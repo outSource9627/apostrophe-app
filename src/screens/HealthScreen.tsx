@@ -1,52 +1,65 @@
 import React, { useEffect, useState } from 'react'
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { api } from '../lib/api'
+import { color, space, radius, fontSize, fontWeight } from '../theme'
 
-type Health = {
-  status: string
-  checks: Record<string, { ok: boolean; detail?: string }>
-  at: string
-}
+type Health = { status: string; checks: Record<string, { ok: boolean; detail?: string }>; at: string }
+type Config = { tiers: { tier: string; amountPaise: number; durationMin: number }[] }
+
+/** Money is integer paise everywhere; format only at the very edge. */
+const rupees = (paise: number) => `₹${(paise / 100).toLocaleString('en-IN')}`
 
 /**
- * Phase 0 proof: the app reaches the same API the web platform does, through the
- * same client. Replaced by the real home surface in Phase 2.
+ * Phase 0/1 proof: the app reaches the same API the web platform does, and reads
+ * pricing from the backend rather than embedding it. A ₹99 hard-coded in this
+ * bundle would survive in the wild for months after an admin changed the price.
  */
 export function HealthScreen() {
-  const [state, setState] = useState<{ loading: boolean; data?: Health; error?: string }>({ loading: true })
+  const [health, setHealth] = useState<Health | null>(null)
+  const [config, setConfig] = useState<Config | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    api
-      .get<Health>('/health', { anonymous: true })
-      .then((data) => setState({ loading: false, data }))
-      .catch((err: Error) => setState({ loading: false, error: err.message }))
+    Promise.all([
+      api.get<Health>('/health', { anonymous: true }),
+      api.get<Config>('/config', { anonymous: true }).catch(() => null),
+    ])
+      .then(([h, c]) => {
+        setHealth(h)
+        setConfig(c)
+      })
+      .catch((e: Error) => setError(e.message))
+      .finally(() => setLoading(false))
   }, [])
+
+  const ok = health?.status === 'healthy'
 
   return (
     <ScrollView contentContainerStyle={styles.page}>
-      <Text style={styles.eyebrow}>APOSTROPHE · PLATFORM CORE</Text>
+      <Text style={styles.eyebrow}>APOSTROPHE · MOBILE</Text>
       <Text style={styles.title}>Connection check</Text>
 
-      {state.loading && <ActivityIndicator style={styles.spinner} />}
+      {loading && <ActivityIndicator style={styles.spinner} color={color.accent} />}
 
-      {state.error && (
+      {error && (
         <View style={[styles.card, styles.cardBad]}>
           <Text style={styles.cardTitle}>Cannot reach the API</Text>
-          <Text style={styles.detail}>{state.error}</Text>
+          <Text style={styles.muted}>{error}</Text>
           <Text style={styles.hint}>
-            Start it with `npm run dev` in apostrophe-admin. On an Android emulator the host is
-            10.0.2.2, not localhost.
+            Start it with `npm run dev` in apostrophe-admin. On an Android emulator the host is 10.0.2.2, not
+            localhost.
           </Text>
         </View>
       )}
 
-      {state.data && (
+      {health && (
         <>
-          <View style={[styles.card, state.data.status === 'healthy' ? styles.cardGood : styles.cardBad]}>
-            <Text style={styles.cardTitle}>{state.data.status.toUpperCase()}</Text>
-            <Text style={styles.detail}>{new Date(state.data.at).toLocaleString()}</Text>
+          <View style={[styles.card, ok ? styles.cardGood : styles.cardBad]}>
+            <Text style={styles.cardTitle}>{health.status.toUpperCase()}</Text>
+            <Text style={styles.muted}>{new Date(health.at).toLocaleString('en-IN')}</Text>
           </View>
-          {Object.entries(state.data.checks).map(([name, check]) => (
+          {Object.entries(health.checks).map(([name, check]) => (
             <View key={name} style={styles.row}>
               <Text style={styles.rowName}>{name}</Text>
               <Text style={check.ok ? styles.ok : styles.bad}>{check.ok ? 'ok' : check.detail ?? 'failed'}</Text>
@@ -54,23 +67,54 @@ export function HealthScreen() {
           ))}
         </>
       )}
+
+      {config && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>PRICING, READ FROM THE BACKEND</Text>
+          <Text style={styles.muted}>
+            Nothing below is hard-coded in this app. An admin changes a price and it updates with no release.
+          </Text>
+          {config.tiers.map((t) => (
+            <View key={t.tier} style={styles.row}>
+              <Text style={styles.rowName}>{t.tier}</Text>
+              <Text style={styles.muted}>
+                {rupees(t.amountPaise)} · {t.durationMin} min
+              </Text>
+            </View>
+          ))}
+        </View>
+      )}
     </ScrollView>
   )
 }
 
 const styles = StyleSheet.create({
-  page: { padding: 24, paddingTop: 72, gap: 12 },
-  eyebrow: { fontSize: 11, letterSpacing: 1.5, color: '#737B9A' },
-  title: { fontSize: 28, fontWeight: '800', letterSpacing: -0.5, color: '#141829', marginBottom: 12 },
-  spinner: { marginTop: 24 },
-  card: { borderRadius: 6, padding: 16, borderWidth: 1, gap: 4 },
-  cardGood: { backgroundColor: '#DCF0E9', borderColor: '#0C7355' },
-  cardBad: { backgroundColor: '#FAE3DF', borderColor: '#A93122' },
-  cardTitle: { fontSize: 16, fontWeight: '700', color: '#141829' },
-  detail: { fontSize: 13, color: '#474D68' },
-  hint: { fontSize: 12, color: '#474D68', marginTop: 6 },
-  row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#D7DCEA' },
-  rowName: { fontSize: 14, color: '#141829', fontWeight: '600' },
-  ok: { fontSize: 13, color: '#0C7355' },
-  bad: { fontSize: 13, color: '#A93122', flexShrink: 1, textAlign: 'right' },
+  page: { padding: space.xl, paddingTop: space['3xl'] + space.xl, gap: space.md },
+  eyebrow: { fontSize: fontSize.xs, letterSpacing: 1.5, color: color.textSubtle },
+  title: {
+    fontSize: fontSize['2xl'],
+    fontWeight: fontWeight.bold,
+    letterSpacing: -0.5,
+    color: color.text,
+    marginBottom: space.md,
+  },
+  spinner: { marginTop: space.xl },
+  card: { borderRadius: radius.md, padding: space.lg, borderWidth: 1, gap: space.xs },
+  cardGood: { backgroundColor: color.successSoft, borderColor: color.success },
+  cardBad: { backgroundColor: color.dangerSoft, borderColor: color.danger },
+  cardTitle: { fontSize: fontSize.lg, fontWeight: fontWeight.semibold, color: color.text },
+  muted: { fontSize: fontSize.sm, color: color.textMuted },
+  hint: { fontSize: fontSize.sm, color: color.textMuted, marginTop: space.sm },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: space.md,
+    borderBottomWidth: 1,
+    borderBottomColor: color.border,
+  },
+  rowName: { fontSize: fontSize.base, color: color.text, fontWeight: fontWeight.semibold },
+  ok: { fontSize: fontSize.sm, color: color.success },
+  bad: { fontSize: fontSize.sm, color: color.danger, flexShrink: 1, textAlign: 'right' },
+  section: { marginTop: space.xl, gap: space.xs },
+  sectionTitle: { fontSize: fontSize.xs, letterSpacing: 1.3, color: color.textSubtle },
 })
