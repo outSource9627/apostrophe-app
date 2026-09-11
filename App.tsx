@@ -6,9 +6,17 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { WelcomeScreen } from './src/screens/WelcomeScreen'
 import { HealthScreen } from './src/screens/HealthScreen'
+import { SignInScreen } from './src/screens/SignInScreen'
+import { HomeScreen } from './src/screens/HomeScreen'
+import { ProfileWizardScreen } from './src/screens/ProfileWizardScreen'
+import { VideosScreen } from './src/screens/VideosScreen'
 
 export type RootStackParamList = {
   Welcome: undefined
+  SignIn: undefined
+  Home: undefined
+  Profile: undefined
+  Videos: undefined
   Health: undefined
 }
 
@@ -39,13 +47,43 @@ export default function App() {
             <Stack.Screen name="Welcome">
               {({ navigation }) => (
                 <WelcomeScreen
-                  // Phase 2 replaces these with the real registration flow.
-                  onGetHired={() => navigation.navigate('Health')}
-                  onWantToHire={() => navigation.navigate('Health')}
-                  onSignIn={() => navigation.navigate('Health')}
+                  onGetHired={() => navigation.navigate('SignIn')}
+                  // The employer app is Phase 8; for now it goes the same way.
+                  onWantToHire={() => navigation.navigate('SignIn')}
+                  onSignIn={() => navigation.navigate('SignIn')}
                 />
               )}
             </Stack.Screen>
+
+            <Stack.Screen name="SignIn">
+              {({ navigation }) => (
+                <SignInScreen
+                  // replace, not navigate: signing in is not a step to go back from.
+                  onSignedIn={() => navigation.replace('Home')}
+                  onRegister={() => navigation.navigate('SignIn')}
+                />
+              )}
+            </Stack.Screen>
+
+            <Stack.Screen name="Home">
+              {({ navigation }) => (
+                <HomeScreen
+                  // ST-22 — payment happens in the gateway's own checkout, which
+                  // Phase 2's mobile leg wires up; this is where it hangs off.
+                  onPay={() => navigation.navigate('Health')}
+                  onProfile={() => navigation.navigate('Profile')}
+                />
+              )}
+            </Stack.Screen>
+
+            <Stack.Screen name="Profile">
+              {({ navigation }) => <ProfileWizardScreen onExit={() => navigation.goBack()} />}
+            </Stack.Screen>
+
+            <Stack.Screen name="Videos">
+              {({ navigation }) => <VideosScreen onRecord={() => navigation.navigate('Health')} />}
+            </Stack.Screen>
+
             <Stack.Screen name="Health" component={HealthScreen} options={{ headerShown: true, title: '' }} />
           </Stack.Navigator>
         </NavigationContainer>
