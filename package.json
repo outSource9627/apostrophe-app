@@ -9,7 +9,7 @@
     "start": "react-native start",
     "test": "jest",
     "theme:sync": "node scripts/sync-theme.mjs",
-    "theme:check": "node scripts/sync-theme.mjs --check",
+    "theme:check": "node scripts/sync-theme.mjs --check && node scripts/check-raw-design-values.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
