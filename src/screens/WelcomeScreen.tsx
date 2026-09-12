@@ -2,7 +2,7 @@ import React from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Logo, LogoMark } from '../components/Logo'
-import { color, space, radius, fontSize, fontWeight } from '../theme'
+import { color, space, radius, fontSize, fontWeight, fontFamilyNative, borderWidth, leading, opacity, trackingNative } from '../theme'
 
 type Props = {
   onGetHired: () => void

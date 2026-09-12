@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { api } from '../lib/api'
-import { color, space, radius, fontSize, fontWeight } from '../theme'
+import { color, space, radius, fontSize, fontWeight, borderWidth, trackingNative } from '../theme'
 
 type Health = { status: string; checks: Record<string, { ok: boolean; detail?: string }>; at: string }
 type Config = { tiers: { tier: string; amountPaise: number; durationMin: number }[] }

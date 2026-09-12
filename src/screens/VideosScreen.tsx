@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import Svg, { Path } from 'react-native-svg'
 import { api } from '../lib/api'
-import { color, space, radius, fontSize, fontWeight, fontFamilyNative } from '../theme'
+import { color, space, radius, fontSize, fontWeight, fontFamilyNative, borderWidth, container, height, leadingNative, trackingNative } from '../theme'
 
 interface SelfVideo {
   id: string

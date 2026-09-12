@@ -5,7 +5,7 @@ import Svg, { Path } from 'react-native-svg'
 import { Logo } from '../components/Logo'
 import { api, tokenStore } from '../lib/api'
 import { ApiClientError } from '../lib/api/types'
-import { color, space, radius, fontSize, fontWeight, fontFamilyNative } from '../theme'
+import { color, space, radius, fontSize, fontWeight, fontFamilyNative, borderWidth, container, height, leadingNative, opacity, trackingNative } from '../theme'
 
 /**
  * ST-01 — sign in with mobile and OTP.

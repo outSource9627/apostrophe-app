@@ -1,7 +1,7 @@
 import React from 'react'
 import { Text, View, StyleSheet, Platform } from 'react-native'
 import Svg, { Path } from 'react-native-svg'
-import { color, fontSize } from '../theme'
+import { color, fontSize, space, fontFamilyNativeWordmark, trackingNative } from '../theme'
 
 /**
  * The Apostrophe mark, same path as the web build so the two cannot drift.

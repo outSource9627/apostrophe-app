@@ -1,7 +1,7 @@
 import React from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { color, space, radius, fontSize, fontWeight, fontFamilyNative } from '../theme'
+import { color, space, radius, fontSize, fontWeight, fontFamilyNative, borderWidth, height } from '../theme'
 
 /**
  * ST-13 — a persistent, non-dismissible payment CTA on every screen an unpaid

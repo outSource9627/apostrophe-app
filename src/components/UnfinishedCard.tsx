@@ -1,7 +1,7 @@
 import React from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import Svg, { Path, Rect } from 'react-native-svg'
-import { color, space, radius, fontSize, fontFamilyNative } from '../theme'
+import { color, space, radius, fontSize, fontFamilyNative, borderWidth, height, trackingNative } from '../theme'
 
 /**
  * The student's card, before the interview exists. Mirrors the web component of

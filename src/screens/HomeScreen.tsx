@@ -6,7 +6,7 @@ import { Logo } from '../components/Logo'
 import { UnfinishedCard } from '../components/UnfinishedCard'
 import { PayBar } from '../components/PayBar'
 import { api } from '../lib/api'
-import { color, space, radius, fontSize, fontWeight, fontFamilyNative } from '../theme'
+import { color, space, radius, fontSize, fontWeight, fontFamilyNative, borderWidth, height, leadingNative, trackingNative } from '../theme'
 
 interface Me {
   paid: boolean
