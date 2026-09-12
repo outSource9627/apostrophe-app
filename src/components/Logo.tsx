@@ -34,10 +34,10 @@ export function Logo({ size = 20, tint = color.ink }: { size?: number; tint?: st
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: space['6'] },
   word: {
-    fontFamily: Platform.select({ ios: 'Georgia', android: 'serif', default: 'serif' }),
-    letterSpacing: -0.3,
+    fontFamily: Platform.select(fontFamilyNativeWordmark),
+    letterSpacing: trackingNative.snug,
     lineHeight: fontSize['2xl'],
   },
 })

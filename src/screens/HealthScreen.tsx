@@ -89,17 +89,17 @@ export function HealthScreen() {
 }
 
 const styles = StyleSheet.create({
-  page: { padding: space.xl, paddingTop: space['3xl'] + space.xl, gap: space.md },
-  eyebrow: { fontSize: fontSize.xs, letterSpacing: 1.5, color: color.textSubtle },
+  page: { padding: space.xl, paddingTop: space['4xl'], gap: space.md },
+  eyebrow: { fontSize: fontSize.xs, letterSpacing: trackingNative.widest, color: color.textSubtle },
   title: {
     fontSize: fontSize['2xl'],
     fontWeight: fontWeight.bold,
-    letterSpacing: -0.5,
+    letterSpacing: trackingNative.tighter,
     color: color.text,
     marginBottom: space.md,
   },
   spinner: { marginTop: space.xl },
-  card: { borderRadius: radius.md, padding: space.lg, borderWidth: 1, gap: space.xs },
+  card: { borderRadius: radius.md, padding: space.lg, borderWidth: borderWidth.thin, gap: space.xs },
   cardGood: { backgroundColor: color.successSoft, borderColor: color.success },
   cardBad: { backgroundColor: color.dangerSoft, borderColor: color.danger },
   cardTitle: { fontSize: fontSize.lg, fontWeight: fontWeight.semibold, color: color.text },
@@ -109,12 +109,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingVertical: space.md,
-    borderBottomWidth: 1,
+    borderBottomWidth: borderWidth.thin,
     borderBottomColor: color.border,
   },
   rowName: { fontSize: fontSize.base, color: color.text, fontWeight: fontWeight.semibold },
   ok: { fontSize: fontSize.sm, color: color.success },
   bad: { fontSize: fontSize.sm, color: color.danger, flexShrink: 1, textAlign: 'right' },
   section: { marginTop: space.xl, gap: space.xs },
-  sectionTitle: { fontSize: fontSize.xs, letterSpacing: 1.3, color: color.textSubtle },
+  sectionTitle: { fontSize: fontSize.xs, letterSpacing: trackingNative.wider, color: color.textSubtle },
 })

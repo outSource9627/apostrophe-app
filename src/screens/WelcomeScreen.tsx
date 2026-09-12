@@ -92,14 +92,14 @@ const styles = StyleSheet.create({
   signIn: { fontSize: fontSize.base, color: color.textMuted },
 
   hero: { paddingHorizontal: space.xl, paddingTop: space['3xl'] },
-  eyebrow: { fontSize: fontSize.xs, letterSpacing: 1.6, color: color.textSubtle },
+  eyebrow: { fontSize: fontSize.xs, letterSpacing: trackingNative.eyebrowTight, color: color.textSubtle },
   headline: {
-    marginTop: space.md, fontSize: fontSize['4xl'], lineHeight: fontSize['4xl'] * 1.06,
-    color: color.text, fontFamily: 'serif', letterSpacing: -0.8,
+    marginTop: space.md, fontSize: fontSize['4xl'], lineHeight: fontSize['4xl'] * leading['106'],
+    color: color.text, fontFamily: fontFamilyNative.displayFallback, letterSpacing: trackingNative.tightest,
   },
   headlineItalic: { marginTop: 0, fontStyle: 'italic', color: color.textMuted },
   lede: {
-    marginTop: space.xl, fontSize: fontSize.lg, lineHeight: fontSize.lg * 1.55,
+    marginTop: space.xl, fontSize: fontSize.lg, lineHeight: fontSize.lg * leading['155'],
     color: color.textMuted,
   },
 
@@ -109,11 +109,11 @@ const styles = StyleSheet.create({
   },
   primaryLabel: { color: color.textInverse, fontSize: fontSize.lg, fontWeight: fontWeight.semibold },
   secondary: {
-    marginTop: space.md, borderRadius: radius.pill, borderWidth: 1, borderColor: color.borderStrong,
+    marginTop: space.md, borderRadius: radius.pill, borderWidth: borderWidth.thin, borderColor: color.borderStrong,
     paddingVertical: space.lg, alignItems: 'center',
   },
   secondaryLabel: { color: color.text, fontSize: fontSize.lg, fontWeight: fontWeight.semibold },
-  pressed: { opacity: 0.85 },
+  pressed: { opacity: opacity.pressed },
 
   markBand: {
     marginTop: space['4xl'], paddingVertical: space['4xl'], alignItems: 'center',
@@ -124,6 +124,6 @@ const styles = StyleSheet.create({
   pillars: { paddingHorizontal: space.xl, paddingTop: space['3xl'], gap: space['2xl'] },
   pillar: { gap: space.xs },
   pillarNumber: { fontSize: fontSize.sm, color: color.textSubtle },
-  pillarTitle: { fontSize: fontSize['2xl'], fontFamily: 'serif', color: color.text, letterSpacing: -0.4 },
-  pillarBody: { fontSize: fontSize.base, lineHeight: fontSize.base * 1.55, color: color.textMuted },
+  pillarTitle: { fontSize: fontSize['2xl'], fontFamily: fontFamilyNative.displayFallback, color: color.text, letterSpacing: trackingNative.tight },
+  pillarBody: { fontSize: fontSize.base, lineHeight: fontSize.base * leading['155'], color: color.textMuted },
 })
