@@ -89,17 +89,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.xl, paddingBottom: space.md,
     borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: color.border,
   },
-  signIn: { fontSize: fontSize.base, color: color.textMuted },
+  signIn: { fontSize: fontSize['ui-base'], color: color.textMuted },
 
   hero: { paddingHorizontal: space.xl, paddingTop: space['3xl'] },
-  eyebrow: { fontSize: fontSize.xs, letterSpacing: trackingNative.eyebrowTight, color: color.textSubtle },
+  eyebrow: { fontSize: fontSize['ui-2xs'], letterSpacing: trackingNative['eyebrow-wide'], color: color.textSubtle },
   headline: {
-    marginTop: space.md, fontSize: fontSize['4xl'], lineHeight: fontSize['4xl'] * leading['106'],
-    color: color.text, fontFamily: fontFamilyNative.displayFallback, letterSpacing: trackingNative.tightest,
+    marginTop: space.md, fontSize: fontSize['display-xl'], lineHeight: fontSize['display-xl'] * leading.display,
+    color: color.text, fontFamily: fontFamilyNative.displayFallback, letterSpacing: trackingNative['tight-sm'],
   },
   headlineItalic: { marginTop: 0, fontStyle: 'italic', color: color.textMuted },
   lede: {
-    marginTop: space.xl, fontSize: fontSize.lg, lineHeight: fontSize.lg * leading['155'],
+    marginTop: space.xl, fontSize: fontSize['ui-lg'], lineHeight: fontSize['ui-lg'] * leading.relaxed,
     color: color.textMuted,
   },
 
@@ -107,12 +107,12 @@ const styles = StyleSheet.create({
     marginTop: space['2xl'], backgroundColor: color.accent, borderRadius: radius.pill,
     paddingVertical: space.lg, alignItems: 'center',
   },
-  primaryLabel: { color: color.textInverse, fontSize: fontSize.lg, fontWeight: fontWeight.semibold },
+  primaryLabel: { color: color.textInverse, fontSize: fontSize['ui-lg'], fontWeight: fontWeight.semibold },
   secondary: {
     marginTop: space.md, borderRadius: radius.pill, borderWidth: borderWidth.thin, borderColor: color.borderStrong,
     paddingVertical: space.lg, alignItems: 'center',
   },
-  secondaryLabel: { color: color.text, fontSize: fontSize.lg, fontWeight: fontWeight.semibold },
+  secondaryLabel: { color: color.text, fontSize: fontSize['ui-lg'], fontWeight: fontWeight.semibold },
   pressed: { opacity: opacity.pressed },
 
   markBand: {
@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
 
   pillars: { paddingHorizontal: space.xl, paddingTop: space['3xl'], gap: space['2xl'] },
   pillar: { gap: space.xs },
-  pillarNumber: { fontSize: fontSize.sm, color: color.textSubtle },
-  pillarTitle: { fontSize: fontSize['2xl'], fontFamily: fontFamilyNative.displayFallback, color: color.text, letterSpacing: trackingNative.tight },
-  pillarBody: { fontSize: fontSize.base, lineHeight: fontSize.base * leading['155'], color: color.textMuted },
+  pillarNumber: { fontSize: fontSize['ui-sm'], color: color.textSubtle },
+  pillarTitle: { fontSize: fontSize['display-md'], fontFamily: fontFamilyNative.displayFallback, color: color.text, letterSpacing: trackingNative.snug },
+  pillarBody: { fontSize: fontSize['ui-base'], lineHeight: fontSize['ui-base'] * leading.relaxed, color: color.textMuted },
 })

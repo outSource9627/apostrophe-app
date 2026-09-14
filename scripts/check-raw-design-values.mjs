@@ -80,6 +80,26 @@ const RULES = [
     pattern: new RegExp(`\\b(?:${PROPS.join('|')}): *-?(?!0\\b)\\d+(?:\\.\\d+)?`, 'g'),
     fix: 'use space, fontSize, radius, height, container, leadingNative, trackingNative, borderWidth or opacity',
   },
+  {
+    /**
+     * React Native imports the token object directly, so the legacy scale shows
+     * up as a key rather than a class. `fontSize['34']` and `space['11']` were
+     * the numeric steps that existed only to keep the old screens pixel-exact;
+     * the scale is now named for the face and the role, and those keys are gone.
+     *
+     * The pattern matches a purely numeric key, so the real steps that merely
+     * begin with a digit — space['2xl'], fontSize['2xs'] — are left alone.
+     */
+    name: 'legacy token key',
+    pattern: /\b(?:fontSize|space|radius|tracking|leading|height)\['\d+(?:-5)?'\]/g,
+    fix: "use a named step — fontSize['ui-sm'], space.lg, radius.md",
+  },
+  {
+    name: 'legacy native scale key',
+    pattern:
+      /\btrackingNative\.(?:tightest|tighter|wide|wider|eyebrowTight)\b|\bleadingNative\.(?:body|bodyLg|lede|ledeLg|display|displayLg)\b/g,
+    fix: "trackingNative and leadingNative are keyed to the font size steps now — leadingNative['ui-base']",
+  },
 ]
 
 function walk(dir, out = []) {

@@ -90,11 +90,11 @@ export function HealthScreen() {
 
 const styles = StyleSheet.create({
   page: { padding: space.xl, paddingTop: space['4xl'], gap: space.md },
-  eyebrow: { fontSize: fontSize.xs, letterSpacing: trackingNative.widest, color: color.textSubtle },
+  eyebrow: { fontSize: fontSize['ui-2xs'], letterSpacing: trackingNative.eyebrow, color: color.textSubtle },
   title: {
-    fontSize: fontSize['2xl'],
+    fontSize: fontSize['display-md'],
     fontWeight: fontWeight.bold,
-    letterSpacing: trackingNative.tighter,
+    letterSpacing: trackingNative.snug,
     color: color.text,
     marginBottom: space.md,
   },
@@ -102,9 +102,9 @@ const styles = StyleSheet.create({
   card: { borderRadius: radius.md, padding: space.lg, borderWidth: borderWidth.thin, gap: space.xs },
   cardGood: { backgroundColor: color.successSoft, borderColor: color.success },
   cardBad: { backgroundColor: color.dangerSoft, borderColor: color.danger },
-  cardTitle: { fontSize: fontSize.lg, fontWeight: fontWeight.semibold, color: color.text },
-  muted: { fontSize: fontSize.sm, color: color.textMuted },
-  hint: { fontSize: fontSize.sm, color: color.textMuted, marginTop: space.sm },
+  cardTitle: { fontSize: fontSize['ui-lg'], fontWeight: fontWeight.semibold, color: color.text },
+  muted: { fontSize: fontSize['ui-sm'], color: color.textMuted },
+  hint: { fontSize: fontSize['ui-sm'], color: color.textMuted, marginTop: space.sm },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -112,9 +112,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: borderWidth.thin,
     borderBottomColor: color.border,
   },
-  rowName: { fontSize: fontSize.base, color: color.text, fontWeight: fontWeight.semibold },
-  ok: { fontSize: fontSize.sm, color: color.success },
-  bad: { fontSize: fontSize.sm, color: color.danger, flexShrink: 1, textAlign: 'right' },
+  rowName: { fontSize: fontSize['ui-base'], color: color.text, fontWeight: fontWeight.semibold },
+  ok: { fontSize: fontSize['ui-sm'], color: color.success },
+  bad: { fontSize: fontSize['ui-sm'], color: color.danger, flexShrink: 1, textAlign: 'right' },
   section: { marginTop: space.xl, gap: space.xs },
-  sectionTitle: { fontSize: fontSize.xs, letterSpacing: trackingNative.wider, color: color.textSubtle },
+  sectionTitle: { fontSize: fontSize['ui-2xs'], letterSpacing: trackingNative['meta-wide'], color: color.textSubtle },
 })

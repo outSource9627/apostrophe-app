@@ -6,18 +6,31 @@
  *
  * Web consumes these as CSS custom properties (app/globals.css is generated
  * from this table). React Native imports the object directly. The two are kept
- * identical by `npm run theme:sync` in the mobile repo — a colour that exists on
+ * identical by `npm run theme:sync` in the other repos — a colour that exists on
  * one surface and not the other is a parity defect under PRD section 7, exactly
  * like a missing feature.
  *
- * ── How the scales are named ────────────────────────────────────────────────
- * The t-shirt steps (xs, sm, base, lg, xl, 2xl…) are the system scale: reach
- * for those first. Alongside them sit numeric steps named after the pixel value
- * they carry today — `fontSize['34']`, `space['11']`, `tracking['18']`. Those
- * exist so that centralising the tokens did not move a single pixel; they are
- * the honest record of what the screens are actually built from, and they are
- * the candidates to fold into the t-shirt scale the next time the type and
- * spacing are deliberately redesigned.
+ * ── Three families, one job each ────────────────────────────────────────────
+ * The foundation rests on a single typographic idea: type carries the design,
+ * so colour does not have to. Every size token therefore names the family it
+ * belongs to, and the binding is not negotiable at the call site.
+ *
+ *   display-*   Newsreader, a bookish serif. Anything that is CONTENT — screen
+ *               titles, candidate names, salary, scores, interview feedback.
+ *   ui-*        Instrument Sans. Anything that is INTERFACE — every control,
+ *               label, row, paragraph and button.
+ *   meta-*      IBM Plex Mono. Eyebrows, status pills, timers, transaction
+ *               references, requirement IDs, fine print. Always uppercase.
+ *
+ * Writing `text-ui-lg` on a candidate's name is not a style slip, it is a
+ * category error — the name is content and belongs in the serif. That is why
+ * the family is in the token name rather than left to a separate font utility.
+ *
+ * ── Two floors ──────────────────────────────────────────────────────────────
+ * Nothing sans-serif sets below 11px, and no interactive label sets below 13px.
+ * `ui-2xs` and `ui-sm` are those floors; there is deliberately nothing beneath
+ * them. The mono steps go to 9px because uppercase mono at a wide tracking
+ * stays legible where a lowercase sans would not.
  */
 export const color = {
   // grounds — paper white, because the brand leans editorial rather than SaaS
@@ -37,152 +50,177 @@ export const color = {
   borderStrong: '#CFCCC6',
 
   /**
-   * Crimson. The single loud colour in the system: it marks the primary action
-   * and nothing else, so "red" always means "this is the thing to press".
+   * Crimson. The single loud colour in the system, and it is a verb rather than
+   * a decoration. Four jobs only: the one primary action on a screen, the
+   * active nav item, the Verified Interview mark, and live/recording. Never a
+   * background, never a section header. Budget: about 5% of a screen's pixels.
    */
   accent: '#B01E24',
   accentHover: '#8F181D',
   accentSoft: '#FBECEC',
-  /** The dotted leader that runs out to a price. Crimson, drained of most of it. */
+  /** The dotted leader that runs out to a price, and the paywall banner's rule. */
   accentMuted: '#D9A9AB',
 
-  /** The logo mark and the darkest ink. Near-black with a blue cast. */
+  /**
+   * The logo mark and the darkest ink. Near-black with a blue cast.
+   *
+   * Rationed deliberately: the ground is paper everywhere, including the
+   * interview room, so ink appears only as the mark, dark-fill secondary
+   * buttons, and the letterbox behind footage. The footage itself is then the
+   * only dark area on any screen, which makes it the focal point without a
+   * single decorative pixel.
+   */
   ink: '#0F1A22',
   /** A panel lifted off the ink ground — the well a video thumbnail sits in. */
   inkRaised: '#1E2429',
 
   // text on the ink ground. White at a fraction, so the ground shows through
   // and the hierarchy survives on a dark surface.
-  textOnInkMuted: 'rgba(255, 255, 255, 0.55)',
-  textOnInkSubtle: 'rgba(255, 255, 255, 0.6)',
+  textOnInk: '#FFFFFF',
+  textOnInkMuted: 'rgba(255, 255, 255, 0.72)',
+  textOnInkSubtle: 'rgba(255, 255, 255, 0.55)',
+  /** The wash behind a sheet, and the gradient foot under a video caption. */
+  scrim: 'rgba(15, 26, 34, 0.4)',
+  scrimStrong: 'rgba(15, 26, 34, 0.82)',
 
-  // semantic state — deliberately not the accent, so "brand" and "this worked"
-  // never collapse into the same colour
+  // semantic state — deliberately low in chroma, so red keeps its monopoly on
+  // urgency and "brand" never collapses into "this worked"
   success: '#0C7355',
   successSoft: '#E4F1EC',
   warning: '#8E540A',
   warningSoft: '#F9EFDD',
   danger: '#A93122',
   dangerSoft: '#FAE9E6',
+  /**
+   * The hairline on a destructive control. Danger drained the way accentMuted
+   * drains the accent — a withdraw button has to read as danger without
+   * shouting, because red is the brand and danger is its own colour.
+   */
+  dangerBorder: '#E4CDC9',
   info: '#0E6E8C',
   infoSoft: '#E3EFF4',
 } as const
 
+/**
+ * A 4px grid. The mobile screen gutter is `xl` (20); card padding is `lg` (16).
+ *
+ * `2xs` is the one sub-grid step, and it exists for optical nudges only — the
+ * 1.5px caret offset, the 2px lift on a notch. Anything structural is on grid.
+ */
 export const space = {
+  '2xs': 2,
+  /** Hairline gaps — between a rule and the text it separates. */
   xs: 4,
+  /** Glyph to label. */
   sm: 8,
+  /** Inside a chip, and between a pill and its neighbour. */
   md: 12,
+  /** Card padding. */
   lg: 16,
-  xl: 24,
-  '2xl': 32,
-  '3xl': 48,
-  '4xl': 72,
-
-  // fine steps — see the naming note at the top of this file
-  '2': 2,
-  '3': 3,
-  '5': 5,
-  '6': 6,
-  '7': 7,
-  '9': 9,
-  '10': 10,
-  '11': 11,
-  '13': 13,
-  '14': 14,
-  '15': 15,
-  '17': 17,
-  '18': 18,
-  '20': 20,
-  '22': 22,
-  '26': 26,
-  '30': 30,
-} as const
-
-export const radius = {
-  sm: 4,
-  md: 8,
-  lg: 14,
-  pill: 999,
-
-  // fine steps — see the naming note at the top of this file
-  '7': 7,
-  '10': 10,
-  '12': 12,
-  '22': 22,
+  /** The screen gutter. */
+  xl: 20,
+  /** Between blocks within a screen. */
+  '2xl': 28,
+  /** A section break. */
+  '3xl': 40,
+  /** Page top and bottom on a wide surface. */
+  '4xl': 56,
 } as const
 
 /**
- * Font size. Two kinds of step, and the difference matters.
+ * Radius carries meaning here: the bigger the radius, the more the surface is
+ * "lifted off" the page. A tag is almost square, a sheet is nearly a pill.
+ */
+export const radius = {
+  /** Tags and skeleton bars. */
+  sm: 4,
+  /** Fields, OTP cells, inline wells. */
+  md: 10,
+  /** Cards, and every framed video. */
+  lg: 14,
+  /** Bottom sheets — top corners only. */
+  xl: 22,
+  /** Every button, chip, pill and toggle. */
+  pill: 999,
+} as const
+
+/**
+ * Font size, named by family and role. See the header note — the prefix binds
+ * the size to a face, and that binding is the system.
  *
- * The t-shirt steps carry a paired line height (see `fontSizeLeading`), so
- * `text-base` sets a size AND a leading. The numeric steps set the size alone,
- * which is what the screens built on them expect — they replaced hand-written
- * `text-[34px]`, and a leading arriving out of nowhere would reflow the page.
- *
- * So: reach for a t-shirt step for body copy, and a numeric step when the
- * leading is being set deliberately next to it.
+ * Every step carries a paired line height in `fontSizeLeading` below, so
+ * `text-ui-base` sets a size AND a leading and body copy never has to be told
+ * how to breathe twice.
  */
 export const fontSize = {
-  xs: 11,
-  sm: 13,
-  base: 15,
-  lg: 18,
-  xl: 22,
-  '2xl': 28,
-  '3xl': 36,
-  '4xl': 48,
-  '5xl': 64,
+  // ── display · Newsreader · content ──────────────────────────────────────
+  /** State titles — "No saved jobs yet". The smallest the serif is allowed. */
+  'display-xs': 18,
+  /** Sheet titles, a percentage read as a value. */
+  'display-sm': 22,
+  /** Candidate names, card headings. */
+  'display-md': 26,
+  /** Screen titles, and the moments — "Your video resume is live". */
+  'display-lg': 36,
+  /** Marketing section heads. */
+  'display-xl': 48,
+  /** The marketing hero, where it does not scale fluidly. */
+  'display-2xl': 64,
+  /** Salary, scores, totals. Set tabular — see `.tnum`. */
+  'display-num': 40,
 
-  // fine steps — see the naming note at the top of this file. A key ending in
-  // `-5` carries a half pixel: `14-5` is 14.5px.
-  '9': 9,
-  '10': 10,
-  '10-5': 10.5,
-  '11': 11,
-  '12': 12,
-  '12-5': 12.5,
-  '13': 13,
-  '13-5': 13.5,
-  '14': 14,
-  '14-5': 14.5,
-  '15': 15,
-  '16': 16,
-  '17': 17,
-  '19': 19,
-  '21': 21,
-  '22': 22,
-  '26': 26,
-  '28': 28,
-  '30': 30,
-  '32': 32,
-  '34': 34,
-  '36': 36,
-  '38': 38,
-  '40': 40,
-  '42': 42,
-  '46': 46,
-  '56': 56,
+  // ── ui · Instrument Sans · interface ────────────────────────────────────
+  /** The sans floor. Non-interactive supporting copy only. */
+  'ui-2xs': 11,
+  /** Fine supporting copy, helper lines beneath a field. */
+  'ui-xs': 12,
+  /** Card meta, field labels, chips. The floor for anything interactive. */
+  'ui-sm': 13,
+  /** Inline and secondary buttons. */
+  'ui-md': 14,
+  /** Body copy, sheets, and the primary button. */
+  'ui-base': 15,
+  /** List titles, the app bar. */
+  'ui-lg': 17,
+  /** Large interface type, where a heading is chrome rather than content. */
+  'ui-xl': 21,
+
+  // ── meta · IBM Plex Mono · always uppercase ─────────────────────────────
+  /** Dense badges sitting on footage. */
+  'meta-xs': 9,
+  /** Eyebrows and status pills. The canonical meta step. */
+  'meta-sm': 10,
+  /** Transaction references, durations, fine print. */
+  'meta-md': 11,
 } as const
 
 /**
- * The line height each t-shirt step carries, as a ratio of its own size.
+ * The line height each step carries, as a unitless ratio.
  *
- * These are Tailwind's own pairings for those names, written down here so this
- * file is the only thing that decides them — otherwise overriding `--text-sm`
- * leaves its leading behind in the framework, which is how a type scale ends up
- * half in the design system and half in node_modules. The odd-looking
- * divisions are those values verbatim, to the last decimal.
+ * Display type sits just above 1 — a serif at 36px needs pulling together, not
+ * opening up. Body copy runs from 1.35 to 1.55. Mono sits at 1.5 because
+ * uppercase with wide tracking reads as a band rather than a line.
  */
 export const fontSizeLeading = {
-  xs: 'calc(1 / 0.75)',
-  sm: 'calc(1.25 / 0.875)',
-  base: 'calc(1.5 / 1)',
-  lg: 'calc(1.75 / 1.125)',
-  xl: 'calc(1.75 / 1.25)',
-  '2xl': 'calc(2 / 1.5)',
-  '3xl': 'calc(2.25 / 1.875)',
-  '4xl': 'calc(2.5 / 2.25)',
-  '5xl': '1',
+  'display-xs': 1.25,
+  'display-sm': 1.2,
+  'display-md': 1.15,
+  'display-lg': 1.08,
+  'display-xl': 1.06,
+  'display-2xl': 1.04,
+  'display-num': 1,
+
+  'ui-2xs': 1.45,
+  'ui-xs': 1.5,
+  'ui-sm': 1.45,
+  'ui-md': 1.4,
+  'ui-base': 1.55,
+  'ui-lg': 1.35,
+  'ui-xl': 1.3,
+
+  'meta-xs': 1.5,
+  'meta-sm': 1.5,
+  'meta-md': 1.4,
 } as const
 
 /**
@@ -196,128 +234,221 @@ export const fontSizeFluid = {
   hero: 'clamp(2.75rem, 7vw, 4.5rem)',
 } as const
 
-export const fontWeight = { regular: '400', medium: '500', semibold: '600', bold: '700' } as const
+/**
+ * Weights. Newsreader carries 300 for the large display steps — a serif set at
+ * 36px looks heavy at 400 — and 400 everywhere else.
+ */
+export const fontWeight = {
+  light: '300',
+  regular: '400',
+  medium: '500',
+  semibold: '600',
+  bold: '700',
+} as const
 
 /**
  * Letter spacing for the web, in em so it tracks the font size.
  *
- * `tight` is for display type, which needs pulling together at large sizes.
- * The numeric steps are the uppercase eyebrow labels — em × 100, so `18` is
- * 0.18em. Small uppercase text needs the extra air to stay readable.
+ * Display steps pull together as they grow; the mono steps push apart, because
+ * small uppercase needs the air to stay readable. The spec's working range for
+ * mono is 0.08–0.16em, and `widest` sits beyond it for the one place a wordmark
+ * is set as a rule.
  */
 export const tracking = {
+  /** The largest display type. */
+  'tight-lg': '-0.03em',
   tight: '-0.025em',
+  /** Section heads and screen titles. */
+  'tight-sm': '-0.02em',
+  /** Names, sheet titles. */
+  snug: '-0.015em',
+  /** List titles set in the sans. */
+  'snug-sm': '-0.01em',
   normal: '0em',
-  wider: '0.05em',
-
-  '2': '0.02em',
-  '8': '0.08em',
-  '10': '0.1em',
-  '12': '0.12em',
-  '13': '0.13em',
-  '14': '0.14em',
-  '15': '0.15em',
-  '16': '0.16em',
-  '18': '0.18em',
-  '30': '0.3em',
+  /** Status pills and inline mono. */
+  meta: '0.1em',
+  /** Captions over footage. */
+  'meta-wide': '0.12em',
+  /** Eyebrow labels. */
+  eyebrow: '0.14em',
+  /** The widest eyebrow — section numbers, the document rule. */
+  'eyebrow-wide': '0.16em',
+  widest: '0.18em',
 } as const
 
 /**
- * Line height for the web, unitless so it multiplies the font size.
- *
- * The numeric steps are the ratio × 100, so `155` is 1.55. Display type sits
- * just above 1 ; body copy runs from 1.4 up.
+ * Line height for the web where it is set apart from a size token — a heading
+ * that has to match a neighbour, a paragraph given extra air deliberately.
  */
 export const leading = {
   none: 1,
+  display: 1.08,
   tight: 1.25,
-  snug: 1.375,
-  relaxed: 1.625,
-
-  '104': 1.04,
-  '106': 1.06,
-  '108': 1.08,
-  '110': 1.1,
-  '140': 1.4,
-  '150': 1.5,
-  '155': 1.55,
-  '160': 1.6,
-  '168': 1.68,
-  '175': 1.75,
+  snug: 1.4,
+  normal: 1.5,
+  relaxed: 1.55,
+  loose: 1.65,
 } as const
 
 /**
- * Two faces, two jobs. The serif carries the voice — headlines, the wordmark,
- * the numbered section titles. The sans carries everything a person has to
- * read carefully: body copy, labels, forms, the whole admin panel.
+ * Three faces, three jobs — see the header note.
+ *
+ * The *-loaded variables are set by next/font, which self-hosts the files. The
+ * stacks after them are what renders if that has not resolved yet, chosen so
+ * the fallback has roughly the right colour on the page.
  */
 export const fontFamily = {
-  // The *-loaded variables are set by next/font, which self-hosts the files.
-  // The stacks after them are what renders if that has not resolved yet.
   display: "var(--font-display-loaded), 'Iowan Old Style', Georgia, serif",
   body: "var(--font-body-loaded), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif",
+  mono: "var(--font-mono-loaded), ui-monospace, SFMono-Regular, Menlo, monospace",
 } as const
 
-/** React Native cannot parse a CSS font stack; it needs the family name alone. */
+/**
+ * React Native cannot parse a CSS font stack; it needs one exact face name.
+ *
+ * These are the fonts' own PostScript names, not friendly labels, and they have
+ * to stay exact: iOS resolves a face by PostScript name while Android resolves
+ * it by filename, so the bundled files in src/assets/fonts are named to match
+ * these strings character for character. Renaming a file there without changing
+ * the string here breaks Android only, which is the kind of bug that reaches a
+ * store build.
+ *
+ * `Newsreader16pt` is the optical size cut for text and small display, which is
+ * the range a phone actually sets: the 36px screen title is the largest thing
+ * in the app, well inside what the 16pt cut is drawn for.
+ *
+ * RN has no synthetic weight for a custom face — asking for fontWeight 600 on a
+ * Regular file silently gives you Regular on Android — so every weight the
+ * design uses is bundled as its own file and named here.
+ */
 export const fontFamilyNative = {
-  display: 'PlayfairDisplay-Regular',
-  body: 'Inter-Regular',
+  /** Newsreader 300 — the large display steps only. */
+  displayLight: 'Newsreader16pt-Light',
+  display: 'Newsreader16pt-Regular',
+  displayMedium: 'Newsreader16pt-Medium',
+  displayItalic: 'Newsreader16pt-Italic',
+
+  body: 'InstrumentSans-Regular',
+  bodyMedium: 'InstrumentSans-Medium',
+  bodySemiBold: 'InstrumentSans-SemiBold',
+  bodyBold: 'InstrumentSans-Bold',
+
+  mono: 'IBMPlexMono-Regular',
+  monoMedium: 'IBMPlexMono-Medium',
+  monoSemiBold: 'IBMPlexMono-SemiBold',
+
   /** The platform's own serif, where the bundled display face is not used. */
   displayFallback: 'serif',
 } as const
 
 /**
- * The wordmark's face on mobile, per platform. iOS ships Georgia and Android
- * does not, so Android falls back to whatever serif it has. Pass this straight
- * to `Platform.select`.
+ * The wordmark's face on mobile.
+ *
+ * This used to fall back to the platform serif on each platform, because the
+ * display face was not bundled and shipping four weights for one word was not
+ * worth it. Newsreader is bundled now, so the wordmark sets in the same serif
+ * as the rest of the product on both platforms — which is the point of a
+ * wordmark. Kept in `Platform.select` shape so call sites do not have to change.
  */
-export const fontFamilyNativeWordmark = { ios: 'Georgia', android: 'serif', default: 'serif' } as const
+export const fontFamilyNativeWordmark = {
+  ios: 'Newsreader16pt-Regular',
+  android: 'Newsreader16pt-Regular',
+  default: 'serif',
+} as const
 
 /**
  * React Native has no em and no unitless line height — both are absolute
  * numbers — so the two web scales above cannot be handed to it directly.
- * These are the same design decisions expressed in points.
+ * These are the same design decisions expressed in points, keyed to match the
+ * font size steps they pair with.
  */
 export const trackingNative = {
-  tightest: -0.8,
-  tighter: -0.5,
-  tight: -0.4,
-  snug: -0.3,
-  wide: 0.9,
-  wider: 1.3,
-  widest: 1.5,
-  eyebrowTight: 1.6,
-  eyebrow: 1.8,
+  'tight-lg': -1.1,
+  tight: -0.9,
+  'tight-sm': -0.7,
+  snug: -0.4,
+  'snug-sm': -0.2,
+  normal: 0,
+  meta: 1,
+  'meta-wide': 1.2,
+  eyebrow: 1.4,
+  'eyebrow-wide': 1.6,
+  widest: 1.8,
 } as const
 
+/**
+ * Absolute line heights for React Native, one per font size step. These are
+ * `fontSize × fontSizeLeading` resolved ahead of time and rounded to the pixel,
+ * because RN will not do the multiplication for us.
+ */
 export const leadingNative = {
-  body: 18,
-  bodyLg: 20,
-  lede: 21,
-  ledeLg: 22,
-  display: 34,
-  displayLg: 42,
+  'display-xs': 23,
+  'display-sm': 26,
+  'display-md': 30,
+  'display-lg': 39,
+  'display-xl': 51,
+  'display-2xl': 67,
+  'display-num': 40,
+
+  'ui-2xs': 16,
+  'ui-xs': 18,
+  'ui-sm': 19,
+  'ui-md': 20,
+  'ui-base': 23,
+  'ui-lg': 23,
+  'ui-xl': 27,
+
+  'meta-xs': 14,
+  'meta-sm': 15,
+  'meta-md': 15,
 } as const
 
 /**
  * Opacity. `pressed` is the dip a button takes under a finger, `disabled` the
- * state of an action that is not available yet.
+ * state of an action that is not available yet — and a disabled action always
+ * carries a reason line beneath it, never a dead control with no explanation.
  */
 export const opacity = { pressed: 0.85, disabled: 0.5, hidden: 0 } as const
 
 /**
  * Border weights. `thin` is every hairline in the product — a 1px rule at any
- * density. `accent` is the thicker bar that marks a pull quote.
+ * density. `accent` is the thicker bar that marks a pull quote, a framing
+ * guide, or the ring on an error glyph.
  */
-export const borderWidth = { thin: 1, accent: 2 } as const
+export const borderWidth = { thin: 1, medium: 1.5, accent: 2 } as const
 
 /**
- * Two shadows in the whole system. `card` lifts a surface off the page; `focus`
- * is the ring a field wears while it has the caret.
+ * Three levels of elevation in the whole system, and the rule is flat by
+ * default: a hairline does the work almost everywhere.
+ *
+ * `card` lifts a surface off the page — swipe cards, sheets, toasts. `raised`
+ * is the small lift under a segmented control's selected pane. `focus` is the
+ * ring a field wears while it has the caret: 3px of ink at 6%, never blue.
  */
 export const shadow = {
   card: '0 1px 2px rgba(15, 26, 34, 0.04), 0 12px 32px -12px rgba(15, 26, 34, 0.12)',
+  raised: '0 1px 2px rgba(15, 26, 34, 0.08)',
   focus: '0 0 0 3px rgba(22, 25, 28, 0.06)',
+  /**
+   * The only coloured shadow in the system, and it exists for exactly one
+   * control: the save action on the job feed. That button is the whole gesture
+   * the feed is built around, so it is allowed to lift off the card in a way
+   * nothing else does.
+   */
+  accent: '0 8px 20px -8px rgba(176, 30, 36, 0.6)',
+} as const
+
+/**
+ * The SAVE and PASS stamps that fade in over a swipe card, angled the way a
+ * rubber stamp lands. Two values, mirrored, and nothing else in the product
+ * rotates — which is what keeps them reading as a stamp rather than a style.
+ *
+ * Web has no --rotate-* theme namespace, so globals.css turns these into
+ * `@utility rotate-<name>` the same way it handles the fixed heights.
+ */
+export const rotation = {
+  stamp: '-11deg',
+  'stamp-alt': '11deg',
 } as const
 
 /**
@@ -366,31 +497,46 @@ export const container = {
  * Fixed heights. Anything a finger or a cursor has to hit lives here, so the
  * hit targets across the product can be checked — and changed — in one place.
  *
+ * The floor is `tap` (44): every tap target is at least 44×44, including the
+ * icon-only controls in the interview room.
+ *
  * Web has no `--height-*` theme namespace, so globals.css turns each of these
  * into an `@utility h-<name>` that behaves like any other Tailwind utility
  * (`sm:h-header-lg` works).
  */
 export const height = {
-  /** Inputs, selects and buttons in a form. */
-  control: 50,
-  /** The one primary action in the pay bar, a touch taller than a field. */
-  'control-lg': 52,
+  /** Primary actions, and every field. */
+  control: 52,
+  /** Inline and secondary buttons. Also the tap-target floor. */
+  'control-sm': 44,
+  /** The small button inside an empty or error state. */
+  'control-xs': 40,
+  /** The action inside a next-action block, and a sheet's paired buttons. */
+  'control-block': 48,
+  /** Filter and skill chips. */
+  chip: 36,
+  /** One pane of a segmented control, inside its 3px track padding. */
+  segment: 34,
+  /** A switch, and the knob inside it. */
+  toggle: 28,
+  'toggle-knob': 22,
+  /** The smallest square a finger reliably hits. */
+  tap: 44,
+  /** A glyph slot in the tab bar — placeholder until the icon set arrives. */
+  glyph: 24,
+  /** The pill behind an active Android tab. */
+  'tab-indicator': 30,
+
   header: 60,
   'header-lg': 72,
-  'otp-cell': 76,
-  'otp-cell-lg': 96,
+  'otp-cell': 52,
+  'otp-cell-lg': 76,
   /** The pay bar itself, and the spacer that keeps it off the content. */
   'pay-bar': 88,
   'pay-bar-stacked': 136,
   'video-thumb': 116,
   /** The empty well on the unfinished-profile card. */
   well: 400,
-  /** The smallest square a finger reliably hits. */
-  tap: 44,
-  /** A tap row given a little more room than the minimum. */
-  'tap-lg': 46,
-  /** A field on mobile, where a finger needs more than a cursor does. */
-  'control-touch': 54,
   /** The top bar on a mobile screen, and the shorter one over the wizard. */
   'app-bar': 52,
   'app-bar-compact': 50,
@@ -422,14 +568,17 @@ export const gridTemplate = {
 } as const
 
 /**
- * Motion. One animation in the product: the sweep that runs across the progress
- * bar while a payment is confirming. It lives here rather than in the component
- * so the easing is a token like everything else.
+ * Motion. Three animations in the product, and none of them is decorative:
+ * `sweep` runs across a progress bar and a skeleton while something is genuinely
+ * in flight, `pulse-dot` marks a live recording, `spin` is the one spinner.
  *
- * The `sweep` keyframes themselves are in the generated globals.css.
+ * The keyframes themselves are in the generated globals.css.
  */
 export const animation = {
   sweep: 'sweep 1.7s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite',
+  'pulse-dot': 'pulseDot 1.4s ease-in-out infinite',
+  spin: 'spin 0.8s linear infinite',
+  'spin-slow': 'spin 1.1s linear infinite',
 } as const
 
 /**
@@ -447,3 +596,4 @@ export const brand = {
 export const aspect = { videoResume: 9 / 16, fullVideo: 16 / 9 } as const
 
 export type ColorToken = keyof typeof color
+export type FontSizeToken = keyof typeof fontSize
