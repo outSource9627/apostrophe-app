@@ -28,6 +28,8 @@ export class ApiClient {
     this.request<T>(path, { ...init, method: 'POST', body })
   patch = <T>(path: string, body?: unknown, init: Omit<RequestInit_, 'method'> = {}) =>
     this.request<T>(path, { ...init, method: 'PATCH', body })
+  put = <T>(path: string, body?: unknown, init: Omit<RequestInit_, 'method'> = {}) =>
+    this.request<T>(path, { ...init, method: 'PUT', body })
   del = <T>(path: string, init: Omit<RequestInit_, 'method'> = {}) =>
     this.request<T>(path, { ...init, method: 'DELETE' })
 
@@ -124,7 +126,15 @@ export class ApiClient {
       throw new ApiClientError(ErrorCode.INTERNAL, 'The server returned an unreadable response.', res.status, undefined, requestId)
     }
     if ('error' in json) {
-      throw new ApiClientError(json.error.code, json.error.message, res.status, json.error.fields, json.error.requestId ?? requestId)
+      throw new ApiClientError(
+        json.error.code,
+        json.error.message,
+        res.status,
+        json.error.fields,
+        json.error.requestId ?? requestId,
+        json.error.details,
+        json.error.meta,
+      )
     }
     return json.data
   }

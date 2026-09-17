@@ -1,5 +1,6 @@
 module.exports = {
   preset: '@react-native/jest-preset',
+  setupFiles: ['./jest.setup.js'],
   /**
    * node_modules is not transformed by default, but React Native's own packages
    * and @react-navigation ship untranspiled ESM — so Jest hits `export` and

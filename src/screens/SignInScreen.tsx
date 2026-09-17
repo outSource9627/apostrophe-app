@@ -1,208 +1,455 @@
 import React, { useState } from 'react'
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
+import {
+  KeyboardAvoidingView,
+  Linking,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import Svg, { Path } from 'react-native-svg'
 import { Logo } from '../components/Logo'
+import { Field, Input } from '../components/ui/fields'
+import { Segmented } from '../components/ui/controls'
+import { Banner } from '../components/ui/Banner'
+import { GoogleButton } from '../components/ui/GoogleButton'
+import { Button } from '../components/ui/Button'
 import { api, tokenStore } from '../lib/api'
 import { ApiClientError } from '../lib/api/types'
-import { color, space, radius, fontSize, fontWeight, fontFamilyNative, borderWidth, container, height, leadingNative, opacity, trackingNative } from '../theme'
+import {
+  borderWidth,
+  color,
+  fontFamilyNative,
+  fontSize,
+  height,
+  leadingNative,
+  radius,
+  space,
+  trackingNative,
+} from '../theme'
+
+type Method = 'Mobile' | 'Email' | 'Google'
+
+type BannerState =
+  | { type: 'WRONG_CREDENTIALS'; message: string }
+  | { type: 'SUSPENDED'; message: string; ref: string }
+  | { type: 'RATE_LIMITED'; message: string; retryTime?: string }
+  | null
+
+interface Props {
+  onSignedIn: () => void
+  onRegister: () => void
+  onOtpSent: (data: { mobile: string; resendAfterSeconds: number }) => void
+}
 
 /**
- * ST-01 — sign in with mobile and OTP.
+ * ST-04 — Sign in screen matching canonical specification.
  *
- * Ink above, a paper sheet below: the brand gets the top half, the form sits
- * where the thumb is. The country code is furniture inside the control rather
- * than a field, because India-only means it cannot vary.
+ * App bar: Logo + "Create account"
+ * Title: "Pick up where you left off."
+ * Method selector: Segmented control (Mobile, Email, Google)
+ * Dynamic Banner: handles 401 wrong credentials, 403 suspended, and 429 rate limit.
  */
-export function SignInScreen({ onSignedIn, onRegister }: { onSignedIn: () => void; onRegister: () => void }) {
+export function SignInScreen({ onSignedIn, onRegister, onOtpSent }: Props) {
   const insets = useSafeAreaInsets()
-  const [stage, setStage] = useState<'MOBILE' | 'CODE'>('MOBILE')
+  const [method, setMethod] = useState<Method>('Mobile')
+
+  // Mobile state
   const [mobile, setMobile] = useState('')
-  const [code, setCode] = useState('')
-  const [error, setError] = useState<string | null>(null)
+
+  // Email state
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+
+  // Status & banner
   const [pending, setPending] = useState(false)
+  const [banner, setBanner] = useState<BannerState>(null)
 
-  const CODE_LENGTH = 6
+  // 1 · Submit Mobile to send OTP
+  async function handleSendMobileCode() {
+    if (pending || mobile.length !== 10) return
+    setPending(true)
+    setBanner(null)
 
-  async function sendCode() {
-    setPending(true); setError(null)
     try {
-      await api.post('/auth/otp/send', { mobile, purpose: 'LOGIN' }, { anonymous: true })
-      setStage('CODE')
-    } catch (e) {
-      setError(e instanceof ApiClientError ? e.message : 'Could not send the code.')
-    } finally { setPending(false) }
+      const res = await api.post<{ sent: boolean; resendAfterSeconds?: number }>(
+        '/auth/otp/send',
+        { mobile, purpose: 'LOGIN' },
+        { anonymous: true },
+      )
+      onOtpSent({
+        mobile,
+        resendAfterSeconds: res.resendAfterSeconds ?? 30,
+      })
+    } catch (err) {
+      if (err instanceof ApiClientError) {
+        if (err.status === 429) {
+          const retrySec = (err.details as { retryAfterSeconds?: number })?.retryAfterSeconds ?? 3600
+          const resumeDate = new Date(Date.now() + retrySec * 1000)
+          const timeStr = resumeDate.toLocaleTimeString('en-IN', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true,
+          })
+          setBanner({
+            type: 'RATE_LIMITED',
+            message: "That’s 5 codes to this number this hour.",
+            retryTime: `TRY AGAIN AFTER ${timeStr} IST`,
+          })
+        } else if (err.status === 403) {
+          setBanner({
+            type: 'SUSPENDED',
+            message: "This account is suspended. Signing in again won’t help — our team has to lift it.",
+            ref: '[REF-AUTH403]',
+          })
+        } else {
+          setBanner({
+            type: 'WRONG_CREDENTIALS',
+            message: err.message,
+          })
+        }
+      } else {
+        setBanner({
+          type: 'WRONG_CREDENTIALS',
+          message: 'Could not send the code.',
+        })
+      }
+    } finally {
+      setPending(false)
+    }
   }
 
-  async function verify() {
-    setPending(true); setError(null)
+  // 2 · Submit Email & Password
+  async function handleEmailLogin() {
+    if (pending || !email.trim() || !password) return
+    setPending(true)
+    setBanner(null)
+
     try {
-      const t = await api.post<{ accessToken: string; refreshToken: string }>(
-        '/auth/login', { mobile, code }, { anonymous: true },
+      const data = await api.post<{ accessToken: string; refreshToken: string }>(
+        '/auth/login/password',
+        { email, password },
+        { anonymous: true },
       )
-      await tokenStore.set(t)
+      await tokenStore.set(data)
       onSignedIn()
-    } catch (e) {
-      setError(e instanceof ApiClientError ? e.message : 'Could not sign you in.')
-    } finally { setPending(false) }
+    } catch (err) {
+      if (err instanceof ApiClientError) {
+        if (err.status === 403) {
+          setBanner({
+            type: 'SUSPENDED',
+            message: "This account is suspended. Signing in again won’t help — our team has to lift it.",
+            ref: '[REF-AUTH403]',
+          })
+        } else {
+          setBanner({
+            type: 'WRONG_CREDENTIALS',
+            message: "That email and password don’t match.",
+          })
+        }
+      } else {
+        setBanner({
+          type: 'WRONG_CREDENTIALS',
+          message: "That email and password don’t match.",
+        })
+      }
+    } finally {
+      setPending(false)
+    }
   }
 
   return (
-    <View style={styles.page}>
-      {/* Status-bar space is left to the real status bar, never painted. */}
-      <View style={[styles.top, { paddingTop: insets.top + space.xl }]}>
-        <Logo size={18} tint={color.textInverse} />
-        <Text style={styles.headline}>Beyond resumes.</Text>
-        <Text style={[styles.headline, styles.headlineMuted]}>Meet the person.</Text>
-        <Text style={styles.lede}>
-          Sit one interview. It becomes the profile employers actually watch.
-        </Text>
+    <KeyboardAvoidingView
+      style={styles.root}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      {/* ── App bar (52px) ─────────────────────────────────────────────── */}
+      <View style={[styles.appBar, { paddingTop: insets.top }]}>
+        <Logo size={18} tint={color.text} />
+        <Pressable onPress={onRegister} hitSlop={12} style={styles.appBarAction}>
+          <Text style={styles.appBarActionText}>Create account</Text>
+        </Pressable>
       </View>
 
-      <View style={[styles.sheet, { paddingBottom: insets.bottom + space.xl }]}>
-        {stage === 'MOBILE' ? (
-          <>
-            <Text style={styles.eyebrow}>WELCOME BACK</Text>
-            <Text style={styles.label}>Mobile number</Text>
-            <View style={styles.control}>
-              <Text style={styles.prefix}>+91</Text>
-              <View style={styles.divider} />
-              <TextInput
-                value={mobile}
-                onChangeText={(v) => setMobile(v.replace(/\D/g, '').slice(0, 10))}
-                keyboardType="number-pad"
-                textContentType="telephoneNumber"
-                placeholder="98765 43210"
-                placeholderTextColor={color.textSubtle}
-                style={styles.input}
-              />
-            </View>
+      <ScrollView
+        contentContainerStyle={[
+          styles.scroll,
+          { paddingBottom: insets.bottom + space.xl },
+        ]}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* Title */}
+        <View style={styles.header}>
+          <Text style={styles.eyebrow}>WELCOME BACK</Text>
+          <Text style={styles.headline}>
+            Pick up where{'\n'}
+            <Text style={styles.headlineMuted}>you left off.</Text>
+          </Text>
+        </View>
 
-            {!!error && <Text style={styles.error}>{error}</Text>}
+        {/* Method chooser · Segmented 3-option control */}
+        <Segmented
+          options={['Mobile', 'Email', 'Google'] as const}
+          value={method}
+          onChange={(m) => {
+            setMethod(m)
+            setBanner(null)
+          }}
+        />
 
-            <Pressable
-              onPress={sendCode}
-              disabled={pending || mobile.length !== 10}
-              style={({ pressed }) => [
-                styles.cta,
-                (pending || mobile.length !== 10) && styles.ctaDisabled,
-                pressed && styles.ctaPressed,
-              ]}
-            >
-              <Text style={styles.ctaLabel}>{pending ? 'Please wait…' : 'Send me a code'}</Text>
-            </Pressable>
-
-            <Pressable onPress={onRegister} style={styles.footerTarget}>
-              <Text style={styles.footer}>
-                First time here? <Text style={styles.footerLink}>Create an account</Text>
-              </Text>
-            </Pressable>
-          </>
-        ) : (
-          <>
-            <Text style={styles.eyebrow}>VERIFY YOUR NUMBER</Text>
-            <Text style={styles.sentTo}>Sent to +91 {mobile}</Text>
-
-            {/*
-              One real input behind six cells. Six separate inputs look the same
-              and then fight the platform over paste, backspace and SMS autofill.
-            */}
-            <View>
-              <TextInput
-                value={code}
-                onChangeText={(v) => setCode(v.replace(/\D/g, '').slice(0, CODE_LENGTH))}
-                keyboardType="number-pad"
-                textContentType="oneTimeCode"
-                autoFocus
-                maxLength={CODE_LENGTH}
-                style={styles.hiddenInput}
-              />
-              <View style={styles.cells} pointerEvents="none">
-                {Array.from({ length: CODE_LENGTH }).map((_, i) => (
-                  <View key={i} style={[styles.cell, i === code.length && styles.cellActive]}>
-                    <Text style={styles.cellText}>{code[i] ?? ''}</Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-
-            {!!error && <Text style={styles.error}>{error}</Text>}
-
-            <Pressable
-              onPress={verify}
-              disabled={pending || code.length !== CODE_LENGTH}
-              style={({ pressed }) => [
-                styles.cta,
-                (pending || code.length !== CODE_LENGTH) && styles.ctaDisabled,
-                pressed && styles.ctaPressed,
-              ]}
-            >
-              <Text style={styles.ctaLabel}>{pending ? 'Please wait…' : 'Sign in'}</Text>
-            </Pressable>
-
-            <Pressable onPress={() => { setStage('MOBILE'); setCode(''); setError(null) }} style={styles.footerTarget}>
-              <View style={styles.backRow}>
-                <Svg width={15} height={15} viewBox="0 0 24 24" fill="none">
-                  <Path d="m15 18-6-6 6-6" stroke={color.textMuted} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" />
-                </Svg>
-                <Text style={styles.footer}>Change the number</Text>
-              </View>
-            </Pressable>
-          </>
+        {/* Dynamic Inline Banner */}
+        {banner && (
+          <Banner
+            tone={
+              banner.type === 'WRONG_CREDENTIALS'
+                ? 'danger'
+                : banner.type === 'RATE_LIMITED'
+                  ? 'warning'
+                  : 'info'
+            }
+            reference={
+              banner.type === 'SUSPENDED'
+                ? banner.ref
+                : banner.type === 'RATE_LIMITED'
+                  ? banner.retryTime
+                  : undefined
+            }
+            actionLabel={banner.type === 'SUSPENDED' ? 'Write to support' : undefined}
+            onAction={
+              banner.type === 'SUSPENDED'
+                ? () => Linking.openURL('mailto:support@apostrophe.work')
+                : undefined
+            }
+          >
+            {banner.message}
+          </Banner>
         )}
-      </View>
-    </View>
+
+        {/* 1 · Mobile Method */}
+        {method === 'Mobile' && (
+          <View style={styles.formSection}>
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>MOBILE</Text>
+              <View style={styles.mobileControl}>
+                <Text style={styles.mobilePrefix}>+91</Text>
+                <View style={styles.mobileDivider} />
+                <TextInput
+                  value={mobile}
+                  onChangeText={(v) => {
+                    setMobile(v.replace(/\D/g, '').slice(0, 10))
+                    setBanner(null)
+                  }}
+                  keyboardType="number-pad"
+                  textContentType="telephoneNumber"
+                  placeholder="98765 43210"
+                  placeholderTextColor={color.textSubtle}
+                  style={styles.mobileInput}
+                  editable={!pending}
+                />
+              </View>
+              <Text style={styles.hintText}>
+                We’ll text a six-digit code. It’s good for 10 minutes.
+              </Text>
+            </View>
+
+            <View style={styles.ctaSection}>
+              <Button
+                label={pending ? 'Sending code…' : 'Send me a code'}
+                variant="primary"
+                size="lg"
+                full
+                disabled={pending || mobile.length !== 10}
+                busy={pending}
+                onPress={handleSendMobileCode}
+              />
+              <Text style={styles.channelNote}>
+                Mobile, email and Google all reach the same account.
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {/* 2 · Email Method */}
+        {method === 'Email' && (
+          <View style={styles.formSection}>
+            <Field label="Email">
+              <Input
+                value={email}
+                onChangeText={(v) => {
+                  setEmail(v)
+                  setBanner(null)
+                }}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                textContentType="emailAddress"
+                placeholder="you@example.com"
+                editable={!pending}
+              />
+            </Field>
+
+            <Field label="Password">
+              <Input
+                value={password}
+                onChangeText={(v) => {
+                  setPassword(v)
+                  setBanner(null)
+                }}
+                secureTextEntry
+                textContentType="password"
+                placeholder="Your password"
+                editable={!pending}
+              />
+            </Field>
+
+            <View style={styles.ctaSection}>
+              <Button
+                label={pending ? 'Signing in…' : 'Sign in'}
+                variant="primary"
+                size="lg"
+                full
+                disabled={pending || !email.trim() || !password}
+                busy={pending}
+                onPress={handleEmailLogin}
+              />
+              <Text style={styles.channelNote}>
+                Mobile, email and Google all reach the same account.
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {/* 3 · Google Method */}
+        {method === 'Google' && (
+          <View style={styles.googleSection}>
+            <Text style={styles.googleHelper}>
+              Sign in securely with your Google account to access your interviews and profile.
+            </Text>
+
+            <GoogleButton onPress={() => {}} />
+
+            <Text style={styles.channelNote}>
+              Mobile, email and Google all reach the same account.
+            </Text>
+          </View>
+        )}
+      </ScrollView>
+    </KeyboardAvoidingView>
   )
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: color.ink },
-  top: { flex: 1, paddingHorizontal: space.xl },
+  root: {
+    flex: 1,
+    backgroundColor: color.background,
+  },
+  appBar: {
+    height: height['app-bar'],
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: space.xl,
+    backgroundColor: color.surface,
+  },
+  appBarAction: {
+    height: height.tap,
+    justifyContent: 'center',
+    paddingHorizontal: space.md,
+    marginRight: -space.md,
+  },
+  appBarActionText: {
+    fontSize: fontSize['ui-sm'],
+    color: color.textMuted,
+  },
+  scroll: {
+    paddingHorizontal: space.xl,
+    paddingTop: space.md,
+    gap: space.xl,
+  },
+  header: {
+    gap: space.sm,
+  },
+  eyebrow: {
+    fontFamily: fontFamilyNative.mono,
+    fontSize: fontSize['meta-sm'],
+    letterSpacing: trackingNative['eyebrow-wide'],
+    color: color.textSubtle,
+    textTransform: 'uppercase',
+  },
   headline: {
     fontFamily: fontFamilyNative.display,
-    fontSize: fontSize['display-xl'], lineHeight: leadingNative['display-lg'], color: color.textInverse, marginTop: space['2xl'],
+    fontSize: fontSize['display-lg'],
+    lineHeight: leadingNative['display-lg'],
+    color: color.text,
+    letterSpacing: trackingNative['tight-sm'],
   },
-  headlineMuted: { color: color.textOnInkMuted, marginTop: 0 },
-  lede: {
-    marginTop: space.lg,
-    maxWidth: container['measure-native'],
-    fontSize: fontSize['ui-md'],
-    lineHeight: leadingNative['ui-base'],
-    color: color.textOnInkMuted,
+  headlineMuted: {
+    color: color.textMuted,
+    fontStyle: 'italic',
   },
-  sheet: {
+  formSection: {
+    gap: space.lg,
+  },
+  fieldGroup: {
+    gap: space.sm,
+  },
+  fieldLabel: {
+    fontFamily: fontFamilyNative.mono,
+    fontSize: fontSize['meta-sm'],
+    letterSpacing: trackingNative['eyebrow-wide'],
+    color: color.textSubtle,
+    textTransform: 'uppercase',
+  },
+  mobileControl: {
+    height: height.control,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    borderRadius: radius.md,
+    borderWidth: borderWidth.thin,
+    borderColor: color.borderStrong,
     backgroundColor: color.surface,
-    borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl,
-    paddingHorizontal: space.xl, paddingTop: space['2xl'],
+    paddingHorizontal: space.lg,
   },
-  eyebrow: { fontSize: fontSize['ui-2xs'], letterSpacing: trackingNative.widest, color: color.textSubtle },
-  label: { marginTop: space.xl, fontSize: fontSize['ui-sm'], fontWeight: fontWeight.medium, color: color.text },
-  control: {
-    marginTop: space.sm, height: height.control, flexDirection: 'row', alignItems: 'center', gap: space.md,
-    borderWidth: borderWidth.thin, borderColor: color.borderStrong, borderRadius: radius.md, paddingHorizontal: space.lg,
+  mobilePrefix: {
+    fontSize: fontSize['ui-base'],
+    color: color.textSubtle,
   },
-  prefix: { fontSize: fontSize['ui-base'], color: color.textSubtle },
-  divider: { width: borderWidth.thin, height: space.xl, backgroundColor: color.border },
-  input: { flex: 1, fontSize: fontSize['ui-lg'], color: color.text, padding: 0 },
-  sentTo: { marginTop: space.lg, fontSize: fontSize['ui-base'], color: color.textMuted },
-  hiddenInput: { position: 'absolute', top: 0, left: 0, right: 0, height: height['otp-cell-lg'], opacity: opacity.hidden, zIndex: 2 },
-  cells: { flexDirection: 'row', gap: space.md, marginTop: space.lg },
-  cell: {
-    flex: 1, height: height['otp-cell-lg'], borderRadius: radius.md, borderWidth: borderWidth.thin, borderColor: color.border,
-    backgroundColor: color.surface, alignItems: 'center', justifyContent: 'center',
+  mobileDivider: {
+    width: borderWidth.thin,
+    height: space.xl,
+    backgroundColor: color.border,
   },
-  cellActive: { borderColor: color.text },
-  cellText: { fontFamily: fontFamilyNative.display, fontSize: fontSize['display-md'], color: color.text },
-  error: { marginTop: space.md, fontSize: fontSize['ui-sm'], color: color.danger },
-  cta: {
-    marginTop: space.lg, height: height.control, borderRadius: radius.pill, backgroundColor: color.accent,
-    alignItems: 'center', justifyContent: 'center',
+  mobileInput: {
+    flex: 1,
+    fontSize: fontSize['ui-base'],
+    color: color.text,
+    padding: 0,
   },
-  ctaPressed: { backgroundColor: color.accentHover },
-  ctaDisabled: { opacity: opacity.disabled },
-  ctaLabel: { color: color.textInverse, fontSize: fontSize['ui-base'], fontWeight: fontWeight.semibold },
-  footerTarget: { marginTop: space.lg, height: height.tap, alignItems: 'center', justifyContent: 'center' },
-  backRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  footer: { fontSize: fontSize['ui-md'], color: color.textMuted },
-  footerLink: { color: color.accent, fontWeight: fontWeight.medium },
+  hintText: {
+    fontSize: fontSize['ui-xs'],
+    color: color.textSubtle,
+    lineHeight: leadingNative['ui-xs'],
+  },
+  ctaSection: {
+    marginTop: space.lg,
+    gap: space.sm,
+  },
+  googleSection: {
+    gap: space.xl,
+    paddingTop: space.sm,
+  },
+  googleHelper: {
+    fontSize: fontSize['ui-sm'],
+    color: color.textMuted,
+    lineHeight: leadingNative['ui-md'],
+  },
+  channelNote: {
+    fontSize: fontSize['ui-xs'],
+    color: color.textSubtle,
+    textAlign: 'center',
+    lineHeight: leadingNative['ui-xs'],
+  },
 })

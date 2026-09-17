@@ -100,7 +100,7 @@ export function PaywallBanner({
 /** The screen's top bar: back, title, and one status or action on the right. */
 export function AppBar({
   title, onBack, status, action,
-}: { title: string; onBack?: () => void; status?: React.ReactNode; action?: React.ReactNode }) {
+}: { title?: string; onBack?: () => void; status?: React.ReactNode; action?: React.ReactNode }) {
   return (
     <View style={styles.appBar}>
       {!!onBack && (
@@ -110,9 +110,13 @@ export function AppBar({
           </Svg>
         </Pressable>
       )}
-      <Body size="lg" numberOfLines={1} style={styles.grow}>
-        {title}
-      </Body>
+      {title ? (
+        <Body size="lg" numberOfLines={1} style={styles.grow}>
+          {title}
+        </Body>
+      ) : (
+        <View style={styles.grow} />
+      )}
       {status}
       {action}
     </View>

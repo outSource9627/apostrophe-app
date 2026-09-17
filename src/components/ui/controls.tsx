@@ -129,8 +129,8 @@ const styles = StyleSheet.create({
   tagText: { color: color.textMuted, textTransform: 'none' },
 
   track: { height: height.toggle, borderRadius: radius.pill },
-  trackOn: { backgroundColor: color.accent },
-  trackIdle: { backgroundColor: color.border },
+  trackOn: { backgroundColor: color.ink },
+  trackIdle: { backgroundColor: color.borderStrong },
   trackOff: { backgroundColor: color.surfaceSunken },
   knob: {
     position: 'absolute',

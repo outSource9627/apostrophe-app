@@ -17,8 +17,10 @@ import { text } from './typography'
  */
 export function Eyebrow({
   tone = 'subtle', style, children, ...rest
-}: { tone?: 'subtle' | 'accent' | 'muted' } & TextProps) {
-  const tint = { subtle: color.textSubtle, accent: color.accent, muted: color.textMuted }[tone]
+}: { tone?: 'subtle' | 'accent' | 'muted' | 'danger' | 'success' } & TextProps) {
+  // `danger` exists because an error/forfeit kicker must read in the danger
+  // rose, never the brand crimson — accent is a verb, not a warning colour.
+  const tint = { subtle: color.textSubtle, accent: color.accent, muted: color.textMuted, danger: color.danger, success: color.success }[tone]
   return (
     <Text style={[text.metaSm, { color: tint }, style]} {...rest}>
       {children}

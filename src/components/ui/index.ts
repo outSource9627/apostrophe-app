@@ -49,5 +49,10 @@ export type { TabItem } from './overlay'
 // §10 the six screen states
 export { Skeleton, EmptyState, ErrorState, SuccessState, PendingState, DisabledAction } from './states'
 
+// §11 feedback & controls
+export { Banner } from './Banner'
+export type { BannerTone } from './Banner'
+export { GoogleButton } from './GoogleButton'
+
 // The job feed — student app only
 export { SwipeCard, SwipeActions } from './SwipeCard'

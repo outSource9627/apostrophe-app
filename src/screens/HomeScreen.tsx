@@ -40,7 +40,9 @@ const BEATS = [
  * So this does not hide the product behind a locked door: it shows them the
  * card they already half own, and makes paying the obvious next move.
  */
-export function HomeScreen({ onPay, onProfile }: { onPay: () => void; onProfile: () => void }) {
+export function HomeScreen({
+  onPay, onProfile, onInterviews, onVisibility, onProfileView, onJobs, onApplications, onInterests, onConnections, onChats, onNotifications, onStats, onAccount,
+}: { onPay: () => void; onProfile: () => void; onInterviews?: () => void; onVisibility?: () => void; onProfileView?: () => void; onJobs?: () => void; onApplications?: () => void; onInterests?: () => void; onConnections?: () => void; onChats?: () => void; onNotifications?: () => void; onStats?: () => void; onAccount?: () => void }) {
   const insets = useSafeAreaInsets()
   const me = useQuery({ queryKey: ['me'], queryFn: () => api.get<Me>('/students/me') })
   const config = useQuery({ queryKey: ['config'], queryFn: () => api.get<Config>('/config') })
@@ -79,6 +81,39 @@ export function HomeScreen({ onPay, onProfile }: { onPay: () => void; onProfile:
           <Text style={styles.headline}>Let&apos;s finish</Text>
           <Text style={[styles.headline, styles.headlineMuted]}>your profile.</Text>
           <Text style={styles.link} onPress={onProfile}>Continue where you left off →</Text>
+          {onInterviews && (
+            <Text style={[styles.link, { marginTop: space.md }]} onPress={onInterviews}>My interviews →</Text>
+          )}
+          {onProfileView && (
+            <Text style={[styles.link, { marginTop: space.md }]} onPress={onProfileView}>My profile →</Text>
+          )}
+          {onJobs && (
+            <Text style={[styles.link, { marginTop: space.md }]} onPress={onJobs}>Job feed →</Text>
+          )}
+          {onApplications && (
+            <Text style={[styles.link, { marginTop: space.md }]} onPress={onApplications}>My applications →</Text>
+          )}
+          {onInterests && (
+            <Text style={[styles.link, { marginTop: space.md }]} onPress={onInterests}>Interests →</Text>
+          )}
+          {onConnections && (
+            <Text style={[styles.link, { marginTop: space.md }]} onPress={onConnections}>Connections →</Text>
+          )}
+          {onChats && (
+            <Text style={[styles.link, { marginTop: space.md }]} onPress={onChats}>Chats →</Text>
+          )}
+          {onNotifications && (
+            <Text style={[styles.link, { marginTop: space.md }]} onPress={onNotifications}>Notifications →</Text>
+          )}
+          {onStats && (
+            <Text style={[styles.link, { marginTop: space.md }]} onPress={onStats}>Your stats →</Text>
+          )}
+          {onAccount && (
+            <Text style={[styles.link, { marginTop: space.md }]} onPress={onAccount}>Account →</Text>
+          )}
+          {onVisibility && (
+            <Text style={[styles.link, { marginTop: space.md }]} onPress={onVisibility}>Visibility →</Text>
+          )}
         </View>
       </View>
     )

@@ -1,3 +1,4 @@
+
 /**
  * The API envelope, mirrored from the platform core (src/server/http/api.ts).
  * When @apostrophe/contracts is published this file is replaced by that import;
@@ -22,6 +23,9 @@ export type ApiErrorBody = {
   code: ErrorCodeValue
   message: string
   fields?: Record<string, string>
+  details?: Record<string, unknown>
+  /** Machine-readable refusal detail — `meta.reason` is the CH-06 code to switch on. */
+  meta?: Record<string, unknown>
   requestId?: string
 }
 
@@ -32,6 +36,9 @@ export class ApiClientError extends Error {
     readonly status: number,
     readonly fields?: Record<string, string>,
     readonly requestId?: string,
+    readonly details?: Record<string, unknown>,
+    /** Server error.meta — carries the refusal `reason` code for chat sends (CH-06). */
+    readonly meta?: Record<string, unknown>,
   ) {
     super(message)
     this.name = 'ApiClientError'

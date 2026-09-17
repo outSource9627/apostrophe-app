@@ -83,6 +83,34 @@ export const color = {
   scrim: 'rgba(15, 26, 34, 0.4)',
   scrimStrong: 'rgba(15, 26, 34, 0.82)',
 
+  /**
+   * ── the on-ink surface set ────────────────────────────────────────────
+   * Over footage the system has no ground and no hairline. `surface` would
+   * blow a hole in the frame and the warm greys vanish against a moving
+   * image, so everything drawn on top of footage is white at a fraction and
+   * the picture reads through it. Declared once here rather than invented per
+   * component, which is what the interview room boards do (ST-30-A..D).
+   *
+   * They are deliberately NOT text colours — `textOnInk*` above are the three
+   * type steps; these six are grounds, edges and lines.
+   */
+  /** The fill behind an over-footage control — mute, camera, audio, leave. */
+  onInkGround: 'rgba(255, 255, 255, 0.14)',
+  /** Its hairline, and the border on the interviewer's tile. */
+  onInkEdge: 'rgba(255, 255, 255, 0.22)',
+  /** The 9:16 framing guide — its rect, its head-room rules, its centre line. */
+  guideLine: 'rgba(255, 255, 255, 0.26)',
+  /** The scrub track under a playing video, before the played part fills it. */
+  onInkTrack: 'rgba(255, 255, 255, 0.28)',
+  /** A quiet bar in the audio-level meter. */
+  onInkLevel: 'rgba(255, 255, 255, 0.34)',
+  /**
+   * The guide's corner ticks and a loud bar in the level meter — the only two
+   * marks over footage allowed above a quarter opacity without being white.
+   * They are the ones a person has to find while looking at their own face.
+   */
+  guideEdge: 'rgba(255, 255, 255, 0.62)',
+
   // semantic state — deliberately low in chroma, so red keeps its monopoly on
   // urgency and "brand" never collapses into "this worked"
   success: '#0C7355',

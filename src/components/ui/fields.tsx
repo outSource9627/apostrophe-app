@@ -96,8 +96,8 @@ export function LockedField({ value, consequence }: { value: string; consequence
  * which is the usual way this control goes wrong.
  */
 export function OtpInput({
-  length = 6, value, onChange, invalid = false, label = 'One-time code',
-}: { length?: number; value: string; onChange?: (next: string) => void; invalid?: boolean; label?: string }) {
+  length = 6, value, onChange, invalid = false, inert = false, label = 'One-time code',
+}: { length?: number; value: string; onChange?: (next: string) => void; invalid?: boolean; inert?: boolean; label?: string }) {
   const [focused, setFocused] = useState(false)
   const digits = value.slice(0, length).split('')
   const caretAt = Math.min(digits.length, length - 1)
@@ -106,7 +106,7 @@ export function OtpInput({
     <View>
       <View style={styles.otpRow} pointerEvents="none">
         {Array.from({ length }).map((_, i) => {
-          const active = focused && i === caretAt
+          const active = !inert && focused && i === caretAt
           const filled = i < digits.length
           return (
             <View
@@ -123,8 +123,9 @@ export function OtpInput({
       </View>
       <TextInput
         value={value}
+        editable={!inert}
         onChangeText={(t) => onChange?.(t.replace(/\D/g, '').slice(0, length))}
-        onFocus={() => setFocused(true)}
+        onFocus={() => !inert && setFocused(true)}
         onBlur={() => setFocused(false)}
         keyboardType="number-pad"
         textContentType="oneTimeCode"

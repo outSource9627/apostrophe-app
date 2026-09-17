@@ -32,10 +32,11 @@ const TONES = {
 
 export type Tone = keyof typeof TONES
 
-export function StatusPill({ tone = 'neutral', label }: { tone?: Tone; label: string }) {
+export function StatusPill({ tone = 'neutral', label, dot = false }: { tone?: Tone; label: string; dot?: boolean }) {
   const t = TONES[tone]
   return (
     <View style={[styles.pill, { backgroundColor: t.bg }]}>
+      {dot && <View style={{ width: 6, height: 6, borderRadius: 999, backgroundColor: t.fg, marginRight: 6 }} />}
       <Text style={[text.metaPill, { color: t.fg }]}>{label}</Text>
     </View>
   )
@@ -94,6 +95,8 @@ export function UnverifiedMark({ style }: { style?: ViewProps['style'] }) {
 
 const styles = StyleSheet.create({
   pill: {
+    flexDirection: 'row',
+    alignItems: 'center',
     alignSelf: 'flex-start',
     borderRadius: radius.pill,
     paddingHorizontal: space.md,
