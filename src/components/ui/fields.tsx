@@ -45,11 +45,16 @@ export function Field({
 }
 
 export function Input({
-  invalid = false, style, onFocus, onBlur, ...rest
-}: { invalid?: boolean } & TextInputProps) {
+  invalid = false, style, onFocus, onBlur, inputRef, ...rest
+}: {
+  invalid?: boolean
+  /** The TextInput itself — for a form that moves focus to its first invalid field. */
+  inputRef?: React.Ref<React.ComponentRef<typeof TextInput>>
+} & TextInputProps) {
   const [focused, setFocused] = useState(false)
   return (
     <TextInput
+      ref={inputRef}
       placeholderTextColor={color.textSubtle}
       style={[
         text.uiBase,
@@ -96,8 +101,18 @@ export function LockedField({ value, consequence }: { value: string; consequence
  * which is the usual way this control goes wrong.
  */
 export function OtpInput({
-  length = 6, value, onChange, invalid = false, inert = false, label = 'One-time code',
-}: { length?: number; value: string; onChange?: (next: string) => void; invalid?: boolean; inert?: boolean; label?: string }) {
+  length = 6, value, onChange, invalid = false, inert = false, label = 'One-time code', autoFocus = false, inputRef,
+}: {
+  length?: number
+  value: string
+  onChange?: (next: string) => void
+  invalid?: boolean
+  inert?: boolean
+  label?: string
+  autoFocus?: boolean
+  /** The real input behind the cells — for a screen that moves focus between two codes. */
+  inputRef?: React.Ref<React.ComponentRef<typeof TextInput>>
+}) {
   const [focused, setFocused] = useState(false)
   const digits = value.slice(0, length).split('')
   const caretAt = Math.min(digits.length, length - 1)
@@ -122,8 +137,10 @@ export function OtpInput({
         })}
       </View>
       <TextInput
+        ref={inputRef}
         value={value}
         editable={!inert}
+        autoFocus={autoFocus && !inert}
         onChangeText={(t) => onChange?.(t.replace(/\D/g, '').slice(0, length))}
         onFocus={() => !inert && setFocused(true)}
         onBlur={() => setFocused(false)}

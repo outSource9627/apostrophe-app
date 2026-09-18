@@ -38,7 +38,21 @@ import { NotificationSettingsScreen } from './src/screens/account/NotificationSe
 import { StatsScreen } from './src/screens/account/StatsScreen'
 import { AccountScreen } from './src/screens/account/AccountScreen'
 import { DataRightsScreen } from './src/screens/account/DataRightsScreen'
+import { ReadinessScreen } from './src/screens/room/ReadinessScreen'
+import { RoomScreen } from './src/screens/room/RoomScreen'
+import { EndedScreen } from './src/screens/room/EndedScreen'
+import { FeedbackScreen } from './src/screens/room/FeedbackScreen'
+import { TopUpScreen } from './src/screens/room/TopUpScreen'
+import { EmployerRegisterScreen } from './src/screens/employer/EmployerRegisterScreen'
+import { EmployerVerifyScreen } from './src/screens/employer/EmployerVerifyScreen'
+import { EmployerSignInScreen } from './src/screens/employer/EmployerSignInScreen'
+import { EmployerHomeScreen } from './src/screens/employer/EmployerHomeScreen'
+import { EmployerDocumentsScreen } from './src/screens/employer/EmployerDocumentsScreen'
+import { EmployerStatusScreen } from './src/screens/employer/EmployerStatusScreen'
+import { EmployerCompanyScreen } from './src/screens/employer/EmployerCompanyScreen'
 import { threadIdForConnection } from './src/lib/api/chat'
+import { getMe } from './src/lib/api/account'
+import type { EmployerRegistrationDraft, RegisterOtpResult } from './src/lib/api/employer'
 
 export type RootStackParamList = {
   Welcome: undefined
@@ -70,6 +84,11 @@ export type RootStackParamList = {
   Confirmed: { id: string }
   Reschedule: { id: string }
   Cancel: { id: string }
+  Readiness: { id: string }
+  Room: { id: string }
+  Ended: { id: string }
+  Feedback: { id: string }
+  TopUp: { id: string }
   Interests: undefined
   Connections: undefined
   Chats: undefined
@@ -80,9 +99,37 @@ export type RootStackParamList = {
   Account: undefined
   DataRights: undefined
   Health: undefined
+
+  // ── Employer onboarding and verification (EM-02..EM-07) ────────────────────
+  EmployerRegister: undefined
+  /**
+   * The EM-02 form travels here IN MEMORY — it carries the password. Nothing
+   * persists navigation state in this app, and the verify screen resets the
+   * stack once the account exists, which drops these params. Do not enable
+   * state persistence without excluding this route.
+   */
+  EmployerVerify: { registration: EmployerRegistrationDraft; sent?: RegisterOtpResult; sentAt?: number }
+  EmployerSignIn: undefined
+  EmployerHome: undefined
+  EmployerDocuments: { focus?: 'COMPANY_PROOF' | 'PHOTO_ID' | 'REQUESTED' } | undefined
+  EmployerStatus: undefined
+  EmployerCompany: undefined
 }
 
 const Stack = createNativeStackNavigator<RootStackParamList>()
+
+/**
+ * Where a signed-in account lands. Mobile OTP and email sign-in are shared by
+ * every role, so the role is read back rather than assumed: an employer goes to
+ * the employer shell, everyone else to the student home as before. Any
+ * employer state cached under a previous session is dropped first.
+ */
+async function signedInHome(): Promise<'Home' | 'EmployerHome'> {
+  const me = await getMe().catch(() => null)
+  if (me?.role !== 'EMPLOYER') return 'Home'
+  queryClient.removeQueries({ queryKey: ['employer'] })
+  return 'EmployerHome'
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -110,8 +157,8 @@ export default function App() {
               {({ navigation }) => (
                 <WelcomeScreen
                   onGetHired={() => navigation.navigate('CreateAccount')}
-                  // The employer app is Phase 8; for now it goes to sign in.
-                  onWantToHire={() => navigation.navigate('SignIn')}
+                  onWantToHire={() => navigation.navigate('EmployerRegister')}
+                  onCreateEmployer={() => navigation.navigate('EmployerRegister')}
                   onSignIn={() => navigation.navigate('SignIn')}
                 />
               )}
@@ -141,7 +188,9 @@ export default function App() {
                   registrationData={route.params.registrationData}
                   initialCooldown={route.params.initialCooldown}
                   onBack={() => navigation.goBack()}
-                  onVerified={() => navigation.replace('Home')}
+                  onVerified={async () =>
+                    navigation.replace(route.params.purpose === 'LOGIN' ? await signedInHome() : 'Home')
+                  }
                   onSignIn={() => navigation.navigate('SignIn')}
                 />
               )}
@@ -150,7 +199,7 @@ export default function App() {
             <Stack.Screen name="SignIn">
               {({ navigation }) => (
                 <SignInScreen
-                  onSignedIn={() => navigation.replace('Home')}
+                  onSignedIn={async () => navigation.replace(await signedInHome())}
                   onRegister={() => navigation.navigate('CreateAccount')}
                   onOtpSent={({ mobile, resendAfterSeconds }) =>
                     navigation.navigate('VerifyMobile', {
@@ -332,6 +381,8 @@ export default function App() {
                   onCancel={(id) => navigation.navigate('Cancel', { id })}
                   onSupport={() => navigation.navigate('Health')}
                   onBook={() => navigation.navigate('BookInterview')}
+                  onJoin={() => navigation.navigate('Readiness', { id: route.params.id })}
+                  onFeedback={() => navigation.navigate('Feedback', { id: route.params.id })}
                 />
               )}
             </Stack.Screen>
@@ -421,6 +472,36 @@ export default function App() {
               )}
             </Stack.Screen>
 
+            <Stack.Screen name="Readiness">
+              {({ navigation, route }) => (
+                <ReadinessScreen id={route.params.id} onBack={() => navigation.goBack()} onJoin={() => navigation.navigate('Room', { id: route.params.id })} />
+              )}
+            </Stack.Screen>
+
+            <Stack.Screen name="Room" options={{ gestureEnabled: false }}>
+              {({ navigation, route }) => (
+                <RoomScreen id={route.params.id} onBack={() => navigation.goBack()} onEnded={() => navigation.replace('Ended', { id: route.params.id })} />
+              )}
+            </Stack.Screen>
+
+            <Stack.Screen name="Ended">
+              {({ navigation, route }) => (
+                <EndedScreen id={route.params.id} onBack={() => navigation.navigate('Interviews')} onBook={() => navigation.navigate('BookInterview')} />
+              )}
+            </Stack.Screen>
+
+            <Stack.Screen name="Feedback">
+              {({ navigation, route }) => (
+                <FeedbackScreen id={route.params.id} onBack={() => navigation.navigate('Interviews')} />
+              )}
+            </Stack.Screen>
+
+            <Stack.Screen name="TopUp">
+              {({ navigation, route }) => (
+                <TopUpScreen id={route.params.id} onBack={() => navigation.navigate('Interviews')} onPay={() => navigation.navigate('Pricing')} />
+              )}
+            </Stack.Screen>
+
             <Stack.Screen name="Notifications">
               {({ navigation }) => (
                 <NotificationsScreen
@@ -462,6 +543,81 @@ export default function App() {
             </Stack.Screen>
 
             <Stack.Screen name="Health" component={HealthScreen} options={{ headerShown: true, title: '' }} />
+
+            {/* ── Employer onboarding and verification ─────────────────────── */}
+            <Stack.Screen name="EmployerRegister">
+              {({ navigation }) => (
+                <EmployerRegisterScreen
+                  onBack={() => navigation.goBack()}
+                  onSignIn={() => navigation.navigate('EmployerSignIn')}
+                  onCodesSent={({ registration, sent }) =>
+                    navigation.navigate('EmployerVerify', { registration, sent, sentAt: Date.now() })
+                  }
+                />
+              )}
+            </Stack.Screen>
+
+            <Stack.Screen name="EmployerVerify">
+              {({ navigation, route }) => (
+                <EmployerVerifyScreen
+                  registration={route.params.registration}
+                  sent={route.params.sent}
+                  sentAt={route.params.sentAt}
+                  onEdit={() => navigation.goBack()}
+                  // A reset, not a push: the stack loses the params holding the password.
+                  onRegistered={() => navigation.reset({ index: 0, routes: [{ name: 'EmployerHome' }] })}
+                  onSignIn={() => navigation.navigate('EmployerSignIn')}
+                />
+              )}
+            </Stack.Screen>
+
+            <Stack.Screen name="EmployerSignIn">
+              {({ navigation }) => (
+                <EmployerSignInScreen
+                  onBack={() => navigation.goBack()}
+                  onRegister={() => navigation.navigate('EmployerRegister')}
+                  onSignedIn={(role) =>
+                    navigation.reset({ index: 0, routes: [{ name: role === 'EMPLOYER' ? 'EmployerHome' : 'Home' }] })
+                  }
+                />
+              )}
+            </Stack.Screen>
+
+            <Stack.Screen name="EmployerHome">
+              {({ navigation }) => (
+                <EmployerHomeScreen
+                  onDocuments={(focus) => navigation.navigate('EmployerDocuments', { focus })}
+                  onStatus={() => navigation.navigate('EmployerStatus')}
+                  onCompany={() => navigation.navigate('EmployerCompany')}
+                />
+              )}
+            </Stack.Screen>
+
+            <Stack.Screen name="EmployerDocuments">
+              {({ navigation, route }) => (
+                <EmployerDocumentsScreen
+                  focus={route.params?.focus}
+                  onBack={() => navigation.goBack()}
+                  // Back to the EM-06 a Resubmit opened this from, else in this screen's place.
+                  onSubmitted={() => navigation.popTo('EmployerStatus')}
+                />
+              )}
+            </Stack.Screen>
+
+            <Stack.Screen name="EmployerStatus">
+              {({ navigation }) => (
+                <EmployerStatusScreen
+                  onBack={() => navigation.goBack()}
+                  onResubmit={(focus) => navigation.navigate('EmployerDocuments', { focus })}
+                  // The candidate feed (EM-08) is the next flow; until it exists the feed's door is home.
+                  onFeed={() => navigation.reset({ index: 0, routes: [{ name: 'EmployerHome' }] })}
+                />
+              )}
+            </Stack.Screen>
+
+            <Stack.Screen name="EmployerCompany">
+              {({ navigation }) => <EmployerCompanyScreen onBack={() => navigation.goBack()} />}
+            </Stack.Screen>
           </Stack.Navigator>
         </NavigationContainer>
       </SafeAreaProvider>

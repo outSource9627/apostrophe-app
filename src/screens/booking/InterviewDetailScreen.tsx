@@ -17,7 +17,7 @@ import { InterviewerPlate } from './InterviewerPlate'
  * interviewer entirely, so a swap is invisible to the student by design).
  */
 export function InterviewDetailScreen({
-  id, onBack, onReschedule, onCancel, onSupport, onBook,
+  id, onBack, onReschedule, onCancel, onSupport, onBook, onJoin, onFeedback,
 }: {
   id: string
   onBack: () => void
@@ -25,6 +25,8 @@ export function InterviewDetailScreen({
   onCancel: (id: string) => void
   onSupport: () => void
   onBook: () => void
+  onJoin: () => void
+  onFeedback: () => void
 }) {
   const insets = useSafeAreaInsets()
   const q = useQuery({ queryKey: ['interview', id], queryFn: () => api.get<StudentInterview>(`/interviews/${id}`) })
@@ -38,9 +40,9 @@ export function InterviewDetailScreen({
   const iv = q.data!
   const noShow = iv.status === 'STUDENT_NO_SHOW' || iv.status === 'INTERVIEWER_NO_SHOW'
   if (noShow) return frame(<Missed iv={iv} insets={insets} onSupport={onSupport} onBook={onBook} />)
-  if (iv.roomReady) return frame(<JoinOpen iv={iv} />)
+  if (iv.roomReady) return frame(<JoinOpen iv={iv} onJoin={onJoin} />)
   if (iv.status === 'BOOKED') return frame(<Booked iv={iv} onReschedule={() => onReschedule(id)} onCancel={() => onCancel(id)} />)
-  return frame(<Terminal iv={iv} insets={insets} onBook={onBook} />)
+  return frame(<Terminal iv={iv} insets={insets} onBook={onBook} onFeedback={onFeedback} />)
 }
 
 function When({ iv }: { iv: StudentInterview }) {
@@ -79,7 +81,7 @@ function Booked({ iv, onReschedule, onCancel }: { iv: StudentInterview; onResche
   )
 }
 
-function JoinOpen({ iv }: { iv: StudentInterview }) {
+function JoinOpen({ iv, onJoin }: { iv: StudentInterview; onJoin: () => void }) {
   const closeIso = new Date(new Date(iv.slotStart).getTime() + 15 * 60000).toISOString()
   const toStart = useCountdown(iv.slotStart)
   const toClose = useCountdown(closeIso)
@@ -106,8 +108,8 @@ function JoinOpen({ iv }: { iv: StudentInterview }) {
       {started && <Banner tone="warning">{`Join closes at ${closeT}. After that this is a no-show and the interview you paid for is spent.`}</Banner>}
       <InterviewerPlate note="You will see who it is the moment the session starts — that is the first thing that happens in the room." />
       <View style={{ gap: space.md }}>
-        <Button variant="primary" size="lg" full label="Join interview" />
-        <Button variant="outline" size="block" full label="Run the device check" />
+        <Button variant="primary" size="lg" full label="Join interview" onPress={onJoin} />
+        <Button variant="outline" size="block" full label="Run the device check" onPress={onJoin} />
       </View>
     </ScrollView>
   )
@@ -135,7 +137,7 @@ function Missed({ iv, insets, onSupport, onBook }: { iv: StudentInterview; inset
   )
 }
 
-function Terminal({ iv, insets, onBook }: { iv: StudentInterview; insets: { bottom: number }; onBook: () => void }) {
+function Terminal({ iv, insets, onBook, onFeedback }: { iv: StudentInterview; insets: { bottom: number }; onBook: () => void; onFeedback: () => void }) {
   const done = iv.status === 'COMPLETED'
   const label = done ? 'Completed' : iv.status === 'CANCELLED' ? 'Cancelled' : iv.status === 'RESCHEDULED' ? 'Rescheduled' : 'Under review'
   return (
@@ -143,7 +145,8 @@ function Terminal({ iv, insets, onBook }: { iv: StudentInterview; insets: { bott
       <StatusPill tone={done ? 'success' : 'neutral'} label={label} />
       <When iv={iv} />
       {done && <Body tone="muted">Your interview is done. When your film is published it becomes your video resume.</Body>}
-      <View style={{ marginTop: space.lg, paddingBottom: insets.bottom }}>
+      <View style={{ marginTop: space.lg, paddingBottom: insets.bottom, gap: space.sm }}>
+        {done && <Button variant="primary" size="block" full label="See my feedback" onPress={onFeedback} />}
         <Button variant="outline" size="block" full label="Book another interview" onPress={onBook} />
       </View>
     </ScrollView>

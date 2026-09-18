@@ -2,11 +2,13 @@ import React from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Logo, LogoMark } from '../components/Logo'
-import { color, space, radius, fontSize, fontWeight, fontFamilyNative, borderWidth, leading, opacity, trackingNative } from '../theme'
+import { color, space, radius, fontSize, fontWeight, fontFamilyNative, borderWidth, height, leading, opacity, trackingNative } from '../theme'
 
 type Props = {
   onGetHired: () => void
   onWantToHire: () => void
+  /** Employer registration (EM-02). A text action, never a second crimson. */
+  onCreateEmployer: () => void
   onSignIn: () => void
 }
 
@@ -24,7 +26,7 @@ const PILLARS = [
  * crimson — because PRD section 7 treats any divergence between the two
  * surfaces as a defect, and that starts with what a person sees first.
  */
-export function WelcomeScreen({ onGetHired, onWantToHire, onSignIn }: Props) {
+export function WelcomeScreen({ onGetHired, onWantToHire, onCreateEmployer, onSignIn }: Props) {
   const insets = useSafeAreaInsets()
 
   return (
@@ -78,6 +80,18 @@ export function WelcomeScreen({ onGetHired, onWantToHire, onSignIn }: Props) {
           </View>
         ))}
       </View>
+
+      {/* The page ends on the employer's way in. A text action, because Get
+          Hired is this screen's one crimson. */}
+      <View style={styles.employer}>
+        <Pressable
+          onPress={onCreateEmployer}
+          accessibilityRole="button"
+          style={({ pressed }) => [styles.employerAction, pressed && styles.pressed]}
+        >
+          <Text style={styles.employerLabel}>Hiring? Create an employer account</Text>
+        </Pressable>
+      </View>
     </ScrollView>
   )
 }
@@ -126,4 +140,14 @@ const styles = StyleSheet.create({
   pillarNumber: { fontSize: fontSize['ui-sm'], color: color.textSubtle },
   pillarTitle: { fontSize: fontSize['display-md'], fontFamily: fontFamilyNative.displayFallback, color: color.text, letterSpacing: trackingNative.snug },
   pillarBody: { fontSize: fontSize['ui-base'], lineHeight: fontSize['ui-base'] * leading.relaxed, color: color.textMuted },
+
+  employer: {
+    marginTop: space['3xl'], marginHorizontal: space.xl, paddingTop: space.xl,
+    borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: color.border, alignItems: 'flex-start',
+  },
+  employerAction: { minHeight: height.tap, justifyContent: 'center' },
+  employerLabel: {
+    fontFamily: fontFamilyNative.bodySemiBold, fontSize: fontSize['ui-md'], color: color.text,
+    textDecorationLine: 'underline', textDecorationColor: color.borderStrong,
+  },
 })
