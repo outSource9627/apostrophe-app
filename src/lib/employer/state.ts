@@ -26,7 +26,6 @@ import type {
  */
 
 // ── Routes ───────────────────────────────────────────────────────────────────
-/** RootStackParamList names. EM-01 is web-only, so `landing` is the app's Welcome. */
 export const EMPLOYER_ROUTES = {
   landing: 'Welcome',
   register: 'EmployerRegister',
@@ -36,6 +35,16 @@ export const EMPLOYER_ROUTES = {
   documents: 'EmployerDocuments',
   status: 'EmployerStatus',
   company: 'EmployerCompany',
+  feed: 'EmployerFeed',
+  candidate: 'CandidateProfile',
+  candidateVideo: 'CandidateVideo',
+  filters: 'FeedFilters',
+  savedSearches: 'SavedSearches',
+  shortlist: 'EmployerShortlist',
+  interests: 'EmployerInterests',
+  jobs: 'EmployerJobs',
+  chat: 'EmployerChats',
+  account: 'EmployerAccount',
 } as const
 
 // ── Time (Asia/Kolkata, always) ──────────────────────────────────────────────

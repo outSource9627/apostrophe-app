@@ -70,7 +70,7 @@ export function FeedExplainer() {
 
         <View style={styles.row}>
           <View style={styles.column}>
-            <VerifiedSeal />
+            <VerifiedSeal label="Verified interview" />
           </View>
           <Marker n={3} />
         </View>

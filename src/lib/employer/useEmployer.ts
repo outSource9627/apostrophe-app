@@ -8,7 +8,7 @@ import { getMe, type Me } from '../api/account'
 import {
   employerSession, getEmployerMe, onEmployerSessionChange, type EmployerMe, type EmployerState,
 } from '../api/employer'
-import { verificationPrompt, type PromptCopy } from './state'
+import { EMPLOYER_ROUTES, verificationPrompt, type PromptCopy } from './state'
 import type { RootStackParamList } from '../../../App'
 
 /**
@@ -198,8 +198,16 @@ export function useEmployer(): UseEmployer {
   const error = query.error instanceof Error ? query.error : null
 
   useEffect(() => {
-    if (!isFocused || !(error instanceof NotEmployerError)) return
-    navigation.reset({ index: 0, routes: [{ name: error.role === 'STUDENT' ? 'Home' : 'Welcome' }] })
+    if (!isFocused) return
+    if (error instanceof NotEmployerError) {
+      navigation.reset({ index: 0, routes: [{ name: error.role === 'STUDENT' ? 'Home' : 'Welcome' }] })
+    } else if (error instanceof ApiClientError && error.code === ErrorCode.UNAUTHENTICATED) {
+      // The session could not be refreshed, so the poll has stood down and the
+      // screen would keep drawing the last state it read — an approval never
+      // seen. The web client sends that employer to sign in; here Sign in opens
+      // over the landing, as EmployerLoadState's button does.
+      navigation.reset({ index: 1, routes: [{ name: EMPLOYER_ROUTES.landing }, { name: EMPLOYER_ROUTES.signin }] })
+    }
   }, [isFocused, error, navigation])
 
   const refresh = useCallback(async () => {

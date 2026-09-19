@@ -48,6 +48,8 @@ const FRESH: RowState = { code: '', error: null, note: null, verifying: false, r
 
 const EXPIRED = 'That code has expired. Send a new one.'
 
+const NO_MATCH = 'That code doesn’t match or has expired.'
+
 const wrongCode = (left: number) =>
   left === 0
     ? 'That code doesn’t match, and it can’t be tried again. Send a new one.'
@@ -207,16 +209,19 @@ export function EmployerVerifyScreen({
     } catch (e) {
       if (e instanceof ApiClientError && e.code === ErrorCode.VALIDATION) {
         if (e.fields?.code) {
-          // Wrong and expired are one answer; only a live code has tries to count.
+          // Wrong and expired are one answer on purpose: the server no longer
+          // says whether a live code exists, so neither may this row. The cells
+          // keep the digits in danger so the employer can see what they sent.
           const left = attemptsLeft(e)
-          patchRow(channel, left === null ? { ...FRESH, note: EXPIRED } : { verifying: false, error: wrongCode(left) })
+          patchRow(channel, { verifying: false, error: left === null ? NO_MATCH : wrongCode(left) })
           return
         }
         const field: FieldKey = channel === 'EMAIL' ? 'email' : 'mobile'
         const refusal = e.fields?.[field]
         if (refusal) return backToForm(field, refusal)
       }
-      patchRow(channel, { verifying: false, note: messageOf(e) })
+      // The code was never checked, so the cells empty: the next six digits typed or pasted try again.
+      patchRow(channel, { verifying: false, code: '', note: messageOf(e) })
     }
   }
 
@@ -227,6 +232,8 @@ export function EmployerVerifyScreen({
         channel === 'EMAIL' ? { email: registration.email.trim() } : { mobile: registration.mobile },
       )
       markCodeSent(channel, valueOf(channel), result)
+      // Only an open row resends, so any proof still held has lapsed; the new code replaces it.
+      updateChannel(channel, valueOf(channel), { proof: null, expiresAt: null })
       patchRow(channel, FRESH)
       touched()
       focusRow(channel)
@@ -256,8 +263,12 @@ export function EmployerVerifyScreen({
     const state = rows[channel]
     const blocked = Boolean(p.blockedUntil && p.blockedUntil > now)
     const resendReady = !(p.resendAt && p.resendAt > now)
+    /** Confirmed once, but the 30-minute proof ran out while the other row waited. The code is spent, so: send a new one. */
+    const lapsed = Boolean(p.proof)
 
-    const note = blocked ? (p.limitNote ?? `Ask again after ${formatIstTarget(p.blockedUntil!)}.`) : state.note
+    const note = blocked
+      ? (p.limitNote ?? `Ask again after ${formatIstTarget(p.blockedUntil!)}.`)
+      : (state.note ?? (lapsed ? EXPIRED : null))
     const helper = state.verifying
       ? 'Checking the code…'
       : resendReady && !state.code

@@ -50,6 +50,27 @@ import { EmployerHomeScreen } from './src/screens/employer/EmployerHomeScreen'
 import { EmployerDocumentsScreen } from './src/screens/employer/EmployerDocumentsScreen'
 import { EmployerStatusScreen } from './src/screens/employer/EmployerStatusScreen'
 import { EmployerCompanyScreen } from './src/screens/employer/EmployerCompanyScreen'
+import { EmployerFeedScreen } from './src/screens/employer/EmployerFeedScreen'
+import { CandidateProfileScreen } from './src/screens/employer/CandidateProfileScreen'
+import { CandidateVideoScreen } from './src/screens/employer/CandidateVideoScreen'
+import { FeedFiltersModal } from './src/screens/employer/FeedFiltersModal'
+import { SavedSearchesModal } from './src/screens/employer/SavedSearchesModal'
+import { EmployerShortlistScreen } from './src/screens/employer/EmployerShortlistScreen'
+import { EmployerInterestsScreen } from './src/screens/employer/EmployerInterestsScreen'
+import { ShortlistEntryModal } from './src/screens/employer/ShortlistEntryModal'
+import { SendInterestModal } from './src/screens/employer/SendInterestModal'
+import { EmployerJobsScreen } from './src/screens/employer/EmployerJobsScreen'
+import { JobEditorScreen } from './src/screens/employer/JobEditorScreen'
+import { JobDetailScreen as EmployerJobDetailScreen } from './src/screens/employer/JobDetailScreen'
+import { JobApplicationsScreen } from './src/screens/employer/JobApplicationsScreen'
+import { ApplicantDetailScreen } from './src/screens/employer/ApplicantDetailScreen'
+import { EmployerConnectionsScreen } from './src/screens/employer/EmployerConnectionsScreen'
+import { EmployerChatsScreen } from './src/screens/employer/EmployerChatsScreen'
+import { EmployerThreadScreen } from './src/screens/employer/EmployerThreadScreen'
+import { EmployerNotificationsScreen } from './src/screens/employer/EmployerNotificationsScreen'
+import { EmployerNotificationSettingsScreen } from './src/screens/employer/EmployerNotificationSettingsScreen'
+import { EmployerAccountScreen } from './src/screens/employer/EmployerAccountScreen'
+import type { ShortlistRow, EmployerJobRef } from './src/lib/api/employerShortlist'
 import { threadIdForConnection } from './src/lib/api/chat'
 import { getMe } from './src/lib/api/account'
 import type { EmployerRegistrationDraft, RegisterOtpResult } from './src/lib/api/employer'
@@ -114,6 +135,32 @@ export type RootStackParamList = {
   EmployerDocuments: { focus?: 'COMPANY_PROOF' | 'PHOTO_ID' | 'REQUESTED' } | undefined
   EmployerStatus: undefined
   EmployerCompany: undefined
+  EmployerFeed: undefined
+  CandidateProfile: { id: string }
+  CandidateVideo: { id: string }
+  FeedFilters: undefined
+  SavedSearches: undefined
+  EmployerShortlist: undefined
+  EmployerInterests: undefined
+  ShortlistEntry: { row: ShortlistRow; jobs: EmployerJobRef[] }
+  SendInterest: {
+    candidateId: string
+    candidateName: string
+    candidateHeadline?: string | null
+    candidateCity?: string | null
+    jobs?: EmployerJobRef[]
+  }
+  EmployerJobs: undefined
+  JobEditor: undefined
+  EmployerJobDetail: { id: string }
+  JobApplications: { id: string }
+  ApplicantDetail: { id: string }
+  EmployerConnections: undefined
+  EmployerChats: undefined
+  EmployerThread: { id: string }
+  EmployerNotifications: undefined
+  EmployerNotificationSettings: undefined
+  EmployerAccount: undefined
 }
 
 const Stack = createNativeStackNavigator<RootStackParamList>()
@@ -609,14 +656,93 @@ export default function App() {
                 <EmployerStatusScreen
                   onBack={() => navigation.goBack()}
                   onResubmit={(focus) => navigation.navigate('EmployerDocuments', { focus })}
-                  // The candidate feed (EM-08) is the next flow; until it exists the feed's door is home.
-                  onFeed={() => navigation.reset({ index: 0, routes: [{ name: 'EmployerHome' }] })}
+                  onFeed={() => navigation.reset({ index: 0, routes: [{ name: 'EmployerFeed' }] })}
                 />
               )}
             </Stack.Screen>
 
             <Stack.Screen name="EmployerCompany">
               {({ navigation }) => <EmployerCompanyScreen onBack={() => navigation.goBack()} />}
+            </Stack.Screen>
+
+            <Stack.Screen name="EmployerFeed">
+              {() => <EmployerFeedScreen />}
+            </Stack.Screen>
+
+            <Stack.Screen name="CandidateProfile">
+              {() => <CandidateProfileScreen />}
+            </Stack.Screen>
+
+            <Stack.Screen name="CandidateVideo">
+              {() => <CandidateVideoScreen />}
+            </Stack.Screen>
+
+            <Stack.Screen name="FeedFilters">
+              {() => <FeedFiltersModal />}
+            </Stack.Screen>
+
+            <Stack.Screen name="SavedSearches">
+              {() => <SavedSearchesModal />}
+            </Stack.Screen>
+
+            <Stack.Screen name="EmployerShortlist">
+              {() => <EmployerShortlistScreen />}
+            </Stack.Screen>
+
+            <Stack.Screen name="EmployerInterests">
+              {() => <EmployerInterestsScreen />}
+            </Stack.Screen>
+
+            <Stack.Screen name="ShortlistEntry">
+              {() => <ShortlistEntryModal />}
+            </Stack.Screen>
+
+            <Stack.Screen name="SendInterest">
+              {() => <SendInterestModal />}
+            </Stack.Screen>
+
+            <Stack.Screen name="EmployerJobs">
+              {() => <EmployerJobsScreen />}
+            </Stack.Screen>
+
+            <Stack.Screen name="JobEditor">
+              {() => <JobEditorScreen />}
+            </Stack.Screen>
+
+            <Stack.Screen name="EmployerJobDetail">
+              {() => <EmployerJobDetailScreen />}
+            </Stack.Screen>
+
+            <Stack.Screen name="JobApplications">
+              {() => <JobApplicationsScreen />}
+            </Stack.Screen>
+
+            <Stack.Screen name="ApplicantDetail">
+              {() => <ApplicantDetailScreen />}
+            </Stack.Screen>
+
+            <Stack.Screen name="EmployerConnections">
+              {() => <EmployerConnectionsScreen />}
+            </Stack.Screen>
+
+            <Stack.Screen name="EmployerChats">
+              {() => <EmployerChatsScreen />}
+            </Stack.Screen>
+
+            <Stack.Screen name="EmployerThread">
+              {() => <EmployerThreadScreen />}
+            </Stack.Screen>
+
+            <Stack.Screen name="EmployerNotifications">
+              {() => <EmployerNotificationsScreen />}
+            </Stack.Screen>
+
+            <Stack.Screen name="EmployerNotificationSettings">
+              {() => <EmployerNotificationSettingsScreen />}
+            </Stack.Screen>
+
+            <Stack.Screen name="EmployerAccount">
+              {() => <EmployerAccountScreen />}
             </Stack.Screen>
           </Stack.Navigator>
         </NavigationContainer>

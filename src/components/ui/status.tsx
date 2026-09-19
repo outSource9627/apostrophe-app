@@ -73,13 +73,22 @@ export function StatusLadder({
  * The Verified Interview mark — one of red's four jobs, and the product's
  * central distinction. A seal with a date, never a colour swap.
  */
-export function VerifiedSeal({ date, style }: { date?: string; style?: ViewProps['style'] }) {
+export function VerifiedSeal({
+  date,
+  label = 'Verified',
+  style,
+}: {
+  date?: string
+  /** Defaults to 'Verified'. The employer feed explainer draws 'Verified interview'. */
+  label?: string
+  style?: ViewProps['style']
+}) {
   return (
     <View style={[styles.seal, style]}>
       <View style={styles.sealRing}>
         <View style={styles.sealCore} />
       </View>
-      <Text style={[text.metaXs, styles.sealText]}>{date ? `Verified · ${date}` : 'Verified'}</Text>
+      <Text style={[text.metaXs, styles.sealText]}>{date ? `${label} · ${date}` : label}</Text>
     </View>
   )
 }

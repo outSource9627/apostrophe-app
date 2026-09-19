@@ -240,10 +240,13 @@ export async function signInWithPassword(email: string, password: string): Promi
   return api.get<Me>('/auth/me')
 }
 
-/** `details.retryAfterSeconds` off a 429, when the server sent one. */
+/**
+ * `retryAfterSeconds` off a 429, when the server sent one. The OTP senders put
+ * it in `meta` (docs/API.md); `details` is read as well in case that moves.
+ */
 export function retryAfterSeconds(e: unknown): number | null {
   if (!(e instanceof ApiClientError) || e.code !== ErrorCode.RATE_LIMITED) return null
-  const n = Number(e.details?.retryAfterSeconds)
+  const n = Number(e.meta?.retryAfterSeconds ?? e.details?.retryAfterSeconds)
   return Number.isFinite(n) && n > 0 ? n : null
 }
 
@@ -459,7 +462,7 @@ export async function uploadEmployerDocument(
   try {
     body = await (await fetch(file.uri)).blob()
   } catch {
-    throw new EmployerUploadError('refused', `${file.name} could not be read from this phone. Choose it again.`, file.name, file.size)
+    throw new EmployerUploadError('refused', `${file.name} could not be read from this phone.`, file.name, file.size)
   }
   const sized = body.size > 0 && body.size !== file.size ? { ...file, size: body.size } : file
   const resized = checkEmployerFile(sized)
@@ -476,7 +479,7 @@ export async function uploadEmployerDocument(
       throw new EmployerUploadError('refused', e.message, sized.name, sized.size)
     }
     // fetch rejects with a TypeError when there is no network at all.
-    throw new EmployerUploadError('network', 'The connection dropped before the upload started.', sized.name, sized.size)
+    throw new EmployerUploadError('network', 'The connection dropped before the upload started and nothing was saved.', sized.name, sized.size)
   }
 
   await new Promise<void>((resolve, reject) => {

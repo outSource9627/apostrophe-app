@@ -60,18 +60,42 @@ type Phase =
   | { t: 'refused'; error: EmployerUploadError }
   | { t: 'stopped'; error: EmployerUploadError; file: PickedFile }
 
-/** What the document physically is, for the fix sentence. */
-const NOUN: Record<DocKind, string> = { GST: 'certificate', CIN: 'certificate', PAN: 'card', PHOTO_ID: 'card' }
+/*
+  The two below are the web's (apostrophe-user components/employer/DocumentSlot.tsx),
+  word for word: the same fault must read the same on both surfaces and on the
+  board (EM-05 · Upload error).
+*/
 
-/** The one way on after a named fault, in the board's words (EM-05 · Upload error). */
-function refusal(error: EmployerUploadError, kind: DocKind): string {
-  if (error.fault === 'size') {
-    return `${error.message} Scan it again at a lower quality, or take a photo of the ${NOUN[kind]} and choose the JPG.`
+/** What a refused file IS, named from its extension — 'aadhaar.docx is a Word document'. */
+function describeType(name: string): string | null {
+  const ext = name.includes('.') ? name.split('.').pop()!.toLowerCase() : ''
+  if (['doc', 'docx', 'odt', 'rtf'].includes(ext)) return 'a Word document'
+  if (['xls', 'xlsx', 'csv', 'ods'].includes(ext)) return 'a spreadsheet'
+  if (['ppt', 'pptx', 'odp'].includes(ext)) return 'a presentation'
+  if (['heic', 'heif'].includes(ext)) return 'a HEIC photo'
+  if (ext === 'webp') return 'a WebP image'
+  if (ext === 'gif') return 'a GIF'
+  if (['zip', 'rar', '7z'].includes(ext)) return 'a compressed folder'
+  if (ext === 'txt') return 'a text file'
+  return null
+}
+
+/**
+ * The sentence in the refusal block: the file, the fact, the fix. Never
+ * "Upload failed. Please try again." — each fault says what it was.
+ */
+function refusalSentence(e: EmployerUploadError, kinds: readonly DocKind[]): string {
+  const subject = kinds.length === 1 && kinds[0] === 'PHOTO_ID' ? 'card' : 'document'
+  if (e.fault === 'type') {
+    const what = describeType(e.fileName)
+    const fact = what ? `${e.fileName} is ${what}.` : `${e.fileName} is not a PDF, JPG or PNG.`
+    return `${fact} Choose a PDF, JPG or PNG of the ${subject} itself; a photo of it works.`
   }
-  if (error.fault === 'type') {
-    return `${error.message} Choose a PDF, JPG or PNG of the ${NOUN[kind]} itself; a photo of it works.`
+  if (e.fault === 'size') {
+    return `${e.fileName} is ${megabytes(e.sizeBytes)}, over the 10 MB limit. Scan it again at a lower quality, or take a photo of the ${subject} and choose the JPG.`
   }
-  return error.message
+  // The server's own words when it refused the presign already say what to choose.
+  return /^choose\b/i.test(e.message) ? e.message : `${e.message} Choose the file again.`
 }
 
 const kindsFor = (requirement: Exclude<RequirementKey, 'WORK_EMAIL'>, kinds?: readonly DocKind[]): readonly DocKind[] =>
@@ -239,7 +263,7 @@ export function DocumentSlot({
           <Text style={[text.metaPill, { color: color.danger }]}>Not accepted</Text>
         </View>
         <Body size="sm" tone="danger" style={styles.message}>
-          {refusal(phase.error, selected)}
+          {refusalSentence(phase.error, choices)}
         </Body>
         <View style={styles.way}>
           <Button variant="destructive" size="md" label="Choose another file" disabled={disabled} onPress={() => { choose() }} />

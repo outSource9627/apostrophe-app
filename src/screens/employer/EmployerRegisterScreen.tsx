@@ -131,7 +131,8 @@ export function proofValid(p: ChannelProgress, now = Date.now()): boolean {
  * limit carries `retryAt`, and only it runs past a couple of minutes; the
  * cooldown is drawn as the row's own countdown, the limit as an inert row.
  */
-const isHourlyLimit = (e: ApiClientError) => e.details?.retryAt != null || (retryAfterSeconds(e) ?? 0) > 120
+const isHourlyLimit = (e: ApiClientError) =>
+  (e.meta?.retryAt ?? e.details?.retryAt) != null || (retryAfterSeconds(e) ?? 0) > 120
 
 /** Applies a refused send to that channel alone. True when it was a rate limit and the row now carries it. */
 export function applySendLimit(channel: CodeChannel, value: string, e: unknown, now = Date.now()): boolean {

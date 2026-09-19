@@ -91,7 +91,7 @@ export function EmployerShell({
           <Logo size={18} />
         )}
         <View style={styles.grow} />
-        {!!onAccount && (
+        {onAccount ? (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Account"
@@ -100,7 +100,16 @@ export function EmployerShell({
           >
             <CompanyMonogram name={state?.company.name ?? ''} />
           </Pressable>
-        )}
+        ) : !back && state?.verified ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Account"
+            onPress={() => navigation.navigate('EmployerAccount')}
+            style={({ pressed }) => [styles.account, pressed && styles.pressed]}
+          >
+            <CompanyMonogram name={state?.company.name ?? ''} />
+          </Pressable>
+        ) : null}
       </View>
 
       {!!prompt && (
