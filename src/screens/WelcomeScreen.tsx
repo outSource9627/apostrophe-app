@@ -10,6 +10,8 @@ type Props = {
   /** Employer registration (EM-02). A text action, never a second crimson. */
   onCreateEmployer: () => void
   onSignIn: () => void
+  /** Interviewer recruitment (Settled Decision D6). */
+  onJoinUs?: () => void
 }
 
 const PILLARS = [
@@ -26,7 +28,7 @@ const PILLARS = [
  * crimson — because PRD section 7 treats any divergence between the two
  * surfaces as a defect, and that starts with what a person sees first.
  */
-export function WelcomeScreen({ onGetHired, onWantToHire, onCreateEmployer, onSignIn }: Props) {
+export function WelcomeScreen({ onGetHired, onWantToHire, onCreateEmployer, onSignIn, onJoinUs }: Props) {
   const insets = useSafeAreaInsets()
 
   return (
@@ -81,8 +83,7 @@ export function WelcomeScreen({ onGetHired, onWantToHire, onCreateEmployer, onSi
         ))}
       </View>
 
-      {/* The page ends on the employer's way in. A text action, because Get
-          Hired is this screen's one crimson. */}
+      {/* The page ends on the employer's and interviewer's way in. */}
       <View style={styles.employer}>
         <Pressable
           onPress={onCreateEmployer}
@@ -91,6 +92,15 @@ export function WelcomeScreen({ onGetHired, onWantToHire, onCreateEmployer, onSi
         >
           <Text style={styles.employerLabel}>Hiring? Create an employer account</Text>
         </Pressable>
+        {onJoinUs && (
+          <Pressable
+            onPress={onJoinUs}
+            accessibilityRole="button"
+            style={({ pressed }) => [styles.employerAction, pressed && styles.pressed, { marginTop: space.sm }]}
+          >
+            <Text style={styles.employerLabel}>Evaluate talent? Interview on Apostrophe →</Text>
+          </Pressable>
+        )}
       </View>
     </ScrollView>
   )

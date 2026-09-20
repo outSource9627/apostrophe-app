@@ -70,6 +70,27 @@ import { EmployerThreadScreen } from './src/screens/employer/EmployerThreadScree
 import { EmployerNotificationsScreen } from './src/screens/employer/EmployerNotificationsScreen'
 import { EmployerNotificationSettingsScreen } from './src/screens/employer/EmployerNotificationSettingsScreen'
 import { EmployerAccountScreen } from './src/screens/employer/EmployerAccountScreen'
+import {
+  JoinUsScreen,
+  InterviewerApplyScreen,
+  InterviewerSignInScreen,
+  InterviewerPasswordScreen,
+  InterviewerDashboardScreen,
+  AvailabilityScreen,
+  OverridesScreen,
+  InterviewerInterviewsScreen,
+  InterviewerDetailScreen,
+  ScorecardDraftScreen,
+  PendingScorecardsScreen,
+  InterviewerWalletScreen,
+  InterviewerLedgerScreen,
+  WithdrawScreen,
+  BankAccountScreen,
+  StatementsScreen,
+  InterviewerAccountScreen,
+  InterviewerNotificationsScreen,
+  InterviewerChatsScreen,
+} from './src/screens/interviewer'
 import type { ShortlistRow, EmployerJobRef } from './src/lib/api/employerShortlist'
 import { threadIdForConnection } from './src/lib/api/chat'
 import { getMe } from './src/lib/api/account'
@@ -161,6 +182,27 @@ export type RootStackParamList = {
   EmployerNotifications: undefined
   EmployerNotificationSettings: undefined
   EmployerAccount: undefined
+
+  // ── Interviewer portal & recruitment (IV-01..IV-22) ────────────────────────
+  JoinUs: undefined
+  InterviewerApply: undefined
+  InterviewerSignIn: undefined
+  InterviewerPassword: { email?: string; forced?: boolean; reset?: boolean } | undefined
+  InterviewerDashboard: undefined
+  InterviewerAvailability: undefined
+  InterviewerOverrides: undefined
+  InterviewerInterviews: undefined
+  InterviewerDetail: { id: string; autoJoin?: boolean }
+  ScorecardDraft: { id: string }
+  PendingScorecards: undefined
+  InterviewerWallet: undefined
+  InterviewerLedger: undefined
+  InterviewerWithdraw: undefined
+  InterviewerBankAccount: undefined
+  InterviewerStatements: undefined
+  InterviewerAccount: undefined
+  InterviewerNotifications: undefined
+  InterviewerChats: undefined
 }
 
 const Stack = createNativeStackNavigator<RootStackParamList>()
@@ -168,14 +210,20 @@ const Stack = createNativeStackNavigator<RootStackParamList>()
 /**
  * Where a signed-in account lands. Mobile OTP and email sign-in are shared by
  * every role, so the role is read back rather than assumed: an employer goes to
- * the employer shell, everyone else to the student home as before. Any
- * employer state cached under a previous session is dropped first.
+ * the employer shell, an interviewer goes to the interviewer portal, everyone
+ * else to the student home. Any role state cached under a previous session is dropped first.
  */
-async function signedInHome(): Promise<'Home' | 'EmployerHome'> {
+async function signedInHome(): Promise<'Home' | 'EmployerHome' | 'InterviewerDashboard'> {
   const me = await getMe().catch(() => null)
-  if (me?.role !== 'EMPLOYER') return 'Home'
-  queryClient.removeQueries({ queryKey: ['employer'] })
-  return 'EmployerHome'
+  if (me?.role === 'EMPLOYER') {
+    queryClient.removeQueries({ queryKey: ['employer'] })
+    return 'EmployerHome'
+  }
+  if (me?.role === 'INTERVIEWER') {
+    queryClient.removeQueries({ queryKey: ['interviewer'] })
+    return 'InterviewerDashboard'
+  }
+  return 'Home'
 }
 
 const queryClient = new QueryClient({
@@ -207,6 +255,7 @@ export default function App() {
                   onWantToHire={() => navigation.navigate('EmployerRegister')}
                   onCreateEmployer={() => navigation.navigate('EmployerRegister')}
                   onSignIn={() => navigation.navigate('SignIn')}
+                  onJoinUs={() => navigation.navigate('JoinUs')}
                 />
               )}
             </Stack.Screen>
@@ -743,6 +792,83 @@ export default function App() {
 
             <Stack.Screen name="EmployerAccount">
               {() => <EmployerAccountScreen />}
+            </Stack.Screen>
+
+            {/* ── Interviewer Portal & Recruitment (IV-01..IV-22) ────────────────── */}
+            <Stack.Screen name="JoinUs">
+              {() => <JoinUsScreen />}
+            </Stack.Screen>
+
+            <Stack.Screen name="InterviewerApply">
+              {() => <InterviewerApplyScreen />}
+            </Stack.Screen>
+
+            <Stack.Screen name="InterviewerSignIn">
+              {() => <InterviewerSignInScreen />}
+            </Stack.Screen>
+
+            <Stack.Screen name="InterviewerPassword">
+              {() => <InterviewerPasswordScreen />}
+            </Stack.Screen>
+
+            <Stack.Screen name="InterviewerDashboard">
+              {() => <InterviewerDashboardScreen />}
+            </Stack.Screen>
+
+            <Stack.Screen name="InterviewerAvailability">
+              {() => <AvailabilityScreen />}
+            </Stack.Screen>
+
+            <Stack.Screen name="InterviewerOverrides">
+              {() => <OverridesScreen />}
+            </Stack.Screen>
+
+            <Stack.Screen name="InterviewerInterviews">
+              {() => <InterviewerInterviewsScreen />}
+            </Stack.Screen>
+
+            <Stack.Screen name="InterviewerDetail">
+              {() => <InterviewerDetailScreen />}
+            </Stack.Screen>
+
+            <Stack.Screen name="ScorecardDraft">
+              {() => <ScorecardDraftScreen />}
+            </Stack.Screen>
+
+            <Stack.Screen name="PendingScorecards">
+              {() => <PendingScorecardsScreen />}
+            </Stack.Screen>
+
+            <Stack.Screen name="InterviewerWallet">
+              {() => <InterviewerWalletScreen />}
+            </Stack.Screen>
+
+            <Stack.Screen name="InterviewerLedger">
+              {() => <InterviewerLedgerScreen />}
+            </Stack.Screen>
+
+            <Stack.Screen name="InterviewerWithdraw">
+              {() => <WithdrawScreen />}
+            </Stack.Screen>
+
+            <Stack.Screen name="InterviewerBankAccount">
+              {() => <BankAccountScreen />}
+            </Stack.Screen>
+
+            <Stack.Screen name="InterviewerStatements">
+              {() => <StatementsScreen />}
+            </Stack.Screen>
+
+            <Stack.Screen name="InterviewerAccount">
+              {() => <InterviewerAccountScreen />}
+            </Stack.Screen>
+
+            <Stack.Screen name="InterviewerNotifications">
+              {() => <InterviewerNotificationsScreen />}
+            </Stack.Screen>
+
+            <Stack.Screen name="InterviewerChats">
+              {() => <InterviewerChatsScreen />}
             </Stack.Screen>
           </Stack.Navigator>
         </NavigationContainer>

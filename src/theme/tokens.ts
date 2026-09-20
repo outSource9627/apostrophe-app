@@ -92,7 +92,14 @@ export const color = {
    * component, which is what the interview room boards do (ST-30-A..D).
    *
    * They are deliberately NOT text colours — `textOnInk*` above are the three
-   * type steps; these six are grounds, edges and lines.
+   * type steps; these are grounds, edges and lines. Every one is a value a
+   * board actually draws, and the entry cost is exactly that: a token nothing
+   * draws is the same defect as a raw value, it just fails later, when
+   * somebody reaches for it and calls it precedent. The 0.28 scrub track was
+   * turned away once on that rule, when the claim was that the ROOM drew it —
+   * the room draws no transport at all. It is back below under its right name
+   * because student-profile draws it on four boards, which is a different
+   * fact, not a softened rule.
    */
   /** The fill behind an over-footage control — mute, camera, audio, leave. */
   onInkGround: 'rgba(255, 255, 255, 0.14)',
@@ -100,9 +107,7 @@ export const color = {
   onInkEdge: 'rgba(255, 255, 255, 0.22)',
   /** The 9:16 framing guide — its rect, its head-room rules, its centre line. */
   guideLine: 'rgba(255, 255, 255, 0.26)',
-  /** The scrub track under a playing video, before the played part fills it. */
-  onInkTrack: 'rgba(255, 255, 255, 0.28)',
-  /** A quiet bar in the audio-level meter. */
+  /** A quiet bar in the audio-level meter (ST-30-D). */
   onInkLevel: 'rgba(255, 255, 255, 0.34)',
   /**
    * The guide's corner ticks and a loud bar in the level meter — the only two
@@ -110,6 +115,24 @@ export const color = {
    * They are the ones a person has to find while looking at their own face.
    */
   guideEdge: 'rgba(255, 255, 255, 0.62)',
+
+  /**
+   * ── the four marks that sit ON a still ────────────────────────────────
+   * The set above is for things drawn over LIVE footage in the room. These
+   * four are for a framed video anywhere else — a player, a card head, a clip
+   * thumbnail — and they are nearly opaque where the room's are nearly
+   * transparent, which is the whole difference: the room is asking you to see
+   * through its marks to your own face, and a player is asking you to read a
+   * duration off a picture you do not control.
+   */
+  /** The idle play disc on a still — white, all but solid (profile ST-20/32). */
+  onInkDisc: 'rgba(255, 255, 255, 0.94)',
+  /** The same disc once the film is RUNNING: ink, so the picture stays the subject. */
+  onInkDiscPlaying: 'rgba(15, 26, 34, 0.55)',
+  /** A paper badge laid on a still — a duration, an Unverified tag (profile ST-21). */
+  onInkBadge: 'rgba(255, 255, 255, 0.92)',
+  /** The transport scrubber's unfilled track. The fill is plain white. */
+  onInkTrack: 'rgba(255, 255, 255, 0.28)',
 
   // semantic state — deliberately low in chroma, so red keeps its monopoly on
   // urgency and "brand" never collapses into "this worked"
@@ -196,6 +219,16 @@ export const fontSize = {
   'display-2xl': 64,
   /** Salary, scores, totals. Set tabular — see `.tnum`. */
   'display-num': 40,
+  /**
+   * The one long-form serif step: the interviewer's written feedback in the
+   * room (ST-33-delivered). It is 18px like `display-xs`, and aliasing the two
+   * is wrong — `display-xs` is a state headline at 1.25/-0.01em, pulled
+   * together the way a title is, while this is a paragraph somebody reads at
+   * 1.55/-0.005em. The boards name it `.prose` rather than `.d-prose` for the
+   * same reason: it is named for the job it does. `Display level="prose"`
+   * sets the serif alongside it, so the family binding still holds.
+   */
+  prose: 18,
 
   // ── ui · Instrument Sans · interface ────────────────────────────────────
   /** The sans floor. Non-interactive supporting copy only. */
@@ -220,6 +253,36 @@ export const fontSize = {
   'meta-sm': 10,
   /** Transaction references, durations, fine print. */
   'meta-md': 11,
+  /**
+   * 13 — the mono step that is a MARK rather than a line of fine print: the
+   * employer monogram inside a 44px Avatar (chat ST-43, ST-43Web, ST-41, ST-42
+   * and booking all draw it at 13/500/0.06em), and the 13px uppercase tabular
+   * mono the booking flow sets a date rail in. It is deliberately not `ui-sm`,
+   * which is also 13: that one is Instrument Sans and carries interface, and a
+   * monogram set in the sans stops reading as a stand-in for a logo and starts
+   * reading as two letters of a word.
+   */
+  'meta-lg': 13,
+  /**
+   * ── the two clock steps ─────────────────────────────────────────────
+   * A countdown is the one thing in the product set in mono at a size the
+   * mono steps above were never meant to reach. It is mono because it is a
+   * readout the person has to act against rather than a fact they are
+   * reading — the room says outright that a serif countdown "would out-shout
+   * REC and read as a failure clock" — and it is tabular because a digit that
+   * changes width every second is a clock that jitters under the thumb.
+   *
+   * 15 is the countdown inside a sunken well (booking ST-26, 'Starts in' /
+   * '01 : 23 : 46'). It is deliberately not `ui-base`, which is also 15: that
+   * one is Instrument Sans and carries a sentence.
+   */
+  'meta-xl': 15,
+  /**
+   * 56 — the join clock, and the largest element in the booking flow. It is
+   * the only meta step above the fine-print range, which is the point: at the
+   * moment the window opens, the time left IS the screen.
+   */
+  'meta-hero': 56,
 } as const
 
 /**
@@ -237,6 +300,7 @@ export const fontSizeLeading = {
   'display-xl': 1.06,
   'display-2xl': 1.04,
   'display-num': 1,
+  prose: 1.55,
 
   'ui-2xs': 1.45,
   'ui-xs': 1.5,
@@ -249,6 +313,11 @@ export const fontSizeLeading = {
   'meta-xs': 1.5,
   'meta-sm': 1.5,
   'meta-md': 1.4,
+  /** Tighter than the steps below it: at 13 the mono is a mark, not a line. */
+  'meta-lg': 1.2,
+  'meta-xl': 1.4,
+  /** A clock is one line and owns its own box. Nothing sets beneath it. */
+  'meta-hero': 1,
 } as const
 
 /**
@@ -292,9 +361,44 @@ export const tracking = {
   snug: '-0.015em',
   /** List titles set in the sans. */
   'snug-sm': '-0.01em',
+  /** The one serif reading step — `prose`. A paragraph tracks looser than a
+      title, because the eye is travelling along the line rather than taking
+      the whole phrase in at once. */
+  'snug-xs': '-0.005em',
   normal: '0em',
+  /**
+   * The one mixed-case mono step in the product: an email address read back to
+   * the person who typed it (signup ST-05). Lowercase mono already has the
+   * air uppercase mono has to be given, so `meta` at 0.1em would space an
+   * address out into a ransom note. `Meta uppercase={false}` reaches for this.
+   */
+  'meta-tight': '0.02em',
+  /**
+   * The monogram step. A two-letter mono mark inside an Avatar needs the
+   * letters held apart so they read as an abbreviation rather than a syllable,
+   * but not the 0.1em a status pill takes — at 0.1em the pair drifts off the
+   * optical centre of a 44px circle and has to be nudged back with a margin,
+   * which is how a raw value gets written. Fifty-three instances across the
+   * boards set 0.06em, and every one of them is a mark: the employer monogram
+   * and booking's 13px uppercase date rail.
+   */
+  'meta-snug': '0.06em',
   /** Status pills and inline mono. */
   meta: '0.1em',
+  /**
+   * The two clock tracks, and they tighten as the clock grows for the same
+   * reason the display steps do: tracking is air between letters, and a
+   * 56px digit already has more of it than a 10px one. 0.08em at
+   * `meta-xl`, 0.04em at `meta-hero` — both measured off the boards
+   * (booking ST-26 and ST-26-join), not interpolated.
+   *
+   * They are the tracking on the DIGITS. The spaced colons a countdown sets
+   * ('01 : 23 : 46') are not tracking at all — they are word spaces the
+   * component inserts, because a mono colon sits tight against the digit
+   * either side of it and a clock has to be read in groups.
+   */
+  'meta-clock': '0.08em',
+  'meta-clock-lg': '0.04em',
   /** Captions over footage. */
   'meta-wide': '0.12em',
   /** Eyebrow labels. */
@@ -396,7 +500,10 @@ export const trackingNative = {
   'tight-sm': -0.7,
   snug: -0.4,
   'snug-sm': -0.2,
+  'snug-xs': -0.1,
   normal: 0,
+  'meta-tight': 0.2,
+  'meta-snug': 0.8,
   meta: 1,
   'meta-wide': 1.2,
   eyebrow: 1.4,
@@ -417,6 +524,7 @@ export const leadingNative = {
   'display-xl': 51,
   'display-2xl': 67,
   'display-num': 40,
+  prose: 28,
 
   'ui-2xs': 16,
   'ui-xs': 18,
@@ -429,6 +537,7 @@ export const leadingNative = {
   'meta-xs': 14,
   'meta-sm': 15,
   'meta-md': 15,
+  'meta-lg': 16,
 } as const
 
 /**
@@ -440,10 +549,34 @@ export const opacity = { pressed: 0.85, disabled: 0.5, hidden: 0 } as const
 
 /**
  * Border weights. `thin` is every hairline in the product — a 1px rule at any
- * density. `accent` is the thicker bar that marks a pull quote, a framing
- * guide, or the ring on an error glyph.
+ * density. `medium` is the 1.5px ring an UNFILLED mark wears: a skills-floor
+ * pip that has not been earned yet is a ring rather than a paler fill, because
+ * a paler fill reads as a weak state where a ring reads as an empty one.
+ * `accent` is the thicker bar that marks a pull quote, a framing guide, the
+ * ring on an error glyph, and the spinner's track.
+ *
+ * These emit as `border-w-*` rather than `border-*`, because `border-<name>`
+ * is already the border COLOUR namespace — `border-accent` is the crimson
+ * hairline and `border-w-accent` is the 2px rule. They were declared here and
+ * emitted nowhere for a while, which is its own defect: a component that needs
+ * 1.5px and cannot reach a token writes 1.5px.
  */
 export const borderWidth = { thin: 1, medium: 1.5, accent: 2 } as const
+
+/**
+ * How far a text action's rule sits below its baseline.
+ *
+ * Nine boards across five flows draw an underlined text action and every one
+ * of them sets 3px, with the rule itself in `borderStrong` so the underline
+ * reads as a hairline the word sits above rather than as part of the word. It
+ * is a token because 3 is not on the 4px grid and there is nowhere else it
+ * could come from — the moment it is written inline, the offset drifts per
+ * screen and the decoration colour goes with it.
+ *
+ * Web only. React Native has no text-underline-offset; a pressable label there
+ * takes `textDecorationLine` and the platform picks the offset.
+ */
+export const underlineOffset = { text: 3 } as const
 
 /**
  * Three levels of elevation in the whole system, and the rule is flat by
@@ -452,6 +585,13 @@ export const borderWidth = { thin: 1, medium: 1.5, accent: 2 } as const
  * `card` lifts a surface off the page — swipe cards, sheets, toasts. `raised`
  * is the small lift under a segmented control's selected pane. `focus` is the
  * ring a field wears while it has the caret: 3px of ink at 6%, never blue.
+ *
+ * `lift` is the fourth, and it exists only for what sits OVER FOOTAGE — the
+ * interview room's transient band. On paper a card is separated from the page
+ * by a hairline and a change of ground, so `card` can stay almost invisible;
+ * over a moving image there is neither, and a band carrying "One minute left"
+ * has to read as a sheet of paper laid on top of the picture rather than a
+ * tint composited into it. It is the room's own `--lift`, unchanged.
  */
 export const shadow = {
   card: '0 1px 2px rgba(15, 26, 34, 0.04), 0 12px 32px -12px rgba(15, 26, 34, 0.12)',
@@ -464,6 +604,7 @@ export const shadow = {
    * nothing else does.
    */
   accent: '0 8px 20px -8px rgba(176, 30, 36, 0.6)',
+  lift: '0 2px 6px rgba(15, 26, 34, 0.18), 0 16px 40px -16px rgba(15, 26, 34, 0.45)',
 } as const
 
 /**
@@ -499,6 +640,15 @@ export const container = {
 
   /** The admin panel's content column. It is desktop-only (AD-01). */
   shell: 1400,
+  /**
+   * The desktop content column, and the one measure the whole web product
+   * lines up on. Seven of the nine flows centre their 1440 boards on exactly
+   * 1152 with a 32px gutter inside it — paywall, signup, profile, room,
+   * account, job-feed and the wizard — so the app bar's inner row, the body
+   * and the pay bar all share an edge. Chat's three-pane layout is full-bleed
+   * instead, which is a different page type rather than a different measure.
+   */
+  column: 1152,
   /** The profile wizard's progress rail. */
   rail: 296,
   /** The wider proof rail beside the landing headline. */
@@ -519,6 +669,21 @@ export const container = {
   'col-min': 260,
   'label-min': 120,
   'input-min': 128,
+  /**
+   * The narrowest a NUMERIC chip may get. A row of score or year chips whose
+   * widths follow their digit counts reads as a ragged list rather than as a
+   * set of equal choices, and '1' beside '10' beside '100' is where that shows
+   * first. It is a floor and not a width: a chip with a word in it still grows
+   * past it.
+   */
+  'chip-min': 48,
+  /**
+   * The toggle track's width, paired with `height.toggle` at 26. It is the
+   * 44px tap cell the switch sits in, which is why the track is not narrower:
+   * the visible control and the box a finger has to hit are one measurement,
+   * so a change to either cannot leave the other behind.
+   */
+  'toggle-track': 44,
 } as const
 
 /**
@@ -545,8 +710,17 @@ export const height = {
   chip: 36,
   /** One pane of a segmented control, inside its 3px track padding. */
   segment: 34,
-  /** A switch, and the knob inside it. */
-  toggle: 28,
+  /**
+   * A switch, and the knob inside it.
+   *
+   * 26 around the 22px knob, with `container['toggle-track']` at 44 for its
+   * width. Three flows drew three tracks — 52x32 knob 26, 44x26 knob 22,
+   * 40x24 knob 20 — and account's is the reading that survives: its knob is
+   * already the knob token, and its width is exactly the 44px tap cell the
+   * switch is centred in, so the track and the target are one measurement
+   * rather than two that drift. It was 28, which matched no board at all.
+   */
+  toggle: 26,
   'toggle-knob': 22,
   /** The smallest square a finger reliably hits. */
   tap: 44,
@@ -561,25 +735,38 @@ export const height = {
   'otp-cell-lg': 76,
   /** The pay bar itself, and the spacer that keeps it off the content. */
   'pay-bar': 88,
-  'pay-bar-stacked': 136,
+  /**
+   * The same bar once the CTA drops below the amount — the phone layout. The
+   * paywall measures it at 146.5 (SPEC 4.2): 16 top, then a baseline row of a
+   * 26px serif amount beside a 13px detail line that WRAPS TO TWO LINES at
+   * 390px and is meant to, then 12, then a 52px button, then 20. Every board
+   * carrying the bar gives its content `padding-bottom: 148`, so the token is
+   * the spacer's 148 rather than the bar's own fraction. It was 136, and at
+   * 136 the bar covered the last line of content.
+   */
+  'pay-bar-stacked': 148,
   'video-thumb': 116,
   /** The empty well on the unfinished-profile card. */
   well: 400,
-  /** The top bar on a mobile screen, and the shorter one over the wizard. */
+  /**
+   * ── the three app-bar heights, and there are only three ─────────────────
+   * `app-bar` (52) is a drill-in bar carrying a back chevron and nothing else.
+   * `header` (60) is a root bar carrying the brand lockup — the wizard and the
+   * profile frame included. `header-lg` (72) is either of them on a desktop
+   * viewport. A fourth height measured off whatever padding a header happened
+   * to have is how the 57px `app-header` got here, and it is why a bar drifted
+   * a few pixels per surface; there is no measured height any more. A 50px
+   * `app-bar-compact` sat here too, drawn by no board in any of the nine flows
+   * and referenced by no component — the same defect one pixel smaller, so it
+   * went with the 57.
+   */
   'app-bar': 52,
-  'app-bar-compact': 50,
   /** The avatar circle in the mobile top bar, inside a `tap`-sized target. */
-  avatar: 34,
+  avatar: 32,
   /** The unfinished-profile well, on a phone. */
   'well-compact': 286,
   /** A video thumbnail in the mobile list, against `container['video-thumb-compact']`. */
   'video-thumb-compact': 84,
-  /**
-   * The signed-in header, measured rather than set: it is padding plus the
-   * wordmark. `min-h-below-app-header` subtracts it from the viewport, so if
-   * that header's padding changes this number has to change with it.
-   */
-  'app-header': 57,
 } as const
 
 /**
@@ -597,8 +784,15 @@ export const gridTemplate = {
 
 /**
  * Motion. Three animations in the product, and none of them is decorative:
- * `sweep` runs across a progress bar and a skeleton while something is genuinely
+ * `sweep` runs across an INDETERMINATE progress bar while something is genuinely
  * in flight, `pulse-dot` marks a live recording, `spin` is the one spinner.
+ *
+ * A skeleton does not sweep, and used to. Both flows that draw a loading state
+ * forbid shimmer and pulse outright — job-feed states the reason, that a
+ * mid-range Android on a variable network does not need another compositing
+ * layer — and draw the real component's geometry instead. A sweep on a
+ * skeleton also says the wrong thing: it animates a shape that is not going to
+ * move, where the indeterminate bar animates the only thing that is.
  *
  * The keyframes themselves are in the generated globals.css.
  */
@@ -618,6 +812,17 @@ export const animation = {
  */
 export const brand = {
   wordmarkRatio: 1.15,
+  /**
+   * The mark's size inside an app bar, mobile and desktop.
+   *
+   * These are tokens rather than numbers inside AppBar because the WORDMARK is
+   * derived from them: 18 × 1.15 is the 18/20.7 lockup every mobile board in
+   * nine flows draws, and 20 × 1.15 is the 20/23 one every desktop board
+   * draws. A bar that picks its own mark size silently picks a wordmark size
+   * too, and the two lockups stop matching across surfaces.
+   */
+  markInBar: 18,
+  markInBarLg: 20,
 } as const
 
 /** Interview capture is locked to 9:16 (IR-02); every card that shows one mirrors it. */
