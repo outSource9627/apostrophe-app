@@ -7,11 +7,22 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		06EBA988531B45BABBD00CD3 /* InstrumentSans-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 71C462A6BA3644A682AF26A4 /* InstrumentSans-Medium.ttf */; };
 		0C80B921A6F3F58F76C31292 /* libPods-ApostropheApp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5DCACB8F33CDC322A6C60F78 /* libPods-ApostropheApp.a */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
+		1BA1427E72DE428480E17E0B /* IBMPlexMono-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A6D0E6268A834182B37406E1 /* IBMPlexMono-Regular.ttf */; };
+		33B896F236CB455893F68163 /* Newsreader16pt-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 617AF966C1B3421F9665643D /* Newsreader16pt-Regular.ttf */; };
+		49E9A7A84495468ABC7C5683 /* InstrumentSans-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = AFBD7E018B3944CFB2217BAB /* InstrumentSans-Bold.ttf */; };
+		58784778049B4B1392D2CD21 /* IBMPlexMono-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 5DAA6EC61BBB49DD87CFBB43 /* IBMPlexMono-SemiBold.ttf */; };
+		70B3CABF45874406BE998504 /* IBMPlexMono-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 60FC94A1500F4FDDB674AB6A /* IBMPlexMono-Medium.ttf */; };
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
+		7BC29B35D7BD41F8B6D1316E /* Newsreader16pt-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 8B9599D778554CF88EAC1815 /* Newsreader16pt-Italic.ttf */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
+		8D7D3E788DBA454DB09BAEAA /* InstrumentSans-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = BA66C6C79FCC4E42BACF1B09 /* InstrumentSans-SemiBold.ttf */; };
+		93DDF294D4DB44E99E9E946A /* InstrumentSans-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = D6F84A880EB0446E8120438F /* InstrumentSans-Regular.ttf */; };
 		ADF8BEADAED9B0D6C9374A70 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
+		E3E397CD1F034A44997B928E /* Newsreader16pt-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 986DEF58DCC54A02A2E6E76D /* Newsreader16pt-Light.ttf */; };
+		F01114D9E15D4BF4956E95F4 /* Newsreader16pt-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = FE27D6D4DC174B2F87BC6019 /* Newsreader16pt-Medium.ttf */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -21,10 +32,21 @@
 		13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = PrivacyInfo.xcprivacy; path = ApostropheApp/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		3B4392A12AC88292D35C810B /* Pods-ApostropheApp.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ApostropheApp.debug.xcconfig"; path = "Target Support Files/Pods-ApostropheApp/Pods-ApostropheApp.debug.xcconfig"; sourceTree = "<group>"; };
 		5709B34CF0A7D63546082F79 /* Pods-ApostropheApp.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ApostropheApp.release.xcconfig"; path = "Target Support Files/Pods-ApostropheApp/Pods-ApostropheApp.release.xcconfig"; sourceTree = "<group>"; };
+		5DAA6EC61BBB49DD87CFBB43 /* IBMPlexMono-SemiBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "IBMPlexMono-SemiBold.ttf"; path = "../src/assets/fonts/IBMPlexMono-SemiBold.ttf"; sourceTree = "<group>"; };
 		5DCACB8F33CDC322A6C60F78 /* libPods-ApostropheApp.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-ApostropheApp.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		60FC94A1500F4FDDB674AB6A /* IBMPlexMono-Medium.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "IBMPlexMono-Medium.ttf"; path = "../src/assets/fonts/IBMPlexMono-Medium.ttf"; sourceTree = "<group>"; };
+		617AF966C1B3421F9665643D /* Newsreader16pt-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Newsreader16pt-Regular.ttf"; path = "../src/assets/fonts/Newsreader16pt-Regular.ttf"; sourceTree = "<group>"; };
+		71C462A6BA3644A682AF26A4 /* InstrumentSans-Medium.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "InstrumentSans-Medium.ttf"; path = "../src/assets/fonts/InstrumentSans-Medium.ttf"; sourceTree = "<group>"; };
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = ApostropheApp/AppDelegate.swift; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = ApostropheApp/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		8B9599D778554CF88EAC1815 /* Newsreader16pt-Italic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Newsreader16pt-Italic.ttf"; path = "../src/assets/fonts/Newsreader16pt-Italic.ttf"; sourceTree = "<group>"; };
+		986DEF58DCC54A02A2E6E76D /* Newsreader16pt-Light.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Newsreader16pt-Light.ttf"; path = "../src/assets/fonts/Newsreader16pt-Light.ttf"; sourceTree = "<group>"; };
+		A6D0E6268A834182B37406E1 /* IBMPlexMono-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "IBMPlexMono-Regular.ttf"; path = "../src/assets/fonts/IBMPlexMono-Regular.ttf"; sourceTree = "<group>"; };
+		AFBD7E018B3944CFB2217BAB /* InstrumentSans-Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "InstrumentSans-Bold.ttf"; path = "../src/assets/fonts/InstrumentSans-Bold.ttf"; sourceTree = "<group>"; };
+		BA66C6C79FCC4E42BACF1B09 /* InstrumentSans-SemiBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "InstrumentSans-SemiBold.ttf"; path = "../src/assets/fonts/InstrumentSans-SemiBold.ttf"; sourceTree = "<group>"; };
+		D6F84A880EB0446E8120438F /* InstrumentSans-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "InstrumentSans-Regular.ttf"; path = "../src/assets/fonts/InstrumentSans-Regular.ttf"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
+		FE27D6D4DC174B2F87BC6019 /* Newsreader16pt-Medium.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Newsreader16pt-Medium.ttf"; path = "../src/assets/fonts/Newsreader16pt-Medium.ttf"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -75,6 +97,7 @@
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
 				BBD78D7AC51CEA395F1C20DB /* Pods */,
+				C2751A1D5BE944C1A655FCA9 /* Resources */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -96,6 +119,25 @@
 				5709B34CF0A7D63546082F79 /* Pods-ApostropheApp.release.xcconfig */,
 			);
 			path = Pods;
+			sourceTree = "<group>";
+		};
+		C2751A1D5BE944C1A655FCA9 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				60FC94A1500F4FDDB674AB6A /* IBMPlexMono-Medium.ttf */,
+				8B9599D778554CF88EAC1815 /* Newsreader16pt-Italic.ttf */,
+				A6D0E6268A834182B37406E1 /* IBMPlexMono-Regular.ttf */,
+				617AF966C1B3421F9665643D /* Newsreader16pt-Regular.ttf */,
+				986DEF58DCC54A02A2E6E76D /* Newsreader16pt-Light.ttf */,
+				FE27D6D4DC174B2F87BC6019 /* Newsreader16pt-Medium.ttf */,
+				D6F84A880EB0446E8120438F /* InstrumentSans-Regular.ttf */,
+				BA66C6C79FCC4E42BACF1B09 /* InstrumentSans-SemiBold.ttf */,
+				71C462A6BA3644A682AF26A4 /* InstrumentSans-Medium.ttf */,
+				5DAA6EC61BBB49DD87CFBB43 /* IBMPlexMono-SemiBold.ttf */,
+				AFBD7E018B3944CFB2217BAB /* InstrumentSans-Bold.ttf */,
+			);
+			name = Resources;
+			path = "";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -161,6 +203,17 @@
 				81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				ADF8BEADAED9B0D6C9374A70 /* PrivacyInfo.xcprivacy in Resources */,
+				70B3CABF45874406BE998504 /* IBMPlexMono-Medium.ttf in Resources */,
+				7BC29B35D7BD41F8B6D1316E /* Newsreader16pt-Italic.ttf in Resources */,
+				1BA1427E72DE428480E17E0B /* IBMPlexMono-Regular.ttf in Resources */,
+				33B896F236CB455893F68163 /* Newsreader16pt-Regular.ttf in Resources */,
+				E3E397CD1F034A44997B928E /* Newsreader16pt-Light.ttf in Resources */,
+				F01114D9E15D4BF4956E95F4 /* Newsreader16pt-Medium.ttf in Resources */,
+				93DDF294D4DB44E99E9E946A /* InstrumentSans-Regular.ttf in Resources */,
+				8D7D3E788DBA454DB09BAEAA /* InstrumentSans-SemiBold.ttf in Resources */,
+				06EBA988531B45BABBD00CD3 /* InstrumentSans-Medium.ttf in Resources */,
+				58784778049B4B1392D2CD21 /* IBMPlexMono-SemiBold.ttf in Resources */,
+				49E9A7A84495468ABC7C5683 /* InstrumentSans-Bold.ttf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

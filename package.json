@@ -9,10 +9,13 @@
     "start": "react-native start",
     "test": "jest",
     "theme:sync": "node scripts/sync-theme.mjs",
-    "theme:check": "node scripts/sync-theme.mjs --check",
+    "theme:check": "node scripts/sync-theme.mjs --check && node scripts/check-raw-design-values.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@react-native-async-storage/async-storage": "^3.1.1",
+    "@react-native-community/netinfo": "^12.0.1",
+    "@react-native-documents/picker": "^12.0.2",
     "@react-native/new-app-screen": "0.87.1",
     "@react-navigation/native": "^7.3.18",
     "@react-navigation/native-stack": "^7.18.10",
@@ -20,9 +23,17 @@
     "react": "19.2.3",
     "react-native": "0.87.1",
     "react-native-gesture-handler": "^3.2.1",
+    "react-native-image-picker": "^8.2.1",
     "react-native-keychain": "^10.0.0",
+    "react-native-nitro-image": "^0.15.2",
+    "react-native-nitro-modules": "^0.37.1",
+    "react-native-razorpay": "^3.0.0",
     "react-native-safe-area-context": "^5.5.2",
     "react-native-screens": "^4.27.0",
+    "react-native-svg": "^15.15.5",
+    "react-native-video": "^6.19.2",
+    "react-native-vision-camera": "^5.2.3",
+    "socket.io-client": "^4.8.3",
     "zustand": "^5.0.15"
   },
   "devDependencies": {

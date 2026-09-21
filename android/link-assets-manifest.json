@@ -1,0 +1,49 @@
+{
+  "migIndex": 1,
+  "data": [
+    {
+      "path": "src/assets/fonts/IBMPlexMono-Medium.ttf",
+      "sha1": "d1246280a315c377a651879047723bab6e3b411e"
+    },
+    {
+      "path": "src/assets/fonts/IBMPlexMono-Regular.ttf",
+      "sha1": "2b7c2393fff41a6e1446fd6351002e1aa1a999e8"
+    },
+    {
+      "path": "src/assets/fonts/IBMPlexMono-SemiBold.ttf",
+      "sha1": "f3a7efe0dc14fce44455e570ab6dea33dddc5133"
+    },
+    {
+      "path": "src/assets/fonts/InstrumentSans-Bold.ttf",
+      "sha1": "06b38f01cf77cea8b09370ecfa0c4bfcbf03e90b"
+    },
+    {
+      "path": "src/assets/fonts/InstrumentSans-Medium.ttf",
+      "sha1": "c43c6c7ae2ab3befb1aeb9bdf70f73cb7fc15e7c"
+    },
+    {
+      "path": "src/assets/fonts/InstrumentSans-Regular.ttf",
+      "sha1": "2e547286b12f7d762f099b412a8b9bd9fb6cc387"
+    },
+    {
+      "path": "src/assets/fonts/InstrumentSans-SemiBold.ttf",
+      "sha1": "961e9e775e84d121ee7163e5a36dd580715cbd23"
+    },
+    {
+      "path": "src/assets/fonts/Newsreader16pt-Italic.ttf",
+      "sha1": "670be95c9cc81b6d5ebb37939f1bcefb2673f2ef"
+    },
+    {
+      "path": "src/assets/fonts/Newsreader16pt-Light.ttf",
+      "sha1": "d428a365ec40034b030c4f925f8b9042b8d4cd64"
+    },
+    {
+      "path": "src/assets/fonts/Newsreader16pt-Medium.ttf",
+      "sha1": "6e86e40737011035b5bc19f803c1a7d8b66f99f3"
+    },
+    {
+      "path": "src/assets/fonts/Newsreader16pt-Regular.ttf",
+      "sha1": "858059950b90b9c88ee5645978d73cb874839c1b"
+    }
+  ]
+}
