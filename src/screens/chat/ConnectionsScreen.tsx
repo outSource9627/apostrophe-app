@@ -63,7 +63,7 @@ export function ConnectionsScreen({ onBack, onChats, onOpenThread, onBrowseJobs,
       {bar}
       <ScrollView contentContainerStyle={styles.body}>
         <View style={{ gap: space.sm }}>
-          <Eyebrow>{`${rows.length} connection${rows.length === 1 ? '' : 's'} · two doors, no third`}</Eyebrow>
+          {/* <Eyebrow>{`${rows.length} connection${rows.length === 1 ? '' : 's'} · two doors, no third`}</Eyebrow> */}
           <Display level="lg">Connections</Display>
         </View>
 
