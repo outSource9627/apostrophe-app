@@ -90,7 +90,10 @@ async function load(): Promise<Snapshot> {
       const availability = availRes.status === 'fulfilled' ? availRes.value : null
       const walletSummary = walletRes.status === 'fulfilled' ? walletRes.value : null
       const ledger = ledgerRes.status === 'fulfilled' ? ledgerRes.value.items || [] : []
-      const bankAccount = bankRes.status === 'fulfilled' ? bankRes.value.account || null : null
+      const bankAccount =
+        bankRes.status === 'fulfilled'
+          ? bankRes.value.bank || bankRes.value.account || null
+          : null
       const notifications = notificationsRes.status === 'fulfilled' ? notificationsRes.value.notifications || [] : []
       const unreadNotifications = notifications.filter((n) => !n.read).length
 

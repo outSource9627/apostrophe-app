@@ -298,10 +298,15 @@ export const requestWithdrawal = (amountPaise: number) =>
   api.post<WithdrawalRequestDto>('/interviewers/me/wallet/withdrawals', { amountPaise })
 
 export const getBankAccount = () =>
-  api.get<{ account: BankAccountDto | null }>('/interviewers/me/wallet/bank')
+  api.get<{ bank?: BankAccountDto | null; account?: BankAccountDto | null }>('/interviewers/me/bank')
 
 export const updateBankAccount = (body: BankAccountInput) =>
-  api.put<BankAccountDto>('/interviewers/me/wallet/bank', body)
+  api.put<{ bank: BankAccountDto }>('/interviewers/me/bank', {
+    accountHolder: body.accountHolder || body.beneficiaryName,
+    accountNumber: body.accountNumber,
+    ifsc: body.ifsc,
+    pan: (body as any).pan || (body.panLast4 ? `AAAAA${body.panLast4}` : 'AAAAA1234A'),
+  })
 
 // ── Auth & Application ──────────────────────────────────────────────────────
 
