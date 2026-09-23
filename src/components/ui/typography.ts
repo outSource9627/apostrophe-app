@@ -155,4 +155,16 @@ export const text = StyleSheet.create({
     textTransform: 'uppercase',
     color: color.textSubtle,
   },
+  /**
+   * `ProgressRing`'s centre value. No baked-in colour, unlike the steps
+   * above: the ring's digits take their tone from the ring itself (ink,
+   * warning, danger), the same way `Eyebrow` and `Body` apply theirs.
+   */
+  meta2xl: {
+    fontFamily: fontFamilyNative.mono,
+    fontSize: fontSize['meta-2xl'],
+    lineHeight: leadingNative['meta-2xl'],
+    letterSpacing: trackingNative.meta,
+    textTransform: 'uppercase',
+  },
 })

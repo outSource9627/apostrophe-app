@@ -1,13 +1,13 @@
 import React from 'react'
-import { ScrollView, StyleSheet, Text, View } from 'react-native'
+import { ScrollView, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   CATEGORY_LABELS, CHANNEL_ORDER, getNotificationPrefs, putNotificationPrefs,
   type NotificationCategory, type NotificationChannel,
 } from '../../lib/api/account'
-import { color, space, radius, fontFamilyNative, fontSize } from '../../theme'
-import { AppBar, Body, Display, Eyebrow, Meta, Toggle } from '../../components/ui'
+import { borderWidth, color, space } from '../../theme'
+import { AppBar, Body, Display, Eyebrow, Meta, StatusPill, Toggle } from '../../components/ui'
 
 const SUBLINE: Partial<Record<NotificationCategory, string>> = {
   CONNECTION: 'When an employer sends an Interest',
@@ -64,7 +64,7 @@ export function NotificationSettingsScreen({ onBack }: { onBack: () => void }) {
           {locked.map((r) => (
             <View key={r.category} style={styles.lockedRow}>
               <Body size="lg" style={{ flex: 1 }}>{CATEGORY_LABELS[r.category]}</Body>
-              <View style={styles.pill}><Text style={styles.pillText}>PUSH · EMAIL · IN-APP</Text></View>
+              <StatusPill tone="neutral" label="PUSH · EMAIL · IN-APP" />
             </View>
           ))}
           <Body size="xs" tone="muted">We always send these three. They carry money, a booked time, or your account&rsquo;s security, so they aren&rsquo;t ours to switch off.</Body>
@@ -96,10 +96,8 @@ const styles = StyleSheet.create({
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   body: { padding: space.xl, gap: space['2xl'], paddingBottom: space['4xl'] },
   headRow: { flexDirection: 'row', alignItems: 'flex-end' },
-  col: { width: 56, alignItems: 'center' },
+  col: { width: space['4xl'], alignItems: 'center' },
   lockedRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.md },
-  pill: { borderRadius: radius.pill, backgroundColor: color.surfaceSunken, paddingHorizontal: 10, paddingVertical: 5 },
-  pillText: { fontFamily: fontFamilyNative.monoMedium, fontSize: fontSize['meta-sm'], letterSpacing: 1, textTransform: 'uppercase', color: color.textMuted },
   chooseRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: space.md },
-  chooseBorder: { borderTopWidth: 1, borderTopColor: color.border },
+  chooseBorder: { borderTopWidth: borderWidth.thin, borderTopColor: color.border },
 })

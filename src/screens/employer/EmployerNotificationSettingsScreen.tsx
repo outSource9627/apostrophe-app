@@ -1,17 +1,20 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import {
-  ActivityIndicator,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native'
+import { ScrollView, StyleSheet, View } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { color, radius, space, fontFamilyNative } from '../../theme'
+import { borderWidth, color, space } from '../../theme'
 import { EmployerShell } from '../../components/employer/EmployerShell'
+import {
+  Body,
+  Button,
+  Card,
+  Display,
+  ErrorState,
+  Eyebrow,
+  Skeleton,
+  StatusPill,
+  Toggle,
+} from '../../components/ui'
 import {
   getNotificationPrefs,
   putNotificationPrefs,
@@ -44,14 +47,17 @@ export function EmployerNotificationSettingsScreen() {
 
   const [rows, setRows] = useState<PrefRow[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
 
   const load = useCallback(async () => {
     try {
       setLoading(true)
+      setError(null)
       const data = await getNotificationPrefs()
       setRows(data)
     } catch (err) {
       console.error('Failed to load notification prefs', err)
+      setError(err instanceof Error ? err : new Error('Failed to load notification prefs'))
     } finally {
       setLoading(false)
     }
@@ -114,73 +120,79 @@ export function EmployerNotificationSettingsScreen() {
     >
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-          <Text style={styles.title}>Notifications</Text>
-          <Text style={styles.subtitle}>
+          <Display level="lg">Notifications</Display>
+          <Body tone="muted">
             Choose how each kind of update reaches you. Changes save as you make them.
-          </Text>
+          </Body>
         </View>
 
         {loading ? (
-          <View style={styles.centerBox}>
-            <ActivityIndicator size="small" color={color.ink} />
-          </View>
+          <Skeleton lines={4} />
+        ) : error && rows.length === 0 ? (
+          <ErrorState
+            title="We could not load your notification settings."
+            body={error.message}
+            action={<Button variant="outline" size="sm" label="Try again" onPress={() => load()} />}
+          />
         ) : (
           <View style={styles.content}>
             {/* Always on */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>ALWAYS ON</Text>
-              <View style={styles.card}>
+              <Eyebrow>Always on</Eyebrow>
+              <Card style={styles.card}>
                 {ALWAYS_ON.map((item, idx) => (
                   <View
                     key={item.title}
                     style={[styles.alwaysRow, idx > 0 && styles.rowBorder]}
                   >
                     <View style={styles.rowTop}>
-                      <Text style={styles.rowTitle}>{item.title}</Text>
-                      <View style={styles.alwaysPill}>
-                        <Text style={styles.alwaysPillText}>Always on</Text>
-                      </View>
+                      <Body weight="semibold" style={styles.grow}>
+                        {item.title}
+                      </Body>
+                      <StatusPill tone="neutral" label="Always on" />
                     </View>
-                    <Text style={styles.rowLine}>{item.line}</Text>
-                    <Text style={styles.channelsLine}>{item.channels}</Text>
+                    <Body size="xs" tone="muted">
+                      {item.line}
+                    </Body>
+                    <Eyebrow>{item.channels}</Eyebrow>
                   </View>
                 ))}
-              </View>
+              </Card>
             </View>
 
             {/* You choose */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>YOU CHOOSE</Text>
-              <View style={styles.card}>
+              <Eyebrow>You choose</Eyebrow>
+              <Card style={styles.card}>
                 {/* Job applications */}
                 <View style={styles.choiceRow}>
                   <View style={styles.choiceInfo}>
-                    <Text style={styles.rowTitle}>Job applications</Text>
-                    <Text style={styles.rowLine}>Someone applies to one of your posts.</Text>
+                    <Body weight="semibold">Job applications</Body>
+                    <Body size="xs" tone="muted">Someone applies to one of your posts.</Body>
                   </View>
                   <View style={styles.togglesCol}>
                     <View style={styles.switchItem}>
-                      <Text style={styles.switchLabel}>Push</Text>
-                      <Switch
-                        value={getPref('APPLICATION', 'PUSH')}
-                        onValueChange={(v) => handleToggle('APPLICATION', 'PUSH', v)}
-                        trackColor={{ true: color.ink, false: color.border }}
+                      <Body size="sm">Push</Body>
+                      <Toggle
+                        on={getPref('APPLICATION', 'PUSH')}
+                        onChange={(v) => handleToggle('APPLICATION', 'PUSH', v)}
+                        label="Push for job applications"
                       />
                     </View>
                     <View style={styles.switchItem}>
-                      <Text style={styles.switchLabel}>Email</Text>
-                      <Switch
-                        value={getPref('APPLICATION', 'EMAIL')}
-                        onValueChange={(v) => handleToggle('APPLICATION', 'EMAIL', v)}
-                        trackColor={{ true: color.ink, false: color.border }}
+                      <Body size="sm">Email</Body>
+                      <Toggle
+                        on={getPref('APPLICATION', 'EMAIL')}
+                        onChange={(v) => handleToggle('APPLICATION', 'EMAIL', v)}
+                        label="Email for job applications"
                       />
                     </View>
                     <View style={styles.switchItem}>
-                      <Text style={styles.switchLabel}>In app</Text>
-                      <Switch
-                        value={getPref('APPLICATION', 'IN_APP')}
-                        onValueChange={(v) => handleToggle('APPLICATION', 'IN_APP', v)}
-                        trackColor={{ true: color.ink, false: color.border }}
+                      <Body size="sm">In app</Body>
+                      <Toggle
+                        on={getPref('APPLICATION', 'IN_APP')}
+                        onChange={(v) => handleToggle('APPLICATION', 'IN_APP', v)}
+                        label="In app for job applications"
                       />
                     </View>
                   </View>
@@ -189,32 +201,32 @@ export function EmployerNotificationSettingsScreen() {
                 {/* Your job posts */}
                 <View style={[styles.choiceRow, styles.rowBorder]}>
                   <View style={styles.choiceInfo}>
-                    <Text style={styles.rowTitle}>Your job posts</Text>
-                    <Text style={styles.rowLine}>A post is approved, or needs changes.</Text>
+                    <Body weight="semibold">Your job posts</Body>
+                    <Body size="xs" tone="muted">A post is approved, or needs changes.</Body>
                   </View>
                   <View style={styles.togglesCol}>
                     <View style={styles.switchItem}>
-                      <Text style={styles.switchLabel}>Push</Text>
-                      <Switch
-                        value={getPref('JOB', 'PUSH')}
-                        onValueChange={(v) => handleToggle('JOB', 'PUSH', v)}
-                        trackColor={{ true: color.ink, false: color.border }}
+                      <Body size="sm">Push</Body>
+                      <Toggle
+                        on={getPref('JOB', 'PUSH')}
+                        onChange={(v) => handleToggle('JOB', 'PUSH', v)}
+                        label="Push for your job posts"
                       />
                     </View>
                     <View style={styles.switchItem}>
-                      <Text style={styles.switchLabel}>Email</Text>
-                      <Switch
-                        value={getPref('JOB', 'EMAIL')}
-                        onValueChange={(v) => handleToggle('JOB', 'EMAIL', v)}
-                        trackColor={{ true: color.ink, false: color.border }}
+                      <Body size="sm">Email</Body>
+                      <Toggle
+                        on={getPref('JOB', 'EMAIL')}
+                        onChange={(v) => handleToggle('JOB', 'EMAIL', v)}
+                        label="Email for your job posts"
                       />
                     </View>
                     <View style={styles.switchItem}>
-                      <Text style={styles.switchLabel}>In app</Text>
-                      <Switch
-                        value={getPref('JOB', 'IN_APP')}
-                        onValueChange={(v) => handleToggle('JOB', 'IN_APP', v)}
-                        trackColor={{ true: color.ink, false: color.border }}
+                      <Body size="sm">In app</Body>
+                      <Toggle
+                        on={getPref('JOB', 'IN_APP')}
+                        onChange={(v) => handleToggle('JOB', 'IN_APP', v)}
+                        label="In app for your job posts"
                       />
                     </View>
                   </View>
@@ -223,47 +235,43 @@ export function EmployerNotificationSettingsScreen() {
                 {/* News from Apostrophe */}
                 <View style={[styles.choiceRow, styles.rowBorder]}>
                   <View style={styles.choiceInfo}>
-                    <Text style={styles.rowTitle}>News from Apostrophe</Text>
-                    <Text style={styles.rowLine}>Occasional product news.</Text>
+                    <Body weight="semibold">News from Apostrophe</Body>
+                    <Body size="xs" tone="muted">Occasional product news.</Body>
                   </View>
                   <View style={styles.togglesCol}>
                     <View style={styles.switchItem}>
-                      <Text style={styles.switchLabel}>Push</Text>
-                      <Switch
-                        value={getPref('MARKETING', 'PUSH')}
-                        onValueChange={(v) => handleToggle('MARKETING', 'PUSH', v)}
-                        trackColor={{ true: color.ink, false: color.border }}
+                      <Body size="sm">Push</Body>
+                      <Toggle
+                        on={getPref('MARKETING', 'PUSH')}
+                        onChange={(v) => handleToggle('MARKETING', 'PUSH', v)}
+                        label="Push for news from Apostrophe"
                       />
                     </View>
                     <View style={styles.switchItem}>
-                      <Text style={styles.switchLabel}>Email</Text>
-                      <Switch
-                        value={getPref('MARKETING', 'EMAIL')}
-                        onValueChange={(v) => handleToggle('MARKETING', 'EMAIL', v)}
-                        trackColor={{ true: color.ink, false: color.border }}
+                      <Body size="sm">Email</Body>
+                      <Toggle
+                        on={getPref('MARKETING', 'EMAIL')}
+                        onChange={(v) => handleToggle('MARKETING', 'EMAIL', v)}
+                        label="Email for news from Apostrophe"
                       />
                     </View>
                     <View style={styles.switchItem}>
-                      <Text style={styles.switchLabel}>In app</Text>
-                      <Switch
-                        value={getPref('MARKETING', 'IN_APP')}
-                        onValueChange={(v) => handleToggle('MARKETING', 'IN_APP', v)}
-                        trackColor={{ true: color.ink, false: color.border }}
+                      <Body size="sm">In app</Body>
+                      <Toggle
+                        on={getPref('MARKETING', 'IN_APP')}
+                        onChange={(v) => handleToggle('MARKETING', 'IN_APP', v)}
+                        label="In app for news from Apostrophe"
                       />
                     </View>
                   </View>
                 </View>
-              </View>
+              </Card>
             </View>
 
             {/* Reset Defaults */}
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={handleResetDefaults}
-              style={styles.resetBtn}
-            >
-              <Text style={styles.resetBtnText}>Reset to defaults</Text>
-            </TouchableOpacity>
+            <View style={styles.resetWrap}>
+              <Button variant="outline" size="sm" label="Reset to defaults" onPress={handleResetDefaults} />
+            </View>
           </View>
         )}
       </ScrollView>
@@ -279,23 +287,7 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: space.lg,
-  },
-  title: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: 26,
-    fontWeight: 'bold',
-    color: color.text,
-    marginBottom: space.xs,
-  },
-  subtitle: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 14,
-    lineHeight: 20,
-    color: color.textMuted,
-  },
-  centerBox: {
-    paddingVertical: space['2xl'],
-    alignItems: 'center',
+    gap: space.xs,
   },
   content: {
     gap: space.lg,
@@ -303,26 +295,18 @@ const styles = StyleSheet.create({
   section: {
     gap: space.xs,
   },
-  sectionTitle: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 11,
-    fontWeight: '700',
-    color: color.textSubtle,
-    letterSpacing: 0.5,
-  },
   card: {
-    backgroundColor: color.background,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: color.border,
     padding: space.md,
+  },
+  grow: {
+    flex: 1,
   },
   alwaysRow: {
     paddingVertical: space.sm,
-    gap: 3,
+    gap: space['2xs'],
   },
   rowBorder: {
-    borderTopWidth: 1,
+    borderTopWidth: borderWidth.thin,
     borderTopColor: color.border,
     marginTop: space.sm,
     paddingTop: space.sm,
@@ -331,68 +315,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-  },
-  rowTitle: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: 15,
-    fontWeight: 'bold',
-    color: color.text,
-  },
-  alwaysPill: {
-    backgroundColor: color.surfaceMuted,
-    borderRadius: radius.pill,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  alwaysPillText: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 10,
-    color: color.textMuted,
-    fontWeight: '600',
-  },
-  rowLine: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 12,
-    color: color.textMuted,
-    lineHeight: 16,
-  },
-  channelsLine: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 10,
-    color: color.textSubtle,
-    marginTop: 2,
+    gap: space.sm,
   },
   choiceRow: {
     paddingVertical: space.sm,
     gap: space.sm,
   },
   choiceInfo: {
-    gap: 2,
+    gap: space['2xs'],
   },
   togglesCol: {
-    gap: 6,
-    paddingTop: 4,
+    gap: space.xs,
+    paddingTop: space.xs,
   },
   switchItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 2,
+    paddingVertical: space['2xs'],
   },
-  switchLabel: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    color: color.text,
-  },
-  resetBtn: {
+  resetWrap: {
     alignSelf: 'center',
-    paddingVertical: space.sm,
-  },
-  resetBtnText: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    fontWeight: '600',
-    color: color.text,
-    textDecorationLine: 'underline',
+    marginTop: space.sm,
   },
 })

@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useFocusEffect } from '@react-navigation/native'
 import { useQuery } from '@tanstack/react-query'
 import { borderWidth, color, height, opacity, radius, space } from '../../theme'
-import { Banner, Body, Button, Display, Eyebrow, Input, Sheet, Skeleton, text } from '../../components/ui'
+import { Banner, Body, Button, Chip, Display, ErrorState, Eyebrow, Input, Sheet, Skeleton, text } from '../../components/ui'
 import { Glyph, TextAction } from '../../components/employer'
 import { Logo } from '../../components/Logo'
 import { api, ApiClientError, ErrorCode } from '../../lib/api'
@@ -621,25 +621,14 @@ export function EmployerRegisterScreen({ onBack, onSignIn, onCodesSent }: Employ
               blockRef={blockRef('companySize')}
             >
               <View accessibilityRole="radiogroup" accessibilityLabel="Company size" style={styles.chips}>
-                {COMPANY_SIZES.map((size) => {
-                  const on = form.companySize === size
-                  return (
-                    <Pressable
-                      key={size}
-                      accessibilityRole="radio"
-                      accessibilityState={{ checked: on, disabled: sending }}
-                      disabled={sending}
-                      onPress={() => change('companySize', { companySize: size })}
-                      style={({ pressed }) => [styles.chipTap, pressed && styles.pressed]}
-                    >
-                      <View style={[styles.chip, on ? styles.chipOn : styles.chipOff]}>
-                        <Body size="sm" weight="medium" tone={on ? 'inverse' : 'default'}>
-                          {COMPANY_SIZE_LABEL[size]}
-                        </Body>
-                      </View>
-                    </Pressable>
-                  )
-                })}
+                {COMPANY_SIZES.map((size) => (
+                  <Chip
+                    key={size}
+                    label={COMPANY_SIZE_LABEL[size]}
+                    selected={form.companySize === size}
+                    onPress={sending ? undefined : () => change('companySize', { companySize: size })}
+                  />
+                ))}
               </View>
             </FormField>
 
@@ -854,19 +843,13 @@ export function EmployerRegisterScreen({ onBack, onSignIn, onCodesSent }: Employ
             })}
           </ScrollView>
         ) : config.isError || (config.isSuccess && !config.isFetching) ? (
-          <View style={styles.sheetFailure}>
-            <Body size="sm" tone="muted">
-              The list of industries didn’t load. Check your connection, then try again.
-            </Body>
-            <Button
-              variant="outline"
-              size="md"
-              label="Try again"
-              busy={config.isFetching}
-              onPress={() => config.refetch()}
-              style={styles.start}
-            />
-          </View>
+          <ErrorState
+            title="The list of industries didn’t load."
+            body="Check your connection, then try again."
+            action={
+              <Button variant="outline" size="sm" label="Try again" busy={config.isFetching} onPress={() => config.refetch()} />
+            }
+          />
         ) : (
           <Skeleton lines={6} block={false} />
         )}
@@ -1016,7 +999,6 @@ const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.background },
   grow: { flex: 1 },
   shrink: { flexShrink: 1 },
-  start: { alignSelf: 'flex-start' },
   pressed: { opacity: opacity.pressed },
 
   bar: {
@@ -1063,17 +1045,6 @@ const styles = StyleSheet.create({
   trailingAction: { marginRight: -space.md },
 
   chips: { flexDirection: 'row', flexWrap: 'wrap', columnGap: space.sm },
-  chipTap: { height: height.tap, justifyContent: 'center' },
-  chip: {
-    height: height.chip,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: radius.pill,
-    borderWidth: borderWidth.thin,
-    paddingHorizontal: space.md,
-  },
-  chipOn: { backgroundColor: color.ink, borderColor: color.ink },
-  chipOff: { backgroundColor: color.surface, borderColor: color.borderStrong },
 
   actions: { gap: space.sm },
 
@@ -1085,5 +1056,4 @@ const styles = StyleSheet.create({
     borderBottomWidth: borderWidth.thin,
     borderBottomColor: color.border,
   },
-  sheetFailure: { gap: space.md },
 })

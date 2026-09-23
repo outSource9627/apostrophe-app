@@ -1,19 +1,24 @@
 import React, { useEffect, useState } from 'react'
-import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native'
+import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import { useNavigation, useRoute } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { borderWidth, color, fontFamilyNative, radius, space } from '../../theme'
-import { Button, Card, Eyebrow, StatusPill } from '../../components/ui'
+import { height, space } from '../../theme'
+import {
+  Banner,
+  Body,
+  Button,
+  Card,
+  Chip,
+  Display,
+  ErrorState,
+  Eyebrow,
+  Field,
+  Input,
+  ListRow,
+  Meta,
+  Skeleton,
+  StatusPill,
+} from '../../components/ui'
 import { InterviewerShell } from '../../components/interviewer/InterviewerShell'
 import { interviewerApi, type InterviewSessionDto } from '../../lib/api/interviewer'
 import { canJoinInterviewRoom, formatScorecardCountdown, isScorecardOverdue, TIER_FEES_PAISE } from '../../lib/interviewer/state'
@@ -62,6 +67,7 @@ export function InterviewerDetailScreen() {
 
   const [session, setSession] = useState<InterviewSessionDto | null>(null)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<Error | null>(null)
   const [activeArea, setActiveArea] = useState(0)
   const [notes, setNotes] = useState('')
   const [savingNotes, setSavingNotes] = useState(false)
@@ -79,6 +85,7 @@ export function InterviewerDetailScreen() {
       })
       .catch((err) => {
         Alert.alert('Error', err?.message || 'Unable to load interview details.')
+        setLoadError(err instanceof Error ? err : new Error(err?.message || 'Unable to load interview details.'))
       })
       .finally(() => setLoading(false))
   }, [id])
@@ -115,10 +122,31 @@ export function InterviewerDetailScreen() {
     }
   }
 
-  if (loading || !session) {
+  if (loading) {
     return (
       <InterviewerShell back={{ label: 'Interviews', onPress: () => navigation.goBack() }}>
-        <Text style={styles.loadingText}>Loading session details...</Text>
+        <Skeleton lines={4} />
+      </InterviewerShell>
+    )
+  }
+
+  if (!session) {
+    return (
+      <InterviewerShell back={{ label: 'Interviews', onPress: () => navigation.goBack() }}>
+        <ErrorState
+          title="We could not load this session."
+          body={loadError?.message}
+          action={
+            <Button
+              variant="outline"
+              size="sm"
+              label="Go back"
+              // The error state's small button is 40 tall; the slop brings its tap box to the 44 floor.
+              hitSlop={(height.tap - height['control-xs']) / 2}
+              onPress={() => navigation.goBack()}
+            />
+          }
+        />
       </InterviewerShell>
     )
   }
@@ -155,12 +183,10 @@ export function InterviewerDetailScreen() {
     >
       {/* Session Header */}
       <View style={styles.header}>
-        <View style={{ flex: 1 }}>
+        <View style={styles.grow}>
           <Eyebrow>{session.tier.replace('_', ' ')} INTERVIEW</Eyebrow>
-          <Text style={styles.title}>{session.student?.name || 'Candidate'}</Text>
-          <Text style={styles.subtitle}>
-            Fee: {formatPaise(fee)} · Status: {session.status}
-          </Text>
+          <Display level="sm" style={styles.title}>{session.student?.name || 'Candidate'}</Display>
+          <Meta style={styles.subtitle}>{`Fee: ${formatPaise(fee)} · Status: ${session.status}`}</Meta>
         </View>
         <StatusPill
           tone={canJoin ? 'success' : 'info'}
@@ -170,67 +196,46 @@ export function InterviewerDetailScreen() {
 
       {/* Scorecard countdown alert if completed */}
       {isOwed && (
-        <View style={[styles.owedClockRow, overdue && styles.owedClockOverdue]}>
-          <Text style={styles.clockIcon}>⏱️</Text>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.clockTitle, overdue && styles.clockTextOverdue]}>
-              {overdue ? 'Scorecard Overdue (Forfeited)' : 'Scorecard Window Open'}
-            </Text>
-            <Text style={[styles.clockSub, overdue && styles.clockTextOverdue]}>
-              {formatScorecardCountdown(session.slotEnd)}
-            </Text>
-          </View>
-          <Button
-            label="Submit Now"
-            variant="primary"
-            size="sm"
-            onPress={() => navigation.navigate('ScorecardDraft', { id: session.id })}
-          />
-        </View>
+        <Banner
+          tone={overdue ? 'danger' : 'warning'}
+          title={overdue ? 'Scorecard Overdue (Forfeited)' : 'Scorecard Window Open'}
+          actionLabel="Submit Now"
+          onAction={() => navigation.navigate('ScorecardDraft', { id: session.id })}
+        >
+          {formatScorecardCountdown(session.slotEnd)}
+        </Banner>
       )}
 
       {/* Candidate Profile Summary */}
       <Card style={styles.profileCard}>
-        <Text style={styles.cardHeading}>Candidate Information</Text>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Location:</Text>
-          <Text style={styles.infoVal}>{session.student?.city || 'Not specified'}</Text>
-        </View>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Education:</Text>
-          <Text style={styles.infoVal}>{session.student?.education || 'Degree in Engineering / CS'}</Text>
-        </View>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Experience:</Text>
-          <Text style={styles.infoVal}>{session.student?.headline || 'Standard candidate'}</Text>
-        </View>
+        <Eyebrow>Candidate Information</Eyebrow>
+        <ListRow label="Location" value={session.student?.city || 'Not specified'} />
+        <ListRow label="Education" value={session.student?.education || 'Degree in Engineering / CS'} />
+        <ListRow label="Experience" value={session.student?.headline || 'Standard candidate'} style={styles.rowLast} />
       </Card>
 
       {/* 4-Area Standard Script */}
       <View style={styles.scriptSection}>
         <Eyebrow>STRUCTURED EVALUATION SCRIPT</Eyebrow>
-        <Text style={styles.scriptTitle}>20-Minute Protocol</Text>
+        <Body size="lg">20-Minute Protocol</Body>
 
-        <View style={styles.areaTabs}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.areaTabs}>
           {SCRIPT_AREAS.map((area, idx) => (
-            <Pressable
+            <Chip
               key={area.n}
+              label={area.n}
+              selected={activeArea === idx}
               onPress={() => setActiveArea(idx)}
-              style={[styles.areaTab, activeArea === idx && styles.areaTabActive]}
-            >
-              <Text style={[styles.areaTabNum, activeArea === idx && styles.areaTabNumActive]}>
-                {area.n}
-              </Text>
-            </Pressable>
+            />
           ))}
-        </View>
+        </ScrollView>
 
         <Card style={styles.areaContentCard}>
-          <Text style={styles.areaHeading}>{SCRIPT_AREAS[activeArea].title}</Text>
+          <Body size="md" weight="semibold">{SCRIPT_AREAS[activeArea].title}</Body>
           {SCRIPT_AREAS[activeArea].questions.map((q, i) => (
             <View key={i} style={styles.questionItem}>
-              <Text style={styles.bullet}>•</Text>
-              <Text style={styles.questionText}>{q}</Text>
+              <Body size="sm" tone="subtle">•</Body>
+              <Body size="sm" style={styles.grow}>{q}</Body>
             </View>
           ))}
         </Card>
@@ -239,18 +244,17 @@ export function InterviewerDetailScreen() {
       {/* Private Notes Scratchpad */}
       <Card style={styles.notesCard}>
         <View style={styles.notesHeader}>
-          <View>
-            <Text style={styles.cardHeading}>Private Prep Notes</Text>
-            <Text style={styles.notesSub}>Only visible to you, never shared with the candidate.</Text>
+          <View style={styles.grow}>
+            <Eyebrow>Private Prep Notes</Eyebrow>
+            <Body size="xs" tone="subtle">Only visible to you, never shared with the candidate.</Body>
           </View>
           <Pressable onPress={handleSaveNotes}>
-            <Text style={styles.saveNotesLink}>
+            <Body size="sm" weight="semibold">
               {savingNotes ? 'Saving...' : 'Save'}
-            </Text>
+            </Body>
           </Pressable>
         </View>
-        <TextInput
-          style={styles.notesInput}
+        <Input
           value={notes}
           onChangeText={setNotes}
           placeholder="Jot down notes during or before the session..."
@@ -267,28 +271,29 @@ export function InterviewerDetailScreen() {
             onPress={() => setShowDeclineModal(!showDeclineModal)}
             style={styles.declineToggle}
           >
-            <Text style={styles.declineToggleText}>
+            <Body size="xs" weight="semibold" tone="muted">
               {showDeclineModal ? '▲ Hide Decline Option' : '▼ Cannot conduct this session? Decline'}
-            </Text>
+            </Body>
           </Pressable>
 
           {showDeclineModal && (
             <Card style={styles.declineCard}>
-              <Text style={styles.declineTitle}>Decline Scheduled Session</Text>
-              <Text style={styles.declineWarning}>
+              <Eyebrow tone="danger">Decline Scheduled Session</Eyebrow>
+              <Banner tone="warning">
                 Declining less than 2 hours before the start time affects your reliability metrics.
-              </Text>
-              <TextInput
-                style={styles.declineInput}
-                value={declineReason}
-                onChangeText={setDeclineReason}
-                placeholder="Reason for declining (e.g., sudden emergency, domain mismatch)..."
-                multiline
-                numberOfLines={3}
-              />
+              </Banner>
+              <Field label="Reason for declining">
+                <Input
+                  value={declineReason}
+                  onChangeText={setDeclineReason}
+                  placeholder="e.g., sudden emergency, domain mismatch"
+                  multiline
+                  numberOfLines={3}
+                />
+              </Field>
               <Button
                 label={declining ? 'Declining...' : 'Confirm Decline'}
-                variant="primary"
+                variant="destructive"
                 disabled={declining}
                 onPress={handleDecline}
               />
@@ -301,226 +306,24 @@ export function InterviewerDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  loadingText: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 14,
-    color: color.textMuted,
-    textAlign: 'center',
-    marginTop: space['2xl'],
-  },
+  grow: { flex: 1 },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     gap: space.xs,
   },
-  title: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 22,
-    fontWeight: '700',
-    color: color.text,
-    marginTop: 2,
-  },
-  subtitle: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 12,
-    color: color.textMuted,
-    marginTop: 2,
-  },
-  owedClockRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.sm,
-    backgroundColor: '#fffbeb',
-    padding: space.md,
-    borderRadius: radius.md,
-    borderWidth: borderWidth.thin,
-    borderColor: '#fde68a',
-  },
-  owedClockOverdue: {
-    backgroundColor: '#fef2f2',
-    borderColor: '#fecaca',
-  },
-  clockIcon: {
-    fontSize: 20,
-  },
-  clockTitle: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#92400e',
-  },
-  clockSub: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#b45309',
-    marginTop: 2,
-  },
-  clockTextOverdue: {
-    color: color.accent,
-  },
-  profileCard: {
-    padding: space.md,
-    gap: space.xs,
-  },
-  cardHeading: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 15,
-    fontWeight: '700',
-    color: color.text,
-    marginBottom: space['2xs'],
-  },
-  infoRow: {
-    flexDirection: 'row',
-    gap: space.xs,
-  },
-  infoLabel: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    fontWeight: '600',
-    color: color.textMuted,
-    width: 80,
-  },
-  infoVal: {
-    flex: 1,
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    color: color.text,
-  },
-  scriptSection: {
-    gap: space.xs,
-  },
-  scriptTitle: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 16,
-    fontWeight: '700',
-    color: color.text,
-  },
-  areaTabs: {
-    flexDirection: 'row',
-    gap: space.xs,
-    marginVertical: space['2xs'],
-  },
-  areaTab: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: space.xs,
-    backgroundColor: color.surfaceSubtle,
-    borderRadius: radius.sm,
-    borderWidth: borderWidth.thin,
-    borderColor: color.border,
-  },
-  areaTabActive: {
-    backgroundColor: color.accent,
-    borderColor: color.accent,
-  },
-  areaTabNum: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 13,
-    fontWeight: '700',
-    color: color.textMuted,
-  },
-  areaTabNumActive: {
-    color: color.surface,
-  },
-  areaContentCard: {
-    padding: space.md,
-    gap: space.sm,
-  },
-  areaHeading: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 14,
-    fontWeight: '700',
-    color: color.text,
-  },
-  questionItem: {
-    flexDirection: 'row',
-    gap: space.xs,
-    alignItems: 'flex-start',
-  },
-  bullet: {
-    color: color.accent,
-    fontSize: 14,
-    lineHeight: 18,
-  },
-  questionText: {
-    flex: 1,
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    color: color.text,
-    lineHeight: 18,
-  },
-  notesCard: {
-    padding: space.md,
-    gap: space.xs,
-  },
-  notesHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  notesSub: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 11,
-    color: color.textSubtle,
-  },
-  saveNotesLink: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    fontWeight: '700',
-    color: color.accent,
-  },
-  notesInput: {
-    borderWidth: borderWidth.thin,
-    borderColor: color.border,
-    borderRadius: radius.sm,
-    padding: space.sm,
-    minHeight: 80,
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    color: color.text,
-    backgroundColor: color.surfaceSubtle,
-  },
-  declineSection: {
-    gap: space.xs,
-  },
-  declineToggle: {
-    paddingVertical: space.xs,
-    alignItems: 'center',
-  },
-  declineToggleText: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 12,
-    fontWeight: '600',
-    color: color.accent,
-  },
-  declineCard: {
-    padding: space.md,
-    gap: space.sm,
-    backgroundColor: '#fff1f2',
-    borderColor: '#fecdd3',
-  },
-  declineTitle: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#9f1239',
-  },
-  declineWarning: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 12,
-    color: '#be123c',
-    lineHeight: 16,
-  },
-  declineInput: {
-    borderWidth: borderWidth.thin,
-    borderColor: '#fecdd3',
-    borderRadius: radius.sm,
-    padding: space.sm,
-    backgroundColor: color.surface,
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    minHeight: 60,
-  },
+  title: { marginTop: space['2xs'] },
+  subtitle: { marginTop: space['2xs'] },
+  profileCard: { padding: space.md, gap: space.xs },
+  rowLast: { borderBottomWidth: 0 },
+  scriptSection: { gap: space.xs },
+  areaTabs: { gap: space.sm, paddingVertical: space['2xs'] },
+  areaContentCard: { padding: space.md, gap: space.sm },
+  questionItem: { flexDirection: 'row', gap: space.xs, alignItems: 'flex-start' },
+  notesCard: { padding: space.md, gap: space.xs },
+  notesHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  declineSection: { gap: space.xs },
+  declineToggle: { paddingVertical: space.xs, alignItems: 'center' },
+  declineCard: { padding: space.md, gap: space.sm },
 })

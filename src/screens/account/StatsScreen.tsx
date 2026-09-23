@@ -4,8 +4,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useQuery } from '@tanstack/react-query'
 import { getAudience } from '../../lib/api/account'
 import { fmtStampFull } from '../../lib/chat/format'
-import { color, space, radius, borderWidth } from '../../theme'
-import { AppBar, Body, Button, Display, Figure, Meta } from '../../components/ui'
+import { color, space, radius } from '../../theme'
+import { AppBar, Body, Button, Card, Display, Figure, Meta } from '../../components/ui'
 
 /**
  * ST-48 — two numbers and a sentence. HOW MANY employers shortlisted you, never
@@ -34,7 +34,7 @@ export function StatsScreen({ onBack, onVideoResume, onVisibility }: {
       <ScrollView contentContainerStyle={styles.body}>
         <Display level="lg">Your stats</Display>
 
-        <View style={styles.cells}>
+        <Card style={styles.cells}>
           <View style={styles.cell}>
             <Figure value={a.shortlistCount} style={empty ? { color: color.textSubtle } : undefined} />
             <Body size="base">employers shortlisted you</Body>
@@ -43,7 +43,7 @@ export function StatsScreen({ onBack, onVideoResume, onVisibility }: {
             <Figure value={a.profileViews} style={empty ? { color: color.textSubtle } : undefined} />
             <Body size="base">people opened your profile</Body>
           </View>
-        </View>
+        </Card>
 
         <Meta style={{ color: color.textSubtle }}>{`Last 30 days · to ${fmtStampFull(now)}`}</Meta>
 
@@ -52,12 +52,12 @@ export function StatsScreen({ onBack, onVideoResume, onVisibility }: {
         </View>
 
         {empty && (
-          <View style={styles.card}>
+          <Card style={styles.cardInner}>
             <Display level="xs">It&rsquo;s early.</Display>
             <Body size="sm" tone="muted" style={{ marginTop: space.sm }}>Your video went live recently. Employers usually reach a new profile within a week or two of it joining the feed.</Body>
             <View style={{ marginTop: space.md }}><Button variant="primary" size="lg" label="Add another video" onPress={onVideoResume} /></View>
             <Pressable onPress={onVisibility} style={{ marginTop: space.md }}><Body size="sm" weight="medium" style={{ color: color.textMuted }}>Check who can see you</Body></Pressable>
-          </View>
+          </Card>
         )}
       </ScrollView>
     </View>
@@ -68,8 +68,8 @@ const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.surface },
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   body: { padding: space.xl, gap: space['2xl'], paddingBottom: space['4xl'] },
-  cells: { flexDirection: 'row', gap: space.lg },
+  cells: { flexDirection: 'row', gap: space.lg, padding: space.lg },
   cell: { flex: 1, gap: space.sm },
-  card: { borderRadius: radius.lg, borderWidth: borderWidth.thin, borderColor: color.border, padding: space.xl },
+  cardInner: { padding: space.xl },
   well: { borderRadius: radius.md, backgroundColor: color.surfaceMuted, padding: space.lg },
 })

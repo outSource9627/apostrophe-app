@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import Svg, { Circle, Path, Rect } from 'react-native-svg'
 import { color, space, radius, borderWidth, fontFamilyNative, fontSize } from '../../theme'
 import { Body, Eyebrow, Meta } from '../../components/ui/Type'
-import { Button, Chip, Sheet, StatusPill } from '../../components/ui'
+import { Button, Chip, Divider, IconButton, Sheet, StatusPill } from '../../components/ui'
 import { LogoMark } from '../../components/Logo'
 import type { MessageDto, ReportReason, ThreadDto } from '../../lib/api/chat'
 import { attachmentMeta, fmtClock, fmtReceipt, interestClock, monogram, type ClockReading } from '../../lib/chat/format'
@@ -70,9 +70,9 @@ export function CounterpartyPlate({ thread, size = 44 }: { thread: Pick<ThreadDt
 export function DayDivider({ label }: { label: string }) {
   return (
     <View style={styles.dividerRow}>
-      <View style={styles.rule} />
+      <Divider style={styles.rule} />
       <Meta style={{ color: color.textSubtle }}>{label}</Meta>
-      <View style={styles.rule} />
+      <Divider style={styles.rule} />
     </View>
   )
 }
@@ -220,9 +220,9 @@ export function Composer({ value, busy, error, onChange, onSend }: {
           multiline
           style={styles.input}
         />
-        <Pressable accessibilityRole="button" accessibilityLabel="Send" disabled={!canSend} onPress={onSend} style={[styles.send, { opacity: canSend ? 1 : 0.4 }]}>
+        <IconButton tone="ink" label="Send" disabled={!canSend} onPress={onSend} style={{ opacity: canSend ? 1 : 0.4 }}>
           <Stroke size={20} stroke={color.textInverse}><Path d="M4 12h15" /><Path d="m13 6 6 6-6 6" /></Stroke>
-        </Pressable>
+        </IconButton>
       </View>
     </View>
   )
@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
   clockPill: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 5 },
   clockPillText: { fontFamily: fontFamilyNative.monoMedium, fontSize: fontSize['ui-2xs'], letterSpacing: 1, textTransform: 'uppercase' },
   clockTrack: { height: 3, borderRadius: radius.pill, backgroundColor: color.surfaceSunken, overflow: 'hidden' },
-  rule: { flex: 1, height: 1, backgroundColor: color.border },
+  rule: { flex: 1 },
   systemLine: { alignItems: 'center', gap: space.xs, paddingVertical: space.xs },
   deliveryRow: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingRight: space.xs },
   spinner: { width: 11, height: 11, borderRadius: radius.pill, borderWidth: 2, borderColor: color.borderStrong, borderTopColor: color.textSubtle },
@@ -355,7 +355,6 @@ const styles = StyleSheet.create({
   composer: { borderTopWidth: borderWidth.thin, borderTopColor: color.border, backgroundColor: color.surface, paddingHorizontal: space.xl, paddingTop: space.md, paddingBottom: space.lg },
   composerRow: { flexDirection: 'row', alignItems: 'flex-end', gap: space.sm },
   input: { flex: 1, minHeight: 44, maxHeight: 120, borderRadius: radius.xl, borderWidth: borderWidth.thin, borderColor: color.borderStrong, backgroundColor: color.surface, paddingHorizontal: space.lg, paddingVertical: 10, fontSize: fontSize['ui-base'], color: color.text },
-  send: { width: 44, height: 44, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', backgroundColor: color.ink },
   consequences: { marginTop: space.lg, backgroundColor: color.surfaceMuted, borderRadius: radius.md, padding: 14, gap: space.md },
   consequence: { flexDirection: 'row', gap: space.md },
   menuItem: { flexDirection: 'row', alignItems: 'center', gap: space.md, height: 44, paddingHorizontal: space.sm },

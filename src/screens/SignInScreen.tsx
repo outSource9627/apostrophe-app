@@ -17,18 +17,17 @@ import { Segmented } from '../components/ui/controls'
 import { Banner } from '../components/ui/Banner'
 import { GoogleButton } from '../components/ui/GoogleButton'
 import { Button } from '../components/ui/Button'
+import { Body, Display, Eyebrow } from '../components/ui/Type'
 import { api, tokenStore } from '../lib/api'
 import { ApiClientError } from '../lib/api/types'
 import {
   borderWidth,
   color,
-  fontFamilyNative,
   fontSize,
   height,
   leadingNative,
   radius,
   space,
-  trackingNative,
 } from '../theme'
 
 type Method = 'Mobile' | 'Email' | 'Google'
@@ -170,7 +169,7 @@ export function SignInScreen({ onSignedIn, onRegister, onOtpSent }: Props) {
       <View style={[styles.appBar, { paddingTop: insets.top }]}>
         <Logo size={18} tint={color.text} />
         <Pressable onPress={onRegister} hitSlop={12} style={styles.appBarAction}>
-          <Text style={styles.appBarActionText}>Create account</Text>
+          <Body size="sm" tone="muted">Create account</Body>
         </Pressable>
       </View>
 
@@ -183,11 +182,11 @@ export function SignInScreen({ onSignedIn, onRegister, onOtpSent }: Props) {
       >
         {/* Title */}
         <View style={styles.header}>
-          <Text style={styles.eyebrow}>WELCOME BACK</Text>
-          <Text style={styles.headline}>
+          <Eyebrow>WELCOME BACK</Eyebrow>
+          <Display level="lg">
             Pick up where{'\n'}
             <Text style={styles.headlineMuted}>you left off.</Text>
-          </Text>
+          </Display>
         </View>
 
         {/* Method chooser · Segmented 3-option control */}
@@ -231,8 +230,7 @@ export function SignInScreen({ onSignedIn, onRegister, onOtpSent }: Props) {
         {/* 1 · Mobile Method */}
         {method === 'Mobile' && (
           <View style={styles.formSection}>
-            <View style={styles.fieldGroup}>
-              <Text style={styles.fieldLabel}>MOBILE</Text>
+            <Field label="Mobile" helper="We’ll text a six-digit code. It’s good for 10 minutes.">
               <View style={styles.mobileControl}>
                 <Text style={styles.mobilePrefix}>+91</Text>
                 <View style={styles.mobileDivider} />
@@ -250,10 +248,7 @@ export function SignInScreen({ onSignedIn, onRegister, onOtpSent }: Props) {
                   editable={!pending}
                 />
               </View>
-              <Text style={styles.hintText}>
-                We’ll text a six-digit code. It’s good for 10 minutes.
-              </Text>
-            </View>
+            </Field>
 
             <View style={styles.ctaSection}>
               <Button
@@ -265,9 +260,9 @@ export function SignInScreen({ onSignedIn, onRegister, onOtpSent }: Props) {
                 busy={pending}
                 onPress={handleSendMobileCode}
               />
-              <Text style={styles.channelNote}>
+              <Body size="xs" tone="subtle" style={styles.channelNote}>
                 Mobile, email and Google all reach the same account.
-              </Text>
+              </Body>
             </View>
           </View>
         )}
@@ -314,9 +309,9 @@ export function SignInScreen({ onSignedIn, onRegister, onOtpSent }: Props) {
                 busy={pending}
                 onPress={handleEmailLogin}
               />
-              <Text style={styles.channelNote}>
+              <Body size="xs" tone="subtle" style={styles.channelNote}>
                 Mobile, email and Google all reach the same account.
-              </Text>
+              </Body>
             </View>
           </View>
         )}
@@ -324,15 +319,15 @@ export function SignInScreen({ onSignedIn, onRegister, onOtpSent }: Props) {
         {/* 3 · Google Method */}
         {method === 'Google' && (
           <View style={styles.googleSection}>
-            <Text style={styles.googleHelper}>
+            <Body size="sm" tone="muted" style={styles.googleHelper}>
               Sign in securely with your Google account to access your interviews and profile.
-            </Text>
+            </Body>
 
             <GoogleButton onPress={() => {}} />
 
-            <Text style={styles.channelNote}>
+            <Body size="xs" tone="subtle" style={styles.channelNote}>
               Mobile, email and Google all reach the same account.
-            </Text>
+            </Body>
           </View>
         )}
       </ScrollView>
@@ -359,10 +354,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.md,
     marginRight: -space.md,
   },
-  appBarActionText: {
-    fontSize: fontSize['ui-sm'],
-    color: color.textMuted,
-  },
   scroll: {
     paddingHorizontal: space.xl,
     paddingTop: space.md,
@@ -371,36 +362,12 @@ const styles = StyleSheet.create({
   header: {
     gap: space.sm,
   },
-  eyebrow: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: fontSize['meta-sm'],
-    letterSpacing: trackingNative['eyebrow-wide'],
-    color: color.textSubtle,
-    textTransform: 'uppercase',
-  },
-  headline: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: fontSize['display-lg'],
-    lineHeight: leadingNative['display-lg'],
-    color: color.text,
-    letterSpacing: trackingNative['tight-sm'],
-  },
   headlineMuted: {
     color: color.textMuted,
     fontStyle: 'italic',
   },
   formSection: {
     gap: space.lg,
-  },
-  fieldGroup: {
-    gap: space.sm,
-  },
-  fieldLabel: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: fontSize['meta-sm'],
-    letterSpacing: trackingNative['eyebrow-wide'],
-    color: color.textSubtle,
-    textTransform: 'uppercase',
   },
   mobileControl: {
     height: height.control,
@@ -428,11 +395,6 @@ const styles = StyleSheet.create({
     color: color.text,
     padding: 0,
   },
-  hintText: {
-    fontSize: fontSize['ui-xs'],
-    color: color.textSubtle,
-    lineHeight: leadingNative['ui-xs'],
-  },
   ctaSection: {
     marginTop: space.lg,
     gap: space.sm,
@@ -442,14 +404,9 @@ const styles = StyleSheet.create({
     paddingTop: space.sm,
   },
   googleHelper: {
-    fontSize: fontSize['ui-sm'],
-    color: color.textMuted,
     lineHeight: leadingNative['ui-md'],
   },
   channelNote: {
-    fontSize: fontSize['ui-xs'],
-    color: color.textSubtle,
     textAlign: 'center',
-    lineHeight: leadingNative['ui-xs'],
   },
 })

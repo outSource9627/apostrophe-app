@@ -6,7 +6,7 @@ import { api, ApiClientError } from '../../lib/api'
 import {
   bookInterview, getCapacity, type CapacitySlot,
 } from '../../lib/api/interviews'
-import { bookingWindow, fmtStamp, groupByDay, type DaySlots } from '../../lib/interviews/slots'
+import { bookingWindow, fmtShortDate, fmtStamp, fmtTime, groupByDay, type DaySlots } from '../../lib/interviews/slots'
 import { color, space, radius, borderWidth } from '../../theme'
 import {
   AppBar, Banner, Button, Card, Display, Eyebrow, Figure, Meta, Body, ProgressBar, StatusPill,
@@ -144,6 +144,13 @@ function Picker({
   const [note, setNote] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [now, setNow] = useState(() => new Date())
+
+  // Ticks every minute so the "right now" line stays honest on a screen left open.
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 60 * 1000)
+    return () => clearInterval(t)
+  }, [])
 
   const win = useMemo(() => bookingWindow(), [])
   const cap = useQuery({
@@ -202,6 +209,9 @@ function Picker({
         <View style={{ gap: space.sm }}>
           <Eyebrow>Step 1 of 1 · Asia/Kolkata</Eyebrow>
           <Display level="lg">Book your interview.</Display>
+          <Meta style={{ color: color.textSubtle }}>
+            It's {fmtStamp(now.toISOString())} right now. Earliest open slot is {fmtShortDate(win.fromIso)}, {fmtTime(win.fromIso)} — bookings need at least 12 hours' notice.
+          </Meta>
         </View>
 
         <View style={styles.tierWell}>

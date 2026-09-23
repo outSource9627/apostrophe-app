@@ -10,21 +10,25 @@
  * one surface and not the other is a parity defect under PRD section 7, exactly
  * like a missing feature.
  *
- * ── Three families, one job each ────────────────────────────────────────────
+ * ── Two families, one job each ─────────────────────────────────────────────
  * The foundation rests on a single typographic idea: type carries the design,
  * so colour does not have to. Every size token therefore names the family it
  * belongs to, and the binding is not negotiable at the call site.
  *
- *   display-*   Newsreader, a bookish serif. Anything that is CONTENT — screen
- *               titles, candidate names, salary, scores, interview feedback.
- *   ui-*        Instrument Sans. Anything that is INTERFACE — every control,
- *               label, row, paragraph and button.
+ *   display-*   Libre Franklin, at its heavier weights. Anything that is
+ *               CONTENT — screen titles, candidate names, salary, scores,
+ *               interview feedback.
+ *   ui-*        Libre Franklin, at its lighter weights. Anything that is
+ *               INTERFACE — every control, label, row, paragraph and button.
  *   meta-*      IBM Plex Mono. Eyebrows, status pills, timers, transaction
  *               references, requirement IDs, fine print. Always uppercase.
  *
- * Writing `text-ui-lg` on a candidate's name is not a style slip, it is a
- * category error — the name is content and belongs in the serif. That is why
- * the family is in the token name rather than left to a separate font utility.
+ * display-* and ui-* share one typeface now — weight and size carry the
+ * hierarchy a second family used to — but the token names still mark the same
+ * category. Writing `text-ui-lg` on a candidate's name is still a category
+ * error: the name is content, and a future redesign that gives `display-*`
+ * its own face again should not have to hunt down every place that quietly
+ * assumed otherwise.
  *
  * ── Two floors ──────────────────────────────────────────────────────────────
  * Nothing sans-serif sets below 11px, and no interactive label sets below 13px.
@@ -187,8 +191,8 @@ export const radius = {
   sm: 4,
   /** Fields, OTP cells, inline wells. */
   md: 10,
-  /** Cards, and every framed video. */
-  lg: 14,
+  /** Cards, and every framed video (ink/placeholder ground — `VideoFrame`'s sunken/list-thumb scale stays on `md`). */
+  lg: 24,
   /** Bottom sheets — top corners only. */
   xl: 22,
   /** Every button, chip, pill and toggle. */
@@ -264,7 +268,7 @@ export const fontSize = {
    */
   'meta-lg': 13,
   /**
-   * ── the two clock steps ─────────────────────────────────────────────
+   * ── the three clock steps ────────────────────────────────────────────
    * A countdown is the one thing in the product set in mono at a size the
    * mono steps above were never meant to reach. It is mono because it is a
    * readout the person has to act against rather than a fact they are
@@ -277,6 +281,15 @@ export const fontSize = {
    * one is Instrument Sans and carries a sentence.
    */
   'meta-xl': 15,
+  /**
+   * 20 — `Countdown`'s `ring` format, the one readout centred inside an
+   * arc instead of sitting in a well or a band. It has to clear `meta-xl`
+   * by enough to read as the ring's subject rather than another line of
+   * fine print, and it stays one size across every ring diameter the
+   * component draws: the ring itself carries the size difference, so the
+   * label does not have to.
+   */
+  'meta-2xl': 20,
   /**
    * 56 — the join clock, and the largest element in the booking flow. It is
    * the only meta step above the fine-print range, which is the point: at the
@@ -316,6 +329,8 @@ export const fontSizeLeading = {
   /** Tighter than the steps below it: at 13 the mono is a mark, not a line. */
   'meta-lg': 1.2,
   'meta-xl': 1.4,
+  /** Same reasoning as `meta-hero`: a ring's centre label owns its own box. */
+  'meta-2xl': 1,
   /** A clock is one line and owns its own box. Nothing sets beneath it. */
   'meta-hero': 1,
 } as const
@@ -423,15 +438,18 @@ export const leading = {
 } as const
 
 /**
- * Three faces, three jobs — see the header note.
+ * Two faces, two jobs — see the header note.
  *
- * The *-loaded variables are set by next/font, which self-hosts the files. The
- * stacks after them are what renders if that has not resolved yet, chosen so
- * the fallback has roughly the right colour on the page.
+ * display and body both resolve to the same loaded Libre Franklin, so a
+ * component switching between `fontFamily.display` and `.body` is choosing a
+ * weight/size role, not a typeface. The *-loaded variables are set by
+ * next/font, which self-hosts the files. The stacks after them are what
+ * renders if that has not resolved yet, chosen so the fallback has roughly
+ * the right colour on the page.
  */
 export const fontFamily = {
-  display: "var(--font-display-loaded), 'Iowan Old Style', Georgia, serif",
-  body: "var(--font-body-loaded), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif",
+  display: "var(--font-sans-loaded), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif",
+  body: "var(--font-sans-loaded), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif",
   mono: "var(--font-mono-loaded), ui-monospace, SFMono-Regular, Menlo, monospace",
 } as const
 
@@ -445,32 +463,41 @@ export const fontFamily = {
  * the string here breaks Android only, which is the kind of bug that reaches a
  * store build.
  *
- * `Newsreader16pt` is the optical size cut for text and small display, which is
- * the range a phone actually sets: the 36px screen title is the largest thing
- * in the app, well inside what the 16pt cut is drawn for.
+ * `display` and `body` are the same Libre Franklin now — see `fontFamily`'s
+ * header note — so both sets of keys below point at the same five static
+ * weight files (Light 300, Regular 400, Medium 500, SemiBold 600, Bold 700)
+ * plus one Italic. They stay as separate `display*`/`body*` keys rather than
+ * collapsing to one set: the names still mark CONTENT vs INTERFACE, and a
+ * future redesign that gives `display-*` its own face again should not have
+ * to touch every call site that reads `fontFamilyNative.body*`.
+ *
+ * Google ships Libre Franklin as a variable font only — no static weights in
+ * the repo — so these five files are instanced out of it with `fonttools
+ * varLib.instancer --update-name-table` (the variable source and the exact
+ * command are worth keeping in mind if a weight ever needs re-cutting; not
+ * committed here, only the resulting statics are).
  *
  * RN has no synthetic weight for a custom face — asking for fontWeight 600 on a
  * Regular file silently gives you Regular on Android — so every weight the
  * design uses is bundled as its own file and named here.
  */
 export const fontFamilyNative = {
-  /** Newsreader 300 — the large display steps only. */
-  displayLight: 'Newsreader16pt-Light',
-  display: 'Newsreader16pt-Regular',
-  displayMedium: 'Newsreader16pt-Medium',
-  displayItalic: 'Newsreader16pt-Italic',
+  displayLight: 'LibreFranklin-Light',
+  display: 'LibreFranklin-Regular',
+  displayMedium: 'LibreFranklin-Medium',
+  displayItalic: 'LibreFranklin-Italic',
 
-  body: 'InstrumentSans-Regular',
-  bodyMedium: 'InstrumentSans-Medium',
-  bodySemiBold: 'InstrumentSans-SemiBold',
-  bodyBold: 'InstrumentSans-Bold',
+  body: 'LibreFranklin-Regular',
+  bodyMedium: 'LibreFranklin-Medium',
+  bodySemiBold: 'LibreFranklin-SemiBold',
+  bodyBold: 'LibreFranklin-Bold',
 
   mono: 'IBMPlexMono-Regular',
   monoMedium: 'IBMPlexMono-Medium',
   monoSemiBold: 'IBMPlexMono-SemiBold',
 
-  /** The platform's own serif, where the bundled display face is not used. */
-  displayFallback: 'serif',
+  /** The platform's own sans, where the bundled face is not used — no longer a serif fallback now that display isn't one. */
+  displayFallback: 'sans-serif',
 } as const
 
 /**
@@ -478,14 +505,16 @@ export const fontFamilyNative = {
  *
  * This used to fall back to the platform serif on each platform, because the
  * display face was not bundled and shipping four weights for one word was not
- * worth it. Newsreader is bundled now, so the wordmark sets in the same serif
- * as the rest of the product on both platforms — which is the point of a
- * wordmark. Kept in `Platform.select` shape so call sites do not have to change.
+ * worth it. The display face is bundled now, so the wordmark sets in the same
+ * face as the rest of the product on both platforms — which is the point of a
+ * wordmark, and that stayed true when the face changed from Newsreader to
+ * Libre Franklin. Kept in `Platform.select` shape so call sites do not have to
+ * change.
  */
 export const fontFamilyNativeWordmark = {
-  ios: 'Newsreader16pt-Regular',
-  android: 'Newsreader16pt-Regular',
-  default: 'serif',
+  ios: 'LibreFranklin-Regular',
+  android: 'LibreFranklin-Regular',
+  default: 'sans-serif',
 } as const
 
 /**
@@ -538,6 +567,8 @@ export const leadingNative = {
   'meta-sm': 15,
   'meta-md': 15,
   'meta-lg': 16,
+  /** The native ring's centre value — see `fontSizeLeading['meta-2xl']`. */
+  'meta-2xl': 20,
 } as const
 
 /**
@@ -594,7 +625,7 @@ export const underlineOffset = { text: 3 } as const
  * tint composited into it. It is the room's own `--lift`, unchanged.
  */
 export const shadow = {
-  card: '0 1px 2px rgba(15, 26, 34, 0.04), 0 12px 32px -12px rgba(15, 26, 34, 0.12)',
+  card: '0 2px 4px rgba(15, 26, 34, 0.04), 0 16px 40px -12px rgba(15, 26, 34, 0.14)',
   raised: '0 1px 2px rgba(15, 26, 34, 0.08)',
   focus: '0 0 0 3px rgba(22, 25, 28, 0.06)',
   /**
@@ -728,6 +759,8 @@ export const height = {
   glyph: 24,
   /** The pill behind an active Android tab. */
   'tab-indicator': 30,
+  /** The bottom tab bar itself, above the safe-area inset it sits on top of. */
+  'tab-bar': 64,
 
   header: 60,
   'header-lg': 72,

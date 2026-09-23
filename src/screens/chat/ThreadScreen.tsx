@@ -10,7 +10,7 @@ import { ApiClientError } from '../../lib/api'
 import { ChatSendError, useThreadSocket } from '../../lib/chat/socket'
 import { fmtClock, fmtDayDivider, fmtDayMon, fmtStampZone, newClientMessageId, originLabel, refusalCopy } from '../../lib/chat/format'
 import { color, space, borderWidth, height } from '../../theme'
-import { Body, Display, Meta } from '../../components/ui'
+import { Body, Display, EmptyState, Meta } from '../../components/ui'
 import {
   BlockSheet, Bubble, ClosesLine, Composer, CounterpartyPlate, DayDivider,
   MaskInfoLine, MenuSheet, ReadOnlyFoot, ReconnectingStrip, RecordingPill, ReportSheet, SystemLine, TypingDots,
@@ -178,17 +178,23 @@ export function ThreadScreen({ id, onBack, onSupport }: { id: string; onBack: ()
       {masked && open && <MaskInfoLine />}
 
       <ScrollView ref={scrollRef} contentContainerStyle={styles.transcript} onContentSizeChange={scrollDown}>
-        {groups.map((g) => (
-          <View key={g.key} style={{ gap: space.md }}>
-            <DayDivider label={g.label} />
-            {g.items.map((m) => (m.kind === 'SYSTEM'
-              ? m.systemKind === 'IDENTITY_REVEALED'
-                ? <SystemLine key={m.id} media={<CounterpartyPlate thread={thread} size={44} />} text={`Your session started · your interviewer is ${thread.counterparty.name}`} time={fmtClock(m.createdAt)} />
-                : <SystemLine key={m.id} text={SYSTEM_TEXT[m.systemKind ?? ''] ?? 'Update'} time={fmtClock(m.createdAt)} />
-              : <Bubble key={m.id} msg={m} now={now} />))}
-          </View>
-        ))}
-        {peerTyping && <View style={{ paddingTop: space.xs }}><TypingDots /></View>}
+        {groups.length === 0 && !peerTyping ? (
+          <EmptyState title="No messages yet" body="Nothing has been sent in this conversation yet." />
+        ) : (
+          <>
+            {groups.map((g) => (
+              <View key={g.key} style={{ gap: space.md }}>
+                <DayDivider label={g.label} />
+                {g.items.map((m) => (m.kind === 'SYSTEM'
+                  ? m.systemKind === 'IDENTITY_REVEALED'
+                    ? <SystemLine key={m.id} media={<CounterpartyPlate thread={thread} size={44} />} text={`Your session started · your interviewer is ${thread.counterparty.name}`} time={fmtClock(m.createdAt)} />
+                    : <SystemLine key={m.id} text={SYSTEM_TEXT[m.systemKind ?? ''] ?? 'Update'} time={fmtClock(m.createdAt)} />
+                  : <Bubble key={m.id} msg={m} now={now} />))}
+              </View>
+            ))}
+            {peerTyping && <View style={{ paddingTop: space.xs }}><TypingDots /></View>}
+          </>
+        )}
       </ScrollView>
 
       {!!closesText && <ClosesLine text={closesText} />}

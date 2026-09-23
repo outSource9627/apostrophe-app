@@ -6,8 +6,8 @@ import { api } from '../../lib/api'
 import { type StudentInterview } from '../../lib/api/interviews'
 import { fmtShortDate, fmtTime, splitByTime } from '../../lib/interviews/slots'
 import { statusMark } from '../../lib/interviews/status'
-import { color, space, radius, borderWidth } from '../../theme'
-import { AppBar, Body, Button, Display, Eyebrow, EmptyState, Meta, StatusPill } from '../../components/ui'
+import { color, space } from '../../theme'
+import { AppBar, Body, Button, Card, Display, Eyebrow, EmptyState, Meta, StatusPill } from '../../components/ui'
 
 /**
  * ST-25 — one list, upcoming first then past, a status per row. Join shows on a
@@ -65,7 +65,7 @@ export function InterviewsScreen({
 function Row({ iv, onOpen }: { iv: StudentInterview; onOpen: () => void }) {
   const mark = statusMark(iv.status)
   return (
-    <View style={styles.card}>
+    <Card style={styles.cardInner}>
       <Pressable onPress={onOpen} style={styles.cardHead}>
         <View style={{ flex: 1, minWidth: 0, gap: space.xs }}>
           <Body weight="semibold" size="lg">{relativeWhen(iv.slotStart)}</Body>
@@ -78,7 +78,7 @@ function Row({ iv, onOpen }: { iv: StudentInterview; onOpen: () => void }) {
           <Button variant="primary" size="md" label="Join interview" onPress={onOpen} />
         </View>
       )}
-    </View>
+    </Card>
   )
 }
 
@@ -100,6 +100,6 @@ const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.surface },
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   body: { padding: space.xl, gap: space.xl, paddingBottom: space['4xl'] },
-  card: { borderRadius: radius.lg, borderWidth: borderWidth.thin, borderColor: color.border, backgroundColor: color.surface, padding: space.lg, gap: space.md },
+  cardInner: { padding: space.lg, gap: space.md },
   cardHead: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: space.md },
 })

@@ -1,23 +1,49 @@
 import React from 'react'
-import {
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native'
+import { Alert, StyleSheet, View } from 'react-native'
+import Svg, { Path } from 'react-native-svg'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { borderWidth, color, fontFamilyNative, radius, space } from '../../theme'
-import { Button, Card, Eyebrow, StatusPill } from '../../components/ui'
+import { borderWidth, color, radius, space } from '../../theme'
+import {
+  Banner,
+  Body,
+  Button,
+  Card,
+  Display,
+  Divider,
+  ErrorState,
+  Eyebrow,
+  Meta,
+  ObjectRow,
+  Skeleton,
+  StatusPill,
+  Tag,
+} from '../../components/ui'
 import { InterviewerShell } from '../../components/interviewer/InterviewerShell'
 import { useInterviewer } from '../../lib/interviewer/useInterviewer'
 import { tokenStore } from '../../lib/api'
 
+/** The chevron on a drill-in row. Danger-toned on Sign Out so the row reads as the destructive one without reaching for accent. */
+function RowChevron({ danger = false }: { danger?: boolean }) {
+  return (
+    <Svg
+      width={16}
+      height={16}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={danger ? color.danger : color.textSubtle}
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <Path d="m9 5 7 7-7 7" />
+    </Svg>
+  )
+}
+
 export function InterviewerAccountScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<any>>()
-  const { profile } = useInterviewer()
+  const { profile, error, refresh } = useInterviewer()
 
   const isSuspended = profile?.status === 'SUSPENDED'
 
@@ -42,131 +68,117 @@ export function InterviewerAccountScreen() {
     <InterviewerShell navTab="account">
       <View style={styles.header}>
         <Eyebrow>GOVERNANCE & SETTINGS</Eyebrow>
-        <Text style={styles.title}>Interviewer Account</Text>
+        <Display level="lg">Interviewer Account</Display>
       </View>
 
-      {/* Suspension Alert Box (Settled Decision D4/D5) */}
-      {isSuspended && (
-        <Card style={styles.suspensionCard}>
-          <View style={styles.suspensionHeader}>
-            <Text style={styles.suspensionIcon}>⚠️</Text>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.suspensionTitle}>Account Under Active Suspension</Text>
-              <Text style={styles.suspensionSub}>
-                Status: SUSPENDED · Action restricted
-              </Text>
+      {profile ? (
+        <>
+          {/* Suspension Alert Box (Settled Decision D4/D5) */}
+          {isSuspended && (
+            <Banner tone="danger" title="Account under active suspension" reference="SUSPENDED · ACTION RESTRICTED">
+              <View style={styles.suspensionBody}>
+                <Body size="sm" tone="danger">
+                  Your interviewer account has been temporarily restricted due to consecutive overdue scorecards or
+                  candidate complaints. While suspended:
+                </Body>
+                <View style={styles.bulletList}>
+                  <Body size="xs" tone="danger">• You cannot accept or conduct new interviews.</Body>
+                  <Body size="xs" tone="danger">• Payout withdrawals are temporarily frozen.</Body>
+                  <Body size="xs" tone="danger">• You can still complete owed scorecards and view your ledger.</Body>
+                </View>
+                <Body size="xs" tone="danger" style={styles.appealText}>
+                  To appeal your suspension, contact platform governance at compliance@apostrophe.jobs.
+                </Body>
+              </View>
+            </Banner>
+          )}
+
+          {/* Profile Overview */}
+          <Card style={styles.profileCard}>
+            <View style={styles.profileHeader}>
+              <View style={styles.avatar}>
+                <Display level="xs">{(profile?.name || 'I').slice(0, 1).toUpperCase()}</Display>
+              </View>
+              <View style={styles.grow}>
+                <Display level="xs">{profile?.name || 'Interviewer'}</Display>
+                <Body size="xs" tone="muted">{profile?.email || ''}</Body>
+                <Meta style={styles.phone}>{profile?.phone || ''}</Meta>
+              </View>
+              <StatusPill tone={isSuspended ? 'danger' : 'success'} label={profile?.status || 'ACTIVE'} />
             </View>
-          </View>
-          <Text style={styles.suspensionBody}>
-            Your interviewer account has been temporarily restricted due to consecutive overdue scorecards or candidate complaints. While suspended:
-          </Text>
-          <View style={styles.bulletList}>
-            <Text style={styles.bulletItem}>• You cannot accept or conduct new interviews.</Text>
-            <Text style={styles.bulletItem}>• Payout withdrawals are temporarily frozen.</Text>
-            <Text style={styles.bulletItem}>• You can still complete owed scorecards and view your ledger.</Text>
-          </View>
-          <Text style={styles.appealText}>
-            To appeal your suspension, contact platform governance at compliance@apostrophe.jobs.
-          </Text>
-        </Card>
-      )}
 
-      {/* Profile Overview */}
-      <Card style={styles.profileCard}>
-        <View style={styles.profileHeader}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>
-              {(profile?.name || 'I').slice(0, 1).toUpperCase()}
-            </Text>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.name}>{profile?.name || 'Interviewer'}</Text>
-            <Text style={styles.email}>{profile?.email || ''}</Text>
-            <Text style={styles.phone}>{profile?.phone || ''}</Text>
-          </View>
-          <StatusPill
-            tone={isSuspended ? 'danger' : 'success'}
-            label={profile?.status || 'ACTIVE'}
-          />
-        </View>
-
-        {profile?.bio && <Text style={styles.bio}>{profile.bio}</Text>}
-      </Card>
-
-      {/* Quality Metrics & Tier Access */}
-      <Card style={styles.metricsCard}>
-        <Text style={styles.cardHeading}>Performance & Evaluation Tier</Text>
-        <View style={styles.metricRow}>
-          <View style={styles.metricBox}>
-            <Text style={styles.metricLabel}>Quality Score</Text>
-            <Text style={styles.metricVal}>
-              {profile?.qualityScore ? profile.qualityScore.toFixed(1) : '5.0'} / 5.0
-            </Text>
-          </View>
-          <View style={styles.metricBox}>
-            <Text style={styles.metricLabel}>Total Sessions</Text>
-            <Text style={styles.metricVal}>{profile?.totalInterviews ?? 0}</Text>
-          </View>
-          <View style={styles.metricBox}>
-            <Text style={styles.metricLabel}>Reliability</Text>
-            <Text style={[styles.metricVal, { color: '#059669' }]}>99.2%</Text>
-          </View>
-        </View>
-
-        <View style={styles.tierAccessBox}>
-          <Text style={styles.tierAccessLabel}>Permitted Evaluation Tiers:</Text>
-          <View style={styles.tierPillsRow}>
-            {profile?.permittedTiers?.map((tier) => (
-              <View key={tier} style={styles.tierPill}>
-                <Text style={styles.tierPillText}>{tier.replace('_', ' ')}</Text>
-              </View>
-            )) || (
-              <View style={styles.tierPill}>
-                <Text style={styles.tierPillText}>TIER 1</Text>
-              </View>
+            {!!profile?.bio && (
+              <>
+                <Divider />
+                <Body size="sm">{profile.bio}</Body>
+              </>
             )}
-          </View>
-        </View>
-      </Card>
+          </Card>
 
-      {/* Account Actions & Shortcuts */}
-      <View style={styles.actionsList}>
-        <Pressable
-          style={styles.actionItem}
-          onPress={() => navigation.navigate('InterviewerNotifications')}
-        >
-          <Text style={styles.actionIcon}>🔔</Text>
-          <Text style={styles.actionLabel}>Notifications & System Alerts</Text>
-          <Text style={styles.chevron}>→</Text>
-        </Pressable>
+          {/* Quality Metrics & Tier Access */}
+          <Card style={styles.metricsCard}>
+            <Eyebrow>Performance & Evaluation Tier</Eyebrow>
+            <View style={styles.metricRow}>
+              <View style={styles.metricBox}>
+                <Eyebrow>Quality Score</Eyebrow>
+                <Display level="xs">
+                  {profile?.qualityScore ? profile.qualityScore.toFixed(1) : '5.0'} / 5.0
+                </Display>
+              </View>
+              <View style={styles.metricBox}>
+                <Eyebrow>Total Sessions</Eyebrow>
+                <Display level="xs">{profile?.totalInterviews ?? 0}</Display>
+              </View>
+              <View style={styles.metricBox}>
+                <Eyebrow>Reliability</Eyebrow>
+                <Display level="xs" style={styles.reliabilityValue}>99.2%</Display>
+              </View>
+            </View>
 
-        <Pressable
-          style={styles.actionItem}
-          onPress={() => navigation.navigate('InterviewerChats')}
-        >
-          <Text style={styles.actionIcon}>💬</Text>
-          <Text style={styles.actionLabel}>Candidate Support Conversations</Text>
-          <Text style={styles.chevron}>→</Text>
-        </Pressable>
+            <View style={styles.tierAccessBox}>
+              <Body size="xs" weight="medium" tone="muted">Permitted Evaluation Tiers:</Body>
+              <View style={styles.tierPillsRow}>
+                {profile?.permittedTiers?.map((tier) => (
+                  <Tag key={tier} label={tier.replace('_', ' ')} />
+                )) || <Tag label="TIER 1" />}
+              </View>
+            </View>
+          </Card>
 
-        <Pressable
-          style={styles.actionItem}
-          onPress={() => navigation.navigate('InterviewerPassword', { email: profile?.email })}
-        >
-          <Text style={styles.actionIcon}>🔑</Text>
-          <Text style={styles.actionLabel}>Change Password</Text>
-          <Text style={styles.chevron}>→</Text>
-        </Pressable>
-
-        <Pressable
-          style={[styles.actionItem, styles.signOutItem]}
-          onPress={handleSignOut}
-        >
-          <Text style={[styles.actionIcon, styles.signOutText]}>🚪</Text>
-          <Text style={[styles.actionLabel, styles.signOutText]}>Sign Out</Text>
-          <Text style={[styles.chevron, styles.signOutText]}>→</Text>
-        </Pressable>
-      </View>
+          {/* Account Actions & Shortcuts */}
+          <Card>
+            <ObjectRow
+              title="Notifications & System Alerts"
+              status={<RowChevron />}
+              onPress={() => navigation.navigate('InterviewerNotifications')}
+            />
+            <ObjectRow
+              title="Candidate Support Conversations"
+              status={<RowChevron />}
+              onPress={() => navigation.navigate('InterviewerChats')}
+            />
+            <ObjectRow
+              title="Change Password"
+              status={<RowChevron />}
+              onPress={() => navigation.navigate('InterviewerPassword', { email: profile?.email })}
+            />
+            <ObjectRow
+              title="Sign Out"
+              status={<RowChevron danger />}
+              onPress={handleSignOut}
+              last
+            />
+          </Card>
+        </>
+      ) : error ? (
+        <ErrorState
+          title="We could not load your account."
+          body={error.message}
+          action={<Button variant="outline" size="sm" label="Try again" onPress={() => refresh()} />}
+        />
+      ) : (
+        <Skeleton lines={4} />
+      )}
     </InterviewerShell>
   )
 }
@@ -175,58 +187,17 @@ const styles = StyleSheet.create({
   header: {
     gap: space['2xs'],
   },
-  title: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 24,
-    fontWeight: '700',
-    color: color.text,
-  },
-  suspensionCard: {
-    padding: space.md,
-    gap: space.xs,
-    backgroundColor: '#fff1f2',
-    borderColor: '#fecdd3',
-  },
-  suspensionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.xs,
-  },
-  suspensionIcon: {
-    fontSize: 22,
-  },
-  suspensionTitle: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#9f1239',
-  },
-  suspensionSub: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 11,
-    color: '#be123c',
+  grow: {
+    flex: 1,
   },
   suspensionBody: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 12,
-    color: '#881337',
-    lineHeight: 17,
+    gap: space.xs,
   },
   bulletList: {
-    gap: 2,
-    marginVertical: 2,
-  },
-  bulletItem: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 12,
-    color: '#881337',
+    gap: space['2xs'],
   },
   appealText: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 11,
-    color: '#be123c',
     fontStyle: 'italic',
-    marginTop: 2,
   },
   profileCard: {
     padding: space.md,
@@ -240,53 +211,19 @@ const styles = StyleSheet.create({
   avatar: {
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: radius.pill,
     backgroundColor: color.surfaceSubtle,
     borderWidth: borderWidth.thin,
     borderColor: color.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarText: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 20,
-    fontWeight: '700',
-    color: color.text,
-  },
-  name: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 16,
-    fontWeight: '700',
-    color: color.text,
-  },
-  email: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 12,
-    color: color.textMuted,
-  },
   phone: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 11,
     color: color.textSubtle,
-  },
-  bio: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    color: color.text,
-    lineHeight: 18,
-    borderTopWidth: borderWidth.thin,
-    borderTopColor: color.border,
-    paddingTop: space.xs,
   },
   metricsCard: {
     padding: space.md,
     gap: space.md,
-  },
-  cardHeading: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 14,
-    fontWeight: '700',
-    color: color.text,
   },
   metricRow: {
     flexDirection: 'row',
@@ -297,80 +234,17 @@ const styles = StyleSheet.create({
   metricBox: {
     flex: 1,
     alignItems: 'center',
-    gap: 2,
+    gap: space['2xs'],
   },
-  metricLabel: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 10,
-    color: color.textSubtle,
-  },
-  metricVal: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 15,
-    fontWeight: '700',
-    color: color.text,
+  reliabilityValue: {
+    color: color.success,
   },
   tierAccessBox: {
     gap: space.xs,
-  },
-  tierAccessLabel: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 12,
-    fontWeight: '600',
-    color: color.textMuted,
   },
   tierPillsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: space.xs,
-  },
-  tierPill: {
-    backgroundColor: '#eff6ff',
-    borderColor: '#bfdbfe',
-    borderWidth: borderWidth.thin,
-    borderRadius: radius.sm,
-    paddingHorizontal: space.sm,
-    paddingVertical: 2,
-  },
-  tierPillText: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 11,
-    fontWeight: '700',
-    color: color.accent,
-  },
-  actionsList: {
-    backgroundColor: color.surface,
-    borderRadius: radius.md,
-    borderWidth: borderWidth.thin,
-    borderColor: color.border,
-    overflow: 'hidden',
-  },
-  actionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: space.md,
-    borderBottomWidth: borderWidth.thin,
-    borderBottomColor: color.border,
-    gap: space.sm,
-  },
-  actionIcon: {
-    fontSize: 18,
-  },
-  actionLabel: {
-    flex: 1,
-    fontFamily: fontFamilyNative.body,
-    fontSize: 14,
-    fontWeight: '600',
-    color: color.text,
-  },
-  chevron: {
-    fontSize: 16,
-    color: color.textSubtle,
-  },
-  signOutItem: {
-    borderBottomWidth: 0,
-  },
-  signOutText: {
-    color: color.accent,
   },
 })

@@ -29,7 +29,7 @@ export { StatusPill, StatusDot, StatusLadder, VerifiedSeal, UnverifiedMark } fro
 export type { Tone } from './status'
 
 // §04 / §08 surfaces, cards, progress
-export { Card, ObjectRow, NextAction, ProgressBar, CompletionCard, ScoreRow } from './data'
+export { Card, ObjectRow, NextAction, ProgressBar, ProgressRing, CompletionCard, ScoreRow } from './data'
 
 // §07 video — the most important pieces in the system
 export {

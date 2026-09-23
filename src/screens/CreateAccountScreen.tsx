@@ -11,6 +11,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Logo } from '../components/Logo'
 import { Field, Input } from '../components/ui/fields'
+import { Chip } from '../components/ui/controls'
+import { Body, Display, Eyebrow } from '../components/ui/Type'
 import { Button } from '../components/ui/Button'
 import { GoogleButton } from '../components/ui/GoogleButton'
 import { api } from '../lib/api'
@@ -18,14 +20,10 @@ import { ApiClientError } from '../lib/api/types'
 import {
   borderWidth,
   color,
-  fontFamilyNative,
   fontSize,
-  fontWeight,
   height,
-  leadingNative,
   radius,
   space,
-  trackingNative,
 } from '../theme'
 
 export interface RegistrationData {
@@ -144,8 +142,8 @@ export function CreateAccountScreen({ onSignIn, onOtpSent }: Props) {
       {/* ── App bar (52px) ─────────────────────────────────────────────── */}
       <View style={[styles.appBar, { paddingTop: insets.top }]}>
         <Logo size={20} />
-        <Pressable onPress={onSignIn} hitSlop={12}>
-          <Text style={styles.appBarAction}>Sign in</Text>
+        <Pressable onPress={onSignIn} hitSlop={12} style={styles.appBarAction}>
+          <Body size="sm" tone="muted">Sign in</Body>
         </Pressable>
       </View>
 
@@ -158,10 +156,10 @@ export function CreateAccountScreen({ onSignIn, onOtpSent }: Props) {
       >
         {/* Title */}
         <View style={styles.header}>
-          <Text style={styles.eyebrow}>CREATE YOUR ACCOUNT</Text>
-          <Text style={styles.headline}>
+          <Eyebrow>CREATE YOUR ACCOUNT</Eyebrow>
+          <Display level="lg">
             Five things, and <Text style={styles.headlineMuted}>we’re off.</Text>
-          </Text>
+          </Display>
         </View>
 
         {/* Form */}
@@ -179,14 +177,14 @@ export function CreateAccountScreen({ onSignIn, onOtpSent }: Props) {
 
           {/* 2 · Mobile */}
           <View style={styles.fieldBlock}>
-            <Text style={styles.label}>MOBILE</Text>
+            <Eyebrow>Mobile</Eyebrow>
             <View
               style={[
                 styles.mobileControl,
                 isMobileRegistered && styles.controlInvalid,
               ]}
             >
-              <Text style={styles.mobilePrefix}>+91</Text>
+              <Body size="base" tone="subtle">+91</Body>
               <View style={styles.mobileDivider} />
               <Input
                 value={form.mobile}
@@ -198,12 +196,12 @@ export function CreateAccountScreen({ onSignIn, onOtpSent }: Props) {
               />
             </View>
             {isMobileRegistered && (
-              <Text style={styles.errorText}>
+              <Body size="xs" tone="danger">
                 This mobile number is already registered.{' '}
-                <Text style={styles.link} onPress={onSignIn}>
+                <Body size="xs" weight="semibold" tone="danger" style={styles.link} onPress={onSignIn}>
                   Sign in
-                </Text>
-              </Text>
+                </Body>
+              </Body>
             )}
           </View>
 
@@ -232,48 +230,36 @@ export function CreateAccountScreen({ onSignIn, onOtpSent }: Props) {
             />
           </Field>
 
-          {/* 5 · Highest qualification · 2x2 grid */}
+          {/* 5 · Highest qualification */}
           <View style={styles.fieldBlock}>
             <View style={styles.qualHeader}>
-              <Text style={styles.label}>HIGHEST QUALIFICATION</Text>
-              <Text style={styles.qualPrice}>
+              <Eyebrow>Highest qualification</Eyebrow>
+              <Display level="md">
                 {selectedTier.price}
                 <Text style={styles.qualDuration}> / {selectedTier.duration}</Text>
-              </Text>
+              </Display>
             </View>
 
-            <View style={styles.qualGrid}>
-              {prices.map((q) => {
-                const isSelected = form.qualification === q.value
-                return (
-                  <Pressable
-                    key={q.value}
-                    onPress={() => setField('qualification')(q.value)}
-                    disabled={pending}
-                    style={[
-                      styles.qualChip,
-                      isSelected ? styles.qualChipSelected : styles.qualChipIdle,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.qualChipLabel,
-                        isSelected && styles.qualChipLabelSelected,
-                      ]}
-                    >
-                      {q.label}
-                    </Text>
-                  </Pressable>
-                )
-              })}
+            <View style={styles.chips}>
+              {prices.map((q) => (
+                <Chip
+                  key={q.value}
+                  label={q.label}
+                  selected={form.qualification === q.value}
+                  onPress={() => {
+                    if (pending) return
+                    setField('qualification')(q.value)
+                  }}
+                />
+              ))}
             </View>
-            <Text style={styles.helperText}>
+            <Body size="xs" tone="subtle">
               This sets your interview length and what it costs.
-            </Text>
+            </Body>
           </View>
 
           {!!error && !isMobileRegistered && (
-            <Text style={styles.generalError}>{error}</Text>
+            <Body size="sm" tone="danger">{error}</Body>
           )}
 
           {/* ── Actions (Lower third) ────────────────────────────────────────── */}
@@ -315,8 +301,10 @@ const styles = StyleSheet.create({
     backgroundColor: color.surface,
   },
   appBarAction: {
-    fontSize: fontSize['ui-sm'],
-    color: color.textMuted,
+    height: height.tap,
+    justifyContent: 'center',
+    paddingHorizontal: space.md,
+    marginRight: -space.md,
   },
   scroll: {
     paddingHorizontal: space.xl,
@@ -325,20 +313,6 @@ const styles = StyleSheet.create({
   header: {
     gap: space.sm,
     marginBottom: space.lg,
-  },
-  eyebrow: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: fontSize['meta-sm'],
-    letterSpacing: trackingNative['eyebrow-wide'],
-    color: color.textSubtle,
-    textTransform: 'uppercase',
-  },
-  headline: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: fontSize['display-lg'],
-    lineHeight: leadingNative['display-lg'],
-    color: color.text,
-    letterSpacing: trackingNative['tight-sm'],
   },
   headlineMuted: {
     color: color.textMuted,
@@ -349,13 +323,6 @@ const styles = StyleSheet.create({
   },
   fieldBlock: {
     gap: space.sm,
-  },
-  label: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: fontSize['meta-sm'],
-    letterSpacing: trackingNative['eyebrow-wide'],
-    color: color.textSubtle,
-    textTransform: 'uppercase',
   },
   mobileControl: {
     flexDirection: 'row',
@@ -371,10 +338,6 @@ const styles = StyleSheet.create({
   controlInvalid: {
     borderColor: color.danger,
     backgroundColor: color.dangerSoft,
-  },
-  mobilePrefix: {
-    fontSize: fontSize['ui-base'],
-    color: color.textSubtle,
   },
   mobileDivider: {
     width: borderWidth.thin,
@@ -394,65 +357,17 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: space.md,
   },
-  qualPrice: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: fontSize['display-md'],
-    color: color.text,
-    letterSpacing: trackingNative['tight-sm'],
-  },
   qualDuration: {
     fontSize: fontSize['display-sm'],
     color: color.textMuted,
   },
-  qualGrid: {
+  chips: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: space.sm,
   },
-  qualChip: {
-    width: '48.5%',
-    height: height['control-block'],
-    borderRadius: radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  qualChipIdle: {
-    borderWidth: borderWidth.thin,
-    borderColor: color.border,
-    backgroundColor: color.surfaceMuted,
-  },
-  qualChipSelected: {
-    borderWidth: borderWidth.thin,
-    borderColor: color.ink,
-    backgroundColor: color.surface,
-  },
-  qualChipLabel: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: fontSize['display-xs'],
-    color: color.textMuted,
-  },
-  qualChipLabelSelected: {
-    color: color.text,
-    fontWeight: fontWeight.semibold,
-  },
-  helperText: {
-    fontSize: fontSize['ui-xs'],
-    color: color.textSubtle,
-    lineHeight: leadingNative['ui-xs'],
-  },
-  errorText: {
-    fontSize: fontSize['ui-xs'],
-    color: color.danger,
-    lineHeight: leadingNative['ui-xs'],
-  },
   link: {
     textDecorationLine: 'underline',
-    fontWeight: fontWeight.semibold,
-    color: color.danger,
-  },
-  generalError: {
-    fontSize: fontSize['ui-sm'],
-    color: color.danger,
   },
   actions: {
     marginTop: space.xl,

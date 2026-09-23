@@ -4,8 +4,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Svg, { Ellipse, Path, Rect } from 'react-native-svg'
 import { useRoom } from '../../lib/room/useRoom'
 import { LogoMark } from '../../components/Logo'
-import { color, space, radius, borderWidth, fontFamilyNative, fontSize } from '../../theme'
-import { Body, Display, Meta } from '../../components/ui'
+import { color, space, radius, borderWidth, fontFamilyNative, fontSize, height } from '../../theme'
+import { Body, Button, Card, Display, ErrorState, Meta } from '../../components/ui'
 
 /**
  * ST-30 — the interview room (student), the twin of the web room. Paper/ink only
@@ -57,6 +57,26 @@ export function RoomScreen({ id, onEnded }: { id: string; onEnded: () => void; o
           <View style={styles.reconnect}>
             <Meta style={{ color: color.warning }}>Reconnecting · nothing is lost</Meta>
             <Meta style={{ color: color.warning }}>{`${room.reconnectSecLeft ?? 90}s`}</Meta>
+          </View>
+        )}
+        {room.state === 'dropped' && (
+          <View style={styles.centre}>
+            <Card raised style={styles.errorCard}>
+              <ErrorState
+                title="Connection lost"
+                body="We could not reconnect in time. Nothing about your interview was lost."
+                action={
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    label="Leave"
+                    // The error state's small button is 40 tall; the slop brings its tap box to the 44 floor.
+                    hitSlop={(height.tap - height['control-xs']) / 2}
+                    onPress={room.leave}
+                  />
+                }
+              />
+            </Card>
           </View>
         )}
         {room.state === 'live' && (room.minutesLeft === 5 || room.minutesLeft === 1) && (
@@ -142,6 +162,7 @@ const styles = StyleSheet.create({
   tileEyebrow: { fontFamily: fontFamilyNative.monoMedium, fontSize: fontSize['meta-sm'], letterSpacing: 1, color: color.textOnInkSubtle },
   tileName: { fontFamily: fontFamilyNative.display, fontSize: fontSize['ui-sm'], color: color.textOnInk, maxWidth: '100%' },
   centre: { position: 'absolute', top: '30%', left: space.xl, right: space.xl, alignItems: 'center' },
+  errorCard: { alignSelf: 'stretch' },
   reconnect: { position: 'absolute', left: space.lg, right: space.lg, bottom: 40, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderRadius: radius.md, backgroundColor: color.warningSoft, paddingHorizontal: space.md, paddingVertical: space.sm },
   warnBand: { position: 'absolute', left: space.xl, right: space.xl, top: 84, alignItems: 'center', borderRadius: radius.md, backgroundColor: color.warningSoft, paddingVertical: space.sm },
   truth: { position: 'absolute', left: 0, right: 0, bottom: space.md, alignItems: 'center' },

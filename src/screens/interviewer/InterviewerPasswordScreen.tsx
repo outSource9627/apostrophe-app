@@ -1,19 +1,10 @@
 import React, { useState } from 'react'
-import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native'
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNavigation, useRoute } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { borderWidth, color, fontFamilyNative, height, opacity, space } from '../../theme'
-import { Button, Card, Eyebrow, Field, Input } from '../../components/ui'
+import { color, space } from '../../theme'
+import { AppBar, Body, Button, Card, Display, Eyebrow, Field, Input, SuccessState } from '../../components/ui'
 import { interviewerApi } from '../../lib/api/interviewer'
 
 export function InterviewerPasswordScreen() {
@@ -80,16 +71,7 @@ export function InterviewerPasswordScreen() {
       style={[styles.page, { paddingTop: insets.top }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <View style={styles.bar}>
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => navigation.goBack()}
-          style={({ pressed }) => [styles.backBtn, pressed && styles.pressed]}
-        >
-          <Text style={styles.backArrow}>←</Text>
-        </Pressable>
-        <Eyebrow>{isReset ? 'FORGOT PASSWORD' : 'SET PASSWORD'}</Eyebrow>
-      </View>
+      <AppBar title="Password" onBack={() => navigation.goBack()} />
 
       <ScrollView
         style={styles.scroll}
@@ -97,34 +79,36 @@ export function InterviewerPasswordScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.header}>
-          <Text style={styles.title}>
+          <Eyebrow>{isReset ? 'FORGOT PASSWORD' : 'SET PASSWORD'}</Eyebrow>
+          <Display level="lg">
             {isReset
               ? 'Reset Your Password'
               : isForced
               ? 'Create New Password'
               : 'Update Account Password'}
-          </Text>
-          <Text style={styles.subtitle}>
+          </Display>
+          <Body tone="muted">
             {isReset
               ? 'Enter the email address registered with your interviewer profile to receive recovery instructions.'
               : isForced
               ? 'For your security, you must update your temporary password before accessing the interviewer portal.'
               : 'Choose a strong password with at least 8 characters.'}
-          </Text>
+          </Body>
         </View>
 
         {isReset ? (
           resetSent ? (
-            <Card style={styles.card}>
-              <Text style={styles.successIcon}>✉️</Text>
-              <Text style={styles.cardTitle}>Reset Instructions Sent</Text>
-              <Text style={styles.cardDesc}>
-                If an interviewer account exists for {email}, a password reset link has been dispatched to your inbox.
-              </Text>
-              <Button
-                label="Return to Sign In"
-                variant="primary"
-                onPress={() => navigation.replace('InterviewerSignIn')}
+            <Card>
+              <SuccessState
+                title="Reset Instructions Sent"
+                body={`If an interviewer account exists for ${email}, a password reset link has been dispatched to your inbox.`}
+                action={
+                  <Button
+                    label="Return to Sign In"
+                    variant="primary"
+                    onPress={() => navigation.replace('InterviewerSignIn')}
+                  />
+                }
               />
             </Card>
           ) : (
@@ -196,30 +180,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: color.background,
   },
-  bar: {
-    height: height.header,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.xs,
-    paddingHorizontal: space.lg,
-    backgroundColor: color.surface,
-    borderBottomWidth: borderWidth.thin,
-    borderBottomColor: color.border,
-  },
-  backBtn: {
-    width: height.tap,
-    height: height.tap,
-    marginLeft: -space.xs,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backArrow: {
-    fontSize: 20,
-    color: color.text,
-  },
-  pressed: {
-    opacity: opacity.pressed,
-  },
   scroll: {
     flex: 1,
   },
@@ -231,39 +191,8 @@ const styles = StyleSheet.create({
   header: {
     gap: space['2xs'],
   },
-  title: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 24,
-    fontWeight: '700',
-    color: color.text,
-  },
-  subtitle: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 14,
-    color: color.textMuted,
-    lineHeight: 20,
-  },
   card: {
     padding: space.lg,
     gap: space.md,
-  },
-  cardTitle: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 18,
-    fontWeight: '700',
-    color: color.text,
-    textAlign: 'center',
-  },
-  cardDesc: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 14,
-    color: color.textMuted,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  successIcon: {
-    fontSize: 40,
-    textAlign: 'center',
-    marginBottom: space['2xs'],
   },
 })

@@ -1,9 +1,10 @@
 import React from 'react'
-import { StatusBar } from 'react-native'
+import { StatusBar, StyleSheet, View } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { NavigationContainer } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { BottomTabBar } from './src/navigation/BottomTabBar'
 import { WelcomeScreen } from './src/screens/WelcomeScreen'
 import { CreateAccountScreen, type RegistrationData } from './src/screens/CreateAccountScreen'
 import { VerifyMobileScreen } from './src/screens/VerifyMobileScreen'
@@ -247,6 +248,8 @@ export default function App() {
             in styles.xml rather than here. */}
         <StatusBar barStyle="dark-content" />
         <NavigationContainer>
+        <View style={styles.appShell}>
+        <View style={styles.stackArea}>
           <Stack.Navigator screenOptions={{ headerShown: false }}>
             <Stack.Screen name="Welcome">
               {({ navigation }) => (
@@ -871,8 +874,16 @@ export default function App() {
               {() => <InterviewerChatsScreen />}
             </Stack.Screen>
           </Stack.Navigator>
+        </View>
+        <BottomTabBar />
+        </View>
         </NavigationContainer>
       </SafeAreaProvider>
     </QueryClientProvider>
   )
 }
+
+const styles = StyleSheet.create({
+  appShell: { flex: 1 },
+  stackArea: { flex: 1 },
+})

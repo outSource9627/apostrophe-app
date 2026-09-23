@@ -1,16 +1,9 @@
 import React, { useState } from 'react'
-import {
-  ActivityIndicator,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native'
+import { ScrollView, StyleSheet, View } from 'react-native'
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { color, radius, space, fontFamilyNative } from '../../theme'
+import { space } from '../../theme'
+import { Banner, Body, Button, Card, Chip, Display, Divider, Field, Input } from '../../components/ui'
 import { EmployerShell } from '../../components/employer/EmployerShell'
 import {
   sendCandidateInterest,
@@ -70,29 +63,26 @@ export function SendInterestModal() {
       footer={
         <View style={styles.footRow}>
           {connectedError ? (
-            <TouchableOpacity
-              activeOpacity={0.8}
+            <Button
+              variant="primary"
+              size="block"
+              full
+              label="Open Chat"
               onPress={() => {
                 navigation.goBack()
                 // Navigation to chats
               }}
-              style={styles.actionBtn}
-            >
-              <Text style={styles.actionBtnText}>Open Chat</Text>
-            </TouchableOpacity>
+            />
           ) : (
-            <TouchableOpacity
-              activeOpacity={0.8}
+            <Button
+              variant="primary"
+              size="block"
+              full
+              busy={sending}
+              disabled={Boolean(cooldownError)}
+              label="Send Interest"
               onPress={handleSend}
-              disabled={sending || Boolean(cooldownError)}
-              style={[styles.actionBtn, (sending || Boolean(cooldownError)) && styles.btnDisabled]}
-            >
-              {sending ? (
-                <ActivityIndicator color={color.textInverse} size="small" />
-              ) : (
-                <Text style={styles.actionBtnText}>Send Interest</Text>
-              )}
-            </TouchableOpacity>
+            />
           )}
         </View>
       }
@@ -100,103 +90,78 @@ export function SendInterestModal() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Candidate Target Header */}
         <View style={styles.header}>
-          <Text style={styles.name}>{candidateName}</Text>
-          <Text style={styles.subtitle}>
+          <Display level="sm">{candidateName}</Display>
+          <Body size="sm" tone="muted">
             {[candidateHeadline, candidateCity].filter(Boolean).join(' · ')}
-          </Text>
+          </Body>
         </View>
+        <Divider />
 
         {/* Cooldown Refusal Notice */}
         {cooldownError && (
-          <View style={styles.cooldownBox}>
-            <Text style={styles.cooldownTitle}>Cooldown active</Text>
-            <Text style={styles.cooldownBody}>{cooldownError.message}</Text>
-            {cooldownError.nextEligibleAt && (
-              <Text style={styles.cooldownDate}>
-                Eligible again on {new Date(cooldownError.nextEligibleAt).toLocaleDateString('en-IN', { dateStyle: 'long' })}
-              </Text>
-            )}
-          </View>
+          <Banner
+            tone="warning"
+            title="Cooldown active"
+            reference={
+              cooldownError.nextEligibleAt
+                ? `Eligible again on ${new Date(cooldownError.nextEligibleAt).toLocaleDateString('en-IN', { dateStyle: 'long' })}`
+                : undefined
+            }
+          >
+            {cooldownError.message}
+          </Banner>
         )}
 
         {/* Already Connected Notice */}
         {connectedError && (
-          <View style={styles.connectedBox}>
-            <Text style={styles.connectedTitle}>Already connected</Text>
-            <Text style={styles.connectedBody}>
-              You and {candidateName} already have an active conversation. You can message directly in chats.
-            </Text>
-          </View>
+          <Banner tone="success" title="Already connected">
+            {`You and ${candidateName} already have an active conversation. You can message directly in chats.`}
+          </Banner>
         )}
 
-        {genericError && (
-          <View style={styles.errorBox}>
-            <Text style={styles.errorText}>{genericError}</Text>
-          </View>
-        )}
+        {genericError && <Banner tone="danger">{genericError}</Banner>}
 
         {!cooldownError && !connectedError && (
           <>
             {/* Rule Callout Banner */}
-            <View style={styles.ruleBox}>
-              <Text style={styles.ruleTitle}>Deliberate outreach</Text>
-              <Text style={styles.ruleBody}>
-                An Interest knocks on the candidate’s door with your company name. You can send 1 Interest to a candidate every 30 days.
-              </Text>
-            </View>
+            <Banner tone="neutral" title="Deliberate outreach">
+              An Interest knocks on the candidate’s door with your company name. You can send 1 Interest to a candidate every 30 days.
+            </Banner>
 
-            {/* Optional Job Opening Selection */}
-            {jobs.length > 0 && (
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>LINK TO JOB (OPTIONAL)</Text>
-                <View style={styles.jobList}>
-                  <TouchableOpacity
-                    activeOpacity={0.8}
-                    onPress={() => setSelectedJobId('')}
-                    style={[styles.jobOption, !selectedJobId && styles.jobOptionActive]}
-                  >
-                    <Text style={[styles.jobOptionText, !selectedJobId && styles.jobOptionTextActive]}>
-                      General introduction (no opening)
-                    </Text>
-                  </TouchableOpacity>
-                  {jobs.map((job) => {
-                    const active = selectedJobId === job.id
-                    return (
-                      <TouchableOpacity
+            <Card style={styles.card}>
+              {/* Optional Job Opening Selection */}
+              {jobs.length > 0 && (
+                <Field label="Link to job (optional)">
+                  <View style={styles.chipWrap}>
+                    <Chip
+                      label="General introduction (no opening)"
+                      selected={!selectedJobId}
+                      onPress={() => setSelectedJobId('')}
+                    />
+                    {jobs.map((job) => (
+                      <Chip
                         key={job.id}
-                        activeOpacity={0.8}
+                        label={`${job.title} (${job.location || 'Remote'})`}
+                        selected={selectedJobId === job.id}
                         onPress={() => setSelectedJobId(job.id)}
-                        style={[styles.jobOption, active && styles.jobOptionActive]}
-                      >
-                        <Text style={[styles.jobOptionText, active && styles.jobOptionTextActive]}>
-                          {job.title} ({job.location || 'Remote'})
-                        </Text>
-                      </TouchableOpacity>
-                    )
-                  })}
-                </View>
-              </View>
-            )}
+                      />
+                    ))}
+                  </View>
+                </Field>
+              )}
 
-            {/* Personal Note */}
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>PERSONAL NOTE (OPTIONAL)</Text>
-                <Text style={styles.counter}>
-                  {message.length}/{INTEREST_MESSAGE_MAX_LENGTH}
-                </Text>
-              </View>
-              <TextInput
-                value={message}
-                onChangeText={setMessage}
-                maxLength={INTEREST_MESSAGE_MAX_LENGTH}
-                multiline
-                numberOfLines={4}
-                placeholder="Mention why their profile stood out or what role you are hiring for…"
-                placeholderTextColor={color.textMuted}
-                style={styles.textArea}
-              />
-            </View>
+              {/* Personal Note */}
+              <Field label="Personal note (optional)" helper={`${message.length}/${INTEREST_MESSAGE_MAX_LENGTH} characters`}>
+                <Input
+                  value={message}
+                  onChangeText={setMessage}
+                  maxLength={INTEREST_MESSAGE_MAX_LENGTH}
+                  multiline
+                  numberOfLines={4}
+                  placeholder="Mention why their profile stood out or what role you are hiring for…"
+                />
+              </Field>
+            </Card>
           </>
         )}
       </ScrollView>
@@ -211,157 +176,19 @@ const styles = StyleSheet.create({
     gap: space.md,
   },
   header: {
-    borderBottomWidth: 1,
-    borderBottomColor: color.border,
-    paddingBottom: space.sm,
-    gap: 2,
+    gap: space['2xs'],
   },
-  name: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: 20,
-    color: color.text,
+  card: {
+    padding: space.xl,
+    gap: space.lg,
   },
-  subtitle: {
-    fontSize: 13,
-    color: color.textMuted,
-  },
-  ruleBox: {
-    backgroundColor: color.surfaceMuted,
-    borderWidth: 1,
-    borderColor: color.border,
-    borderRadius: radius.md,
-    padding: space.sm,
-    gap: 2,
-  },
-  ruleTitle: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: color.text,
-  },
-  ruleBody: {
-    fontSize: 12,
-    color: color.textMuted,
-    lineHeight: 16,
-  },
-  cooldownBox: {
-    backgroundColor: 'rgba(234, 179, 8, 0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(234, 179, 8, 0.3)',
-    borderRadius: radius.md,
-    padding: space.md,
-    gap: 4,
-  },
-  cooldownTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: color.text,
-  },
-  cooldownBody: {
-    fontSize: 13,
-    color: color.textMuted,
-  },
-  cooldownDate: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 11,
-    color: color.textMuted,
-    marginTop: 4,
-  },
-  connectedBox: {
-    backgroundColor: 'rgba(34, 197, 94, 0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(34, 197, 94, 0.3)',
-    borderRadius: radius.md,
-    padding: space.md,
-    gap: 4,
-  },
-  connectedTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: color.text,
-  },
-  connectedBody: {
-    fontSize: 13,
-    color: color.textMuted,
-  },
-  errorBox: {
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    borderRadius: radius.md,
-    padding: space.sm,
-  },
-  errorText: {
-    fontSize: 12,
-    color: color.danger,
-  },
-  section: {
-    gap: space.xs,
-  },
-  sectionHeader: {
+  chipWrap: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  sectionTitle: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 10,
-    letterSpacing: 1,
-    color: color.textSubtle,
-  },
-  counter: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 10,
-    color: color.textMuted,
-  },
-  textArea: {
-    backgroundColor: color.surface,
-    borderWidth: 1,
-    borderColor: color.border,
-    borderRadius: radius.md,
-    padding: space.sm,
-    fontSize: 14,
-    color: color.text,
-    minHeight: 100,
-    textAlignVertical: 'top',
-  },
-  jobList: {
-    gap: 6,
-    marginTop: 4,
-  },
-  jobOption: {
-    backgroundColor: color.surface,
-    borderWidth: 1,
-    borderColor: color.border,
-    borderRadius: radius.md,
-    padding: space.sm,
-  },
-  jobOptionActive: {
-    borderColor: color.text,
-    backgroundColor: color.surfaceMuted,
-  },
-  jobOptionText: {
-    fontSize: 13,
-    color: color.textMuted,
-  },
-  jobOptionTextActive: {
-    color: color.text,
-    fontWeight: '600',
+    flexWrap: 'wrap',
+    gap: space.sm,
   },
   footRow: {
     paddingHorizontal: space.sm,
     paddingVertical: space.xs,
-  },
-  actionBtn: {
-    backgroundColor: color.text,
-    borderRadius: radius.lg,
-    paddingVertical: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  actionBtnText: {
-    color: color.textInverse,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  btnDisabled: {
-    opacity: 0.6,
   },
 })

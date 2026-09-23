@@ -9,9 +9,9 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { borderWidth, color, fontFamilyNative, height, opacity, radius, space } from '../../theme'
+import { borderWidth, color, fontFamilyNative, height, space } from '../../theme'
 import { Logo } from '../../components/Logo'
-import { Button, Card, Eyebrow } from '../../components/ui'
+import { Body, Button, Card, Display, Eyebrow, Meta, Spacer } from '../../components/ui'
 import { TIER_FEES_PAISE } from '../../lib/interviewer/state'
 import { formatPaise } from '../../lib/format/money'
 
@@ -43,7 +43,7 @@ export function JoinUsScreen() {
           hitSlop={8}
           accessibilityRole="button"
         >
-          <Text style={styles.signInLink}>Sign In</Text>
+          <Body size="base" tone="muted">Sign In</Body>
         </Pressable>
       </View>
 
@@ -53,12 +53,22 @@ export function JoinUsScreen() {
       >
         <View style={styles.hero}>
           <Eyebrow>APOSTROPHE · INTERVIEWER NETWORK</Eyebrow>
+          {/* Two-line hero, one line italic — the italic face is a distinct
+              bundled font file (`fontFamilyNative.headingItalic`), not a
+              `fontStyle: 'italic'` toggle: this codebase's custom fonts have no
+              synthetic italic on Android (see tokens.ts on fontFamilyNative), so
+              `Display` — which has no italic modifier — can't express this line.
+              Stays token-driven raw Text for that reason, the same escape hatch
+              WelcomeScreen's own hero uses (there because the marketing hero
+              exceeds Display's size ceiling; here because of the italic face). */}
           <Text style={styles.headline}>Evaluate Talent.</Text>
           <Text style={[styles.headline, styles.headlineItalic]}>Earn On Your Terms.</Text>
-          <Text style={styles.lede}>
+          <Body size="base" tone="muted" style={styles.lede}>
             Join an elite pool of industry practitioners conducting 20-minute structured technical and behavioral interviews. Fast, respectful, and fairly compensated.
-          </Text>
+          </Body>
 
+          {/* The one primary (crimson) action on this screen — see the accent-colour rule. */}
+          <Spacer size="sm" />
           <Button
             label="Apply to Interview"
             variant="primary"
@@ -69,15 +79,18 @@ export function JoinUsScreen() {
         {/* Tiers & Earnings */}
         <View style={styles.section}>
           <Eyebrow>COMPENSATION TIERS</Eyebrow>
-          <Text style={styles.sectionTitle}>Predictable per-session fees</Text>
+          <Display level="sm" style={styles.sectionTitle}>Predictable per-session fees</Display>
           <View style={styles.tierList}>
             {TIERS.map((t) => (
               <Card key={t.tier} style={styles.tierCard}>
                 <View style={styles.tierHeader}>
-                  <Text style={styles.tierName}>{t.name}</Text>
-                  <Text style={styles.tierFee}>{formatPaise(t.paise)}</Text>
+                  <Body size="base" weight="semibold">{t.name}</Body>
+                  {/* Fee amount: mono/content, never accent — a price is not one
+                      of the accent rule's four jobs. Matches how
+                      InterviewerDetailScreen renders the same fee figure. */}
+                  <Meta style={styles.tierFee}>{formatPaise(t.paise)}</Meta>
                 </View>
-                <Text style={styles.tierDesc}>{t.desc}</Text>
+                <Body size="sm" tone="muted">{t.desc}</Body>
               </Card>
             ))}
           </View>
@@ -86,29 +99,33 @@ export function JoinUsScreen() {
         {/* Perks */}
         <View style={styles.section}>
           <Eyebrow>WHY JOIN</Eyebrow>
-          <Text style={styles.sectionTitle}>Designed for working professionals</Text>
+          <Display level="sm" style={styles.sectionTitle}>Designed for working professionals</Display>
           <View style={styles.perkGrid}>
             {PERKS.map((p, i) => (
-              <View key={i} style={styles.perkItem}>
+              <Card key={i} style={styles.perkItem}>
                 <Text style={styles.perkIcon}>{p.icon}</Text>
-                <Text style={styles.perkTitle}>{p.title}</Text>
-                <Text style={styles.perkDesc}>{p.desc}</Text>
-              </View>
+                <Body size="md" weight="semibold">{p.title}</Body>
+                <Body size="sm" tone="muted">{p.desc}</Body>
+              </Card>
             ))}
           </View>
         </View>
 
         {/* Requirements */}
         <Card style={styles.reqCard}>
-          <Text style={styles.reqTitle}>Who We Look For</Text>
-          <Text style={styles.reqItem}>• Minimum 2+ years of professional engineering or domain experience</Text>
-          <Text style={styles.reqItem}>• Strong communication and empathetic evaluation skills</Text>
-          <Text style={styles.reqItem}>• Reliable broadband connection and quiet interview environment</Text>
-          <Text style={styles.reqItem}>• Commitment to complete scorecards within 24 hours</Text>
-          <View style={{ marginTop: space.md }}>
+          <Display level="sm" style={styles.reqTitle}>Who We Look For</Display>
+          <Body size="sm" tone="muted">• Minimum 2+ years of professional engineering or domain experience</Body>
+          <Body size="sm" tone="muted">• Strong communication and empathetic evaluation skills</Body>
+          <Body size="sm" tone="muted">• Reliable broadband connection and quiet interview environment</Body>
+          <Body size="sm" tone="muted">• Commitment to complete scorecards within 24 hours</Body>
+          <View style={styles.reqAction}>
+            {/* Repeats the hero's action lower on the page — kept as the
+                non-crimson `outline` variant so the screen still carries only
+                one primary (accent) button, per the accent-colour rule. It was
+                a second `variant="primary"` before this pass. */}
             <Button
               label="Submit Your Application"
-              variant="primary"
+              variant="outline"
               onPress={() => navigation.navigate('InterviewerApply')}
             />
           </View>
@@ -133,12 +150,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: borderWidth.thin,
     borderBottomColor: color.border,
   },
-  signInLink: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 14,
-    fontWeight: '600',
-    color: color.accent,
-  },
   scroll: {
     flex: 1,
   },
@@ -159,23 +170,19 @@ const styles = StyleSheet.create({
   },
   headlineItalic: {
     fontFamily: fontFamilyNative.headingItalic,
-    color: color.accent,
+    // Was color.accent — a decorative crimson headline is not one of the
+    // accent rule's four sanctioned jobs. Muted, like WelcomeScreen's own
+    // italic hero line.
+    color: color.textMuted,
   },
   lede: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 15,
-    color: color.textMuted,
-    lineHeight: 22,
     marginBottom: space.sm,
   },
   section: {
     gap: space.sm,
   },
   sectionTitle: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 18,
-    fontWeight: '600',
-    color: color.text,
+    marginTop: 0,
   },
   tierList: {
     gap: space.sm,
@@ -190,33 +197,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  tierName: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 15,
-    fontWeight: '700',
-    color: color.text,
-  },
   tierFee: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 16,
-    fontWeight: '700',
-    color: color.accent,
-  },
-  tierDesc: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    color: color.textMuted,
-    lineHeight: 18,
+    color: color.text,
   },
   perkGrid: {
     gap: space.md,
     marginTop: space['2xs'],
   },
   perkItem: {
-    backgroundColor: color.surface,
-    borderWidth: borderWidth.thin,
-    borderColor: color.border,
-    borderRadius: radius.md,
     padding: space.md,
     gap: space['2xs'],
   },
@@ -224,34 +212,15 @@ const styles = StyleSheet.create({
     fontSize: 24,
     marginBottom: space['2xs'],
   },
-  perkTitle: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 15,
-    fontWeight: '700',
-    color: color.text,
-  },
-  perkDesc: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    color: color.textMuted,
-    lineHeight: 18,
-  },
   reqCard: {
     padding: space.lg,
     gap: space.xs,
     backgroundColor: color.surfaceSubtle,
   },
   reqTitle: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 16,
-    fontWeight: '700',
-    color: color.text,
     marginBottom: space['2xs'],
   },
-  reqItem: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    color: color.textMuted,
-    lineHeight: 20,
+  reqAction: {
+    marginTop: space.md,
   },
 })

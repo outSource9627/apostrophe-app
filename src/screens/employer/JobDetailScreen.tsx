@@ -1,16 +1,21 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import {
-  ActivityIndicator,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native'
+import { StyleSheet, View } from 'react-native'
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { color, radius, space, fontFamilyNative } from '../../theme'
-import { EmployerShell } from '../../components/employer/EmployerShell'
+import { color, radius, space } from '../../theme'
+import {
+  Body,
+  Button,
+  Card,
+  Display,
+  Divider,
+  EmptyState,
+  ErrorState,
+  Eyebrow,
+  Figure,
+  Skeleton,
+} from '../../components/ui'
+import { EmployerShell } from '../../components/employer'
 import {
   fetchEmployerJobDetail,
   type EmployerJobDetail,
@@ -24,14 +29,17 @@ export function JobDetailScreen() {
 
   const [job, setJob] = useState<EmployerJobDetail | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
 
   const loadJob = useCallback(async () => {
     try {
       setLoading(true)
+      setError(null)
       const data = await fetchEmployerJobDetail(id)
       setJob(data)
     } catch (err) {
       console.error('Failed to load job', err)
+      setError(err instanceof Error ? err : new Error('Failed to load job.'))
     } finally {
       setLoading(false)
     }
@@ -46,215 +54,125 @@ export function JobDetailScreen() {
       back={{ label: 'JOBS', onPress: () => navigation.goBack() }}
       footer={
         job ? (
-          <View style={styles.footRow}>
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => navigation.navigate('JobApplications', { id: job.id })}
-              style={styles.actionBtn}
-            >
-              <Text style={styles.actionBtnText}>
-                View applicants ({job.counters.applications})
-              </Text>
-            </TouchableOpacity>
-          </View>
+          <Button
+            variant="primary"
+            size="lg"
+            full
+            label={`View applicants (${job.counters.applications})`}
+            onPress={() => navigation.navigate('JobApplications', { id: job.id })}
+          />
         ) : undefined
       }
     >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {loading ? (
-          <View style={styles.centre}>
-            <ActivityIndicator color={color.text} size="small" />
-            <Text style={styles.loadingText}>Loading job details…</Text>
+      {loading ? (
+        <Skeleton lines={4} />
+      ) : error ? (
+        <ErrorState
+          title="We could not load this job."
+          body={error.message}
+          action={<Button variant="outline" size="sm" label="Try again" onPress={loadJob} />}
+        />
+      ) : !job ? (
+        <EmptyState title="Job not found" body="This job posting may have been removed." />
+      ) : (
+        <>
+          {/* Header */}
+          <View style={styles.header}>
+            <Eyebrow>{job.category || 'General'}</Eyebrow>
+            <Display level="lg">{job.title}</Display>
+            <Body tone="muted">
+              {[job.location, job.remote ? 'Remote' : null, job.employmentType]
+                .filter(Boolean)
+                .join(' · ')}
+            </Body>
+            <Figure
+              value={`₹${Math.round(job.salaryMinPaise / 10000000)} - ₹${Math.round(job.salaryMaxPaise / 10000000)}`}
+              unit="LPA"
+            />
           </View>
-        ) : !job ? (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyTitle}>Job not found</Text>
+          <Divider />
+
+          {/* Counters */}
+          <Card style={styles.countersCard}>
+            <Counter label="Views" value={job.counters.views} />
+            <Counter label="Saves" value={job.counters.saves} />
+            <Counter label="Shortlisted" value={job.counters.shortlisted} />
+            <Counter label="Applicants" value={job.counters.applications} />
+          </Card>
+
+          {/* Description */}
+          <View style={styles.section}>
+            <Eyebrow>About the role</Eyebrow>
+            <Body size="sm" tone="muted">
+              {job.description}
+            </Body>
           </View>
-        ) : (
-          <View style={styles.container}>
-            {/* Header */}
-            <View style={styles.header}>
-              <Text style={styles.category}>{job.category || 'General'}</Text>
-              <Text style={styles.title}>{job.title}</Text>
-              <Text style={styles.meta}>
-                {[job.location, job.remote ? 'Remote' : null, job.employmentType]
-                  .filter(Boolean)
-                  .join(' · ')}
-              </Text>
-              <Text style={styles.salary}>
-                ₹{Math.round(job.salaryMinPaise / 10000000)} - ₹{Math.round(job.salaryMaxPaise / 10000000)} LPA
-              </Text>
-            </View>
 
-            {/* Counters */}
-            <View style={styles.countersBox}>
-              <View style={styles.counterCol}>
-                <Text style={styles.counterNum}>{job.counters.views}</Text>
-                <Text style={styles.counterLabel}>Views</Text>
-              </View>
-              <View style={styles.counterCol}>
-                <Text style={styles.counterNum}>{job.counters.saves}</Text>
-                <Text style={styles.counterLabel}>Saves</Text>
-              </View>
-              <View style={styles.counterCol}>
-                <Text style={styles.counterNum}>{job.counters.shortlisted}</Text>
-                <Text style={styles.counterLabel}>Shortlisted</Text>
-              </View>
-              <View style={styles.counterCol}>
-                <Text style={styles.counterNumAccent}>{job.counters.applications}</Text>
-                <Text style={styles.counterLabel}>Applicants</Text>
-              </View>
-            </View>
+          {/* Responsibilities */}
+          <Bullets title="Key responsibilities" items={job.responsibilities} />
 
-            {/* Description */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>ABOUT THE ROLE</Text>
-              <Text style={styles.bodyText}>{job.description}</Text>
-            </View>
-
-            {/* Responsibilities */}
-            {job.responsibilities?.length > 0 && (
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>KEY RESPONSIBILITIES</Text>
-                {job.responsibilities.map((r, i) => (
-                  <Text key={i} style={styles.bulletItem}>• {r}</Text>
-                ))}
-              </View>
-            )}
-
-            {/* Requirements */}
-            {job.requirements?.length > 0 && (
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>REQUIREMENTS</Text>
-                {job.requirements.map((r, i) => (
-                  <Text key={i} style={styles.bulletItem}>• {r}</Text>
-                ))}
-              </View>
-            )}
-          </View>
-        )}
-      </ScrollView>
+          {/* Requirements */}
+          <Bullets title="Requirements" items={job.requirements} />
+        </>
+      )}
     </EmployerShell>
   )
 }
 
+/** One counter cell — the serif value the sibling job screen gives a salary, over its mono label. Never the accent: a count is a fact, not a call to act. */
+function Counter({ label, value }: { label: string; value: number }) {
+  return (
+    <View style={styles.counterCell}>
+      <Display level="xs">{value}</Display>
+      <Eyebrow>{label}</Eyebrow>
+    </View>
+  )
+}
+
+function Bullets({ title, items }: { title: string; items: string[] }) {
+  if (!items || items.length === 0) return null
+  return (
+    <View style={styles.section}>
+      <Eyebrow>{title}</Eyebrow>
+      {items.map((it, i) => (
+        <View key={i} style={styles.bulletRow}>
+          <View style={styles.bulletDot} />
+          <Body size="sm" style={styles.grow}>
+            {it}
+          </Body>
+        </View>
+      ))}
+    </View>
+  )
+}
+
 const styles = StyleSheet.create({
-  scrollContent: {
-    paddingHorizontal: space.sm,
-    paddingBottom: space.xl,
-    gap: space.md,
-  },
-  centre: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 48,
-  },
-  loadingText: {
-    fontSize: 13,
-    color: color.textMuted,
-    marginTop: space.xs,
-  },
-  emptyCard: {
-    padding: space.xl,
-    alignItems: 'center',
-  },
-  emptyTitle: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: 18,
-    color: color.text,
-  },
-  container: {
-    gap: space.md,
-  },
+  grow: { flex: 1 },
   header: {
-    borderBottomWidth: 1,
-    borderBottomColor: color.border,
-    paddingBottom: space.sm,
-    gap: 2,
+    gap: space.xs,
   },
-  category: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 10,
-    letterSpacing: 1,
-    color: color.textSubtle,
-    textTransform: 'uppercase',
+  section: {
+    gap: space.sm,
   },
-  title: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: 22,
-    color: color.text,
-  },
-  meta: {
-    fontSize: 13,
-    color: color.textMuted,
-  },
-  salary: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: color.text,
-    marginTop: 4,
-  },
-  countersBox: {
+  countersCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
-    backgroundColor: color.surfaceMuted,
-    borderRadius: radius.md,
-    paddingVertical: space.sm,
+    paddingVertical: space.md,
   },
-  counterCol: {
+  counterCell: {
     alignItems: 'center',
-    gap: 2,
+    gap: space['2xs'],
   },
-  counterNum: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: 18,
-    color: color.text,
+  bulletRow: {
+    flexDirection: 'row',
+    gap: space.sm,
   },
-  counterNumAccent: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: 18,
-    color: color.accent,
-    fontWeight: 'bold',
-  },
-  counterLabel: {
-    fontSize: 10,
-    color: color.textMuted,
-  },
-  section: {
-    gap: space.xs,
-  },
-  sectionTitle: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 10,
-    letterSpacing: 1,
-    color: color.textSubtle,
-  },
-  bodyText: {
-    fontSize: 13,
-    color: color.text,
-    lineHeight: 18,
-  },
-  bulletItem: {
-    fontSize: 13,
-    color: color.textMuted,
-    lineHeight: 18,
-    paddingLeft: 4,
-  },
-  footRow: {
-    paddingHorizontal: space.sm,
-    paddingVertical: space.xs,
-  },
-  actionBtn: {
-    backgroundColor: color.text,
-    borderRadius: radius.lg,
-    paddingVertical: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  actionBtnText: {
-    color: color.textInverse,
-    fontSize: 14,
-    fontWeight: '600',
+  bulletDot: {
+    width: space.xs,
+    height: space.xs,
+    borderRadius: radius.pill,
+    backgroundColor: color.borderStrong,
+    marginTop: space.sm,
   },
 })

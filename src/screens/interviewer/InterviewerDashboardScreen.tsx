@@ -2,13 +2,26 @@ import React from 'react'
 import {
   Pressable,
   StyleSheet,
-  Text,
   View,
 } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { borderWidth, color, fontFamilyNative, radius, space } from '../../theme'
-import { Button, Card, Eyebrow, StatusPill } from '../../components/ui'
+import { borderWidth, color, radius, space } from '../../theme'
+import {
+  Banner,
+  Body,
+  Button,
+  Card,
+  Display,
+  EmptyState,
+  ErrorState,
+  Eyebrow,
+  Figure,
+  Meta,
+  ObjectRow,
+  Skeleton,
+  StatusPill,
+} from '../../components/ui'
 import { InterviewerShell } from '../../components/interviewer/InterviewerShell'
 import { useInterviewer } from '../../lib/interviewer/useInterviewer'
 import { formatPaise } from '../../lib/format/money'
@@ -16,7 +29,7 @@ import { formatScorecardCountdown, isScorecardOverdue, canJoinInterviewRoom } fr
 
 export function InterviewerDashboardScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<any>>()
-  const { profile, upcomingInterviews, owedScorecards, wallet } = useInterviewer()
+  const { profile, upcomingInterviews, owedScorecards, wallet, loading, error, refresh } = useInterviewer()
 
   const nextInterview = upcomingInterviews[0]
   const canJoinNext = nextInterview ? canJoinInterviewRoom(nextInterview.slotStart) : false
@@ -39,13 +52,35 @@ export function InterviewerDashboardScreen() {
     }
   }
 
+  if (loading && !profile) {
+    return (
+      <InterviewerShell navTab="home">
+        <Skeleton lines={4} />
+      </InterviewerShell>
+    )
+  }
+
+  if (error && !profile) {
+    return (
+      <InterviewerShell navTab="home">
+        <ErrorState
+          title="We could not load your dashboard."
+          body={error.message}
+          action={<Button variant="outline" size="sm" label="Try again" onPress={refresh} />}
+        />
+      </InterviewerShell>
+    )
+  }
+
   return (
     <InterviewerShell navTab="home">
       {/* Welcome header */}
       <View style={styles.header}>
         <View>
           <Eyebrow>INTERVIEWER DASHBOARD</Eyebrow>
-          <Text style={styles.greeting}>Welcome, {profile?.name || 'Interviewer'}</Text>
+          <Display level="sm" style={styles.greeting}>
+            Welcome, {profile?.name || 'Interviewer'}
+          </Display>
         </View>
         {profile?.status === 'ACTIVE' ? (
           <StatusPill tone="success" label="ACTIVE" />
@@ -58,45 +93,40 @@ export function InterviewerDashboardScreen() {
 
       {/* Owed Scorecard Banner (Settled Decision D3: 24h deadline) */}
       {owedScorecards.length > 0 && (
-        <View style={styles.owedBanner}>
-          <View style={styles.owedHeader}>
-            <Text style={styles.owedIcon}>⚠️</Text>
-            <Text style={styles.owedTitle}>
-              {owedScorecards.length} Scorecard{owedScorecards.length > 1 ? 's' : ''} Awaiting Submission
-            </Text>
-          </View>
-          <Text style={styles.owedDesc}>
+        <Banner
+          tone="warning"
+          title={`${owedScorecards.length} Scorecard${owedScorecards.length > 1 ? 's' : ''} Awaiting Submission`}
+          actionLabel={owedScorecards.length > 2 ? `View all ${owedScorecards.length} pending scorecards` : undefined}
+          onAction={owedScorecards.length > 2 ? () => navigation.navigate('PendingScorecards') : undefined}
+        >
+          <Body size="xs" tone="muted">
             Scorecards must be submitted within 24 hours of session end. Failure to submit leads to fee forfeiture.
-          </Text>
+          </Body>
 
-          {owedScorecards.slice(0, 2).map((sc) => {
-            const overdue = isScorecardOverdue(sc.slotEnd)
-            return (
-              <View key={sc.id} style={styles.owedRow}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.owedStudent}>{sc.student?.name || 'Candidate'}</Text>
-                  <Text style={[styles.owedClock, overdue && styles.owedClockOverdue]}>
-                    {formatScorecardCountdown(sc.slotEnd)}
-                  </Text>
+          <View style={styles.owedList}>
+            {owedScorecards.slice(0, 2).map((sc) => {
+              const overdue = isScorecardOverdue(sc.slotEnd)
+              return (
+                <View key={sc.id} style={styles.owedRow}>
+                  <View style={styles.grow}>
+                    <Body size="sm" weight="semibold">
+                      {sc.student?.name || 'Candidate'}
+                    </Body>
+                    <Meta style={overdue ? styles.owedClockOverdue : styles.owedClock}>
+                      {formatScorecardCountdown(sc.slotEnd)}
+                    </Meta>
+                  </View>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    label="Draft Scorecard"
+                    onPress={() => navigation.navigate('ScorecardDraft', { id: sc.id })}
+                  />
                 </View>
-                <Pressable
-                  style={styles.scorecardBtn}
-                  onPress={() => navigation.navigate('ScorecardDraft', { id: sc.id })}
-                >
-                  <Text style={styles.scorecardBtnText}>Draft Scorecard</Text>
-                </Pressable>
-              </View>
-            )
-          })}
-
-          {owedScorecards.length > 2 && (
-            <Pressable onPress={() => navigation.navigate('PendingScorecards')}>
-              <Text style={styles.viewAllOwed}>
-                View all {owedScorecards.length} pending scorecards →
-              </Text>
-            </Pressable>
-          )}
-        </View>
+              )
+            })}
+          </View>
+        </Banner>
       )}
 
       {/* Next Interview Card */}
@@ -105,26 +135,25 @@ export function InterviewerDashboardScreen() {
           <View style={styles.nextHeader}>
             <View>
               <Eyebrow>NEXT INTERVIEW</Eyebrow>
-              <Text style={styles.nextTime}>
+              <Display level="xs" style={styles.nextTime}>
                 {formatSlotDate(nextInterview.slotStart)} at {formatSlotTime(nextInterview.slotStart)}
-              </Text>
+              </Display>
             </View>
             <StatusPill tone="info" label={nextInterview.tier.replace('_', ' ')} />
           </View>
 
-          <View style={styles.candidateRow}>
-            <View style={styles.candidateAvatar}>
-              <Text style={styles.avatarText}>
-                {(nextInterview.student?.name || 'C').slice(0, 1).toUpperCase()}
-              </Text>
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.candidateName}>{nextInterview.student?.name || 'Candidate'}</Text>
-              <Text style={styles.candidateSub}>
-                {nextInterview.student?.education || 'Computer Science / Engineering'}
-              </Text>
-            </View>
-          </View>
+          <ObjectRow
+            last
+            thumb={
+              <View style={styles.candidateAvatar}>
+                <Body weight="semibold">
+                  {(nextInterview.student?.name || 'C').slice(0, 1).toUpperCase()}
+                </Body>
+              </View>
+            }
+            title={nextInterview.student?.name || 'Candidate'}
+            meta={nextInterview.student?.education || 'Computer Science / Engineering'}
+          />
 
           <View style={styles.nextActions}>
             <Button
@@ -141,61 +170,69 @@ export function InterviewerDashboardScreen() {
           </View>
         </Card>
       ) : (
-        <Card style={styles.noInterviewCard}>
-          <Text style={styles.noInterviewIcon}>📅</Text>
-          <Text style={styles.noInterviewTitle}>No upcoming interviews today</Text>
-          <Text style={styles.noInterviewDesc}>
-            Make sure your recurring availability is updated to receive student bookings.
-          </Text>
-          <Button
-            label="Edit Availability"
-            variant="secondary"
-            onPress={() => navigation.navigate('InterviewerAvailability')}
+        <Card>
+          <EmptyState
+            title="No upcoming interviews today"
+            body="Make sure your recurring availability is updated to receive student bookings."
+            action={
+              <Button
+                label="Edit Availability"
+                variant="secondary"
+                onPress={() => navigation.navigate('InterviewerAvailability')}
+              />
+            }
           />
         </Card>
       )}
 
       {/* Quick Metrics & Actions */}
       <View style={styles.metricsGrid}>
-        <Pressable
-          style={styles.metricCard}
-          onPress={() => navigation.navigate('InterviewerWallet')}
-        >
-          <Text style={styles.metricLabel}>Available Balance</Text>
-          <Text style={styles.metricValue}>{formatPaise(wallet?.balancePaise ?? 0)}</Text>
-          <Text style={styles.metricSub}>Tap to withdraw →</Text>
+        <Pressable style={styles.metricWrap} onPress={() => navigation.navigate('InterviewerWallet')}>
+          <Card style={styles.metricCard}>
+            <Body size="xs" tone="muted">
+              Available Balance
+            </Body>
+            <Figure value={formatPaise(wallet?.balancePaise ?? 0)} />
+            <Body size="xs" tone="muted">
+              Tap to withdraw →
+            </Body>
+          </Card>
         </Pressable>
 
-        <Pressable
-          style={styles.metricCard}
-          onPress={() => navigation.navigate('InterviewerInterviews')}
-        >
-          <Text style={styles.metricLabel}>Upcoming Sessions</Text>
-          <Text style={styles.metricValue}>{upcomingInterviews.length}</Text>
-          <Text style={styles.metricSub}>View schedule →</Text>
+        <Pressable style={styles.metricWrap} onPress={() => navigation.navigate('InterviewerInterviews')}>
+          <Card style={styles.metricCard}>
+            <Body size="xs" tone="muted">
+              Upcoming Sessions
+            </Body>
+            <Figure value={upcomingInterviews.length} />
+            <Body size="xs" tone="muted">
+              View schedule →
+            </Body>
+          </Card>
         </Pressable>
       </View>
 
       {/* Quality & Permitted Tiers Summary */}
       <Card style={styles.qualityCard}>
         <View style={styles.qualityHeader}>
-          <Text style={styles.qualityTitle}>Interviewer Standing</Text>
-          <Text style={styles.qualityScore}>
-            Score: {profile?.qualityScore ? profile.qualityScore.toFixed(1) : '5.0'} / 5.0
-          </Text>
+          <Body size="sm" weight="semibold">
+            Interviewer Standing
+          </Body>
+          <Meta>{`Score: ${profile?.qualityScore ? profile.qualityScore.toFixed(1) : '5.0'} / 5.0`}</Meta>
         </View>
-        <Text style={styles.qualityDesc}>
-          Permitted Tiers: {profile?.permittedTiers?.map((t) => t.replace('_', ' ')).join(', ') || 'TIER 1'}
-        </Text>
-        <Text style={styles.qualityDesc}>
-          Total Completed: {profile?.totalInterviews ?? 0} sessions conducted
-        </Text>
+        <Body size="xs" tone="muted">
+          {`Permitted Tiers: ${profile?.permittedTiers?.map((t) => t.replace('_', ' ')).join(', ') || 'TIER 1'}`}
+        </Body>
+        <Body size="xs" tone="muted">
+          {`Total Completed: ${profile?.totalInterviews ?? 0} sessions conducted`}
+        </Body>
       </Card>
     </InterviewerShell>
   )
 }
 
 const styles = StyleSheet.create({
+  grow: { flex: 1 },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -203,84 +240,27 @@ const styles = StyleSheet.create({
     paddingVertical: space.xs,
   },
   greeting: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 22,
-    fontWeight: '700',
-    color: color.text,
     marginTop: space['2xs'],
   },
-  owedBanner: {
-    backgroundColor: '#fffbeb',
-    borderColor: '#fde68a',
-    borderWidth: borderWidth.thin,
-    borderRadius: radius.md,
-    padding: space.md,
-    gap: space.xs,
-  },
-  owedHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.xs,
-  },
-  owedIcon: {
-    fontSize: 16,
-  },
-  owedTitle: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#92400e',
-  },
-  owedDesc: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 12,
-    color: '#b45309',
-    lineHeight: 16,
+  owedList: {
+    gap: space.sm,
+    marginTop: space['2xs'],
   },
   owedRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: space.md,
     backgroundColor: color.surface,
-    padding: space.sm,
-    borderRadius: radius.sm,
-    borderWidth: borderWidth.thin,
-    borderColor: '#fde68a',
-    marginTop: space['2xs'],
-  },
-  owedStudent: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    fontWeight: '600',
-    color: color.text,
+    borderRadius: radius.md,
+    padding: space.md,
   },
   owedClock: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 11,
-    color: color.accent,
-    marginTop: 2,
+    color: color.textMuted,
+    marginTop: space['2xs'],
   },
   owedClockOverdue: {
-    color: color.accent,
-    fontWeight: '700',
-  },
-  scorecardBtn: {
-    backgroundColor: color.accent,
-    paddingHorizontal: space.sm,
-    paddingVertical: space['2xs'],
-    borderRadius: radius.sm,
-  },
-  scorecardBtnText: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 12,
-    fontWeight: '600',
-    color: color.surface,
-  },
-  viewAllOwed: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 12,
-    fontWeight: '600',
-    color: color.accent,
+    color: color.danger,
     marginTop: space['2xs'],
   },
   nextCard: {
@@ -293,100 +273,31 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   nextTime: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 16,
-    fontWeight: '700',
-    color: color.text,
     marginTop: space['2xs'],
-  },
-  candidateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.sm,
-    paddingVertical: space['2xs'],
   },
   candidateAvatar: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: radius.pill,
     backgroundColor: color.surfaceSubtle,
     borderWidth: borderWidth.thin,
     borderColor: color.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarText: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 16,
-    fontWeight: '700',
-    color: color.text,
-  },
-  candidateName: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 14,
-    fontWeight: '700',
-    color: color.text,
-  },
-  candidateSub: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 12,
-    color: color.textMuted,
-  },
   nextActions: {
     gap: space.xs,
-  },
-  noInterviewCard: {
-    padding: space.lg,
-    alignItems: 'center',
-    gap: space.xs,
-  },
-  noInterviewIcon: {
-    fontSize: 32,
-  },
-  noInterviewTitle: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 16,
-    fontWeight: '700',
-    color: color.text,
-  },
-  noInterviewDesc: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    color: color.textMuted,
-    textAlign: 'center',
-    lineHeight: 18,
-    marginBottom: space.xs,
   },
   metricsGrid: {
     flexDirection: 'row',
     gap: space.md,
   },
-  metricCard: {
+  metricWrap: {
     flex: 1,
-    backgroundColor: color.surface,
-    borderWidth: borderWidth.thin,
-    borderColor: color.border,
-    borderRadius: radius.md,
+  },
+  metricCard: {
     padding: space.md,
     gap: 2,
-  },
-  metricLabel: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 12,
-    color: color.textMuted,
-  },
-  metricValue: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 18,
-    fontWeight: '700',
-    color: color.text,
-    marginVertical: 2,
-  },
-  metricSub: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 11,
-    color: color.accent,
-    fontWeight: '500',
   },
   qualityCard: {
     padding: space.md,
@@ -397,22 +308,5 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-  },
-  qualityTitle: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 14,
-    fontWeight: '700',
-    color: color.text,
-  },
-  qualityScore: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 13,
-    fontWeight: '700',
-    color: color.accent,
-  },
-  qualityDesc: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 12,
-    color: color.textMuted,
   },
 })

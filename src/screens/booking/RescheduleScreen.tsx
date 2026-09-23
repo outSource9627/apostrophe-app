@@ -5,8 +5,8 @@ import { useQuery } from '@tanstack/react-query'
 import { api, ApiClientError } from '../../lib/api'
 import { getCapacity, rescheduleInterview, type CapacitySlot, type StudentInterview } from '../../lib/api/interviews'
 import { bookingWindow, fmtShortDate, fmtStamp, fmtTime, groupByDay, weekdayLong, type DaySlots } from '../../lib/interviews/slots'
-import { color, space, radius, borderWidth } from '../../theme'
-import { AppBar, Banner, Body, Button, Card, Display, Eyebrow, Meta, StatusPill } from '../../components/ui'
+import { color, space, borderWidth, height } from '../../theme'
+import { AppBar, Banner, Body, Button, Card, Display, ErrorState, Eyebrow, Meta, StatusPill } from '../../components/ui'
 import { SlotPicker } from './SlotPicker'
 
 /**
@@ -25,7 +25,24 @@ export function RescheduleScreen({
     <View style={[styles.page, { paddingTop: insets.top }]}><AppBar title="Interview" onBack={onBack} />{child}</View>
   )
   if (q.isPending) return frame(<View style={styles.centre}><Meta style={{ color: color.textMuted }}>LOADING…</Meta></View>)
-  if (q.isError) return frame(<View style={styles.centre}><Body tone="muted">Could not load this interview.</Body></View>)
+  if (q.isError) return frame(
+    <View style={styles.centre}>
+      <ErrorState
+        title="Could not load this interview."
+        body="Check your connection and try again."
+        action={
+          <Button
+            variant="outline"
+            size="sm"
+            label="Try again"
+            // The error state's small button is 40 tall; the slop brings its tap box to the 44 floor.
+            hitSlop={(height.tap - height['control-xs']) / 2}
+            onPress={() => q.refetch()}
+          />
+        }
+      />
+    </View>,
+  )
 
   const iv = q.data!
   if (iv.status === 'BOOKED' && iv.canReschedule) {
@@ -48,11 +65,11 @@ export function RescheduleScreen({
 
   return frame(
     <ScrollView contentContainerStyle={styles.body}>
-      <View style={styles.refusedCard}>
+      <Card style={styles.refusedCard}>
         <Eyebrow>{copy.label}</Eyebrow>
         <Display level="sm">{copy.title}</Display>
         {copy.lines.map((l) => <Body key={l} size="sm" tone="muted">{l}</Body>)}
-      </View>
+      </Card>
       <Card>
         <View style={styles.rowBetween}>
           <View style={{ gap: space.xs }}>
@@ -168,6 +185,6 @@ const styles = StyleSheet.create({
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   body: { padding: space.xl, gap: space.xl, paddingBottom: space['4xl'] },
   rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.md },
-  refusedCard: { borderRadius: radius.lg, borderWidth: borderWidth.thin, borderColor: color.borderStrong, backgroundColor: color.surfaceMuted, padding: space.lg, gap: space.sm },
+  refusedCard: { borderColor: color.borderStrong, backgroundColor: color.surfaceMuted, padding: space.lg, gap: space.sm },
   foot: { borderTopWidth: borderWidth.thin, borderTopColor: color.border, backgroundColor: color.surface, paddingHorizontal: space.xl, paddingTop: space.lg },
 })

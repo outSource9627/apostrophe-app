@@ -1,17 +1,9 @@
 import React, { useState } from 'react'
-import {
-  ActivityIndicator,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native'
+import { StyleSheet, View } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { color, radius, space, fontFamilyNative } from '../../theme'
+import { color, radius, space } from '../../theme'
+import { Banner, Body, Button, Card, Display, Field, Input, Toggle } from '../../components/ui'
 import { EmployerShell } from '../../components/employer/EmployerShell'
 import {
   createEmployerJob,
@@ -89,264 +81,130 @@ export function JobEditorScreen() {
       back={{ label: 'JOBS', onPress: () => navigation.goBack() }}
       footer={
         <View style={styles.footRow}>
-          <TouchableOpacity
-            activeOpacity={0.8}
+          <Button
+            variant="outline"
+            size="lg"
+            label="Save draft"
+            disabled={saving}
             onPress={() => handleSave(false)}
-            disabled={saving}
             style={styles.draftBtn}
-          >
-            <Text style={styles.draftBtnText}>Save draft</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={() => handleSave(true)}
+          />
+          <Button
+            variant="primary"
+            size="lg"
+            label="Submit for review"
+            busy={saving}
             disabled={saving}
-            style={[styles.submitBtn, saving && styles.btnDisabled]}
-          >
-            {saving ? (
-              <ActivityIndicator color={color.textInverse} size="small" />
-            ) : (
-              <Text style={styles.submitBtnText}>Submit for review</Text>
-            )}
-          </TouchableOpacity>
+            onPress={() => handleSave(true)}
+            style={styles.submitBtn}
+          />
         </View>
       }
     >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Post a Job</Text>
-          <Text style={styles.subtitle}>
-            New postings are reviewed within 12 hours before going live to verified students.
-          </Text>
-        </View>
+      <View style={styles.header}>
+        <Display level="lg" accessibilityRole="header">
+          Post a Job
+        </Display>
+        <Body size="xs" tone="muted">
+          New postings are reviewed within 12 hours before going live to verified students.
+        </Body>
+      </View>
 
-        {error && (
-          <View style={styles.errorBox}>
-            <Text style={styles.errorText}>{error}</Text>
-          </View>
-        )}
+      {!!error && <Banner tone="danger">{error}</Banner>}
 
-        {/* Role Title */}
-        <View style={styles.field}>
-          <Text style={styles.label}>ROLE TITLE *</Text>
-          <TextInput
+      <Card style={styles.card}>
+        <Field label="Role title *">
+          <Input
             value={title}
             onChangeText={setTitle}
             placeholder="e.g. Frontend Engineer, Product Designer"
-            placeholderTextColor={color.textMuted}
-            style={styles.input}
           />
-        </View>
+        </Field>
 
-        {/* Category & Vacancies */}
-        <View style={styles.rowFields}>
-          <View style={[styles.field, { flex: 2 }]}>
-            <Text style={styles.label}>CATEGORY</Text>
-            <TextInput
-              value={category}
-              onChangeText={setCategory}
-              placeholder="e.g. Engineering, Design"
-              placeholderTextColor={color.textMuted}
-              style={styles.input}
-            />
+        <View style={styles.row}>
+          <View style={styles.flex2}>
+            <Field label="Category">
+              <Input
+                value={category}
+                onChangeText={setCategory}
+                placeholder="e.g. Engineering, Design"
+              />
+            </Field>
           </View>
 
-          <View style={[styles.field, { flex: 1 }]}>
-            <Text style={styles.label}>VACANCIES</Text>
-            <TextInput
-              value={vacancies}
-              onChangeText={setVacancies}
-              keyboardType="number-pad"
-              style={styles.input}
-            />
+          <View style={styles.flex1}>
+            <Field label="Vacancies">
+              <Input value={vacancies} onChangeText={setVacancies} keyboardType="number-pad" />
+            </Field>
           </View>
         </View>
 
-        {/* Location & Remote */}
-        <View style={styles.field}>
-          <Text style={styles.label}>OFFICE LOCATION</Text>
-          <TextInput
+        <Field label="Office location">
+          <Input
             value={location}
             onChangeText={setLocation}
             placeholder="e.g. Bangalore, Mumbai"
-            placeholderTextColor={color.textMuted}
-            style={styles.input}
           />
+        </Field>
+
+        <View style={styles.toggleRow}>
+          <View style={styles.toggleInfo}>
+            <Body size="sm" weight="medium">
+              Remote friendly
+            </Body>
+            <Body size="xs" tone="muted">
+              Accept applications from anywhere
+            </Body>
+          </View>
+          <Toggle on={remote} onChange={setRemote} label="Remote friendly" />
         </View>
 
-        <View style={styles.switchRow}>
-          <View style={styles.switchInfo}>
-            <Text style={styles.switchTitle}>Remote friendly</Text>
-            <Text style={styles.switchBody}>Accept applications from anywhere</Text>
-          </View>
-          <Switch
-            value={remote}
-            onValueChange={setRemote}
-            trackColor={{ false: color.border, true: color.text }}
-          />
-        </View>
-
-        {/* Compensation (LPA) */}
-        <View style={styles.rowFields}>
-          <View style={[styles.field, { flex: 1 }]}>
-            <Text style={styles.label}>MIN SALARY (₹ LPA)</Text>
-            <TextInput
-              value={salaryMinLpa}
-              onChangeText={setSalaryMinLpa}
-              keyboardType="decimal-pad"
-              style={styles.input}
-            />
+        <View style={styles.row}>
+          <View style={styles.flex1}>
+            <Field label="Min salary (₹ LPA)">
+              <Input value={salaryMinLpa} onChangeText={setSalaryMinLpa} keyboardType="decimal-pad" />
+            </Field>
           </View>
 
-          <View style={[styles.field, { flex: 1 }]}>
-            <Text style={styles.label}>MAX SALARY (₹ LPA)</Text>
-            <TextInput
-              value={salaryMaxLpa}
-              onChangeText={setSalaryMaxLpa}
-              keyboardType="decimal-pad"
-              style={styles.input}
-            />
+          <View style={styles.flex1}>
+            <Field label="Max salary (₹ LPA)">
+              <Input value={salaryMaxLpa} onChangeText={setSalaryMaxLpa} keyboardType="decimal-pad" />
+            </Field>
           </View>
         </View>
 
-        {/* Description */}
-        <View style={styles.field}>
-          <Text style={styles.label}>ROLE DESCRIPTION *</Text>
-          <TextInput
+        <Field label="Role description *">
+          <Input
             value={description}
             onChangeText={setDescription}
             multiline
             numberOfLines={5}
             placeholder="Describe the mission, key responsibilities, and qualifications required…"
-            placeholderTextColor={color.textMuted}
             style={styles.textArea}
           />
-        </View>
-      </ScrollView>
+        </Field>
+      </Card>
     </EmployerShell>
   )
 }
 
 const styles = StyleSheet.create({
-  scrollContent: {
-    paddingHorizontal: space.sm,
-    paddingBottom: space.xl,
-    gap: space.md,
-  },
-  header: {
-    borderBottomWidth: 1,
-    borderBottomColor: color.border,
-    paddingBottom: space.sm,
-    gap: 4,
-  },
-  title: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: 22,
-    color: color.text,
-  },
-  subtitle: {
-    fontSize: 12,
-    color: color.textMuted,
-    lineHeight: 16,
-  },
-  errorBox: {
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    borderRadius: radius.md,
-    padding: space.sm,
-  },
-  errorText: {
-    fontSize: 12,
-    color: color.danger,
-  },
-  field: {
-    gap: 4,
-  },
-  rowFields: {
-    flexDirection: 'row',
-    gap: space.sm,
-  },
-  label: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 10,
-    letterSpacing: 1,
-    color: color.textSubtle,
-  },
-  input: {
-    backgroundColor: color.surface,
-    borderWidth: 1,
-    borderColor: color.border,
-    borderRadius: radius.md,
-    paddingHorizontal: space.sm,
-    paddingVertical: 8,
-    fontSize: 14,
-    color: color.text,
-  },
-  textArea: {
-    backgroundColor: color.surface,
-    borderWidth: 1,
-    borderColor: color.border,
-    borderRadius: radius.md,
-    padding: space.sm,
-    fontSize: 14,
-    color: color.text,
-    minHeight: 120,
-    textAlignVertical: 'top',
-  },
-  switchRow: {
+  header: { gap: space.xs },
+  card: { padding: space.xl, gap: space.lg },
+  row: { flexDirection: 'row', gap: space.md },
+  flex1: { flex: 1 },
+  flex2: { flex: 2 },
+  toggleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: space.md,
     backgroundColor: color.surfaceMuted,
     borderRadius: radius.md,
-    padding: space.sm,
+    padding: space.lg,
   },
-  switchInfo: {
-    gap: 2,
-  },
-  switchTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: color.text,
-  },
-  switchBody: {
-    fontSize: 11,
-    color: color.textMuted,
-  },
-  footRow: {
-    flexDirection: 'row',
-    gap: space.sm,
-    paddingHorizontal: space.sm,
-    paddingVertical: space.xs,
-  },
-  draftBtn: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: color.border,
-    borderRadius: radius.lg,
-    paddingVertical: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  draftBtnText: {
-    color: color.text,
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  submitBtn: {
-    flex: 2,
-    backgroundColor: color.text,
-    borderRadius: radius.lg,
-    paddingVertical: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  submitBtnText: {
-    color: color.textInverse,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  btnDisabled: {
-    opacity: 0.6,
-  },
+  toggleInfo: { flex: 1, gap: space['2xs'] },
+  textArea: { minHeight: 120, paddingTop: space.md, textAlignVertical: 'top' },
+  footRow: { flexDirection: 'row', gap: space.md },
+  draftBtn: { flex: 1 },
+  submitBtn: { flex: 2 },
 })
