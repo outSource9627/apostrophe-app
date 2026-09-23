@@ -4,8 +4,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import Svg, { Path } from 'react-native-svg'
 import { api, ApiClientError } from '../../lib/api'
-import { color, space, radius, borderWidth } from '../../theme'
-import { AppBar, Banner, Body, Button, Display, Eyebrow, Figure, Meta, Sheet, VerifiedSeal } from '../../components/ui'
+import { color, space, radius, borderWidth, height } from '../../theme'
+import { AppBar, Banner, Body, Button, Card, Chip, Display, Eyebrow, Figure, Meta, Sheet, VerifiedSeal } from '../../components/ui'
 import {
   PersonalStep, EducationStep, ExperienceStep, SkillsStep, PreferencesStep, DocumentsStep,
   type Config, type StepProps,
@@ -83,21 +83,21 @@ export function ProfileViewScreen({ onBack, onBook, onVisibility, onVideos }: {
         </View>
 
         {published ? (
-          <View style={styles.card}>
+          <Card style={styles.card}>
             <Body weight="semibold" size="lg">Your video resume</Body>
             <Body size="sm" tone="muted" style={{ marginTop: space.xs }}>The film from your interview. This is the only video employers see.</Body>
             <View style={{ marginTop: space.md, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
               <VerifiedSeal date={p.publishedAt ? fmtDate(p.publishedAt) : undefined} />
             </View>
-          </View>
+          </Card>
         ) : (
-          <View style={styles.wellCard}>
+          <Card style={styles.wellCard}>
             <Body weight="semibold" size="lg">Your video resume</Body>
             <Body size="sm" tone="muted" style={{ marginTop: space.xs }}>The interview you book becomes your video resume — the one thing employers watch before they read a word.</Body>
             <View style={{ marginTop: space.md, alignItems: 'flex-start' }}>
               <Button variant="primary" size="md" label="Book an interview" onPress={onBook} />
             </View>
-          </View>
+          </Card>
         )}
 
         <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: space.sm }}>
@@ -106,14 +106,16 @@ export function ProfileViewScreen({ onBack, onBook, onVisibility, onVideos }: {
         </View>
         {firstMissing ? <Meta style={{ color: color.textSubtle }}>Still empty — {firstMissing}.</Meta> : null}
 
-        <Pressable onPress={onVisibility} style={styles.feedRow}>
-          <View style={{ flex: 1 }}>
-            <Body weight="medium">{published && !hidden ? 'You are live in the employer feed' : 'Feed visibility'}</Body>
-            <Body size="xs" tone="subtle">
-              {published ? (hidden ? 'You are hidden. Tap to manage.' : 'Employers can find you and send an Interest.') : 'Your video resume unlocks the feed. Tap to manage.'}
-            </Body>
-          </View>
-          <Chevron />
+        <Pressable onPress={onVisibility}>
+          <Card style={styles.feedRow}>
+            <View style={{ flex: 1 }}>
+              <Body weight="medium">{published && !hidden ? 'You are live in the employer feed' : 'Feed visibility'}</Body>
+              <Body size="xs" tone="subtle">
+                {published ? (hidden ? 'You are hidden. Tap to manage.' : 'Employers can find you and send an Interest.') : 'Your video resume unlocks the feed. Tap to manage.'}
+              </Body>
+            </View>
+            <Chevron />
+          </Card>
         </Pressable>
 
         <Section title="Basics" onEdit={() => setEditing('personal')}>
@@ -135,10 +137,10 @@ export function ProfileViewScreen({ onBack, onBook, onVisibility, onVideos }: {
 
         <Section title="Experience" onEdit={() => setEditing('experience')}>
           {p.experience.length === 0 ? <Body size="sm" tone="subtle">Nothing added yet.</Body> : p.experience.map((e, i) => (
-            <View key={e.id ?? i} style={{ gap: 2, marginBottom: space.md }}>
+            <View key={e.id ?? i} style={{ gap: space['2xs'], marginBottom: space.md }}>
               <Display level="xs">{e.role ?? 'Role'}</Display>
               <Body size="sm" tone="muted">{[e.company, dateRange(e.from, e.to)].filter(Boolean).join(' · ')}</Body>
-              {e.description ? <Body size="sm" tone="muted" style={{ marginTop: 2 }}>{e.description}</Body> : null}
+              {e.description ? <Body size="sm" tone="muted" style={{ marginTop: space['2xs'] }}>{e.description}</Body> : null}
             </View>
           ))}
         </Section>
@@ -146,10 +148,11 @@ export function ProfileViewScreen({ onBack, onBook, onVisibility, onVideos }: {
         <Section title="Skills" onEdit={() => setEditing('skills')}>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
             {p.skills.map((s, i) => (
-              <View key={s.id ?? i} style={[styles.skill, s.status === 'PENDING_REVIEW' && styles.skillPending]}>
-                <Body size="sm" tone={s.status === 'PENDING_REVIEW' ? 'muted' : 'default'}>{s.name}</Body>
-                {s.status === 'PENDING_REVIEW' ? <Meta style={{ color: color.info }}>  pending</Meta> : null}
-              </View>
+              <Chip
+                key={s.id ?? i}
+                label={s.status === 'PENDING_REVIEW' ? `${s.name}  ·  pending` : s.name}
+                add={s.status === 'PENDING_REVIEW'}
+              />
             ))}
           </View>
         </Section>
@@ -275,14 +278,15 @@ const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.surface },
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   body: { padding: space.xl, gap: space.xl, paddingBottom: space['4xl'] },
-  card: { borderRadius: radius.lg, borderWidth: borderWidth.thin, borderColor: color.border, backgroundColor: color.surface, padding: space.lg },
-  wellCard: { borderRadius: radius.lg, backgroundColor: color.surfaceMuted, padding: space.lg },
-  feedRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, borderRadius: radius.lg, borderWidth: borderWidth.thin, borderColor: color.border, padding: space.lg },
+  card: { padding: space.lg },
+  // Sunken well, not the bordered Card default — the same override the booking
+  // detail screen's `well` and the shared `CompletionCard`/`NextAction` make on
+  // top of the shared `Card` surface.
+  wellCard: { borderWidth: 0, backgroundColor: color.surfaceMuted, padding: space.lg },
+  feedRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.lg },
   section: { gap: space.md, borderTopWidth: borderWidth.thin, borderTopColor: color.border, paddingTop: space.lg },
   sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  editBtn: { flexDirection: 'row', alignItems: 'center', gap: space.xs, minHeight: 36 },
-  kv: { gap: 2, marginBottom: space.sm },
-  skill: { flexDirection: 'row', alignItems: 'center', borderRadius: radius.sm, backgroundColor: color.surfaceMuted, paddingHorizontal: space.md, paddingVertical: space.sm },
-  skillPending: { backgroundColor: color.surface, borderWidth: borderWidth.thin, borderColor: color.borderStrong, borderStyle: 'dashed' },
+  editBtn: { flexDirection: 'row', alignItems: 'center', gap: space.xs, minHeight: height.chip },
+  kv: { gap: space['2xs'], marginBottom: space.sm },
   doc: { flexDirection: 'row', alignItems: 'center', gap: space.sm, borderRadius: radius.md, backgroundColor: color.surfaceMuted, padding: space.md, marginTop: space.xs },
 })

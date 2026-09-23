@@ -8,16 +8,18 @@ import { fmtDayMon, fmtDayMonthLong, interestClock } from '../../lib/chat/format
 import { employmentLabel } from '../../lib/jobs/format'
 import type { EmploymentType } from '../../lib/api/jobs'
 import { color, space, radius, borderWidth } from '../../theme'
-import { AppBar, Body, Button, Display, Eyebrow, Meta, StatusPill } from '../../components/ui'
+import { AppBar, Body, Button, Card, Display, Eyebrow, Meta, StatusPill } from '../../components/ui'
 import type { Tone } from '../../components/ui/status'
 import { CompanyMark, InterestClock } from './parts'
 
 /**
  * ST-41 — Interests received. The pending list is sorted by expiresAt ASCENDING
  * (this screen exists to stop an Interest lapsing), and NOTHING is ever removed:
- * accepted, declined and lapsed rows stay below. Accept is the one crimson button
- * (one per pending card); Decline is the outline variant. There is no message
- * affordance on a pending, declined or expired Interest.
+ * accepted, declined and lapsed rows stay below. Accept is `secondary` (solid
+ * ink) rather than the crimson `primary` — the pending list can hold more than
+ * one card at once, and crimson is capped at one button per SCREEN, not one per
+ * card; Decline is the outline variant. There is no message affordance on a
+ * pending, declined or expired Interest.
  */
 export function InterestsScreen({ onBack, onConnections, onVideoResume }: {
   onBack: () => void; onConnections: () => void; onVideoResume: () => void
@@ -91,7 +93,7 @@ function PendingCard({ row, now, busy, onAccept, onDecline }: {
 }) {
   const c = row.company
   return (
-    <View style={styles.card}>
+    <Card style={styles.card}>
       <View style={styles.cardHead}>
         <CompanyMark name={c?.name} size={44} />
         <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
@@ -115,10 +117,10 @@ function PendingCard({ row, now, busy, onAccept, onDecline }: {
       <InterestClock sentAt={row.sentAt} expiresAt={row.expiresAt} now={now} />
 
       <View style={styles.cardActions}>
-        <Button variant="primary" size="md" full busy={busy} label="Accept" onPress={onAccept} />
+        <Button variant="secondary" size="md" full busy={busy} label="Accept" onPress={onAccept} />
         <Button variant="outline" size="md" full disabled={busy} label="Decline" onPress={onDecline} />
       </View>
-    </View>
+    </Card>
   )
 }
 
@@ -159,11 +161,11 @@ const COOLDOWN_DAYS = 30 // employer.interestCooldownDays — for the 'may not w
 
 function ExpiredEmpty({ onVideoResume }: { onVideoResume: () => void }) {
   return (
-    <View style={styles.emptyCard}>
+    <Card style={styles.emptyCard}>
       <Display level="xs">Employers write after they watch you.</Display>
       <Body size="sm" tone="muted" style={{ marginTop: space.sm }}>Your video resume is in the feed. Keeping it there, and adding another film, is what you can do from here — nobody can be nudged into sending an Interest.</Body>
       <View style={{ marginTop: space.md }}><Button variant="primary" size="block" full label="Check my video resume" onPress={onVideoResume} /></View>
-    </View>
+    </Card>
   )
 }
 
@@ -172,7 +174,7 @@ function LapsedCard({ row }: { row: InterestRow }) {
   const c = row.company
   const cooldown = new Date(+new Date(row.sentAt) + COOLDOWN_DAYS * 86_400_000).toISOString()
   return (
-    <View style={styles.card}>
+    <Card style={styles.card}>
       <View style={styles.cardHead}>
         <CompanyMark name={c?.name} size={44} />
         <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
@@ -195,7 +197,7 @@ function LapsedCard({ row }: { row: InterestRow }) {
         <Meta style={{ color: color.textSubtle }}>{`sent ${fmtDayMon(row.sentAt)}`}</Meta>
       </View>
       <Body size="xs" tone="muted">{`${c?.name ?? 'They'} was not told. Their list shows only that it was not accepted — a lapse and a decline are the same thing from their side — and they may not write to you again until ${fmtDayMonthLong(cooldown)}.`}</Body>
-    </View>
+    </Card>
   )
 }
 
@@ -203,7 +205,7 @@ const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.surface },
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   body: { padding: space.xl, gap: space.lg, paddingBottom: space['4xl'] },
-  card: { borderRadius: radius.lg, borderWidth: borderWidth.thin, borderColor: color.border, padding: space.lg, gap: space.md },
+  card: { padding: space.lg, gap: space.md },
   cardHead: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   roleWell: { borderRadius: radius.md, backgroundColor: color.surfaceMuted, paddingHorizontal: space.md, paddingVertical: 10, gap: 2 },
   cardActions: { flexDirection: 'row', gap: space.sm },
@@ -211,5 +213,5 @@ const styles = StyleSheet.create({
   closedRow: { flexDirection: 'row', alignItems: 'flex-start', gap: space.md, paddingVertical: space.md },
   closedRowBorder: { borderTopWidth: borderWidth.thin, borderTopColor: color.border },
   rowTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.md },
-  emptyCard: { borderRadius: radius.lg, borderWidth: borderWidth.thin, borderColor: color.border, padding: space.xl },
+  emptyCard: { padding: space.xl },
 })

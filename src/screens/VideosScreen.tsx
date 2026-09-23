@@ -1,10 +1,24 @@
 import React from 'react'
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native'
+import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import Svg, { Path } from 'react-native-svg'
 import { api } from '../lib/api'
-import { color, space, radius, fontSize, fontWeight, fontFamilyNative, borderWidth, container, height, leadingNative, trackingNative } from '../theme'
+import { color, space, height, borderWidth } from '../theme'
+import {
+  Body,
+  Button,
+  Card,
+  Display,
+  ErrorState,
+  Eyebrow,
+  FileField,
+  ObjectRow,
+  StatusPill,
+  Toggle,
+  VerifiedSeal,
+  VideoThumb,
+} from '../components/ui'
+import type { Tone } from '../components/ui'
 
 interface SelfVideo {
   id: string
@@ -18,10 +32,10 @@ interface SelfVideo {
 interface Profile { hiddenFromFeed: boolean }
 interface Config { limits: { selfVideoMaxCount: number; selfVideoMaxSeconds: number } }
 
-const STATUS: Record<SelfVideo['status'], { text: string; fg: string; bg: string }> = {
-  APPROVED: { text: 'Live on your profile', fg: color.success, bg: color.successSoft },
-  PENDING: { text: 'Waiting for review', fg: color.warning, bg: color.warningSoft },
-  REJECTED: { text: 'Not published', fg: color.danger, bg: color.dangerSoft },
+const STATUS: Record<SelfVideo['status'], { label: string; tone: Tone }> = {
+  APPROVED: { label: 'Live on your profile', tone: 'success' },
+  PENDING: { label: 'Waiting for review', tone: 'warning' },
+  REJECTED: { label: 'Not published', tone: 'danger' },
 }
 
 /**
@@ -63,6 +77,31 @@ export function VideosScreen({ onRecord }: { onRecord: () => void }) {
     )
   }
 
+  if (videos.isError || profile.isError || config.isError) {
+    return (
+      <View style={[styles.page, styles.centre, { paddingTop: insets.top }]}>
+        <ErrorState
+          title="Could not load your videos."
+          body="Check your connection and try again."
+          action={
+            <Button
+              variant="outline"
+              size="sm"
+              label="Try again"
+              // The error state's small button is 40 tall; the slop brings its tap box to the 44 floor.
+              hitSlop={(height.tap - height['control-xs']) / 2}
+              onPress={() => {
+                videos.refetch()
+                profile.refetch()
+                config.refetch()
+              }}
+            />
+          }
+        />
+      </View>
+    )
+  }
+
   const list = videos.data?.videos ?? []
   const max = config.data?.limits.selfVideoMaxCount ?? 3
   const seconds = config.data?.limits.selfVideoMaxSeconds ?? 90
@@ -74,79 +113,62 @@ export function VideosScreen({ onRecord }: { onRecord: () => void }) {
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + space['2xl'] }]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.eyebrow}>YOUR OWN RECORDINGS · {list.length} OF {max}</Text>
-        <Text style={styles.headline}>Say a bit more.</Text>
-        <Text style={styles.lede}>
+        <Eyebrow>YOUR OWN RECORDINGS · {list.length} OF {max}</Eyebrow>
+        <Display style={styles.headline}>Say a bit more.</Display>
+        <Body size="sm" tone="muted" style={styles.lede}>
           {seconds} seconds each. Marked as self-recorded — your verified interview still leads.
-        </Text>
+        </Body>
 
-        <View style={styles.verified}>
-          <View style={styles.verifiedThumb}>
-            <Svg width={19} height={19} viewBox="0 0 24 24">
-              <Path d="M9 7.5 17 12l-8 4.5V7.5Z" fill={color.textInverse} />
-            </Svg>
-          </View>
-          <View style={styles.rowBody}>
-            <View style={[styles.pill, { backgroundColor: color.accent }]}>
-              <Text style={[styles.pillText, { color: color.textInverse }]}>Verified interview</Text>
-            </View>
-            <Text style={styles.verifiedTitle}>Your interview</Text>
-            <Text style={styles.verifiedMeta}>Leads your card</Text>
-          </View>
-        </View>
+        <View style={styles.list}>
+          <Card>
+            <ObjectRow
+              last
+              thumb={<VideoThumb verified />}
+              title="Your interview"
+              meta="Leads your card"
+              status={<VerifiedSeal label="Verified interview" />}
+            />
+          </Card>
 
-        {list.map((v) => {
-          const s = STATUS[v.status]
-          return (
-            <View key={v.id} style={styles.row}>
-              <View style={styles.thumb}>
-                <Svg width={19} height={19} viewBox="0 0 24 24">
-                  <Path d="M9 7.5 17 12l-8 4.5V7.5Z" fill={color.textSubtle} />
-                </Svg>
-              </View>
-              <View style={styles.rowBody}>
-                <View style={[styles.pill, { backgroundColor: s.bg }]}>
-                  <Text style={[styles.pillText, { color: s.fg }]}>{s.text}</Text>
+          {list.map((v) => {
+            const mark = STATUS[v.status]
+            return (
+              <Card key={v.id}>
+                <ObjectRow
+                  last
+                  thumb={<VideoThumb verified={false} />}
+                  title={v.title ?? v.kind}
+                  meta={v.durationSec ? `${v.durationSec}s` : undefined}
+                  status={<StatusPill tone={mark.tone} label={mark.label} />}
+                />
+                <View style={styles.cardFoot}>
+                  {v.status === 'REJECTED' && !!v.rejectionReason && (
+                    <Body size="xs" tone="danger">{v.rejectionReason}</Body>
+                  )}
+                  <View style={styles.deleteRow}>
+                    <Button variant="destructive" size="sm" label="Delete" onPress={() => remove.mutate(v.id)} />
+                  </View>
                 </View>
-                <Text style={styles.rowTitle}>{v.title ?? v.kind}</Text>
-                <Text style={styles.rowMeta}>{v.durationSec ? `${v.durationSec}s` : ''}</Text>
-                {v.status === 'REJECTED' && !!v.rejectionReason && (
-                  <Text style={styles.reason}>{v.rejectionReason}</Text>
-                )}
-                <Pressable onPress={() => remove.mutate(v.id)} style={styles.deleteTarget}>
-                  <Text style={styles.delete}>Delete</Text>
-                </Pressable>
-              </View>
-            </View>
-          )
-        })}
+              </Card>
+            )
+          })}
 
-        {list.length < max && (
-          <Pressable onPress={onRecord} style={styles.emptySlot}>
-            <View style={styles.plus}>
-              <Svg width={17} height={17} viewBox="0 0 24 24" fill="none">
-                <Path d="M12 5v14M5 12h14" stroke={color.textSubtle} strokeWidth={1.6} strokeLinecap="round" />
-              </Svg>
-            </View>
-            <View>
-              <Text style={styles.slotTitle}>{max - list.length === 1 ? 'One slot left' : `${max - list.length} slots left`}</Text>
-              <Text style={styles.rowMeta}>Record now, or pick a file</Text>
-            </View>
-          </Pressable>
-        )}
+          {list.length < max && (
+            <FileField
+              filename={max - list.length === 1 ? 'One slot left' : `${max - list.length} slots left`}
+              detail="Record now, or pick a file"
+              onPress={onRecord}
+            />
+          )}
+        </View>
 
         {/* SP-12 / SP-13 */}
         <View style={styles.toggleRow}>
           <View style={styles.toggleText}>
-            <Text style={styles.toggleTitle}>Appear in employer searches</Text>
-            <Text style={styles.toggleBody}>Nothing is deleted when this is off.</Text>
+            <Body size="md" weight="medium">Appear in employer searches</Body>
+            <Body size="xs" tone="muted" style={styles.toggleBody}>Nothing is deleted when this is off.</Body>
           </View>
-          <Switch
-            value={visible}
-            onValueChange={(next) => setVisibility.mutate(!next)}
-            trackColor={{ false: color.borderStrong, true: color.success }}
-            thumbColor={color.surface}
-          />
+          <Toggle on={visible} onChange={(next) => setVisibility.mutate(!next)} label="Appear in employer searches" />
         </View>
       </ScrollView>
     </View>
@@ -157,49 +179,15 @@ const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.background },
   centre: { alignItems: 'center', justifyContent: 'center' },
   scroll: { paddingHorizontal: space.xl, paddingTop: space.sm },
-  eyebrow: { fontSize: fontSize['ui-2xs'], letterSpacing: trackingNative.widest, color: color.textSubtle },
-  headline: { marginTop: space.md, fontFamily: fontFamilyNative.display, fontSize: fontSize['display-md'], color: color.text },
-  lede: { marginTop: space.sm, fontSize: fontSize['ui-sm'], lineHeight: leadingNative['ui-base'], color: color.textMuted },
-  verified: {
-    flexDirection: 'row', gap: space.md, alignItems: 'center', backgroundColor: color.ink,
-    borderRadius: radius.lg, padding: space.md, marginTop: space.xl,
-  },
-  verifiedThumb: {
-    width: container['video-thumb-compact'], height: height['video-thumb-compact'], borderRadius: radius.md, backgroundColor: color.inkRaised,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  verifiedTitle: { marginTop: space.sm, fontFamily: fontFamilyNative.display, fontSize: fontSize['ui-lg'], color: color.textInverse },
-  verifiedMeta: { marginTop: space['2xs'], fontSize: fontSize['ui-xs'], color: color.textOnInkSubtle },
-  row: {
-    flexDirection: 'row', gap: space.md, alignItems: 'flex-start', borderWidth: borderWidth.thin, borderColor: color.border,
-    borderRadius: radius.lg, padding: space.md, marginTop: space.md,
-  },
-  thumb: {
-    width: container['video-thumb-compact'], height: height['video-thumb-compact'], borderRadius: radius.md, backgroundColor: color.surfaceSunken,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  rowBody: { flex: 1 },
-  pill: { alignSelf: 'flex-start', borderRadius: radius.pill, paddingHorizontal: space.sm, paddingVertical: space.xs },
-  pillText: { fontSize: fontSize['meta-sm'], fontWeight: fontWeight.medium },
-  rowTitle: { marginTop: space.sm, fontSize: fontSize['ui-md'], fontWeight: fontWeight.medium, color: color.text },
-  rowMeta: { marginTop: space['2xs'], fontSize: fontSize['ui-xs'], color: color.textSubtle },
-  reason: { marginTop: space.sm, fontSize: fontSize['ui-xs'], lineHeight: leadingNative['ui-xs'], color: color.danger },
-  deleteTarget: { marginTop: space.sm, height: height.tap, justifyContent: 'center' },
-  delete: { fontSize: fontSize['ui-sm'], color: color.textSubtle },
-  emptySlot: {
-    flexDirection: 'row', gap: space.md, alignItems: 'center', borderWidth: borderWidth.thin, borderStyle: 'dashed',
-    borderColor: color.borderStrong, borderRadius: radius.lg, padding: space.md, marginTop: space.md,
-  },
-  plus: {
-    width: container['video-thumb-compact'], height: height['video-thumb-compact'], borderRadius: radius.md, backgroundColor: color.surface,
-    borderWidth: borderWidth.thin, borderColor: color.border, alignItems: 'center', justifyContent: 'center',
-  },
-  slotTitle: { fontSize: fontSize['ui-md'], fontWeight: fontWeight.medium, color: color.textMuted },
+  headline: { marginTop: space.md },
+  lede: { marginTop: space.sm },
+  list: { marginTop: space.xl, gap: space.md },
+  cardFoot: { paddingHorizontal: space.lg, paddingBottom: space.lg, gap: space.sm },
+  deleteRow: { flexDirection: 'row', justifyContent: 'flex-end' },
   toggleRow: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.lg,
     marginTop: space.xl, paddingTop: space.lg, borderTopWidth: borderWidth.thin, borderTopColor: color.border,
   },
   toggleText: { flex: 1 },
-  toggleTitle: { fontSize: fontSize['ui-md'], fontWeight: fontWeight.medium, color: color.text },
-  toggleBody: { marginTop: space.xs, fontSize: fontSize['ui-xs'], lineHeight: leadingNative['ui-xs'], color: color.textMuted },
+  toggleBody: { marginTop: space.xs },
 })

@@ -1,15 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import {
-  ActivityIndicator,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native'
+import { Pressable, StyleSheet, View } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { color, radius, space, fontFamilyNative } from '../../theme'
+import { borderWidth, color, height, radius, space } from '../../theme'
+import {
+  Body,
+  Button,
+  Display,
+  EmptyState,
+  ErrorState,
+  Eyebrow,
+  Meta,
+  Skeleton,
+  StatusPill,
+} from '../../components/ui'
 import { EmployerShell } from '../../components/employer/EmployerShell'
 import { EmployerNav, type EmployerNavKey } from '../../components/employer/EmployerNav'
 import {
@@ -54,10 +58,12 @@ export function EmployerChatsScreen() {
   const [live, setLive] = useState<ThreadDto[]>([])
   const [archived, setArchived] = useState<ThreadDto[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
 
   const load = useCallback(async () => {
     try {
       setLoading(true)
+      setError(null)
       const [liveRes, archivedRes] = await Promise.all([
         getEmployerThreads({ archived: false, perPage: 50 }),
         getEmployerThreads({ archived: true, perPage: 50 }),
@@ -66,6 +72,7 @@ export function EmployerChatsScreen() {
       setArchived(archivedRes.rows)
     } catch (err) {
       console.error('Failed to load employer threads', err)
+      setError(err instanceof Error ? err : new Error('We could not load your conversations.'))
     } finally {
       setLoading(false)
     }
@@ -90,98 +97,101 @@ export function EmployerChatsScreen() {
 
   return (
     <EmployerShell nav={<EmployerNav current="chat" onSelect={handleNavSelect} />}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerTop}>
-            <Text style={styles.eyebrow}>
-              {`${totalUnread} unread · ${totalConversations} conversations`}
-            </Text>
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => navigation.navigate('EmployerConnections')}
-            >
-              <Text style={styles.connectionsLink}>Connections →</Text>
-            </TouchableOpacity>
-          </View>
-          <Text style={styles.title}>Chats</Text>
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.headerTop}>
+          <Eyebrow>
+            {`${totalUnread} unread · ${totalConversations} conversations`}
+          </Eyebrow>
+          <Pressable
+            accessibilityRole="button"
+            hitSlop={8}
+            onPress={() => navigation.navigate('EmployerConnections')}
+          >
+            <Body size="sm" weight="medium">
+              Connections →
+            </Body>
+          </Pressable>
         </View>
+        <Display level="lg">Chats</Display>
+      </View>
 
-        {loading ? (
-          <View style={styles.centerBox}>
-            <ActivityIndicator size="large" color={color.ink} />
-            <Text style={styles.loadingText}>Loading conversations…</Text>
-          </View>
-        ) : totalConversations === 0 ? (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyTitle}>No conversations yet.</Text>
-            <Text style={styles.emptySubtitle}>
-              A chat opens when a candidate accepts your Interest, or applies to your job after you shortlisted them. There is no other way to start one.
-            </Text>
-            <TouchableOpacity
-              activeOpacity={0.8}
+      {loading ? (
+        <Skeleton lines={4} />
+      ) : error ? (
+        <ErrorState
+          title="We could not load your conversations."
+          body={error.message}
+          action={<Button variant="outline" size="sm" label="Try again" onPress={() => load()} />}
+        />
+      ) : totalConversations === 0 ? (
+        <EmptyState
+          title="No conversations yet."
+          body="A chat opens when a candidate accepts your Interest, or applies to your job after you shortlisted them. There is no other way to start one."
+          action={
+            <Button
+              variant="outline"
+              size="sm"
+              label="Browse candidates"
               onPress={() => navigation.navigate('EmployerFeed')}
-              style={styles.browseBtn}
-            >
-              <Text style={styles.browseBtnText}>Browse candidates</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <View style={styles.listContainer}>
-            {/* Unread section */}
-            {unreadThreads.length > 0 && (
-              <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>UNREAD</Text>
-                  <View style={styles.countBadge}>
-                    <Text style={styles.countBadgeText}>{unreadThreads.length}</Text>
-                  </View>
+            />
+          }
+        />
+      ) : (
+        <View style={styles.listContainer}>
+          {/* Unread section */}
+          {unreadThreads.length > 0 && (
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Eyebrow>UNREAD</Eyebrow>
+                <View style={styles.countBadge}>
+                  <Meta style={styles.countBadgeText}>{unreadThreads.length}</Meta>
                 </View>
-                {unreadThreads.map((thread) => (
-                  <ThreadRow
-                    key={thread.id}
-                    thread={thread}
-                    onPress={() => navigation.navigate('EmployerThread', { id: thread.id })}
-                  />
-                ))}
               </View>
-            )}
+              {unreadThreads.map((thread) => (
+                <ThreadRow
+                  key={thread.id}
+                  thread={thread}
+                  onPress={() => navigation.navigate('EmployerThread', { id: thread.id })}
+                />
+              ))}
+            </View>
+          )}
 
-            {/* Earlier section */}
-            {earlierThreads.length > 0 && (
-              <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>EARLIER</Text>
-                </View>
-                {earlierThreads.map((thread) => (
-                  <ThreadRow
-                    key={thread.id}
-                    thread={thread}
-                    onPress={() => navigation.navigate('EmployerThread', { id: thread.id })}
-                  />
-                ))}
+          {/* Earlier section */}
+          {earlierThreads.length > 0 && (
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Eyebrow>EARLIER</Eyebrow>
               </View>
-            )}
+              {earlierThreads.map((thread) => (
+                <ThreadRow
+                  key={thread.id}
+                  thread={thread}
+                  onPress={() => navigation.navigate('EmployerThread', { id: thread.id })}
+                />
+              ))}
+            </View>
+          )}
 
-            {/* Archived section */}
-            {archived.length > 0 && (
-              <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>ARCHIVED · READ-ONLY ({archived.length})</Text>
-                </View>
-                {archived.map((thread) => (
-                  <ThreadRow
-                    key={thread.id}
-                    thread={thread}
-                    isArchived
-                    onPress={() => navigation.navigate('EmployerThread', { id: thread.id })}
-                  />
-                ))}
+          {/* Archived section */}
+          {archived.length > 0 && (
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Eyebrow>{`ARCHIVED · READ-ONLY (${archived.length})`}</Eyebrow>
               </View>
-            )}
-          </View>
-        )}
-      </ScrollView>
+              {archived.map((thread) => (
+                <ThreadRow
+                  key={thread.id}
+                  thread={thread}
+                  isArchived
+                  onPress={() => navigation.navigate('EmployerThread', { id: thread.id })}
+                />
+              ))}
+            </View>
+          )}
+        </View>
+      )}
     </EmployerShell>
   )
 }
@@ -207,7 +217,7 @@ function ThreadRow({
         .toUpperCase()
 
   return (
-    <TouchableOpacity activeOpacity={0.7} onPress={onPress} style={styles.row}>
+    <Pressable accessibilityRole="button" onPress={onPress} style={styles.row}>
       <View
         style={[
           styles.avatar,
@@ -215,139 +225,58 @@ function ThreadRow({
           isArchived && styles.archivedAvatar,
         ]}
       >
-        <Text
-          style={[
-            styles.avatarText,
-            isSupport && styles.supportAvatarText,
-            isArchived && styles.archivedAvatarText,
-          ]}
+        <Body
+          weight="semibold"
+          style={[isSupport && styles.supportAvatarText, isArchived && styles.archivedAvatarText]}
         >
           {initials}
-        </Text>
+        </Body>
       </View>
 
       <View style={styles.rowInfo}>
         <View style={styles.rowTop}>
           <View style={styles.nameBadgeRow}>
-            <Text style={[styles.rowName, thread.unread > 0 && styles.unreadName]} numberOfLines={1}>
+            <Display level="xs" style={styles.grow} numberOfLines={1}>
               {name}
-            </Text>
-            {isSupport && (
-              <View style={styles.supportTag}>
-                <Text style={styles.supportTagText}>Support</Text>
-              </View>
-            )}
+            </Display>
+            {isSupport && <StatusPill tone="info" label="Support" />}
             {isArchived && (
-              <View style={styles.archivedTag}>
-                <Text style={styles.archivedTagText}>
-                  {thread.archivedReason === 'BLOCKED' ? 'Blocked' : 'Withdrawn'}
-                </Text>
-              </View>
+              <StatusPill
+                tone={thread.archivedReason === 'BLOCKED' ? 'danger' : 'neutral'}
+                label={thread.archivedReason === 'BLOCKED' ? 'Blocked' : 'Withdrawn'}
+              />
             )}
           </View>
-          <Text style={styles.timestamp}>{formatTimestamp(thread.lastMessageAt)}</Text>
+          <Meta>{formatTimestamp(thread.lastMessageAt)}</Meta>
         </View>
 
         <View style={styles.rowBottom}>
-          <Text style={styles.preview} numberOfLines={1}>
+          <Body size="sm" tone="muted" numberOfLines={1} style={styles.grow}>
             {thread.lastMessagePreview || 'No messages yet.'}
-          </Text>
+          </Body>
           {thread.unread > 0 && (
             <View style={styles.unreadChip}>
-              <Text style={styles.unreadChipText}>{thread.unread}</Text>
+              <Meta style={styles.unreadChipText}>{thread.unread}</Meta>
             </View>
           )}
         </View>
       </View>
-    </TouchableOpacity>
+    </Pressable>
   )
 }
 
 const styles = StyleSheet.create({
-  scrollContent: {
-    paddingHorizontal: space.lg,
-    paddingTop: space.md,
-    paddingBottom: space['2xl'] * 2,
-  },
+  grow: { flex: 1 },
   header: {
-    marginBottom: space.lg,
+    gap: space.xs,
     paddingBottom: space.md,
-    borderBottomWidth: 1,
+    borderBottomWidth: borderWidth.thin,
     borderBottomColor: color.border,
   },
   headerTop: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: space.xs,
-  },
-  eyebrow: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    color: color.textSubtle,
-    textTransform: 'uppercase',
-  },
-  connectionsLink: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    fontWeight: '600',
-    color: color.accent,
-  },
-  title: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: 26,
-    fontWeight: 'bold',
-    color: color.text,
-  },
-  centerBox: {
-    paddingVertical: space['2xl'],
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: space.sm,
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    color: color.textMuted,
-  },
-  emptyCard: {
-    padding: space.xl,
-    alignItems: 'center',
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: color.border,
-    borderStyle: 'dashed',
-    backgroundColor: color.background,
-    marginVertical: space.xl,
-  },
-  emptyTitle: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: color.text,
-    marginBottom: space.sm,
-    textAlign: 'center',
-  },
-  emptySubtitle: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 14,
-    lineHeight: 20,
-    color: color.textMuted,
-    textAlign: 'center',
-    marginBottom: space.lg,
-  },
-  browseBtn: {
-    backgroundColor: color.accent,
-    paddingHorizontal: space.xl,
-    paddingVertical: space.sm,
-    borderRadius: radius.md,
-  },
-  browseBtnText: {
-    color: '#FFFFFF',
-    fontFamily: fontFamilyNative.body,
-    fontSize: 14,
-    fontWeight: '600',
   },
   listContainer: {
     gap: space.lg,
@@ -359,115 +288,62 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.xs,
-    paddingBottom: 6,
-    borderBottomWidth: 1,
+    paddingBottom: space.xs,
+    borderBottomWidth: borderWidth.thin,
     borderBottomColor: color.border,
   },
-  sectionTitle: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    color: color.textSubtle,
-  },
   countBadge: {
-    backgroundColor: color.accent,
+    backgroundColor: color.ink,
     borderRadius: radius.pill,
-    paddingHorizontal: 6,
-    paddingVertical: 1,
+    paddingHorizontal: space.sm,
+    paddingVertical: space['2xs'],
   },
   countBadgeText: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 10,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: color.textInverse,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.sm,
     paddingVertical: space.sm,
-    borderBottomWidth: 1,
+    borderBottomWidth: borderWidth.thin,
     borderBottomColor: color.border,
   },
   avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: height.tap,
+    height: height.tap,
+    borderRadius: radius.pill,
     backgroundColor: color.surfaceMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarText: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: color.text,
-  },
   supportAvatar: {
-    backgroundColor: '#EFF8FF',
+    backgroundColor: color.infoSoft,
   },
   supportAvatarText: {
-    color: '#175CD3',
+    color: color.info,
   },
   archivedAvatar: {
-    backgroundColor: '#F2F2F0',
+    backgroundColor: color.surfaceSunken,
   },
   archivedAvatarText: {
     color: color.textMuted,
   },
   rowInfo: {
     flex: 1,
-    gap: 2,
+    gap: space['2xs'],
   },
   rowTop: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: space.sm,
   },
   nameBadgeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: space.sm,
     flex: 1,
-    marginRight: space.xs,
-  },
-  rowName: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: 15,
-    color: color.text,
-  },
-  unreadName: {
-    fontWeight: 'bold',
-  },
-  supportTag: {
-    backgroundColor: '#EFF8FF',
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderRadius: radius.pill,
-  },
-  supportTagText: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#175CD3',
-  },
-  archivedTag: {
-    backgroundColor: '#F2F2F0',
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderRadius: radius.pill,
-  },
-  archivedTagText: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 10,
-    fontWeight: '500',
-    color: color.textMuted,
-  },
-  timestamp: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 11,
-    color: color.textSubtle,
   },
   rowBottom: {
     flexDirection: 'row',
@@ -475,22 +351,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: space.xs,
   },
-  preview: {
-    flex: 1,
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    color: color.textMuted,
-  },
   unreadChip: {
     backgroundColor: color.ink,
     borderRadius: radius.pill,
-    paddingHorizontal: 6,
-    paddingVertical: 1,
+    paddingHorizontal: space.sm,
+    paddingVertical: space['2xs'],
   },
   unreadChipText: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 10,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: color.textInverse,
   },
 })

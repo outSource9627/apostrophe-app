@@ -1,25 +1,31 @@
 import React, { useState } from 'react'
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native'
+import { ScrollView, StyleSheet, View } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { borderWidth, color, fontFamilyNative, radius, space } from '../../theme'
-import { Card, Eyebrow, StatusPill } from '../../components/ui'
+import { borderWidth, color, fontFamilyNative, space } from '../../theme'
+import {
+  Body,
+  Button,
+  Card,
+  Chip,
+  Display,
+  EmptyState,
+  ErrorState,
+  Eyebrow,
+  Meta,
+  ObjectRow,
+  Skeleton,
+  StatusPill,
+} from '../../components/ui'
 import { InterviewerShell } from '../../components/interviewer/InterviewerShell'
 import { useInterviewer } from '../../lib/interviewer/useInterviewer'
 import { formatPaise } from '../../lib/format/money'
-import type { LedgerEntryDto } from '../../lib/api/interviewer'
 
 type LedgerFilter = 'ALL' | 'FEE_CREDIT' | 'WITHDRAWAL' | 'FORFEIT'
 
 export function InterviewerLedgerScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<any>>()
-  const { wallet } = useInterviewer()
+  const { wallet, loading, error, refresh } = useInterviewer()
   const [filter, setFilter] = useState<LedgerFilter>('ALL')
 
   const ledger = wallet?.ledger || []
@@ -44,45 +50,50 @@ export function InterviewerLedgerScreen() {
     }
   }
 
+  if (loading && !wallet) {
+    return (
+      <InterviewerShell back={{ label: 'Wallet', onPress: () => navigation.goBack() }}>
+        <Skeleton lines={4} />
+      </InterviewerShell>
+    )
+  }
+
+  if (error && !wallet) {
+    return (
+      <InterviewerShell back={{ label: 'Wallet', onPress: () => navigation.goBack() }}>
+        <ErrorState
+          title="We could not load your ledger."
+          body={error.message}
+          action={<Button variant="outline" size="sm" label="Try again" onPress={refresh} />}
+        />
+      </InterviewerShell>
+    )
+  }
+
   return (
     <InterviewerShell back={{ label: 'Wallet', onPress: () => navigation.goBack() }}>
       <View style={styles.header}>
         <Eyebrow>TRANSACTION HISTORY</Eyebrow>
-        <Text style={styles.title}>Itemised Ledger</Text>
-        <Text style={styles.subtitle}>
+        <Display level="lg" accessibilityRole="header">
+          Itemised Ledger
+        </Display>
+        <Body size="sm" tone="muted">
           Every fee credited, withdrawal disbursed, and forfeiture recorded with full audit trail.
-        </Text>
+        </Body>
       </View>
 
-      {/* Filter Tabs */}
-      <View style={styles.filterRow}>
-        {(['ALL', 'FEE_CREDIT', 'WITHDRAWAL', 'FORFEIT'] as LedgerFilter[]).map((f) => (
-          <Pressable
-            key={f}
-            onPress={() => setFilter(f)}
-            style={[styles.filterTab, filter === f && styles.filterTabActive]}
-          >
-            <Text style={[styles.filterText, filter === f && styles.filterTextActive]}>
-              {f === 'ALL'
-                ? 'All'
-                : f === 'FEE_CREDIT'
-                ? 'Credits'
-                : f === 'WITHDRAWAL'
-                ? 'Withdrawals'
-                : 'Forfeits'}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+      {/* Filter Tabs — a scrolling chip row, same as the status filter on Interviews. */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabRow}>
+        <Chip label="All" selected={filter === 'ALL'} onPress={() => setFilter('ALL')} />
+        <Chip label="Credits" selected={filter === 'FEE_CREDIT'} onPress={() => setFilter('FEE_CREDIT')} />
+        <Chip label="Withdrawals" selected={filter === 'WITHDRAWAL'} onPress={() => setFilter('WITHDRAWAL')} />
+        <Chip label="Forfeits" selected={filter === 'FORFEIT'} onPress={() => setFilter('FORFEIT')} />
+      </ScrollView>
 
       {/* Ledger List */}
       {filteredEntries.length === 0 ? (
-        <Card style={styles.emptyCard}>
-          <Text style={styles.emptyIcon}>📜</Text>
-          <Text style={styles.emptyTitle}>No transactions found</Text>
-          <Text style={styles.emptyDesc}>
-            No records match the selected filter criteria.
-          </Text>
+        <Card>
+          <EmptyState title="No transactions found" body="No records match the selected filter criteria." />
         </Card>
       ) : (
         <View style={styles.list}>
@@ -92,25 +103,24 @@ export function InterviewerLedgerScreen() {
 
             return (
               <Card key={item.id} style={styles.txCard}>
-                <View style={styles.txHeader}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.txTitle}>{item.description || item.type}</Text>
-                    <Text style={styles.txTime}>{formatTxDate(item.createdAt)}</Text>
-                  </View>
-                  <Text
-                    style={[
-                      styles.txAmount,
-                      isCredit && styles.txCredit,
-                      isForfeit && styles.txForfeit,
-                    ]}
-                  >
-                    {isCredit ? '+' : '−'}
-                    {formatPaise(Math.abs(item.amountPaise))}
-                  </Text>
-                </View>
+                <ObjectRow
+                  last
+                  title={item.description || item.type}
+                  meta={formatTxDate(item.createdAt)}
+                  status={
+                    <Body
+                      size="sm"
+                      weight="semibold"
+                      style={[styles.txAmount, isCredit && styles.txCredit, isForfeit && styles.txForfeit]}
+                    >
+                      {isCredit ? '+' : '−'}
+                      {formatPaise(Math.abs(item.amountPaise))}
+                    </Body>
+                  }
+                />
 
                 <View style={styles.txFooter}>
-                  <Text style={styles.txId}>ID: {item.id.slice(0, 12)}</Text>
+                  <Meta>{`ID: ${item.id.slice(0, 12)}`}</Meta>
                   <StatusPill
                     tone={isCredit ? 'success' : isForfeit ? 'danger' : 'neutral'}
                     label={item.type.replace('_', ' ')}
@@ -129,47 +139,9 @@ const styles = StyleSheet.create({
   header: {
     gap: space['2xs'],
   },
-  title: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 24,
-    fontWeight: '700',
-    color: color.text,
-  },
-  subtitle: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    color: color.textMuted,
-    lineHeight: 18,
-  },
-  filterRow: {
-    flexDirection: 'row',
-    gap: space['2xs'],
-    backgroundColor: color.surfaceSubtle,
-    padding: 3,
-    borderRadius: radius.md,
-  },
-  filterTab: {
-    flex: 1,
-    paddingVertical: space.xs,
-    alignItems: 'center',
-    borderRadius: radius.sm,
-  },
-  filterTabActive: {
-    backgroundColor: color.surface,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    shadowOffset: { width: 0, height: 1 },
-  },
-  filterText: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 11,
-    fontWeight: '600',
-    color: color.textMuted,
-  },
-  filterTextActive: {
-    color: color.text,
-    fontWeight: '700',
+  tabRow: {
+    gap: space.sm,
+    paddingVertical: space['2xs'],
   },
   list: {
     gap: space.sm,
@@ -178,34 +150,14 @@ const styles = StyleSheet.create({
     padding: space.md,
     gap: space.xs,
   },
-  txHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  txTitle: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 14,
-    fontWeight: '700',
-    color: color.text,
-  },
-  txTime: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 11,
-    color: color.textSubtle,
-    marginTop: 2,
-  },
   txAmount: {
     fontFamily: fontFamilyNative.mono,
-    fontSize: 15,
-    fontWeight: '700',
-    color: color.text,
   },
   txCredit: {
-    color: '#059669',
+    color: color.success,
   },
   txForfeit: {
-    color: color.accent,
+    color: color.danger,
   },
   txFooter: {
     flexDirection: 'row',
@@ -214,31 +166,5 @@ const styles = StyleSheet.create({
     borderTopWidth: borderWidth.thin,
     borderTopColor: color.border,
     paddingTop: space.xs,
-    marginTop: 2,
-  },
-  txId: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 10,
-    color: color.textSubtle,
-  },
-  emptyCard: {
-    padding: space['2xl'],
-    alignItems: 'center',
-    gap: space.xs,
-  },
-  emptyIcon: {
-    fontSize: 36,
-  },
-  emptyTitle: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 16,
-    fontWeight: '700',
-    color: color.text,
-  },
-  emptyDesc: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    color: color.textMuted,
-    textAlign: 'center',
   },
 })

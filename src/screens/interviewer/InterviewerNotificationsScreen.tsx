@@ -1,22 +1,26 @@
 import React from 'react'
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native'
+import { StyleSheet, View } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { borderWidth, color, fontFamilyNative, radius, space } from '../../theme'
-import { Button, Card, Eyebrow } from '../../components/ui'
+import { color, radius, space } from '../../theme'
+import {
+  Body,
+  Button,
+  Card,
+  Display,
+  EmptyState,
+  ErrorState,
+  Eyebrow,
+  Meta,
+  Skeleton,
+} from '../../components/ui'
 import { InterviewerShell } from '../../components/interviewer/InterviewerShell'
 import { useInterviewer } from '../../lib/interviewer/useInterviewer'
 import { interviewerApi } from '../../lib/api/interviewer'
 
 export function InterviewerNotificationsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<any>>()
-  const { notifications, unreadNotifications, refresh } = useInterviewer()
+  const { notifications, unreadNotifications, loading, error, refresh } = useInterviewer()
 
   const handleMarkAllRead = async () => {
     try {
@@ -41,46 +45,69 @@ export function InterviewerNotificationsScreen() {
     }
   }
 
+  if (loading && notifications.length === 0) {
+    return (
+      <InterviewerShell back={{ label: 'Back', onPress: () => navigation.goBack() }}>
+        <Skeleton lines={4} />
+      </InterviewerShell>
+    )
+  }
+
+  if (error && notifications.length === 0) {
+    return (
+      <InterviewerShell back={{ label: 'Back', onPress: () => navigation.goBack() }}>
+        <ErrorState
+          title="We could not load your notifications."
+          body={error.message}
+          action={<Button variant="outline" size="sm" label="Try again" onPress={refresh} />}
+        />
+      </InterviewerShell>
+    )
+  }
+
   return (
     <InterviewerShell
       back={{ label: 'Back', onPress: () => navigation.goBack() }}
       rightAction={
         unreadNotifications > 0 ? (
-          <Pressable onPress={handleMarkAllRead} hitSlop={8}>
-            <Text style={styles.markReadText}>Mark all read</Text>
-          </Pressable>
+          <Button variant="text" size="sm" label="Mark all read" onPress={handleMarkAllRead} />
         ) : undefined
       }
     >
       <View style={styles.header}>
         <Eyebrow>ACTIVITY & ALERTS</Eyebrow>
-        <Text style={styles.title}>Notifications</Text>
-        <Text style={styles.subtitle}>
+        <Display level="sm">Notifications</Display>
+        <Body size="sm" tone="muted">
           Updates on candidate bookings, 24-hour scorecard reminders, and wallet payouts.
-        </Text>
+        </Body>
       </View>
 
       {notifications.length === 0 ? (
-        <Card style={styles.emptyCard}>
-          <Text style={styles.emptyIcon}>🔔</Text>
-          <Text style={styles.emptyTitle}>No Notifications</Text>
-          <Text style={styles.emptyDesc}>
-            You have no unread alerts or notifications at this time.
-          </Text>
+        <Card>
+          <EmptyState
+            title="No notifications"
+            body="You have no unread alerts or notifications at this time."
+          />
         </Card>
       ) : (
         <View style={styles.list}>
           {notifications.map((n) => (
-            <Card
-              key={n.id}
-              style={[styles.noticeCard, !n.read && styles.noticeUnread]}
-            >
+            <Card key={n.id} style={styles.noticeCard}>
               <View style={styles.noticeHeader}>
-                <Text style={styles.noticeTitle}>{n.title}</Text>
+                <Body
+                  size="md"
+                  weight={n.read ? 'regular' : 'semibold'}
+                  tone={n.read ? 'muted' : 'default'}
+                  style={styles.grow}
+                >
+                  {n.title}
+                </Body>
                 {!n.read && <View style={styles.unreadDot} />}
               </View>
-              <Text style={styles.noticeBody}>{n.body}</Text>
-              <Text style={styles.noticeTime}>{formatNoticeTime(n.createdAt)}</Text>
+              <Body size="sm" tone="muted">
+                {n.body}
+              </Body>
+              <Meta style={styles.noticeTime}>{formatNoticeTime(n.createdAt)}</Meta>
             </Card>
           ))}
         </View>
@@ -93,23 +120,8 @@ const styles = StyleSheet.create({
   header: {
     gap: space['2xs'],
   },
-  title: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 24,
-    fontWeight: '700',
-    color: color.text,
-  },
-  subtitle: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    color: color.textMuted,
-    lineHeight: 18,
-  },
-  markReadText: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    fontWeight: '600',
-    color: color.accent,
+  grow: {
+    flex: 1,
   },
   list: {
     gap: space.xs,
@@ -118,57 +130,19 @@ const styles = StyleSheet.create({
     padding: space.md,
     gap: space['2xs'],
   },
-  noticeUnread: {
-    backgroundColor: '#eff6ff',
-    borderColor: '#bfdbfe',
-  },
   noticeHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-  },
-  noticeTitle: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 14,
-    fontWeight: '700',
-    color: color.text,
+    gap: space.sm,
   },
   unreadDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: color.accent,
-  },
-  noticeBody: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    color: color.textMuted,
-    lineHeight: 18,
+    width: space.sm,
+    height: space.sm,
+    borderRadius: radius.pill,
+    backgroundColor: color.ink,
   },
   noticeTime: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 11,
-    color: color.textSubtle,
-    marginTop: 2,
-  },
-  emptyCard: {
-    padding: space['2xl'],
-    alignItems: 'center',
-    gap: space.xs,
-  },
-  emptyIcon: {
-    fontSize: 36,
-  },
-  emptyTitle: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 16,
-    fontWeight: '700',
-    color: color.text,
-  },
-  emptyDesc: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    color: color.textMuted,
-    textAlign: 'center',
+    marginTop: space['2xs'],
   },
 })

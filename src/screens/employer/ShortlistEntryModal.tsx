@@ -1,23 +1,13 @@
 import React, { useState } from 'react'
-import {
-  ActivityIndicator,
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native'
+import { Alert, ScrollView, StyleSheet, View } from 'react-native'
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { color, radius, space, fontFamilyNative } from '../../theme'
+import { space } from '../../theme'
+import { Banner, Body, Button, Card, Chip, Display, Divider, Field, Input } from '../../components/ui'
 import { EmployerShell } from '../../components/employer/EmployerShell'
 import {
   updateShortlistEntry,
   removeFromShortlist,
-  type ShortlistRow,
-  type EmployerJobRef,
 } from '../../lib/api/employerShortlist'
 import type { RootStackParamList } from '../../../App'
 
@@ -103,18 +93,15 @@ export function ShortlistEntryModal() {
       back={{ label: 'SHORTLIST', onPress: () => navigation.goBack() }}
       footer={
         <View style={styles.footRow}>
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={handleSave}
+          <Button
+            variant="primary"
+            size="block"
+            full
+            busy={saving}
             disabled={saving || removing}
-            style={[styles.saveBtn, (saving || removing) && styles.btnDisabled]}
-          >
-            {saving ? (
-              <ActivityIndicator color={color.textInverse} size="small" />
-            ) : (
-              <Text style={styles.saveBtnText}>Save changes</Text>
-            )}
-          </TouchableOpacity>
+            label="Save changes"
+            onPress={handleSave}
+          />
         </View>
       }
     >
@@ -122,120 +109,88 @@ export function ShortlistEntryModal() {
         {/* Candidate Info Header */}
         <View style={styles.header}>
           <View style={styles.headerInfo}>
-            <Text style={styles.name}>{row.name}</Text>
-            <Text style={styles.subtitle}>
+            <Display level="sm">{row.name}</Display>
+            <Body size="sm" tone="muted">
               {row.available
                 ? [row.candidate?.qualification, row.candidate?.city].filter(Boolean).join(' · ')
                 : 'Profile unavailable'}
-            </Text>
+            </Body>
           </View>
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={handleRemove}
+          <Button
+            variant="destructive"
+            size="sm"
+            busy={removing}
             disabled={removing}
-            style={styles.removeBtn}
-          >
-            <Text style={styles.removeBtnText}>Remove</Text>
-          </TouchableOpacity>
-        </View>
-
-        {error && (
-          <View style={styles.errorBox}>
-            <Text style={styles.errorText}>{error}</Text>
-          </View>
-        )}
-
-        {/* Private Notes Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>PRIVATE NOTES</Text>
-            <Text style={styles.counter}>{notes.length}/2000</Text>
-          </View>
-          <TextInput
-            value={notes}
-            onChangeText={setNotes}
-            maxLength={2000}
-            multiline
-            numberOfLines={4}
-            placeholder="Add private evaluation notes or interview remarks…"
-            placeholderTextColor={color.textMuted}
-            style={styles.textArea}
+            label="Remove"
+            onPress={handleRemove}
           />
-          {row.notesUpdatedAt && (
-            <Text style={styles.editedDate}>
-              Last edited {new Date(row.notesUpdatedAt).toLocaleDateString('en-IN', { dateStyle: 'medium' })}
-            </Text>
-          )}
         </View>
+        <Divider />
 
-        {/* Tags Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>TAGS ({tags.length}/20)</Text>
-          </View>
-          <View style={styles.tagWrap}>
-            {tags.map((t) => (
-              <View key={t} style={styles.tagPill}>
-                <Text style={styles.tagPillText}>#{t}</Text>
-                <TouchableOpacity onPress={() => handleRemoveTag(t)}>
-                  <Text style={styles.tagPillClose}>✕</Text>
-                </TouchableOpacity>
-              </View>
-            ))}
-            {tags.length === 0 && (
-              <Text style={styles.emptyNotice}>No tags assigned yet.</Text>
-            )}
-          </View>
-          <View style={styles.tagInputRow}>
-            <TextInput
-              value={newTag}
-              onChangeText={setNewTag}
-              onSubmitEditing={handleAddTag}
-              placeholder="Add tag (e.g. backend, priority)…"
-              placeholderTextColor={color.textMuted}
-              maxLength={40}
-              style={styles.tagInput}
+        {!!error && <Banner tone="danger">{error}</Banner>}
+
+        <Card style={styles.card}>
+          {/* Private Notes */}
+          <Field label="Private notes" helper={`${notes.length}/2000 characters`}>
+            <Input
+              value={notes}
+              onChangeText={setNotes}
+              maxLength={2000}
+              multiline
+              numberOfLines={4}
+              placeholder="Add private evaluation notes or interview remarks…"
             />
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={handleAddTag}
-              style={styles.addTagBtn}
-            >
-              <Text style={styles.addTagBtnText}>Add</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+          </Field>
+          {!!row.notesUpdatedAt && (
+            <Body size="xs" tone="subtle">
+              {`Last edited ${new Date(row.notesUpdatedAt).toLocaleDateString('en-IN', { dateStyle: 'medium' })}`}
+            </Body>
+          )}
 
-        {/* Job Association Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>LINK TO JOB OPENING</Text>
-          <View style={styles.jobList}>
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => setSelectedJobId('')}
-              style={[styles.jobOption, !selectedJobId && styles.jobOptionActive]}
-            >
-              <Text style={[styles.jobOptionText, !selectedJobId && styles.jobOptionTextActive]}>
-                No job linked
-              </Text>
-            </TouchableOpacity>
-            {jobs.map((job) => {
-              const active = selectedJobId === job.id
-              return (
-                <TouchableOpacity
+          <Divider />
+
+          {/* Tags */}
+          <Field label={`Tags (${tags.length}/20)`}>
+            <View style={styles.chipWrap}>
+              {tags.map((t) => (
+                <Chip key={t} label={`#${t}  ✕`} selected onPress={() => handleRemoveTag(t)} />
+              ))}
+              {tags.length === 0 && (
+                <Body size="sm" tone="subtle">
+                  No tags assigned yet.
+                </Body>
+              )}
+            </View>
+            <View style={styles.tagInputRow}>
+              <Input
+                value={newTag}
+                onChangeText={setNewTag}
+                onSubmitEditing={handleAddTag}
+                placeholder="Add tag (e.g. backend, priority)…"
+                maxLength={40}
+                style={styles.grow}
+              />
+              <Button variant="outline" size="md" label="Add" onPress={handleAddTag} />
+            </View>
+          </Field>
+
+          <Divider />
+
+          {/* Job Association */}
+          <Field label="Link to job opening">
+            <View style={styles.chipWrap}>
+              <Chip label="No job linked" selected={!selectedJobId} onPress={() => setSelectedJobId('')} />
+              {jobs.map((job) => (
+                <Chip
                   key={job.id}
-                  activeOpacity={0.8}
+                  label={`${job.title} (${job.location || 'Remote'})`}
+                  selected={selectedJobId === job.id}
                   onPress={() => setSelectedJobId(job.id)}
-                  style={[styles.jobOption, active && styles.jobOptionActive]}
-                >
-                  <Text style={[styles.jobOptionText, active && styles.jobOptionTextActive]}>
-                    {job.title} ({job.location || 'Remote'})
-                  </Text>
-                </TouchableOpacity>
-              )
-            })}
-          </View>
-        </View>
+                />
+              ))}
+            </View>
+          </Field>
+        </Card>
       </ScrollView>
     </EmployerShell>
   )
@@ -251,175 +206,31 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
-    borderBottomWidth: 1,
-    borderBottomColor: color.border,
-    paddingBottom: space.sm,
+    gap: space.md,
   },
   headerInfo: {
     flex: 1,
-    gap: 2,
+    gap: space['2xs'],
   },
-  name: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: 20,
-    color: color.text,
+  card: {
+    padding: space.xl,
+    gap: space.lg,
   },
-  subtitle: {
-    fontSize: 13,
-    color: color.textMuted,
-  },
-  removeBtn: {
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-  },
-  removeBtnText: {
-    fontSize: 13,
-    color: color.danger,
-    fontWeight: '500',
-  },
-  errorBox: {
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    borderRadius: radius.md,
-    padding: space.sm,
-  },
-  errorText: {
-    fontSize: 12,
-    color: color.danger,
-  },
-  section: {
-    gap: space.xs,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  sectionTitle: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 10,
-    letterSpacing: 1,
-    color: color.textSubtle,
-  },
-  counter: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 10,
-    color: color.textMuted,
-  },
-  textArea: {
-    backgroundColor: color.surface,
-    borderWidth: 1,
-    borderColor: color.border,
-    borderRadius: radius.md,
-    padding: space.sm,
-    fontSize: 14,
-    color: color.text,
-    minHeight: 100,
-    textAlignVertical: 'top',
-  },
-  editedDate: {
-    fontSize: 11,
-    color: color.textMuted,
-    marginTop: 2,
-  },
-  tagWrap: {
+  chipWrap: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
-    marginVertical: 4,
-  },
-  tagPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: color.surfaceMuted,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  tagPillText: {
-    fontSize: 12,
-    color: color.text,
-    fontWeight: '500',
-  },
-  tagPillClose: {
-    fontSize: 10,
-    color: color.textSubtle,
-    marginLeft: 2,
-  },
-  emptyNotice: {
-    fontSize: 12,
-    color: color.textMuted,
-    fontStyle: 'italic',
+    gap: space.sm,
   },
   tagInputRow: {
     flexDirection: 'row',
-    gap: 6,
-  },
-  tagInput: {
-    flex: 1,
-    backgroundColor: color.surface,
-    borderWidth: 1,
-    borderColor: color.border,
-    borderRadius: radius.md,
-    paddingHorizontal: space.sm,
-    paddingVertical: 6,
-    fontSize: 13,
-    color: color.text,
-  },
-  addTagBtn: {
-    backgroundColor: color.surfaceMuted,
-    borderWidth: 1,
-    borderColor: color.border,
-    borderRadius: radius.md,
-    paddingHorizontal: space.md,
+    gap: space.sm,
     alignItems: 'center',
-    justifyContent: 'center',
   },
-  addTagBtnText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: color.text,
-  },
-  jobList: {
-    gap: 6,
-    marginTop: 4,
-  },
-  jobOption: {
-    backgroundColor: color.surface,
-    borderWidth: 1,
-    borderColor: color.border,
-    borderRadius: radius.md,
-    padding: space.sm,
-  },
-  jobOptionActive: {
-    borderColor: color.text,
-    backgroundColor: color.surfaceMuted,
-  },
-  jobOptionText: {
-    fontSize: 13,
-    color: color.textMuted,
-  },
-  jobOptionTextActive: {
-    color: color.text,
-    fontWeight: '600',
+  grow: {
+    flex: 1,
   },
   footRow: {
     paddingHorizontal: space.sm,
     paddingVertical: space.xs,
-  },
-  saveBtn: {
-    backgroundColor: color.text,
-    borderRadius: radius.lg,
-    paddingVertical: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  saveBtnText: {
-    color: color.textInverse,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  btnDisabled: {
-    opacity: 0.6,
   },
 })

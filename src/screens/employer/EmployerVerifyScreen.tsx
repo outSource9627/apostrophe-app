@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import {
-  KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View, type TextInput,
+  KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View, type TextInput,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { borderWidth, color, height, opacity, space } from '../../theme'
-import { Banner, Body, Button, Display, Eyebrow } from '../../components/ui'
-import { CodeRow, Glyph, TextAction } from '../../components/employer'
+import { color, space } from '../../theme'
+import { AppBar, Banner, Body, Button, Display } from '../../components/ui'
+import { CodeRow, TextAction } from '../../components/employer'
 import { ApiClientError, ErrorCode } from '../../lib/api'
 import {
   attemptsLeft, registerEmployer, sendRegisterCodes, verifyRegisterCode,
@@ -321,17 +321,7 @@ export function EmployerVerifyScreen({
       style={[styles.page, { paddingTop: insets.top }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <View style={styles.bar}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Back to create account"
-          onPress={onEdit}
-          style={({ pressed }) => [styles.back, pressed && styles.pressed]}
-        >
-          <Glyph name="chevronLeft" size={height.glyph} weight={borderWidth.accent} />
-        </Pressable>
-        <Eyebrow>Create account</Eyebrow>
-      </View>
+      <AppBar title="Create account" onBack={onEdit} />
 
       <ScrollView
         style={styles.grow}
@@ -386,26 +376,6 @@ const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.background },
   grow: { flex: 1 },
   start: { alignSelf: 'flex-start' },
-  pressed: { opacity: opacity.pressed },
-
-  bar: {
-    height: height.header,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space['2xs'],
-    paddingHorizontal: space.xl,
-    backgroundColor: color.surface,
-    borderBottomWidth: borderWidth.thin,
-    borderBottomColor: color.border,
-  },
-  // Hung over the gutter so the chevron lines up with the content edge.
-  back: {
-    width: height.tap,
-    height: height.tap,
-    marginLeft: -space.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
 
   body: { paddingHorizontal: space.xl, paddingTop: space.xl, gap: space.xl },
   title: { gap: space.sm },

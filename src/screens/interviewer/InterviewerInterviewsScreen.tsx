@@ -1,15 +1,22 @@
 import React, { useState } from 'react'
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native'
+import { ScrollView, StyleSheet, View } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { borderWidth, color, fontFamilyNative, radius, space } from '../../theme'
-import { Button, Card, Eyebrow, StatusPill } from '../../components/ui'
+import { borderWidth, color, radius, space } from '../../theme'
+import {
+  Body,
+  Button,
+  Card,
+  Chip,
+  Display,
+  EmptyState,
+  ErrorState,
+  Eyebrow,
+  Meta,
+  ObjectRow,
+  Skeleton,
+  StatusPill,
+} from '../../components/ui'
 import { InterviewerShell } from '../../components/interviewer/InterviewerShell'
 import { useInterviewer } from '../../lib/interviewer/useInterviewer'
 import { formatPaise } from '../../lib/format/money'
@@ -20,7 +27,7 @@ type FilterKey = 'all' | 'upcoming' | 'owed' | 'past'
 
 export function InterviewerInterviewsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<any>>()
-  const { upcomingInterviews, owedScorecards, pastInterviews } = useInterviewer()
+  const { upcomingInterviews, owedScorecards, pastInterviews, loading, error, refresh } = useInterviewer()
   const [filter, setFilter] = useState<FilterKey>('all')
 
   const formatSlotTime = (iso: string) => {
@@ -64,64 +71,64 @@ export function InterviewerInterviewsScreen() {
 
   const list = getFilteredList()
 
+  if (loading) {
+    return (
+      <InterviewerShell navTab="interviews">
+        <Skeleton lines={4} />
+      </InterviewerShell>
+    )
+  }
+
+  if (error && list.length === 0) {
+    return (
+      <InterviewerShell navTab="interviews">
+        <ErrorState
+          title="We could not load your interviews."
+          body={error.message}
+          action={<Button variant="outline" size="sm" label="Try again" onPress={refresh} />}
+        />
+      </InterviewerShell>
+    )
+  }
+
   return (
     <InterviewerShell navTab="interviews">
       <View style={styles.header}>
         <Eyebrow>SESSIONS</Eyebrow>
-        <Text style={styles.title}>Interviews</Text>
+        <Display level="lg" accessibilityRole="header">
+          Interviews
+        </Display>
       </View>
 
-      {/* Filter Tabs */}
-      <View style={styles.tabsRow}>
-        <Pressable
-          onPress={() => setFilter('all')}
-          style={[styles.tab, filter === 'all' && styles.tabActive]}
-        >
-          <Text style={[styles.tabText, filter === 'all' && styles.tabTextActive]}>
-            All
-          </Text>
-        </Pressable>
-
-        <Pressable
+      {/* Filter Tabs — a scrolling chip row, same as the status filter on Job openings. */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabRow}>
+        <Chip label="All" selected={filter === 'all'} onPress={() => setFilter('all')} />
+        <Chip
+          label={`Upcoming (${upcomingInterviews.length})`}
+          selected={filter === 'upcoming'}
           onPress={() => setFilter('upcoming')}
-          style={[styles.tab, filter === 'upcoming' && styles.tabActive]}
-        >
-          <Text style={[styles.tabText, filter === 'upcoming' && styles.tabTextActive]}>
-            Upcoming ({upcomingInterviews.length})
-          </Text>
-        </Pressable>
-
-        <Pressable
+        />
+        <Chip
+          label={`Owed (${owedScorecards.length})`}
+          selected={filter === 'owed'}
           onPress={() => setFilter('owed')}
-          style={[styles.tab, filter === 'owed' && styles.tabActive]}
-        >
-          <Text style={[styles.tabText, filter === 'owed' && styles.tabTextActive]}>
-            Owed ({owedScorecards.length})
-          </Text>
-        </Pressable>
-
-        <Pressable
-          onPress={() => setFilter('past')}
-          style={[styles.tab, filter === 'past' && styles.tabActive]}
-        >
-          <Text style={[styles.tabText, filter === 'past' && styles.tabTextActive]}>
-            Past
-          </Text>
-        </Pressable>
-      </View>
+        />
+        <Chip label="Past" selected={filter === 'past'} onPress={() => setFilter('past')} />
+      </ScrollView>
 
       {/* List of interviews */}
       {list.length === 0 ? (
-        <Card style={styles.emptyCard}>
-          <Text style={styles.emptyIcon}>📂</Text>
-          <Text style={styles.emptyTitle}>No interviews found</Text>
-          <Text style={styles.emptySub}>
-            {filter === 'owed'
-              ? 'All scorecards are up to date. Excellent work!'
-              : filter === 'upcoming'
-              ? 'No upcoming sessions scheduled right now.'
-              : 'No sessions recorded under this filter.'}
-          </Text>
+        <Card>
+          <EmptyState
+            title="No interviews found"
+            body={
+              filter === 'owed'
+                ? 'All scorecards are up to date. Excellent work!'
+                : filter === 'upcoming'
+                ? 'No upcoming sessions scheduled right now.'
+                : 'No sessions recorded under this filter.'
+            }
+          />
         </Card>
       ) : (
         <View style={styles.list}>
@@ -136,10 +143,10 @@ export function InterviewerInterviewsScreen() {
                 {/* Header info */}
                 <View style={styles.cardHeader}>
                   <View>
-                    <Text style={styles.dateTime}>
+                    <Display level="xs">
                       {formatSlotDate(item.slotStart)} · {formatSlotTime(item.slotStart)}
-                    </Text>
-                    <Text style={styles.feeText}>Fee: {formatPaise(fee)}</Text>
+                    </Display>
+                    <Meta style={styles.feeText}>{`Fee: ${formatPaise(fee)}`}</Meta>
                   </View>
                   <StatusPill
                     tone={
@@ -156,32 +163,29 @@ export function InterviewerInterviewsScreen() {
                 </View>
 
                 {/* Candidate Info */}
-                <View style={styles.studentRow}>
-                  <View style={styles.avatar}>
-                    <Text style={styles.avatarText}>
-                      {(item.student?.name || 'C').slice(0, 1).toUpperCase()}
-                    </Text>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.studentName}>{item.student?.name || 'Candidate'}</Text>
-                    <Text style={styles.studentSub}>
-                      {item.student?.city ? `${item.student.city} · ` : ''}
-                      {item.tier.replace('_', ' ')}
-                    </Text>
-                  </View>
-                </View>
+                <ObjectRow
+                  last
+                  thumb={
+                    <View style={styles.avatar}>
+                      <Body weight="semibold">
+                        {(item.student?.name || 'C').slice(0, 1).toUpperCase()}
+                      </Body>
+                    </View>
+                  }
+                  title={item.student?.name || 'Candidate'}
+                  meta={`${item.student?.city ? `${item.student.city} · ` : ''}${item.tier.replace('_', ' ')}`}
+                />
 
-                {/* Scorecard countdown alert if owed */}
+                {/* Scorecard countdown alert if owed — never the accent, a countdown is a passive readout. */}
                 {isOwed && (
-                  <View style={[styles.owedClockRow, overdue && styles.owedClockOverdue]}>
-                    <Text style={styles.clockIcon}>⏱️</Text>
-                    <Text style={[styles.clockText, overdue && styles.clockTextOverdue]}>
-                      {formatScorecardCountdown(item.slotEnd)}
-                    </Text>
-                  </View>
+                  <StatusPill
+                    tone={overdue ? 'danger' : 'warning'}
+                    dot
+                    label={formatScorecardCountdown(item.slotEnd)}
+                  />
                 )}
 
-                {/* Action buttons */}
+                {/* Action buttons — secondary only: a list of rows never carries the screen's one accent action. */}
                 <View style={styles.actionsRow}>
                   <Button
                     label="Prep & Script"
@@ -193,7 +197,7 @@ export function InterviewerInterviewsScreen() {
                   {canJoin && (
                     <Button
                       label="Join Room"
-                      variant="primary"
+                      variant="secondary"
                       size="sm"
                       onPress={() => navigation.navigate('InterviewerDetail', { id: item.id, autoJoin: true })}
                     />
@@ -202,7 +206,7 @@ export function InterviewerInterviewsScreen() {
                   {isOwed && (
                     <Button
                       label="Draft Scorecard"
-                      variant="primary"
+                      variant="secondary"
                       size="sm"
                       onPress={() => navigation.navigate('ScorecardDraft', { id: item.id })}
                     />
@@ -221,41 +225,9 @@ const styles = StyleSheet.create({
   header: {
     paddingVertical: space['2xs'],
   },
-  title: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 24,
-    fontWeight: '700',
-    color: color.text,
-  },
-  tabsRow: {
-    flexDirection: 'row',
-    gap: space.xs,
-    backgroundColor: color.surfaceSubtle,
-    padding: 3,
-    borderRadius: radius.md,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: space.xs,
-    alignItems: 'center',
-    borderRadius: radius.sm,
-  },
-  tabActive: {
-    backgroundColor: color.surface,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    shadowOffset: { width: 0, height: 1 },
-  },
-  tabText: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 12,
-    fontWeight: '600',
-    color: color.textMuted,
-  },
-  tabTextActive: {
-    color: color.text,
-    fontWeight: '700',
+  tabRow: {
+    gap: space.sm,
+    paddingVertical: space['2xs'],
   },
   list: {
     gap: space.md,
@@ -269,76 +241,18 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
   },
-  dateTime: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 15,
-    fontWeight: '700',
-    color: color.text,
-  },
   feeText: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 12,
-    fontWeight: '600',
-    color: color.accent,
-    marginTop: 2,
-  },
-  studentRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.sm,
+    marginTop: space['2xs'],
   },
   avatar: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: radius.pill,
     backgroundColor: color.surfaceSubtle,
     borderWidth: borderWidth.thin,
     borderColor: color.border,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  avatarText: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 14,
-    fontWeight: '700',
-    color: color.text,
-  },
-  studentName: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 14,
-    fontWeight: '700',
-    color: color.text,
-  },
-  studentSub: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 12,
-    color: color.textMuted,
-  },
-  owedClockRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.xs,
-    backgroundColor: '#fffbeb',
-    padding: space.xs,
-    borderRadius: radius.sm,
-    borderWidth: borderWidth.thin,
-    borderColor: '#fde68a',
-  },
-  owedClockOverdue: {
-    backgroundColor: '#fef2f2',
-    borderColor: '#fecaca',
-  },
-  clockIcon: {
-    fontSize: 14,
-  },
-  clockText: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#b45309',
-  },
-  clockTextOverdue: {
-    color: color.accent,
   },
   actionsRow: {
     flexDirection: 'row',
@@ -347,26 +261,5 @@ const styles = StyleSheet.create({
     borderTopWidth: borderWidth.thin,
     borderTopColor: color.border,
     paddingTop: space.sm,
-  },
-  emptyCard: {
-    padding: space['2xl'],
-    alignItems: 'center',
-    gap: space.xs,
-  },
-  emptyIcon: {
-    fontSize: 36,
-  },
-  emptyTitle: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 16,
-    fontWeight: '700',
-    color: color.text,
-  },
-  emptySub: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    color: color.textMuted,
-    textAlign: 'center',
-    lineHeight: 18,
   },
 })

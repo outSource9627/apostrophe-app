@@ -1,16 +1,24 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import {
-  ActivityIndicator,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native'
+import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native'
+import Svg, { Path } from 'react-native-svg'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { color, radius, space, fontFamilyNative } from '../../theme'
-import { EmployerShell } from '../../components/employer/EmployerShell'
+import { color, space } from '../../theme'
+import {
+  Banner,
+  Body,
+  Button,
+  Card,
+  Display,
+  Divider,
+  ErrorState,
+  Eyebrow,
+  Meta,
+  ObjectRow,
+  Skeleton,
+  StatusPill,
+} from '../../components/ui'
+import { CompanyMonogram, EmployerShell, VerifiedEmployerBadge } from '../../components/employer'
 import { getEmployerMe, type EmployerMe } from '../../lib/api/employer'
 import { logout } from '../../lib/api/account'
 import type { RootStackParamList } from '../../../App'
@@ -25,11 +33,30 @@ function formatApprovedDate(isoStr?: string | null): string {
   return `${day} ${mon} ${yr}`
 }
 
+/** The chevron on a drill-in row. Danger-toned on Sign out so the row reads as the destructive one without reaching for accent. */
+function RowChevron({ danger = false }: { danger?: boolean }) {
+  return (
+    <Svg
+      width={16}
+      height={16}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={danger ? color.danger : color.textSubtle}
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <Path d="m9 5 7 7-7 7" />
+    </Svg>
+  )
+}
+
 export function EmployerAccountScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
 
   const [data, setData] = useState<EmployerMe | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
   const [signingOut, setSigningOut] = useState(false)
 
   const load = useCallback(async () => {
@@ -37,8 +64,10 @@ export function EmployerAccountScreen() {
       setLoading(true)
       const res = await getEmployerMe()
       setData(res)
+      setError(null)
     } catch (err) {
       console.error('Failed to load employer account', err)
+      setError(err instanceof Error ? err : new Error('Failed to load employer account'))
     } finally {
       setLoading(false)
     }
@@ -71,184 +100,133 @@ export function EmployerAccountScreen() {
       scroll={false}
     >
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Account</Text>
-        </View>
+        <Display level="lg" accessibilityRole="header">
+          Account
+        </Display>
 
         {loading ? (
-          <View style={styles.centerBox}>
-            <ActivityIndicator size="large" color={color.ink} />
-            <Text style={styles.loadingText}>Loading account…</Text>
-          </View>
+          <Skeleton lines={4} />
         ) : data ? (
           <View style={styles.content}>
             {/* Suspended Alert */}
             {isSuspended && (
-              <View style={styles.suspendedBox}>
-                <Text style={styles.suspendedTag}>ACCOUNT SUSPENDED</Text>
-                <Text style={styles.suspendedTitle}>{data.company.name}</Text>
-                <Text style={styles.suspendedText}>
-                  While the suspension lasts, candidate browsing, job applications, messaging, and new Interests are frozen.
-                </Text>
-              </View>
+              <Banner tone="danger" title={data.company.name} reference="ACCOUNT SUSPENDED">
+                While the suspension lasts, candidate browsing, job applications, messaging, and new Interests are
+                frozen.
+              </Banner>
             )}
 
             {/* Pending Review Alert */}
             {isPending && (
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={() => navigation.navigate('EmployerStatus')}
-                style={styles.pendingBox}
-              >
-                <View style={styles.pendingTop}>
-                  <Text style={styles.pendingTitle}>In review</Text>
-                  <View style={styles.pendingPill}>
-                    <Text style={styles.pendingPillText}>Pending review</Text>
-                  </View>
-                </View>
-                <Text style={styles.pendingText}>
-                  Your verification documents are under review. Candidates and chat open once approved.
-                </Text>
-              </TouchableOpacity>
+              <Card>
+                <ObjectRow
+                  title="In review"
+                  meta="Your verification documents are under review. Candidates and chat open once approved."
+                  status={<StatusPill tone="warning" label="Pending review" />}
+                  onPress={() => navigation.navigate('EmployerStatus')}
+                  last
+                />
+              </Card>
             )}
 
             {/* Verification Card */}
-            <View style={styles.verificationCard}>
-              <View style={styles.cardHeader}>
-                <View style={styles.shieldIcon}>
-                  <Text style={styles.shieldText}>✓</Text>
-                </View>
-                <View style={styles.companyInfo}>
-                  <View style={styles.nameBadgeRow}>
-                    <Text style={styles.companyName}>{data.company.name}</Text>
-                    <View
-                      style={[
-                        styles.badgePill,
-                        isVerified ? styles.verifiedPill : styles.pendingPill,
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.badgePillText,
-                          isVerified ? styles.verifiedPillText : styles.pendingPillText,
-                        ]}
-                      >
-                        {isVerified ? 'Verified Employer' : 'Pending'}
-                      </Text>
-                    </View>
-                  </View>
-                  <Text style={styles.sinceText}>
-                    {data.verification.approvedAt
-                      ? `Since ${formatApprovedDate(data.verification.approvedAt)}`
-                      : 'Verification pending'}
-                  </Text>
+            <Card style={styles.verificationCard}>
+              <View style={styles.identity}>
+                <CompanyMonogram name={data.company.name} size={space['4xl']} />
+                <View style={styles.naming}>
+                  <Display level="md">{data.company.name}</Display>
+                  {isVerified ? <VerifiedEmployerBadge /> : <StatusPill tone="warning" label="Pending" />}
                 </View>
               </View>
 
-              <Text style={styles.metaRow}>
+              <Meta>
+                {data.verification.approvedAt
+                  ? `Since ${formatApprovedDate(data.verification.approvedAt)}`
+                  : 'Verification pending'}
+              </Meta>
+
+              <Body size="sm" tone="muted">
                 {[data.company.industry, data.company.size, data.company.officeLocation]
                   .filter(Boolean)
                   .join(' · ')}
-              </Text>
+              </Body>
 
-              <View style={styles.hairline} />
+              <Divider />
 
-              <Text style={styles.badgeExplainer}>
-                Verified employers have submitted company PAN, registration documents, and an authorized signatory's government photo ID. Students see this seal next to every communication from your team.
-              </Text>
-            </View>
+              <Body size="xs" tone="muted">
+                Verified employers have submitted company PAN, registration documents, and an authorized signatory's
+                government photo ID. Students see this seal next to every communication from your team.
+              </Body>
+            </Card>
 
             {/* Sign-in & Security */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>SIGN-IN & SECURITY</Text>
-              <View style={styles.listCard}>
-                <View style={styles.fieldRow}>
-                  <View style={styles.fieldInfo}>
-                    <Text style={styles.fieldLabel}>WORK EMAIL</Text>
-                    <Text style={styles.fieldVal}>{data.contact.email}</Text>
-                  </View>
-                  <View style={styles.verifiedSmallPill}>
-                    <Text style={styles.verifiedSmallPillText}>Verified</Text>
-                  </View>
-                </View>
-
-                <View style={[styles.fieldRow, styles.rowBorder]}>
-                  <View style={styles.fieldInfo}>
-                    <Text style={styles.fieldLabel}>MOBILE NUMBER</Text>
-                    <Text style={styles.fieldVal}>{data.contact.mobile}</Text>
-                  </View>
-                  <View style={styles.verifiedSmallPill}>
-                    <Text style={styles.verifiedSmallPillText}>Verified</Text>
-                  </View>
-                </View>
-              </View>
+              <Eyebrow>Sign-in & security</Eyebrow>
+              <Card>
+                <ObjectRow title={data.contact.email} meta="Work email" status={<StatusPill tone="success" label="Verified" />} />
+                <ObjectRow
+                  title={data.contact.mobile}
+                  meta="Mobile number"
+                  status={<StatusPill tone="success" label="Verified" />}
+                  last
+                />
+              </Card>
             </View>
 
             {/* Account Holder */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>ACCOUNT HOLDER</Text>
-              <View style={styles.listCard}>
+              <Eyebrow>Account holder</Eyebrow>
+              <Card>
                 <View style={styles.holderHeader}>
-                  <Text style={styles.holderName}>{data.company.authorisedPerson.name}</Text>
-                  <Text style={styles.holderDesignation}>
+                  <Display level="xs">{data.company.authorisedPerson.name}</Display>
+                  <Body size="sm" tone="muted">
                     {data.company.authorisedPerson.designation} · Authorized Signatory
-                  </Text>
+                  </Body>
                 </View>
-
-                <View style={[styles.fieldRow, styles.rowBorder]}>
-                  <View style={styles.fieldInfo}>
-                    <Text style={styles.fieldLabel}>PHOTO ID SUBMITTED</Text>
-                    <Text style={styles.fieldVal}>Government Photo ID</Text>
-                  </View>
-                </View>
-              </View>
+                <Divider />
+                <ObjectRow title="Government Photo ID" meta="Photo ID submitted" last />
+              </Card>
             </View>
 
             {/* Quick Links */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>PREFERENCES & ACTIVITY</Text>
-              <View style={styles.listCard}>
-                <TouchableOpacity
-                  activeOpacity={0.7}
+              <Eyebrow>Preferences & activity</Eyebrow>
+              <Card>
+                <ObjectRow
+                  title="Notifications inbox"
+                  status={<RowChevron />}
                   onPress={() => navigation.navigate('EmployerNotifications')}
-                  style={styles.linkRow}
-                >
-                  <Text style={styles.linkText}>Notifications inbox</Text>
-                  <Text style={styles.chevron}>›</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  activeOpacity={0.7}
+                />
+                <ObjectRow
+                  title="Notification preferences"
+                  status={<RowChevron />}
                   onPress={() => navigation.navigate('EmployerNotificationSettings')}
-                  style={[styles.linkRow, styles.rowBorder]}
-                >
-                  <Text style={styles.linkText}>Notification preferences</Text>
-                  <Text style={styles.chevron}>›</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  activeOpacity={0.7}
+                />
+                <ObjectRow
+                  title="Connections"
+                  status={<RowChevron />}
                   onPress={() => navigation.navigate('EmployerConnections')}
-                  style={[styles.linkRow, styles.rowBorder]}
-                >
-                  <Text style={styles.linkText}>Connections</Text>
-                  <Text style={styles.chevron}>›</Text>
-                </TouchableOpacity>
-              </View>
+                  last
+                />
+              </Card>
             </View>
 
             {/* Sign Out */}
-            <TouchableOpacity
-              activeOpacity={0.7}
-              disabled={signingOut}
-              onPress={handleSignOut}
-              style={styles.signOutBtn}
-            >
-              <Text style={styles.signOutBtnText}>
-                {signingOut ? 'Signing out…' : 'Sign out'}
-              </Text>
-            </TouchableOpacity>
+            <Card>
+              <ObjectRow
+                title={signingOut ? 'Signing out…' : 'Sign out'}
+                status={signingOut ? <ActivityIndicator size="small" color={color.textMuted} /> : <RowChevron danger />}
+                onPress={signingOut ? undefined : handleSignOut}
+                last
+              />
+            </Card>
           </View>
+        ) : error ? (
+          <ErrorState
+            title="We could not load your account."
+            body={error.message}
+            action={<Button variant="outline" size="sm" label="Try again" onPress={() => load()} />}
+          />
         ) : null}
       </ScrollView>
     </EmployerShell>
@@ -259,264 +237,30 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: space.lg,
     paddingTop: space.md,
-    paddingBottom: space['2xl'] * 2,
-  },
-  header: {
-    marginBottom: space.lg,
-    paddingBottom: space.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: color.border,
-  },
-  title: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: 26,
-    fontWeight: 'bold',
-    color: color.text,
-  },
-  centerBox: {
-    paddingVertical: space['2xl'],
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: space.sm,
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    color: color.textMuted,
+    paddingBottom: space['4xl'],
+    gap: space['2xl'],
   },
   content: {
     gap: space.lg,
   },
-  suspendedBox: {
-    backgroundColor: '#FDF2F2',
-    borderWidth: 1,
-    borderColor: '#E4CDC9',
-    borderRadius: radius.md,
-    padding: space.md,
-    gap: space.xs,
-  },
-  suspendedTag: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 11,
-    fontWeight: 'bold',
-    color: color.accent,
-  },
-  suspendedTitle: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: color.text,
-  },
-  suspendedText: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    lineHeight: 18,
-    color: color.text,
-  },
-  pendingBox: {
-    backgroundColor: '#EFF8FF',
-    borderWidth: 1,
-    borderColor: '#B2DDFF',
-    borderRadius: radius.md,
-    padding: space.md,
-    gap: 4,
-  },
-  pendingTop: {
+  identity: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  pendingTitle: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#175CD3',
-  },
-  pendingText: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 12,
-    color: color.textMuted,
-  },
-  verificationCard: {
-    backgroundColor: color.background,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: color.border,
-    padding: space.md,
+    alignItems: 'flex-start',
     gap: space.sm,
   },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.sm,
-  },
-  shieldIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: color.surfaceMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  shieldText: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: color.accent,
-  },
-  companyInfo: {
+  naming: {
     flex: 1,
-    gap: 2,
-  },
-  nameBadgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    flexWrap: 'wrap',
-  },
-  companyName: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: 17,
-    fontWeight: 'bold',
-    color: color.text,
-  },
-  badgePill: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: radius.pill,
-  },
-  badgePillText: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 10,
-    fontWeight: '600',
-  },
-  verifiedPill: {
-    backgroundColor: '#ECFDF3',
-  },
-  verifiedPillText: {
-    color: '#027A48',
-  },
-  pendingPill: {
-    backgroundColor: '#FEF0C7',
-  },
-  pendingPillText: {
-    color: '#B54708',
-  },
-  sinceText: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 11,
-    color: color.textSubtle,
-  },
-  metaRow: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    color: color.textMuted,
-  },
-  hairline: {
-    height: 1,
-    backgroundColor: color.border,
-  },
-  badgeExplainer: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 12,
-    lineHeight: 18,
-    color: color.textMuted,
+    gap: space.sm,
   },
   section: {
-    gap: space.xs,
-  },
-  sectionTitle: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 11,
-    fontWeight: '700',
-    color: color.textSubtle,
-    letterSpacing: 0.5,
-  },
-  listCard: {
-    backgroundColor: color.background,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: color.border,
-    overflow: 'hidden',
-  },
-  fieldRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: space.md,
-  },
-  rowBorder: {
-    borderTopWidth: 1,
-    borderTopColor: color.border,
-  },
-  fieldInfo: {
-    gap: 2,
-  },
-  fieldLabel: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 11,
-    color: color.textSubtle,
-  },
-  fieldVal: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 14,
-    color: color.text,
-  },
-  verifiedSmallPill: {
-    backgroundColor: '#ECFDF3',
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderRadius: radius.pill,
-  },
-  verifiedSmallPillText: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#027A48',
+    gap: space.md,
   },
   holderHeader: {
+    padding: space.lg,
+    gap: space['2xs'],
+  },
+  verificationCard: {
     padding: space.md,
-    gap: 2,
-  },
-  holderName: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: color.text,
-  },
-  holderDesignation: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 12,
-    color: color.textMuted,
-  },
-  linkRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: space.md,
-  },
-  linkText: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 14,
-    color: color.text,
-  },
-  chevron: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 14,
-    color: color.textSubtle,
-  },
-  signOutBtn: {
-    borderWidth: 1,
-    borderColor: '#E4CDC9',
-    borderRadius: radius.md,
-    paddingVertical: space.md,
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    marginTop: space.sm,
-  },
-  signOutBtnText: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 14,
-    fontWeight: '600',
-    color: color.accent,
+    gap: space.sm,
   },
 })

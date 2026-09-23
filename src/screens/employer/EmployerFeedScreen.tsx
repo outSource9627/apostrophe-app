@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { StyleSheet, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { height, space } from '../../theme'
@@ -17,7 +16,6 @@ import {
 import type { RootStackParamList } from '../../../App'
 
 export function EmployerFeedScreen() {
-  const insets = useSafeAreaInsets()
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
 
   const [items, setItems] = useState<CandidateCardType[]>([])

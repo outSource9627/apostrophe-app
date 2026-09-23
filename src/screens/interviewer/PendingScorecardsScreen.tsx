@@ -1,44 +1,76 @@
 import React from 'react'
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native'
+import { StyleSheet, View } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { borderWidth, color, fontFamilyNative, radius, space } from '../../theme'
-import { Button, Card, Eyebrow } from '../../components/ui'
+import { space } from '../../theme'
+import {
+  Body,
+  Button,
+  Card,
+  Display,
+  EmptyState,
+  ErrorState,
+  Eyebrow,
+  Meta,
+  ProgressRing,
+  Skeleton,
+  StatusPill,
+} from '../../components/ui'
 import { InterviewerShell } from '../../components/interviewer/InterviewerShell'
 import { useInterviewer } from '../../lib/interviewer/useInterviewer'
-import { formatScorecardCountdown, isScorecardOverdue, TIER_FEES_PAISE } from '../../lib/interviewer/state'
+import {
+  computeScorecardClock,
+  formatScorecardCountdown,
+  isScorecardOverdue,
+  SCORECARD_WINDOW_HOURS,
+  TIER_FEES_PAISE,
+} from '../../lib/interviewer/state'
 import { formatPaise } from '../../lib/format/money'
+
+const SCORECARD_WINDOW_MS = SCORECARD_WINDOW_HOURS * 60 * 60 * 1000
 
 export function PendingScorecardsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<any>>()
-  const { owedScorecards } = useInterviewer()
+  const { owedScorecards, loading, error, refresh } = useInterviewer()
+
+  if (loading) {
+    return (
+      <InterviewerShell back={{ label: 'Home', onPress: () => navigation.goBack() }}>
+        <Skeleton lines={4} />
+      </InterviewerShell>
+    )
+  }
+
+  if (error && owedScorecards.length === 0) {
+    return (
+      <InterviewerShell back={{ label: 'Home', onPress: () => navigation.goBack() }}>
+        <ErrorState
+          title="We could not load your scorecards."
+          body={error.message}
+          action={<Button variant="outline" size="sm" label="Try again" onPress={refresh} />}
+        />
+      </InterviewerShell>
+    )
+  }
 
   return (
     <InterviewerShell back={{ label: 'Home', onPress: () => navigation.goBack() }}>
       <View style={styles.header}>
         <Eyebrow>ACTION REQUIRED</Eyebrow>
-        <Text style={styles.title}>Pending Scorecards</Text>
-        <Text style={styles.subtitle}>
+        <Display level="lg" accessibilityRole="header">
+          Pending Scorecards
+        </Display>
+        <Body size="sm" tone="muted">
           All scorecards must be submitted within 24 hours of session end. Failure to submit leads to fee forfeiture.
-        </Text>
+        </Body>
       </View>
 
       {owedScorecards.length === 0 ? (
-        <Card style={styles.emptyCard}>
-          <Text style={styles.emptyIcon}>🎉</Text>
-          <Text style={styles.emptyTitle}>All Caught Up!</Text>
-          <Text style={styles.emptyDesc}>
-            You have no pending scorecards awaiting submission. All completed session fees have been credited.
-          </Text>
-          <Button
-            label="Back to Dashboard"
-            variant="secondary"
-            onPress={() => navigation.goBack()}
+        <Card>
+          <EmptyState
+            title="All caught up"
+            body="You have no pending scorecards awaiting submission. All completed session fees have been credited."
+            action={<Button label="Back to Dashboard" variant="secondary" onPress={() => navigation.goBack()} />}
           />
         </Card>
       ) : (
@@ -46,41 +78,43 @@ export function PendingScorecardsScreen() {
           {owedScorecards.map((sc) => {
             const overdue = isScorecardOverdue(sc.slotEnd)
             const fee = TIER_FEES_PAISE[sc.tier as keyof typeof TIER_FEES_PAISE] ?? 4000
+            const clock = computeScorecardClock(sc)
+            const pct = Math.max(0, Math.min(100, Math.round((clock.remainingMs / SCORECARD_WINDOW_MS) * 100)))
 
             return (
               <Card key={sc.id} style={styles.card}>
                 <View style={styles.cardHeader}>
-                  <View>
-                    <Text style={styles.candidateName}>{sc.student?.name || 'Candidate'}</Text>
-                    <Text style={styles.sessionMeta}>
-                      {sc.tier.replace('_', ' ')} · Fee: {formatPaise(fee)}
-                    </Text>
+                  <View style={styles.grow}>
+                    <Body weight="semibold">{sc.student?.name || 'Candidate'}</Body>
+                    <Meta style={styles.sessionMeta}>
+                      {`${sc.tier.replace('_', ' ')} · Fee: ${formatPaise(fee)}`}
+                    </Meta>
                   </View>
-                  <View style={[styles.badge, overdue && styles.badgeOverdue]}>
-                    <Text style={[styles.badgeText, overdue && styles.badgeTextOverdue]}>
-                      {overdue ? 'FORFEITED' : 'OWED'}
-                    </Text>
-                  </View>
+                  <StatusPill tone={overdue ? 'danger' : 'warning'} label={overdue ? 'FORFEITED' : 'OWED'} />
                 </View>
 
-                {/* Countdown */}
-                <View style={[styles.clockRow, overdue && styles.clockRowOverdue]}>
-                  <Text style={styles.clockIcon}>⏱️</Text>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.clockText, overdue && styles.clockTextOverdue]}>
-                      {formatScorecardCountdown(sc.slotEnd)}
-                    </Text>
-                    <Text style={styles.clockDesc}>
-                      {overdue
-                        ? '24-hour evaluation window has expired.'
-                        : 'Submit now to unlock fee credit.'}
-                    </Text>
-                  </View>
+                {/* Countdown — a ProgressRing readout, never the accent: an
+                    owed/forfeited state is a passive clock, not one of red's
+                    four sanctioned jobs. */}
+                <View style={styles.clockRow}>
+                  <ProgressRing
+                    value={formatScorecardCountdown(sc.slotEnd)}
+                    pct={pct}
+                    tone={overdue ? 'danger' : 'warning'}
+                    size="sm"
+                  />
+                  <Body size="xs" tone="muted" style={styles.grow}>
+                    {overdue
+                      ? '24-hour evaluation window has expired.'
+                      : 'Submit now to unlock fee credit.'}
+                  </Body>
                 </View>
 
+                {/* Secondary only — a list of rows never carries the screen's
+                    one accent action, same rule as the Interviews list. */}
                 <Button
                   label={overdue ? 'View Details' : 'Complete Scorecard'}
-                  variant={overdue ? 'secondary' : 'primary'}
+                  variant="secondary"
                   onPress={() => navigation.navigate('ScorecardDraft', { id: sc.id })}
                 />
               </Card>
@@ -96,18 +130,6 @@ const styles = StyleSheet.create({
   header: {
     gap: space['2xs'],
   },
-  title: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 24,
-    fontWeight: '700',
-    color: color.text,
-  },
-  subtitle: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    color: color.textMuted,
-    lineHeight: 18,
-  },
   list: {
     gap: space.md,
   },
@@ -119,89 +141,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
+    gap: space.sm,
   },
-  candidateName: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 16,
-    fontWeight: '700',
-    color: color.text,
+  grow: {
+    flex: 1,
   },
   sessionMeta: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 12,
-    color: color.textMuted,
-    marginTop: 2,
-  },
-  badge: {
-    backgroundColor: '#fef3c7',
-    paddingHorizontal: space.xs,
-    paddingVertical: 2,
-    borderRadius: radius.sm,
-  },
-  badgeOverdue: {
-    backgroundColor: '#fee2e2',
-  },
-  badgeText: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#b45309',
-  },
-  badgeTextOverdue: {
-    color: color.accent,
+    marginTop: space['2xs'],
   },
   clockRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: space.sm,
-    backgroundColor: '#fffbeb',
-    padding: space.sm,
-    borderRadius: radius.sm,
-    borderWidth: borderWidth.thin,
-    borderColor: '#fde68a',
-  },
-  clockRowOverdue: {
-    backgroundColor: '#fef2f2',
-    borderColor: '#fecaca',
-  },
-  clockIcon: {
-    fontSize: 18,
-  },
-  clockText: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#92400e',
-  },
-  clockTextOverdue: {
-    color: color.accent,
-  },
-  clockDesc: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 11,
-    color: '#b45309',
-    marginTop: 1,
-  },
-  emptyCard: {
-    padding: space['2xl'],
-    alignItems: 'center',
-    gap: space.xs,
-  },
-  emptyIcon: {
-    fontSize: 40,
-  },
-  emptyTitle: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 18,
-    fontWeight: '700',
-    color: color.text,
-  },
-  emptyDesc: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    color: color.textMuted,
-    textAlign: 'center',
-    lineHeight: 18,
-    marginBottom: space.sm,
+    gap: space.md,
   },
 })

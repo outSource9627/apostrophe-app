@@ -4,8 +4,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useQuery } from '@tanstack/react-query'
 import { api, ApiClientError } from '../../lib/api'
 import { createOrder, mockSettle } from '../../lib/api/payments'
-import { color, space, radius, borderWidth } from '../../theme'
-import { AppBar, Banner, Body, Button, Display, Eyebrow, Figure } from '../../components/ui'
+import { color, space, borderWidth, height } from '../../theme'
+import { AppBar, Banner, Body, Button, Card, Display, Divider, ErrorState, Eyebrow, Figure, Skeleton } from '../../components/ui'
 
 interface Me { qualification?: string }
 const TIER_NAME: Record<string, string> = { T1: 'Class 12', T2: 'Graduation', T3: 'Post Graduation', T4: 'PhD' }
@@ -86,35 +86,57 @@ export function CheckoutScreen({ onBack, onConfirming }: { onBack: () => void; o
   const tier = cfg.data?.qualifications.find((q) => q.value === me.data?.qualification)?.tier
   const price = cfg.data?.tiers.find((t) => t.tier === tier)
 
-  return (
-    <View style={[styles.page, { paddingTop: insets.top }]}>
-      <AppBar title="Pricing" onBack={onBack} />
+  const frame = (child: React.ReactNode) => (
+    <View style={[styles.page, { paddingTop: insets.top }]}><AppBar title="Pricing" onBack={onBack} />{child}</View>
+  )
+  if (me.isPending || cfg.isPending) return frame(<Skeleton lines={4} />)
+  if (me.isError || cfg.isError) return frame(
+    <View style={styles.centre}>
+      <ErrorState
+        title="Could not load your order."
+        body="Check your connection and try again."
+        action={
+          <Button
+            variant="outline"
+            size="sm"
+            label="Try again"
+            // The error state's small button is 40 tall; the slop brings its tap box to the 44 floor.
+            hitSlop={(height.tap - height['control-xs']) / 2}
+            onPress={() => { me.refetch(); cfg.refetch() }}
+          />
+        }
+      />
+    </View>,
+  )
+
+  return frame(
+    <>
       <ScrollView contentContainerStyle={styles.body}>
         <View style={{ gap: space.sm }}>
           <Eyebrow>Your order</Eyebrow>
           <Display level="lg">One interview.</Display>
         </View>
-        <View style={styles.summary}>
+        <Card style={styles.summary}>
           <View style={styles.sumRow}><Body tone="muted">Tier</Body><Body weight="medium">{tier ? `${tier} · ${TIER_NAME[tier]}` : '—'}</Body></View>
           <View style={styles.sumRow}><Body tone="muted">Length</Body><Body weight="medium">{price ? `${price.durationMin} minutes` : '—'}</Body></View>
-          <View style={styles.hr} />
+          <Divider />
           <View style={styles.sumRow}><Body tone="muted">Amount</Body>{price ? <Figure value={rupees(price.amountPaise)} /> : <Body>—</Body>}</View>
-        </View>
+        </Card>
         <Body size="sm" tone="muted">Pay by UPI, card, net banking or wallet — the gateway offers them next. One-time; nothing recurring.</Body>
         {error ? <Banner tone="danger">{error}</Banner> : null}
       </ScrollView>
       <View style={[styles.foot, { paddingBottom: insets.bottom + space.xl }]}>
         <Button variant="primary" size="lg" full busy={busy} label="Pay now" onPress={pay} />
       </View>
-    </View>
+    </>,
   )
 }
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.surface },
+  centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   body: { padding: space.xl, gap: space.xl },
-  summary: { borderRadius: radius.lg, borderWidth: borderWidth.thin, borderColor: color.border, padding: space.lg, gap: space.md },
+  summary: { padding: space.lg, gap: space.md },
   sumRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
-  hr: { height: 1, backgroundColor: color.border },
   foot: { borderTopWidth: borderWidth.thin, borderTopColor: color.border, paddingHorizontal: space.xl, paddingTop: space.lg },
 })

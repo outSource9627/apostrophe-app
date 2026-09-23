@@ -6,7 +6,7 @@ import { api, ApiClientError } from '../../lib/api'
 import { swipeJob, type JobDetail } from '../../lib/api/jobs'
 import { applicationMark, dateLine, deadlineLine, employmentLabel, experienceLine, locationLine, salaryRange } from '../../lib/jobs/format'
 import { color, space, radius, borderWidth } from '../../theme'
-import { AppBar, Banner, Body, Button, Display, Eyebrow, Figure, Meta, StatusPill } from '../../components/ui'
+import { AppBar, Banner, Body, Button, Card, Display, Eyebrow, Figure, Meta, StatusPill, Tag } from '../../components/ui'
 
 /**
  * ST-36 — the full post. One crimson Apply is the only primary; Save is
@@ -52,13 +52,13 @@ export function JobDetailScreen({ id, onBack, onApply, onApplications }: {
         </View>
 
         {applied ? (
-          <View style={styles.appliedCard}>
+          <Card style={styles.appliedCard}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
               <StatusPill tone={applicationMark(applied.status).tone} label={applicationMark(applied.status).label} />
               <Meta style={{ color: color.textSubtle }}>Applied {dateLine(applied.appliedAt)}</Meta>
             </View>
             <Button variant="text" size="md" label="Track it" onPress={onApplications} />
-          </View>
+          </Card>
         ) : null}
 
         <Prose title="About the role" body={job.description} />
@@ -68,7 +68,7 @@ export function JobDetailScreen({ id, onBack, onApply, onApplications }: {
         {job.skills.length > 0 && (
           <View style={{ gap: space.sm }}>
             <Eyebrow>Skills</Eyebrow>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>{job.skills.map((s) => <View key={s} style={styles.skill}><Body size="xs" tone="muted">{s}</Body></View>)}</View>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>{job.skills.map((s) => <Tag key={s} label={s} />)}</View>
           </View>
         )}
       </ScrollView>
@@ -93,7 +93,7 @@ export function JobDetailScreen({ id, onBack, onApply, onApplications }: {
 }
 
 function KV({ k, v }: { k: string; v: string }) {
-  return <View style={{ gap: 2 }}><Eyebrow>{k}</Eyebrow><Body size="sm">{v}</Body></View>
+  return <View style={{ gap: space['2xs'] }}><Eyebrow>{k}</Eyebrow><Body size="sm">{v}</Body></View>
 }
 function Prose({ title, body }: { title: string; body?: string }) {
   if (!body) return null
@@ -118,8 +118,10 @@ const styles = StyleSheet.create({
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   body: { padding: space.xl, gap: space.lg, paddingBottom: space['4xl'] },
   video: { aspectRatio: 9 / 16, maxHeight: 340, borderRadius: radius.md, backgroundColor: color.ink },
-  appliedCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderRadius: radius.md, backgroundColor: color.surfaceMuted, padding: space.md },
-  skill: { borderRadius: radius.sm, backgroundColor: color.surfaceMuted, paddingHorizontal: space.sm, paddingVertical: space.xs },
-  dot: { width: 4, height: 4, borderRadius: 999, backgroundColor: color.borderStrong, marginTop: 8 },
+  // Sunken well, not the bordered card default — the same override the
+  // booking detail screen's `well` and the shared `CompletionCard`/`NextAction`
+  // make on top of the shared `Card` surface.
+  appliedCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 0, borderRadius: radius.md, backgroundColor: color.surfaceMuted, padding: space.md },
+  dot: { width: space.xs, height: space.xs, borderRadius: radius.pill, backgroundColor: color.borderStrong, marginTop: space.sm },
   foot: { borderTopWidth: borderWidth.thin, borderTopColor: color.border, paddingHorizontal: space.xl, paddingTop: space.md },
 })

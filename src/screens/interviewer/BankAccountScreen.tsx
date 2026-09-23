@@ -1,24 +1,16 @@
 import React, { useState } from 'react'
-import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native'
+import { Alert, StyleSheet, View } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { borderWidth, color, fontFamilyNative, radius, space } from '../../theme'
-import { Button, Card, Eyebrow, Field, Input } from '../../components/ui'
+import { space } from '../../theme'
+import { Banner, Body, Button, Card, Display, ErrorState, Eyebrow, Field, Input, Skeleton } from '../../components/ui'
 import { InterviewerShell } from '../../components/interviewer/InterviewerShell'
 import { useInterviewer } from '../../lib/interviewer/useInterviewer'
 import { interviewerApi } from '../../lib/api/interviewer'
 
 export function BankAccountScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<any>>()
-  const { wallet, refresh } = useInterviewer()
+  const { wallet, loading, error, refresh } = useInterviewer()
 
   const [accountHolder, setAccountHolder] = useState(
     wallet?.bankAccount?.beneficiaryName || wallet?.bankAccount?.accountHolder || '',
@@ -68,14 +60,34 @@ export function BankAccountScreen() {
     }
   }
 
+  if (loading) {
+    return (
+      <InterviewerShell back={{ label: 'Wallet', onPress: () => navigation.goBack() }}>
+        <Skeleton lines={4} />
+      </InterviewerShell>
+    )
+  }
+
+  if (error && !wallet) {
+    return (
+      <InterviewerShell back={{ label: 'Wallet', onPress: () => navigation.goBack() }}>
+        <ErrorState
+          title="We could not load your bank account."
+          body={error.message}
+          action={<Button variant="outline" size="sm" label="Try again" onPress={() => refresh()} />}
+        />
+      </InterviewerShell>
+    )
+  }
+
   return (
     <InterviewerShell back={{ label: 'Wallet', onPress: () => navigation.goBack() }}>
       <View style={styles.header}>
         <Eyebrow>PAYOUT RECIPIENT</Eyebrow>
-        <Text style={styles.title}>Bank Account Details</Text>
-        <Text style={styles.subtitle}>
+        <Display level="lg">Bank Account Details</Display>
+        <Body size="sm" tone="muted">
           Payouts are transferred via IMPS / NEFT directly into this Indian bank account.
-        </Text>
+        </Body>
       </View>
 
       <Card style={styles.card}>
@@ -125,17 +137,15 @@ export function BankAccountScreen() {
           />
         </Field>
 
-        <View style={styles.securityNote}>
-          <Text style={styles.securityIcon}>🔒</Text>
-          <Text style={styles.securityText}>
-            Account numbers are encrypted at rest. We never share your banking credentials with candidates or external third parties.
-          </Text>
-        </View>
+        <Banner tone="neutral">
+          Account numbers are encrypted at rest. We never share your banking credentials with candidates or external
+          third parties.
+        </Banner>
 
         <Button
-          label={saving ? 'Saving...' : 'Save Bank Account'}
+          label="Save Bank Account"
           variant="primary"
-          disabled={saving}
+          busy={saving}
           onPress={handleSave}
         />
       </Card>
@@ -147,38 +157,8 @@ const styles = StyleSheet.create({
   header: {
     gap: space['2xs'],
   },
-  title: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 24,
-    fontWeight: '700',
-    color: color.text,
-  },
-  subtitle: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    color: color.textMuted,
-    lineHeight: 18,
-  },
   card: {
     padding: space.md,
     gap: space.md,
-  },
-  securityNote: {
-    flexDirection: 'row',
-    gap: space.xs,
-    backgroundColor: color.surfaceSubtle,
-    padding: space.sm,
-    borderRadius: radius.sm,
-    alignItems: 'center',
-  },
-  securityIcon: {
-    fontSize: 16,
-  },
-  securityText: {
-    flex: 1,
-    fontFamily: fontFamilyNative.body,
-    fontSize: 11,
-    color: color.textSubtle,
-    lineHeight: 15,
   },
 })

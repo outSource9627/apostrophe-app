@@ -8,7 +8,7 @@ import {
 } from '../../lib/api/chat'
 import { fmtDayMon, fmtDayMonthLong, originLabel } from '../../lib/chat/format'
 import { color, space, radius, borderWidth } from '../../theme'
-import { AppBar, Body, Button, Display, Eyebrow, Meta, StatusPill } from '../../components/ui'
+import { AppBar, Body, Button, Card, Display, Divider, Eyebrow, Meta, StatusPill } from '../../components/ui'
 import type { Tone } from '../../components/ui/status'
 import { BlockSheet, CompanyMark } from './parts'
 
@@ -78,7 +78,7 @@ export function ConnectionsScreen({ onBack, onChats, onOpenThread, onBrowseJobs,
             {archived.length > 0 && (
               <View style={styles.archHead}>
                 <Eyebrow>Archived</Eyebrow>
-                <View style={styles.rule} />
+                <Divider style={styles.rule} />
                 <Meta style={{ color: color.textSubtle }}>{String(archived.length)}</Meta>
               </View>
             )}
@@ -121,14 +121,14 @@ function ActiveCard({ row, busy, onOpen, onWithdraw, onBlock }: {
   row: ConnectionRow; busy: boolean; onOpen: () => void; onWithdraw: () => void; onBlock: () => void
 }) {
   return (
-    <View style={styles.card}>
+    <Card style={styles.card}>
       <Head row={row} />
       <View style={styles.actions}>
         <Button variant="primary" size="md" full disabled={busy} label="Open chat" onPress={onOpen} />
         <Button variant="destructive" size="md" disabled={busy} label="Withdraw" onPress={onWithdraw} />
         <Button variant="destructive" size="md" disabled={busy} label="Block" onPress={onBlock} />
       </View>
-    </View>
+    </Card>
   )
 }
 
@@ -136,7 +136,7 @@ function ArchivedCard({ row, busy, onRead, onBlock }: { row: ConnectionRow; busy
   const blocked = row.status === 'BLOCKED'
   const name = row.counterparty.name ?? 'This company'
   return (
-    <View style={[styles.card, styles.cardMuted]}>
+    <Card style={[styles.card, styles.cardMuted]}>
       <Head row={row} muted />
       {blocked ? (
         <View style={styles.dangerWell}>
@@ -153,20 +153,20 @@ function ArchivedCard({ row, busy, onRead, onBlock }: { row: ConnectionRow; busy
           </View>
         </>
       )}
-    </View>
+    </Card>
   )
 }
 
 function EmptyConnections({ onInterests, onBrowseJobs }: { onInterests: () => void; onBrowseJobs: () => void }) {
   return (
-    <View style={styles.emptyCard}>
+    <Card style={styles.emptyCard}>
       <Display level="xs">No connections yet.</Display>
       <Body size="sm" tone="muted" style={{ marginTop: space.sm }}>One opens when you accept an Interest, or when you apply to an employer who had already shortlisted you. There is no third way in, and no way to follow anyone.</Body>
       <View style={[styles.actions, { marginTop: space.md }]}>
         <Button variant="secondary" size="md" full label="See your Interests" onPress={onInterests} />
         <Button variant="outline" size="md" full label="Browse jobs" onPress={onBrowseJobs} />
       </View>
-    </View>
+    </Card>
   )
 }
 
@@ -174,14 +174,14 @@ const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.surface },
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   body: { padding: space.xl, gap: space.md, paddingBottom: space['4xl'] },
-  card: { borderRadius: radius.lg, borderWidth: borderWidth.thin, borderColor: color.border, padding: space.lg, gap: space.md },
+  card: { padding: space.lg, gap: space.md },
   cardMuted: { backgroundColor: color.surfaceMuted },
   head: { flexDirection: 'row', alignItems: 'flex-start', gap: space.md },
   pillRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: space.sm },
   actions: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   archHead: { flexDirection: 'row', alignItems: 'center', gap: space.md, marginTop: space.xs },
-  rule: { flex: 1, height: 1, backgroundColor: color.border },
+  rule: { flex: 1 },
   well: { borderRadius: radius.md, backgroundColor: color.surfaceSunken, padding: space.md },
   dangerWell: { borderRadius: radius.md, borderWidth: borderWidth.thin, borderColor: color.dangerBorder, backgroundColor: color.dangerSoft, padding: space.md },
-  emptyCard: { borderRadius: radius.lg, borderWidth: borderWidth.thin, borderColor: color.border, padding: space.xl },
+  emptyCard: { padding: space.xl },
 })

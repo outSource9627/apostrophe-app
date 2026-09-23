@@ -5,8 +5,8 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { api, ApiClientError } from '../../lib/api'
 import { cancelInterview, type CancelOutcome, type StudentInterview } from '../../lib/api/interviews'
 import { bookingRef, fmtShortDate, fmtTime, weekdayLong } from '../../lib/interviews/slots'
-import { color, space, radius, borderWidth } from '../../theme'
-import { AppBar, Banner, Body, Button, Card, Display, Eyebrow, Figure, Meta, StatusPill } from '../../components/ui'
+import { color, space } from '../../theme'
+import { AppBar, Banner, Body, Button, Card, Display, Divider, Eyebrow, Figure, Meta, StatusPill } from '../../components/ui'
 import { Field, Input } from '../../components/ui'
 
 interface Config { tiers: { tier: string; amountPaise: number }[] }
@@ -63,9 +63,7 @@ export function CancelScreen({
           <Meta style={{ color: color.textSubtle }}>Booking #{bookingRef(data.id)} · cancelled {fmtShortDate(new Date(now).toISOString())}</Meta>
         </View>
         {outcome.entitlementRestored && (
-          <View style={styles.well}>
-            <Body size="sm">Your interview is unused again. Book whenever you are ready.</Body>
-          </View>
+          <Banner tone="neutral">Your interview is unused again. Book whenever you are ready.</Banner>
         )}
         <View style={{ marginTop: 'auto', paddingBottom: insets.bottom }}>
           <Button variant="primary" size="lg" full label="Book another interview" onPress={onBooked} />
@@ -92,22 +90,22 @@ export function CancelScreen({
             {amount ? <Figure value={amount} /> : null}
             <Body size="sm" tone="muted">owed back in full</Body>
           </View>
-          <View style={styles.hr} />
+          <Divider style={styles.hr} />
           <Body size="sm">Your interview comes back unused. You can book again straight away.</Body>
           <Body size="sm" style={{ marginTop: space.sm }}>{wk} {t} goes back to the interviewers.</Body>
         </Card>
       ) : (
         <>
-          <View style={styles.dangerCard}>
+          <Card style={styles.dangerCard}>
             <Eyebrow tone="danger">If you cancel now</Eyebrow>
             <View style={[styles.figureRow, { marginTop: space.sm }]}>
               <Figure value="₹0" />
               <Body size="sm">back</Body>
             </View>
             <Body size="sm" style={{ marginTop: space.sm }}>You are inside twelve hours of the start, so the {amount ?? 'fee'} is forfeit and your interview is spent. Your interviewer has held this slot since you booked it.</Body>
-          </View>
+          </Card>
           <Card raised>
-            <Eyebrow tone="accent">Your one free move</Eyebrow>
+            <Eyebrow tone="muted">Your one free move</Eyebrow>
             <Display level="sm" style={{ marginTop: space.sm }}>Move it instead. It costs nothing.</Display>
             <Body size="sm" tone="muted" style={{ marginTop: space.sm }}>We will put you in another slot and your {amount ?? 'fee'} stays where it is.</Body>
             <View style={{ marginTop: space.md }}>
@@ -124,6 +122,7 @@ export function CancelScreen({
       {err ? <Banner tone="danger">{err}</Banner> : null}
 
       <View style={styles.footBlock}>
+        <Divider />
         <Body size="sm" tone={refundable ? 'default' : 'muted'}>
           {refundable
             ? `Confirm and ${wk} ${t} is cancelled. ${amount ? `${amount} is owed back the way you paid it, ` : ''}and your interview is yours to use again.`
@@ -150,8 +149,7 @@ const styles = StyleSheet.create({
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   body: { padding: space.xl, gap: space.xl, paddingBottom: space['4xl'] },
   figureRow: { flexDirection: 'row', alignItems: 'baseline', gap: space.sm },
-  hr: { height: 1, backgroundColor: color.border, marginVertical: space.md },
-  well: { borderRadius: radius.md, backgroundColor: color.surfaceMuted, padding: space.lg },
-  dangerCard: { borderRadius: radius.lg, borderWidth: borderWidth.thin, borderColor: color.dangerBorder, backgroundColor: color.dangerSoft, padding: space.lg },
-  footBlock: { gap: space.md, borderTopWidth: borderWidth.thin, borderTopColor: color.border, paddingTop: space.lg },
+  hr: { marginVertical: space.md },
+  dangerCard: { borderColor: color.dangerBorder, backgroundColor: color.dangerSoft, padding: space.lg },
+  footBlock: { gap: space.md },
 })

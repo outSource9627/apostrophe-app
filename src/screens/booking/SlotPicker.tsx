@@ -1,8 +1,7 @@
 import React from 'react'
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native'
-import { color, space, radius, borderWidth, fontFamilyNative, fontSize } from '../../theme'
-import { Eyebrow, Display, Body, Meta } from '../../components/ui'
-import { Button } from '../../components/ui'
+import { color, space, radius, borderWidth, height, fontFamilyNative, fontSize } from '../../theme'
+import { Eyebrow, Display, Body, Meta, Button, Card, Chip, ErrorState } from '../../components/ui'
 import {
   type DaySlots,
   dayChip,
@@ -32,6 +31,8 @@ export function SlotPicker({
   nextAvailableIso,
   onJumpToNext,
   loading = false,
+  error = false,
+  onRetry,
 }: {
   days: DaySlots[]
   windowLabel: string
@@ -45,7 +46,31 @@ export function SlotPicker({
   nextAvailableIso?: string | null
   onJumpToNext?: () => void
   loading?: boolean
+  /** The capacity fetch itself failed — replaces the strip and grid with the shared error state. */
+  error?: boolean
+  onRetry?: () => void
 }) {
+  if (error) {
+    return (
+      <ErrorState
+        title="Could not load open slots."
+        body="Check your connection and try again."
+        action={
+          onRetry ? (
+            <Button
+              variant="outline"
+              size="sm"
+              label="Try again"
+              // The error state's small button is 40 tall; the slop brings its tap box to the 44 floor.
+              hitSlop={(height.tap - height['control-xs']) / 2}
+              onPress={onRetry}
+            />
+          ) : undefined
+        }
+      />
+    )
+  }
+
   const selected = days.find((d) => d.key === selectedDayKey)
   const headingIso = selected?.anchorIso ?? nextAvailableIso ?? days[0]?.anchorIso ?? null
 
@@ -57,16 +82,13 @@ export function SlotPicker({
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space.sm }}>
           {days.map((d) => {
             const { dow, num } = dayChip(d.anchorIso)
-            const on = d.key === selectedDayKey
             return (
-              <Pressable
+              <Chip
                 key={d.key}
+                label={`${dow} · ${num}`}
+                selected={d.key === selectedDayKey}
                 onPress={() => onSelectDay(d.key)}
-                style={[styles.dayChip, on && styles.dayChipOn]}
-              >
-                <Meta style={{ color: on ? color.textInverse : color.textSubtle, opacity: on ? 0.7 : 1 }}>{dow}</Meta>
-                <Display level="sm" style={{ color: on ? color.textInverse : color.text }}>{num}</Display>
-              </Pressable>
+              />
             )
           })}
         </ScrollView>
@@ -88,10 +110,10 @@ export function SlotPicker({
         {loading ? (
           <View style={styles.grid}>
             {Array.from({ length: 8 }).map((_, i) => (
-              <View key={i} style={[styles.block, styles.blockSkeleton]}>
+              <Card key={i} style={[styles.block, styles.blockSkeleton]}>
                 <View style={styles.skelLine} />
                 <View style={styles.skelLineSm} />
-              </View>
+              </Card>
             ))}
           </View>
         ) : selected && selected.slots.length > 0 ? (
@@ -135,35 +157,31 @@ function SlotBlock({
 }) {
   if (state === 'gone') {
     return (
-      <View style={[styles.block, styles.blockGone]}>
+      <Card style={[styles.block, styles.blockGone]}>
         <Meta style={styles.timeGone}>{fmtTime(iso)}</Meta>
         <Meta style={{ color: color.textSubtle }}>Taken</Meta>
-      </View>
+      </Card>
     )
   }
   const on = state === 'selected'
   const near = state === 'nearest'
   return (
-    <Pressable onPress={onPress} style={[styles.block, on && styles.blockOn, near && styles.blockNear]}>
-      <Meta style={[styles.time, { color: on ? color.textInverse : color.text }]}>{fmtTime(iso)}</Meta>
-      <Meta style={{ color: on ? color.textInverse : near ? color.text : color.textSubtle, opacity: on ? 0.7 : 1 }}>
-        {near ? 'Nearest · ' : ''}{fmtCapacity(capacity)}
-      </Meta>
+    <Pressable onPress={onPress}>
+      <Card style={[styles.block, on && styles.blockOn, near && styles.blockNear]}>
+        <Meta style={[styles.time, { color: on ? color.textInverse : color.text }]}>{fmtTime(iso)}</Meta>
+        <Meta style={{ color: on ? color.textInverse : near ? color.text : color.textSubtle, opacity: on ? 0.7 : 1 }}>
+          {near ? 'Nearest · ' : ''}{fmtCapacity(capacity)}
+        </Meta>
+      </Card>
     </Pressable>
   )
 }
 
 const styles = StyleSheet.create({
-  dayChip: {
-    width: 58, height: 68, borderRadius: radius.lg, borderWidth: borderWidth.thin,
-    borderColor: color.border, backgroundColor: color.surface, alignItems: 'center', justifyContent: 'center', gap: space.xs,
-  },
-  dayChipOn: { borderColor: color.ink, backgroundColor: color.ink },
   gridHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: space.md },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   block: {
-    width: '48%', minWidth: 0, flexGrow: 1, height: 62, borderRadius: radius.md, borderWidth: borderWidth.thin,
-    borderColor: color.border, backgroundColor: color.surface, justifyContent: 'center', paddingHorizontal: space.md, gap: space.xs,
+    width: '48%', minWidth: 0, flexGrow: 1, height: 62, justifyContent: 'center', paddingHorizontal: space.md, gap: space.xs,
   },
   blockOn: { borderColor: color.ink, backgroundColor: color.ink },
   blockNear: { borderColor: color.borderStrong },

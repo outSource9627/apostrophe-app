@@ -3,8 +3,8 @@ import { StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ApiClientError } from '../../lib/api'
 import { createOrder, mockSettle } from '../../lib/api/payments'
-import { color, space, radius, borderWidth } from '../../theme'
-import { AppBar, Banner, Body, Button, Display, Eyebrow } from '../../components/ui'
+import { color, space } from '../../theme'
+import { AppBar, Banner, Button, Display, Eyebrow } from '../../components/ui'
 
 /**
  * ST-09 — payment failed. The reason is quoted in the gateway's own words, not
@@ -61,9 +61,9 @@ export function PaymentFailedScreen({
       <View style={styles.body}>
         <Eyebrow tone="danger">Payment failed</Eyebrow>
         <Display level="lg" style={{ marginTop: space.sm }}>That didn&apos;t go through.</Display>
-        <View style={styles.reasonCard}>
-          <Body size="sm">{reason ? `"${reason}"` : 'The gateway declined the payment. No money was taken.'}</Body>
-        </View>
+        <Banner tone="danger" style={styles.reasonCard}>
+          {reason ? `"${reason}"` : 'The gateway declined the payment. No money was taken.'}
+        </Banner>
         {error ? <Banner tone="danger">{error}</Banner> : null}
         <View style={{ marginTop: space.xl, gap: space.md }}>
           <Button variant="primary" size="lg" full busy={busy} label="Try again" onPress={retry} />
@@ -77,5 +77,5 @@ export function PaymentFailedScreen({
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.surface },
   body: { flex: 1, padding: space.xl, justifyContent: 'center' },
-  reasonCard: { marginTop: space.lg, borderRadius: radius.md, borderWidth: borderWidth.thin, borderColor: color.dangerBorder, backgroundColor: color.dangerSoft, padding: space.lg },
+  reasonCard: { marginTop: space.lg },
 })

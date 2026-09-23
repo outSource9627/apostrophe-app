@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from 'react'
-import {
-  ActivityIndicator,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native'
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { color, radius, space, fontFamilyNative } from '../../theme'
+import { space } from '../../theme'
+import {
+  Button,
+  Card,
+  Display,
+  Divider,
+  EmptyState,
+  ErrorState,
+  Skeleton,
+  Tag,
+} from '../../components/ui'
 import { EmployerShell } from '../../components/employer/EmployerShell'
 import {
   listSavedSearches,
@@ -23,12 +26,16 @@ export function SavedSearchesModal() {
 
   const [searches, setSearches] = useState<SavedSearch[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
 
   const load = async () => {
     try {
       setLoading(true)
+      setError(null)
       const data = await listSavedSearches()
       setSearches(data)
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('We could not load your saved searches.'))
     } finally {
       setLoading(false)
     }
@@ -47,7 +54,7 @@ export function SavedSearchesModal() {
     }
   }
 
-  const handleApply = (s: SavedSearch) => {
+  const handleApply = (_s: SavedSearch) => {
     navigation.navigate('EmployerFeed')
   }
 
@@ -55,67 +62,67 @@ export function SavedSearchesModal() {
     <EmployerShell back={{ label: 'FEED', onPress: () => navigation.goBack() }}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-          <Text style={styles.title}>Saved Searches</Text>
+          <Display level="sm">Saved Searches</Display>
         </View>
+        <Divider />
 
         {loading ? (
-          <View style={styles.centre}>
-            <ActivityIndicator color={color.text} size="small" />
-            <Text style={styles.loadingText}>Loading saved searches…</Text>
-          </View>
+          <Skeleton lines={3} />
+        ) : error ? (
+          <ErrorState
+            title="We could not load your saved searches."
+            body={error.message}
+            action={<Button variant="outline" size="sm" label="Try again" onPress={() => load()} />}
+          />
         ) : searches.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyTitle}>No saved searches yet</Text>
-            <Text style={styles.emptyBody}>
-              Save your candidate feed filters to quickly recall them anytime.
-            </Text>
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => navigation.navigate('FeedFilters')}
-              style={styles.openFiltersBtn}
-            >
-              <Text style={styles.openFiltersText}>Configure filters</Text>
-            </TouchableOpacity>
-          </View>
+          <EmptyState
+            title="No saved searches yet"
+            body="Save your candidate feed filters to quickly recall them anytime."
+            action={
+              <Button
+                variant="outline"
+                size="sm"
+                label="Configure filters"
+                onPress={() => navigation.navigate('FeedFilters')}
+              />
+            }
+          />
         ) : (
           <View style={styles.list}>
-            {searches.map((s) => (
-              <TouchableOpacity
-                key={s.id}
-                activeOpacity={0.8}
-                onPress={() => handleApply(s)}
-                style={styles.searchItem}
-              >
-                <View style={styles.itemInfo}>
-                  <Text style={styles.searchName}>{s.name}</Text>
-                  <View style={styles.tagRow}>
-                    {s.filters.city && (
-                      <View style={styles.filterPill}>
-                        <Text style={styles.filterPillText}>{s.filters.city}</Text>
+            {searches.map((s) => {
+              const tags = [s.filters.city, s.filters.skill, s.filters.availability].filter(
+                Boolean,
+              ) as string[]
+              return (
+                <Card key={s.id} style={styles.card}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Apply ${s.name}`}
+                    onPress={() => handleApply(s)}
+                    style={styles.cardInfo}
+                  >
+                    <Display level="xs" numberOfLines={1}>
+                      {s.name}
+                    </Display>
+                    {tags.length > 0 && (
+                      <View style={styles.tagRow}>
+                        {tags.map((t, i) => (
+                          <Tag key={i} label={t} />
+                        ))}
                       </View>
                     )}
-                    {s.filters.skill && (
-                      <View style={styles.filterPill}>
-                        <Text style={styles.filterPillText}>{s.filters.skill}</Text>
-                      </View>
-                    )}
-                    {s.filters.availability && (
-                      <View style={styles.filterPill}>
-                        <Text style={styles.filterPillText}>{s.filters.availability}</Text>
-                      </View>
-                    )}
+                  </Pressable>
+                  <View style={styles.actionRow}>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      label="Delete"
+                      onPress={() => handleDelete(s.id)}
+                    />
                   </View>
-                </View>
-
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={() => handleDelete(s.id)}
-                  style={styles.deleteBtn}
-                >
-                  <Text style={styles.deleteBtnText}>✕</Text>
-                </TouchableOpacity>
-              </TouchableOpacity>
-            ))}
+                </Card>
+              )
+            })}
           </View>
         )}
       </ScrollView>
@@ -130,103 +137,25 @@ const styles = StyleSheet.create({
     gap: space.md,
   },
   header: {
-    borderBottomWidth: 1,
-    borderBottomColor: color.border,
-    paddingBottom: space.sm,
-  },
-  title: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: 22,
-    color: color.text,
-  },
-  centre: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 48,
-  },
-  loadingText: {
-    fontSize: 13,
-    color: color.textMuted,
-    marginTop: space.xs,
-  },
-  emptyCard: {
-    backgroundColor: color.surfaceMuted,
-    borderRadius: radius.lg,
-    padding: space.lg,
-    alignItems: 'center',
-    gap: space.xs,
-    marginTop: space.lg,
-  },
-  emptyTitle: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: 18,
-    color: color.text,
-  },
-  emptyBody: {
-    fontSize: 13,
-    color: color.textMuted,
-    textAlign: 'center',
-    lineHeight: 18,
-  },
-  openFiltersBtn: {
-    backgroundColor: color.text,
-    paddingHorizontal: space.md,
-    paddingVertical: 8,
-    borderRadius: radius.md,
-    marginTop: space.xs,
-  },
-  openFiltersText: {
-    color: color.textInverse,
-    fontSize: 12,
-    fontWeight: '600',
+    gap: space['2xs'],
   },
   list: {
+    gap: space.sm,
+  },
+  card: {
+    padding: space.lg,
+    gap: space.sm,
+  },
+  cardInfo: {
     gap: space.xs,
-  },
-  searchItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: color.surface,
-    borderWidth: 1,
-    borderColor: color.border,
-    borderRadius: radius.lg,
-    padding: space.sm,
-  },
-  itemInfo: {
-    flex: 1,
-    gap: 4,
-  },
-  searchName: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: 16,
-    color: color.text,
   },
   tagRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 4,
+    gap: space.sm,
   },
-  filterPill: {
-    backgroundColor: color.surfaceMuted,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  filterPillText: {
-    fontSize: 10,
-    color: color.textMuted,
-    fontWeight: '500',
-  },
-  deleteBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  deleteBtnText: {
-    fontSize: 14,
-    color: color.textSubtle,
+  actionRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
   },
 })

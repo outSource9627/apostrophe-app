@@ -9,8 +9,8 @@ import {
 import { fmtClock, fmtDayMon, fmtRowStamp, originLabel } from '../../lib/chat/format'
 import { useChatSocketEvents } from '../../lib/chat/socket'
 import { color, space, radius, borderWidth } from '../../theme'
-import { AppBar, Body, Display, Eyebrow, Meta } from '../../components/ui'
-import { CounterpartyPlate, OfflineWifi } from './parts'
+import { AppBar, Banner, Body, Card, Display, Divider, ErrorState, Eyebrow, Meta, Skeleton } from '../../components/ui'
+import { CounterpartyPlate } from './parts'
 
 const OPENS_HOURS_BEFORE = 24
 
@@ -52,8 +52,8 @@ export function ChatListScreen({ onBack, onInterests, onOpenThread }: {
       action={<Pressable onPress={onInterests} hitSlop={8}><Body size="sm" weight="medium" style={{ color: color.text }}>Interests</Body></Pressable>} />
   )
   const frame = (c: React.ReactNode) => <View style={[styles.page, { paddingTop: insets.top }]}>{bar}{c}</View>
-  if (q.isPending) return frame(<View style={styles.centre}><Meta style={{ color: color.textMuted }}>LOADING…</Meta></View>)
-  if (q.isError) return frame(<View style={styles.centre}><Body tone="muted">Could not load your chats.</Body></View>)
+  if (q.isPending) return frame(<Skeleton lines={4} />)
+  if (q.isError) return frame(<ErrorState title="Could not load your chats." />)
 
   const { live, archived, conns } = q.data!
   const unreadTotal = live.reduce((n, t) => n + t.unread, 0)
@@ -68,17 +68,14 @@ export function ChatListScreen({ onBack, onInterests, onOpenThread }: {
         </View>
 
         {!connected && (
-          <View style={styles.offline}>
-            <OfflineWifi />
-            <Meta style={{ color: color.warning }}>Reconnecting · a sent message will go out when you are back</Meta>
-          </View>
+          <Banner tone="warning">Reconnecting · a sent message will go out when you are back</Banner>
         )}
 
         {live.length === 0 && archived.length === 0 ? (
-          <View style={styles.emptyCard}>
+          <Card style={styles.emptyCard}>
             <Display level="xs">No chats yet.</Display>
             <Body size="sm" tone="muted" style={{ marginTop: space.sm }}>A chat opens when you accept an Interest, and one opens with your interviewer the day before your interview. Support is always here.</Body>
-          </View>
+          </Card>
         ) : (
           <>
             <View>{live.map((t, i) => <ThreadRow key={t.id} t={t} conn={t.connectionId ? conns.get(t.connectionId) : undefined} now={now} first={i === 0} muted={t.kind === 'STUDENT_INTERVIEWER' && t.state.readOnly && !t.state.open} onOpen={() => onOpenThread(t.id)} />)}</View>
@@ -86,7 +83,7 @@ export function ChatListScreen({ onBack, onInterests, onOpenThread }: {
               <>
                 <View style={styles.archHead}>
                   <Eyebrow>Archived</Eyebrow>
-                  <View style={styles.rule} />
+                  <Divider style={styles.rule} />
                   <Meta style={{ color: color.textSubtle }}>{String(archived.length)}</Meta>
                 </View>
                 <View>{archived.map((t, i) => <ThreadRow key={t.id} t={t} conn={t.connectionId ? conns.get(t.connectionId) : undefined} now={now} first={i === 0} muted onOpen={() => onOpenThread(t.id)} />)}</View>
@@ -144,12 +141,10 @@ function ThreadRow({ t, conn, now, first, muted, onOpen }: {
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.surface },
-  centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   body: { padding: space.xl, gap: space.md, paddingBottom: space['4xl'] },
-  offline: { flexDirection: 'row', alignItems: 'center', gap: space.sm, backgroundColor: color.warningSoft, borderRadius: radius.md, paddingHorizontal: space.md, paddingVertical: space.sm },
-  emptyCard: { borderRadius: radius.lg, borderWidth: borderWidth.thin, borderColor: color.border, padding: space.lg },
+  emptyCard: { padding: space.lg },
   archHead: { flexDirection: 'row', alignItems: 'center', gap: space.md, marginTop: space.xs },
-  rule: { flex: 1, height: 1, backgroundColor: color.border },
+  rule: { flex: 1 },
   row: { flexDirection: 'row', alignItems: 'flex-start', gap: space.md, paddingVertical: 14 },
   rowBorder: { borderTopWidth: borderWidth.thin, borderTopColor: color.border },
   rowTop: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: space.md },

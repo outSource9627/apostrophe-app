@@ -3,17 +3,15 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
-  Text,
   View,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { borderWidth, color, fontFamilyNative, height, opacity, radius, space } from '../../theme'
-import { Button, Card, Eyebrow, Field, Input } from '../../components/ui'
+import { color, radius, space } from '../../theme'
+import { AppBar, Body, Button, Card, Display, Eyebrow, Field, Input, SuccessState } from '../../components/ui'
 import { interviewerApi } from '../../lib/api/interviewer'
 
 export function InterviewerApplyScreen() {
@@ -65,32 +63,30 @@ export function InterviewerApplyScreen() {
   if (submitted) {
     return (
       <View style={[styles.page, { paddingTop: insets.top }]}>
-        <View style={styles.bar}>
-          <Text style={styles.headerTitle}>Application Received</Text>
-        </View>
+        <AppBar title="Application Received" />
 
         <View style={styles.successContainer}>
-          <Text style={styles.successIcon}>🎉</Text>
-          <Text style={styles.successTitle}>Thank You for Applying!</Text>
-          <Text style={styles.successBody}>
-            We have received your application to join the Apostrophe Interviewer Network. Our team will review your profile and experience within 2–3 business days.
-          </Text>
-          <Text style={styles.successNote}>
-            Once approved, you'll receive your credentials by email to set your password, define your weekly availability, and start conducting sessions.
-          </Text>
-
-          <View style={styles.successActions}>
-            <Button
-              label="Return to Overview"
-              variant="secondary"
-              onPress={() => navigation.navigate('JoinUs')}
-            />
-            <Button
-              label="Go to Sign In"
-              variant="primary"
-              onPress={() => navigation.navigate('InterviewerSignIn')}
-            />
-          </View>
+          <SuccessState
+            title="Thank You for Applying!"
+            body="We have received your application to join the Apostrophe Interviewer Network. Our team will review your profile and experience within 2–3 business days."
+            action={
+              <View style={styles.successActions}>
+                <Body size="xs" tone="subtle" style={styles.successNote}>
+                  Once approved, you'll receive your credentials by email to set your password, define your weekly availability, and start conducting sessions.
+                </Body>
+                <Button
+                  label="Return to Overview"
+                  variant="secondary"
+                  onPress={() => navigation.navigate('JoinUs')}
+                />
+                <Button
+                  label="Go to Sign In"
+                  variant="primary"
+                  onPress={() => navigation.navigate('InterviewerSignIn')}
+                />
+              </View>
+            }
+          />
         </View>
       </View>
     )
@@ -101,17 +97,7 @@ export function InterviewerApplyScreen() {
       style={[styles.page, { paddingTop: insets.top }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      {/* Bar */}
-      <View style={styles.bar}>
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => navigation.goBack()}
-          style={({ pressed }) => [styles.backBtn, pressed && styles.pressed]}
-        >
-          <Text style={styles.backArrow}>←</Text>
-        </Pressable>
-        <Eyebrow>APPLY TO INTERVIEW</Eyebrow>
-      </View>
+      <AppBar onBack={() => navigation.goBack()} />
 
       <ScrollView
         style={styles.scroll}
@@ -119,10 +105,11 @@ export function InterviewerApplyScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.intro}>
-          <Text style={styles.title}>Interviewer Application</Text>
-          <Text style={styles.subtitle}>
+          <Eyebrow>APPLY TO INTERVIEW</Eyebrow>
+          <Display level="lg">Interviewer Application</Display>
+          <Body tone="muted">
             Fill out your details below. We review candidates based on hands-on industry experience, technical depth, and evaluation empathy.
-          </Text>
+          </Body>
         </View>
 
         <Card style={styles.formCard}>
@@ -234,36 +221,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: color.background,
   },
-  bar: {
-    height: height.header,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.xs,
-    paddingHorizontal: space.lg,
-    backgroundColor: color.surface,
-    borderBottomWidth: borderWidth.thin,
-    borderBottomColor: color.border,
-  },
-  backBtn: {
-    width: height.tap,
-    height: height.tap,
-    marginLeft: -space.xs,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backArrow: {
-    fontSize: 20,
-    color: color.text,
-  },
-  headerTitle: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 16,
-    fontWeight: '600',
-    color: color.text,
-  },
-  pressed: {
-    opacity: opacity.pressed,
-  },
   scroll: {
     flex: 1,
   },
@@ -274,52 +231,16 @@ const styles = StyleSheet.create({
   intro: {
     gap: space['2xs'],
   },
-  title: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 24,
-    fontWeight: '700',
-    color: color.text,
-  },
-  subtitle: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 14,
-    color: color.textMuted,
-    lineHeight: 20,
-  },
   formCard: {
     padding: space.lg,
     gap: space.md,
   },
   successContainer: {
     flex: 1,
-    padding: space['2xl'],
-    alignItems: 'center',
     justifyContent: 'center',
-    gap: space.md,
-  },
-  successIcon: {
-    fontSize: 54,
-  },
-  successTitle: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 22,
-    fontWeight: '700',
-    color: color.text,
-    textAlign: 'center',
-  },
-  successBody: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 15,
-    color: color.textMuted,
-    textAlign: 'center',
-    lineHeight: 22,
   },
   successNote: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    color: color.textSubtle,
     textAlign: 'center',
-    lineHeight: 18,
     backgroundColor: color.surfaceSubtle,
     padding: space.md,
     borderRadius: radius.md,
@@ -327,6 +248,6 @@ const styles = StyleSheet.create({
   successActions: {
     width: '100%',
     gap: space.sm,
-    marginTop: space.lg,
+    marginTop: space.sm,
   },
 })

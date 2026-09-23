@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { StyleSheet, Text, View } from 'react-native'
+import { StyleSheet, View } from 'react-native'
 import { useIsFocused, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { borderWidth, color, radius, space } from '../../theme'
-import { Banner, Body, Button, Card, DisabledAction, Eyebrow, Meta, text } from '../../components/ui'
+import { color, radius, space } from '../../theme'
+import { Banner, Body, Button, Card, DisabledAction, Meta } from '../../components/ui'
 import {
   DocumentSlot, EmployerShell, Glyph, RequirementHead, TextAction,
   type DocumentSlotHandle, type SlotFile, type SlotStatus,
@@ -326,7 +326,7 @@ function Documents({ focus, onBack, onSubmitted, arrived }: EmployerDocumentsScr
     <EmployerShell back={back} footer={footer}>
       <TitleBlock title="Submit documents" sub={sub} />
 
-      {!!asked && <ReasonWell reason={{ label: 'What the reviewer asked', tone: 'warning', text: asked }} />}
+      {!!asked && <Banner tone="warning" title="What the reviewer asked">{asked}</Banner>}
 
       {shown.map((req, i) => {
         const why = requirementReason(req)
@@ -337,7 +337,11 @@ function Documents({ focus, onBack, onSubmitted, arrived }: EmployerDocumentsScr
               <WorkEmailCard req={req} state={state} />
             ) : isOpen(req) ? (
               <>
-                {!!why && <ReasonWell reason={why} />}
+                {!!why && (
+                  <Banner tone={why.tone} title={why.label}>
+                    {why.text}
+                  </Banner>
+                )}
                 {slotFor(req)}
               </>
             ) : mode === 'answer' && isReplaceable(req) && replacing.includes(req.key) ? (
@@ -395,19 +399,6 @@ function headPill(req: Requirement): { label: string; tone: EmployerTone } {
   return req.status === 'MORE_INFO' ? requirementPill({ status: 'MISSING' }, 'slot') : requirementPill(req, 'slot')
 }
 
-/** The reviewer's words over the slot that answers them: danger for a refusal, warning for a request. */
-function ReasonWell({ reason }: { reason: { label: string; tone: 'danger' | 'warning'; text: string } }) {
-  const danger = reason.tone === 'danger'
-  return (
-    <View style={[styles.well, danger ? styles.wellDanger : styles.wellWarning]}>
-      <Eyebrow tone={danger ? 'danger' : undefined} style={!danger && styles.warningInk}>
-        {reason.label}
-      </Eyebrow>
-      <Body size="sm">{reason.text}</Body>
-    </View>
-  )
-}
-
 /** A disc and two lines: what is already done, or already with a reviewer, where a slot would otherwise be. */
 function SettledCard({
   done, primary, secondary, action,
@@ -429,7 +420,7 @@ function SettledCard({
           <Glyph name={done ? 'shieldCheck' : 'clock'} size={space.lg} tint={done ? color.success : color.info} />
         </View>
         <View style={styles.grow}>
-          <Text style={text.uiSmMedium}>{primary}</Text>
+          <Body size="sm" weight="medium">{primary}</Body>
           {secondary}
         </View>
         {action}
@@ -554,17 +545,6 @@ const styles = StyleSheet.create({
   section: { gap: space.sm },
   footer: { gap: space.md },
   keep: { alignSelf: 'flex-start' },
-
-  well: {
-    gap: space.xs,
-    borderRadius: radius.md,
-    borderWidth: borderWidth.thin,
-    paddingVertical: space.md,
-    paddingHorizontal: space.md,
-  },
-  wellDanger: { backgroundColor: color.dangerSoft, borderColor: color.dangerBorder },
-  wellWarning: { backgroundColor: color.warningSoft, borderColor: 'transparent' },
-  warningInk: { color: color.warning },
 
   settled: { paddingVertical: space.md, paddingHorizontal: space.lg },
   settledLine: { flexDirection: 'row', alignItems: 'center', gap: space.md },

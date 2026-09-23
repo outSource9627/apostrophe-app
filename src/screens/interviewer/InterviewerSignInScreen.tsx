@@ -3,18 +3,16 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
-  Text,
   View,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { borderWidth, color, fontFamilyNative, height, opacity, space } from '../../theme'
+import { borderWidth, color, height, space } from '../../theme'
 import { Logo } from '../../components/Logo'
-import { Button, Card, Eyebrow, Field, Input } from '../../components/ui'
+import { Body, Button, Card, Display, Eyebrow, Field, Input, Tag } from '../../components/ui'
 import { interviewerApi } from '../../lib/api/interviewer'
 import { useInterviewer } from '../../lib/interviewer/useInterviewer'
 
@@ -61,7 +59,7 @@ export function InterviewerSignInScreen() {
     >
       <View style={styles.bar}>
         <Logo size={18} />
-        <Text style={styles.tag}>INTERVIEWER</Text>
+        <Tag label="INTERVIEWER" />
       </View>
 
       <ScrollView
@@ -71,10 +69,10 @@ export function InterviewerSignInScreen() {
       >
         <View style={styles.header}>
           <Eyebrow>INTERVIEWER PORTAL</Eyebrow>
-          <Text style={styles.title}>Sign in to your account</Text>
-          <Text style={styles.subtitle}>
+          <Display level="md">Sign in to your account</Display>
+          <Body size="md" tone="muted">
             Manage your schedule, conduct video interviews, and view wallet earnings.
-          </Text>
+          </Body>
         </View>
 
         <Card style={styles.card}>
@@ -100,12 +98,12 @@ export function InterviewerSignInScreen() {
           </Field>
 
           <View style={styles.forgotRow}>
-            <Pressable
+            <Button
+              variant="text"
+              size="sm"
+              label="Forgot password?"
               onPress={() => navigation.navigate('InterviewerPassword', { email: email.trim(), reset: true })}
-              hitSlop={8}
-            >
-              <Text style={styles.forgotText}>Forgot password?</Text>
-            </Pressable>
+            />
           </View>
 
           <Button
@@ -117,14 +115,13 @@ export function InterviewerSignInScreen() {
         </Card>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Want to evaluate candidates on Apostrophe?</Text>
-          <Pressable
+          <Body size="md" tone="muted">Want to evaluate candidates on Apostrophe?</Body>
+          <Button
+            variant="text"
+            size="md"
+            label="Learn more & apply to interview →"
             onPress={() => navigation.navigate('JoinUs')}
-            hitSlop={8}
-            accessibilityRole="button"
-          >
-            <Text style={styles.applyLink}>Learn more & apply to interview →</Text>
-          </Pressable>
+          />
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -146,17 +143,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: borderWidth.thin,
     borderBottomColor: color.border,
   },
-  tag: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 10,
-    fontWeight: '700',
-    color: color.accent,
-    letterSpacing: 1,
-    paddingHorizontal: space['2xs'],
-    paddingVertical: 2,
-    backgroundColor: color.accentSubtle,
-    borderRadius: 3,
-  },
   scroll: {
     flex: 1,
   },
@@ -168,18 +154,6 @@ const styles = StyleSheet.create({
   header: {
     gap: space['2xs'],
   },
-  title: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 26,
-    fontWeight: '700',
-    color: color.text,
-  },
-  subtitle: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 14,
-    color: color.textMuted,
-    lineHeight: 20,
-  },
   card: {
     padding: space.lg,
     gap: space.md,
@@ -188,26 +162,9 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     marginTop: -space['2xs'],
   },
-  forgotText: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    color: color.accent,
-    fontWeight: '500',
-  },
   footer: {
     alignItems: 'center',
     gap: space.xs,
     paddingVertical: space.md,
-  },
-  footerText: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 14,
-    color: color.textMuted,
-  },
-  applyLink: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 14,
-    fontWeight: '600',
-    color: color.accent,
   },
 })

@@ -3,8 +3,8 @@ import { StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useQuery } from '@tanstack/react-query'
 import { getInterview } from '../../lib/api/interviews'
-import { color, space, radius, borderWidth } from '../../theme'
-import { AppBar, Body, Button, Display, Eyebrow } from '../../components/ui'
+import { color, space } from '../../theme'
+import { AppBar, Banner, Body, Button, Card, Display, Eyebrow } from '../../components/ui'
 
 /**
  * ST-31 — interview ended. The video is being prepared (up to an hour) and
@@ -32,20 +32,18 @@ export function EndedScreen({ id, onBack, onBook }: {
           <Eyebrow>{incomplete ? 'Interview ended early' : 'That is a wrap'}</Eyebrow>
           <Display level="lg">{incomplete ? 'Your interview was marked incomplete.' : 'Your video is being made.'}</Display>
           {incomplete ? (
-            <View style={styles.warnWell}>
-              <Body size="sm" style={{ color: color.warning }}>The session ended before it finished, so it did not become a video resume. Your paid interview still stands — book the rest of it whenever you are ready.</Body>
-            </View>
+            <Banner tone="warning">The session ended before it finished, so it did not become a video resume. Your paid interview still stands — book the rest of it whenever you are ready.</Banner>
           ) : (
             <Body size="base" tone="muted">It takes up to an hour, then joins the employer feed on its own — there is no approval step to wait for.</Body>
           )}
         </View>
 
         {!incomplete && (
-          <View style={styles.card}>
+          <Card style={styles.card}>
             <Step label="Now" body="Your interview is being edited into your 9:16 video resume." />
             <Step label="Within the hour" body="It publishes itself and starts appearing to employers." />
             <Step label="Within a day" body="Your feedback — five scores, strengths and improvements — lands here." />
-          </View>
+          </Card>
         )}
 
         <View style={{ gap: space.sm }}>
@@ -70,7 +68,6 @@ const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.surface },
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   body: { flex: 1, padding: space.xl, gap: space['2xl'], justifyContent: 'center' },
-  card: { borderRadius: radius.lg, borderWidth: borderWidth.thin, borderColor: color.border, padding: space.lg, gap: space.md },
+  card: { padding: space.lg, gap: space.md },
   step: { flexDirection: 'row', gap: space.md },
-  warnWell: { borderRadius: radius.md, backgroundColor: color.warningSoft, padding: space.md },
 })

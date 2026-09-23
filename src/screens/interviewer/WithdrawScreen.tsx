@@ -1,18 +1,9 @@
 import React, { useState } from 'react'
-import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native'
+import { Alert, StyleSheet, View } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { borderWidth, color, fontFamilyNative, radius, space } from '../../theme'
-import { Button, Card, Eyebrow, Field, Input } from '../../components/ui'
+import { color, space } from '../../theme'
+import { Body, Button, Card, Chip, Display, ErrorState, Eyebrow, Field, Figure, Input, ObjectRow, Skeleton } from '../../components/ui'
 import { InterviewerShell } from '../../components/interviewer/InterviewerShell'
 import { useInterviewer } from '../../lib/interviewer/useInterviewer'
 import { interviewerApi } from '../../lib/api/interviewer'
@@ -21,7 +12,7 @@ import { MIN_WITHDRAWAL_PAISE } from '../../lib/interviewer/state'
 
 export function WithdrawScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<any>>()
-  const { wallet, refresh, profile } = useInterviewer()
+  const { wallet, loading, error, refresh, profile } = useInterviewer()
 
   const balancePaise = wallet?.balancePaise ?? 0
   const maxRupees = Math.floor(balancePaise / 100)
@@ -75,23 +66,45 @@ export function WithdrawScreen() {
     }
   }
 
+  if (loading && !wallet) {
+    return (
+      <InterviewerShell back={{ label: 'Wallet', onPress: () => navigation.goBack() }}>
+        <Skeleton lines={4} />
+      </InterviewerShell>
+    )
+  }
+
+  if (error && !wallet) {
+    return (
+      <InterviewerShell back={{ label: 'Wallet', onPress: () => navigation.goBack() }}>
+        <ErrorState
+          title="We could not load your wallet."
+          body={error.message}
+          action={<Button variant="outline" size="sm" label="Try again" onPress={() => refresh()} />}
+        />
+      </InterviewerShell>
+    )
+  }
+
   return (
     <InterviewerShell back={{ label: 'Wallet', onPress: () => navigation.goBack() }}>
       <View style={styles.header}>
         <Eyebrow>PAYOUT DISBURSEMENT</Eyebrow>
-        <Text style={styles.title}>Withdraw Funds</Text>
-        <Text style={styles.subtitle}>
+        <Display level="lg">Withdraw Funds</Display>
+        <Body size="sm" tone="muted">
           Transfer your earned interviewer fees directly to your verified bank account via IMPS / NEFT.
-        </Text>
+        </Body>
       </View>
 
-      {/* Available Balance Box */}
+      {/* Available Balance */}
       <Card style={styles.balanceCard}>
-        <Text style={styles.balanceLabel}>Available Balance</Text>
-        <Text style={styles.balanceValue}>{formatPaise(balancePaise)}</Text>
-        <Text style={styles.minNotice}>
+        <Body size="xs" tone="muted">
+          Available Balance
+        </Body>
+        <Figure value={formatPaise(balancePaise)} />
+        <Body size="2xs" tone="subtle">
           Minimum withdrawal: {formatPaise(MIN_WITHDRAWAL_PAISE)} · No processing fees
-        </Text>
+        </Body>
       </Card>
 
       {/* Amount Input */}
@@ -108,47 +121,47 @@ export function WithdrawScreen() {
         {/* Quick Amount Chips */}
         <View style={styles.chipsRow}>
           {[500, 1000, 2500].map((amt) => (
-            <Pressable
+            <Chip
               key={amt}
+              label={`₹${amt}`}
+              selected={rupees === String(amt)}
               onPress={() => handleQuickSelect(amt)}
-              style={styles.chip}
-            >
-              <Text style={styles.chipText}>₹{amt}</Text>
-            </Pressable>
+            />
           ))}
           {maxRupees >= 500 && (
-            <Pressable
+            <Chip
+              label="Full Balance"
+              selected={rupees === String(maxRupees)}
               onPress={() => handleQuickSelect(maxRupees)}
-              style={[styles.chip, styles.chipFull]}
-            >
-              <Text style={[styles.chipText, styles.chipFullText]}>Full Balance</Text>
-            </Pressable>
+            />
           )}
         </View>
 
         {/* Bank Account Destination */}
-        <View style={styles.bankBox}>
-          <Text style={styles.bankLabel}>Destination Account:</Text>
-          {wallet?.bankAccount ? (
-            <View style={styles.bankInfo}>
-              <Text style={styles.bankName}>{wallet.bankAccount.bankName || 'Verified Bank'}</Text>
-              <Text style={styles.bankAccountNum}>
-                Account ending in {wallet.bankAccount.accountNumberLast4 || wallet.bankAccount.accountNumber?.slice(-4) || '****'} · {wallet.bankAccount.ifsc}
-              </Text>
-            </View>
-          ) : (
-            <View style={styles.noBankBox}>
-              <Text style={styles.noBankText}>No bank account linked.</Text>
-              <Pressable onPress={() => navigation.navigate('InterviewerBankAccount')}>
-                <Text style={styles.linkBankBtn}>+ Link Bank Account</Text>
-              </Pressable>
-            </View>
-          )}
-        </View>
+        <ObjectRow
+          last
+          title="Destination Account"
+          meta={
+            wallet?.bankAccount
+              ? `${wallet.bankAccount.bankName || 'Verified Bank'} · Ending in ${wallet.bankAccount.accountNumberLast4 || wallet.bankAccount.accountNumber?.slice(-4) || '****'} · ${wallet.bankAccount.ifsc}`
+              : 'No bank account linked.'
+          }
+          status={
+            !wallet?.bankAccount ? (
+              <Button
+                label="+ Link"
+                variant="secondary"
+                size="sm"
+                onPress={() => navigation.navigate('InterviewerBankAccount')}
+              />
+            ) : undefined
+          }
+        />
 
         <Button
           label={submitting ? 'Processing Request...' : 'Confirm Withdrawal'}
           variant="primary"
+          busy={submitting}
           disabled={submitting || balancePaise < MIN_WITHDRAWAL_PAISE || isSuspended}
           onPress={handleWithdraw}
         />
@@ -161,39 +174,10 @@ const styles = StyleSheet.create({
   header: {
     gap: space['2xs'],
   },
-  title: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 24,
-    fontWeight: '700',
-    color: color.text,
-  },
-  subtitle: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    color: color.textMuted,
-    lineHeight: 18,
-  },
   balanceCard: {
     padding: space.md,
     gap: space['2xs'],
     backgroundColor: color.surfaceSubtle,
-  },
-  balanceLabel: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 12,
-    color: color.textMuted,
-  },
-  balanceValue: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 26,
-    fontWeight: '700',
-    color: color.text,
-  },
-  minNotice: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 11,
-    color: color.textSubtle,
-    marginTop: 2,
   },
   formCard: {
     padding: space.md,
@@ -201,71 +185,7 @@ const styles = StyleSheet.create({
   },
   chipsRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: space.xs,
-    marginTop: -space.xs,
-  },
-  chip: {
-    paddingVertical: space.xs,
-    paddingHorizontal: space.sm,
-    backgroundColor: color.surfaceSubtle,
-    borderRadius: radius.sm,
-    borderWidth: borderWidth.thin,
-    borderColor: color.border,
-  },
-  chipFull: {
-    backgroundColor: '#eff6ff',
-    borderColor: '#bfdbfe',
-  },
-  chipText: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 12,
-    fontWeight: '600',
-    color: color.text,
-  },
-  chipFullText: {
-    color: color.accent,
-  },
-  bankBox: {
-    backgroundColor: color.surfaceSubtle,
-    padding: space.md,
-    borderRadius: radius.sm,
-    gap: space['2xs'],
-  },
-  bankLabel: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 12,
-    fontWeight: '600',
-    color: color.textMuted,
-  },
-  bankInfo: {
-    gap: 2,
-  },
-  bankName: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 14,
-    fontWeight: '700',
-    color: color.text,
-  },
-  bankAccountNum: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 12,
-    color: color.textSubtle,
-  },
-  noBankBox: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: space['2xs'],
-  },
-  noBankText: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    color: color.accent,
-  },
-  linkBankBtn: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    fontWeight: '700',
-    color: color.accent,
   },
 })

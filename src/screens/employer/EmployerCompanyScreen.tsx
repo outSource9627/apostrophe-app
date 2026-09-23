@@ -1,7 +1,7 @@
 import React from 'react'
 import { Linking, Pressable, StyleSheet, View } from 'react-native'
-import { borderWidth, color, height, opacity, radius, space } from '../../theme'
-import { Body, Button, Card, Display, Divider, ErrorState, Eyebrow } from '../../components/ui'
+import { color, height, opacity, radius, space } from '../../theme'
+import { Body, Button, Card, Display, Divider, ErrorState, Eyebrow, Skeleton } from '../../components/ui'
 import { CompanyMonogram, EmployerShell, Glyph, VerifiedEmployerBadge } from '../../components/employer'
 import type { EmployerState } from '../../lib/api/employer'
 import { companySizeLabel } from '../../lib/employer/state'
@@ -57,7 +57,7 @@ export function EmployerCompanyScreen({ onBack }: EmployerCompanyScreenProps) {
           action={<Button variant="outline" size="sm" label="Try again" onPress={() => refresh()} />}
         />
       ) : (
-        <LoadingCard />
+        <Skeleton lines={4} />
       )}
     </EmployerShell>
   )
@@ -194,26 +194,6 @@ function Name({ children }: { children: string }) {
   return <Display level="xs">{children}</Display>
 }
 
-/** Loading holds the card's own geometry open: the well, the monogram, the name and the meta line. */
-function LoadingCard() {
-  return (
-    <View style={styles.section} accessibilityLabel="Loading" accessibilityState={{ busy: true }}>
-      <Eyebrow>How candidates see you</Eyebrow>
-      <View style={styles.well}>
-        <Card style={styles.card}>
-          <View style={styles.identity}>
-            <View style={styles.skeletonMonogram} />
-            <View style={[styles.bar, styles.barName]} />
-          </View>
-          <View style={[styles.bar, styles.barMeta]} />
-          <Divider style={styles.skeletonRule} />
-          <View style={[styles.bar, styles.barPerson]} />
-        </Card>
-      </View>
-    </View>
-  )
-}
-
 /** 'copperleaf.test' → 'https://copperleaf.test'. An address that already has a scheme is left alone. */
 function websiteHref(site: string): string {
   return /^https?:\/\//i.test(site) ? site : `https://${site}`
@@ -255,16 +235,4 @@ const styles = StyleSheet.create({
   grid: { marginTop: space.xs },
   gridRow: { flexDirection: 'row', gap: space.lg },
   cell: { flex: 1, gap: space['2xs'], paddingVertical: space.sm },
-
-  skeletonMonogram: {
-    width: space['4xl'],
-    height: space['4xl'],
-    borderRadius: radius.md,
-    backgroundColor: color.surfaceSunken,
-  },
-  bar: { height: space.md, borderRadius: radius.sm },
-  barName: { marginTop: space.sm, width: '60%', height: space.xl, backgroundColor: color.surfaceSunken },
-  barMeta: { marginTop: space.md, width: '80%', backgroundColor: color.surfaceMuted },
-  skeletonRule: { marginTop: space.xl, height: borderWidth.thin },
-  barPerson: { marginTop: space.md, width: '40%', height: space.lg, backgroundColor: color.surfaceSunken },
 })

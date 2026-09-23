@@ -3,8 +3,8 @@ import { ScrollView, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../../lib/api'
-import { color, space, radius, borderWidth } from '../../theme'
-import { AppBar, Body, Button, Display, Eyebrow, Figure, Meta, StatusPill } from '../../components/ui'
+import { color, space, borderWidth } from '../../theme'
+import { AppBar, Body, Button, Card, Display, Eyebrow, Figure, Meta, StatusPill } from '../../components/ui'
 
 interface Me { paid: boolean; qualification?: string }
 interface Config { tiers: { tier: string; amountPaise: number; durationMin: number }[]; qualifications: { value: string; tier: string }[] }
@@ -44,16 +44,16 @@ export function PricingScreen({ onBack, onPay }: { onBack: () => void; onPay: ()
           {cfg.data!.tiers.map((t) => {
             const on = t.tier === myTier
             return (
-              <View key={t.tier} style={[styles.tier, on && styles.tierOn]}>
+              <Card key={t.tier} style={[styles.tier, on && styles.tierOn]}>
                 <View style={{ gap: 2 }}>
                   <Body weight="semibold" size="lg">{TIER_NAME[t.tier] ?? t.tier}</Body>
                   <Meta style={{ color: color.textSubtle }}>{t.durationMin} MIN INTERVIEW</Meta>
                 </View>
                 <View style={{ alignItems: 'flex-end', gap: space.xs }}>
                   <Figure value={rupees(t.amountPaise)} />
-                  {on ? <StatusPill tone="accent" label="Your tier" /> : null}
+                  {on ? <StatusPill tone="neutral" label="Your tier" /> : null}
                 </View>
-              </View>
+              </Card>
             )
           })}
         </View>
@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.surface },
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   body: { padding: space.xl, gap: space.xl, paddingBottom: space['4xl'] },
-  tier: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderRadius: radius.lg, borderWidth: borderWidth.thin, borderColor: color.border, backgroundColor: color.surface, padding: space.lg },
+  tier: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: space.lg },
   tierOn: { borderColor: color.ink },
   foot: { borderTopWidth: borderWidth.thin, borderTopColor: color.border, paddingHorizontal: space.xl, paddingTop: space.lg, gap: space.md },
   footEcho: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },

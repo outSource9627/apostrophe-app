@@ -5,8 +5,8 @@ import { useQuery } from '@tanstack/react-query'
 import Svg, { Path } from 'react-native-svg'
 import { tokenStore } from '../../lib/api'
 import { getMe, logout, resendVerificationEmail } from '../../lib/api/account'
-import { color, space, radius, borderWidth } from '../../theme'
-import { AppBar, Body, Button, Display, Eyebrow, Meta, StatusPill } from '../../components/ui'
+import { color, space, borderWidth } from '../../theme'
+import { AppBar, Body, Button, Card, Display, Eyebrow, Meta, StatusPill } from '../../components/ui'
 
 /**
  * ST-49 — Account. Identity state is shown PER identifier, at the identifier. The
@@ -69,16 +69,16 @@ export function AccountScreen({ onBack, onSignedOut, onReceipts, onVisibility, o
 
         <View style={{ gap: space.md }}>
           <Eyebrow>Security</Eyebrow>
-          <View style={styles.group}>
+          <Card style={styles.group}>
             <Row title="Sign out" sub="On this device only" onPress={onSignOut} busy={signingOut} last />
-          </View>
+          </Card>
         </View>
 
         <View style={{ gap: space.md }}>
           <Eyebrow>More</Eyebrow>
-          <View style={styles.group}>
+          <Card style={styles.group}>
             {more.map((m, i) => <Row key={m.label} title={m.label} sub={m.sub} onPress={m.onPress} last={i === more.length - 1} />)}
-          </View>
+          </Card>
         </View>
       </ScrollView>
     </View>
@@ -89,13 +89,13 @@ function Identifier({ label, value, verified, reason, action }: {
   label: string; value: string; verified?: boolean; reason?: string; action?: React.ReactNode
 }) {
   return (
-    <View style={styles.identifier}>
+    <Card style={styles.identifier}>
       <Eyebrow>{label}</Eyebrow>
       <Body size="base">{value}</Body>
       <View style={{ alignSelf: 'flex-start' }}>{verified ? <StatusPill tone="success" label="Verified" /> : <StatusPill tone="warning" label="Not verified" />}</View>
       {!!reason && <Body size="xs" tone="muted">{reason}</Body>}
       {!!action && <View style={{ marginTop: space.xs, alignSelf: 'flex-start' }}>{action}</View>}
-    </View>
+    </Card>
   )
 }
 
@@ -115,8 +115,8 @@ const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.surface },
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   body: { padding: space.xl, gap: space['2xl'], paddingBottom: space['4xl'] },
-  identifier: { borderRadius: radius.lg, borderWidth: borderWidth.thin, borderColor: color.border, padding: space.lg, gap: space.sm },
-  group: { borderRadius: radius.lg, borderWidth: borderWidth.thin, borderColor: color.border, overflow: 'hidden' },
+  identifier: { padding: space.lg, gap: space.sm },
+  group: { overflow: 'hidden' },
   row: { minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: space.md, paddingHorizontal: space.lg, paddingVertical: space.md },
   rowBorder: { borderBottomWidth: borderWidth.thin, borderBottomColor: color.border },
 })

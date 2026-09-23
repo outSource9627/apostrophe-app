@@ -1,7 +1,6 @@
 import React from 'react'
 import {
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -9,7 +8,19 @@ import {
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { borderWidth, color, fontFamilyNative, radius, space } from '../../theme'
-import { Button, Card, Eyebrow, StatusPill } from '../../components/ui'
+import {
+  Body,
+  Button,
+  Card,
+  Display,
+  EmptyState,
+  ErrorState,
+  Eyebrow,
+  Figure,
+  ObjectRow,
+  Skeleton,
+  StatusPill,
+} from '../../components/ui'
 import { InterviewerShell } from '../../components/interviewer/InterviewerShell'
 import { useInterviewer } from '../../lib/interviewer/useInterviewer'
 import { formatPaise } from '../../lib/format/money'
@@ -17,7 +28,7 @@ import { MIN_WITHDRAWAL_PAISE } from '../../lib/interviewer/state'
 
 export function InterviewerWalletScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<any>>()
-  const { profile, wallet, owedScorecards } = useInterviewer()
+  const { profile, wallet, loading, error, refresh } = useInterviewer()
 
   const isSuspended = profile?.status === 'SUSPENDED'
   const balancePaise = wallet?.balancePaise ?? 0
@@ -34,29 +45,61 @@ export function InterviewerWalletScreen() {
     }
   }
 
+  if (loading && !wallet) {
+    return (
+      <InterviewerShell navTab="wallet">
+        <Skeleton lines={4} />
+      </InterviewerShell>
+    )
+  }
+
+  if (error && !wallet) {
+    return (
+      <InterviewerShell navTab="wallet">
+        <ErrorState
+          title="We could not load your wallet."
+          body={error.message}
+          action={<Button variant="outline" size="sm" label="Try again" onPress={refresh} />}
+        />
+      </InterviewerShell>
+    )
+  }
+
+  const recentEntries = wallet?.ledger?.slice(0, 5) ?? []
+
   return (
     <InterviewerShell navTab="wallet">
       <View style={styles.header}>
-        <Eyebrow>COMPENSATION & LEDGER</Eyebrow>
-        <Text style={styles.title}>Interviewer Wallet</Text>
+        <View>
+          <Eyebrow>COMPENSATION & LEDGER</Eyebrow>
+          <Display level="lg" accessibilityRole="header">
+            Interviewer Wallet
+          </Display>
+        </View>
+        <StatusPill
+          tone={isSuspended ? 'danger' : canWithdraw ? 'success' : 'neutral'}
+          label={isSuspended ? 'SUSPENDED' : canWithdraw ? 'READY' : 'BELOW MINIMUM'}
+        />
       </View>
 
       {/* Balances Hero Card */}
       <Card style={styles.heroCard}>
         <View style={styles.heroHeader}>
-          <Text style={styles.heroLabel}>Available for Withdrawal</Text>
-          <Text style={styles.heroAmount}>{formatPaise(balancePaise)}</Text>
+          <Body size="xs" tone="muted">
+            Available for Withdrawal
+          </Body>
+          <Figure value={formatPaise(balancePaise)} />
         </View>
 
         <View style={styles.statsRow}>
           <View style={styles.statBox}>
-            <Text style={styles.statLabel}>Locked (Owed)</Text>
-            <Text style={styles.statVal}>{formatPaise(lockedPaise)}</Text>
+            <Eyebrow>Locked (Owed)</Eyebrow>
+            <Display level="xs">{formatPaise(lockedPaise)}</Display>
           </View>
           <View style={styles.divider} />
           <View style={styles.statBox}>
-            <Text style={styles.statLabel}>Lifetime Earned</Text>
-            <Text style={styles.statVal}>{formatPaise(lifetimePaise)}</Text>
+            <Eyebrow>Lifetime Earned</Eyebrow>
+            <Display level="xs">{formatPaise(lifetimePaise)}</Display>
           </View>
         </View>
 
@@ -77,86 +120,102 @@ export function InterviewerWalletScreen() {
       </Card>
 
       {/* Bank Account Status */}
-      <Card style={styles.bankCard}>
-        <View style={styles.bankHeader}>
-          <Text style={styles.bankIcon}>🏦</Text>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.bankTitle}>Payout Bank Account</Text>
-            <Text style={styles.bankSub}>
-              {wallet?.bankAccount
-                ? `${wallet.bankAccount.bankName || 'Bank'} · Ending in ${wallet.bankAccount.accountNumberLast4 || wallet.bankAccount.accountNumber?.slice(-4) || '****'}`
-                : 'No bank account linked yet.'}
-            </Text>
-          </View>
-          <Button
-            label={wallet?.bankAccount ? 'Edit' : 'Link'}
-            variant="secondary"
-            size="sm"
-            onPress={() => navigation.navigate('InterviewerBankAccount')}
-          />
-        </View>
+      <Card>
+        <ObjectRow
+          last
+          thumb={
+            <View style={styles.bankAvatar}>
+              <Text style={styles.bankIcon}>🏦</Text>
+            </View>
+          }
+          title="Payout Bank Account"
+          meta={
+            wallet?.bankAccount
+              ? `${wallet.bankAccount.bankName || 'Bank'} · Ending in ${wallet.bankAccount.accountNumberLast4 || wallet.bankAccount.accountNumber?.slice(-4) || '****'}`
+              : 'No bank account linked yet.'
+          }
+          status={
+            <Button
+              label={wallet?.bankAccount ? 'Edit' : 'Link'}
+              variant="secondary"
+              size="sm"
+              onPress={() => navigation.navigate('InterviewerBankAccount')}
+            />
+          }
+        />
       </Card>
 
       {/* Quick Navigation Links */}
       <View style={styles.linksRow}>
-        <Pressable
-          style={styles.linkCard}
-          onPress={() => navigation.navigate('InterviewerLedger')}
-        >
-          <Text style={styles.linkIcon}>📜</Text>
-          <Text style={styles.linkTitle}>Itemised Ledger</Text>
-          <Text style={styles.linkSub}>Every credit, fee & forfeit →</Text>
+        <Pressable style={styles.linkWrap} onPress={() => navigation.navigate('InterviewerLedger')}>
+          <Card style={styles.linkCard}>
+            <Text style={styles.linkIcon}>📜</Text>
+            <Body size="md" weight="semibold">
+              Itemised Ledger
+            </Body>
+            <Body size="2xs" tone="subtle">
+              Every credit, fee & forfeit →
+            </Body>
+          </Card>
         </Pressable>
 
-        <Pressable
-          style={styles.linkCard}
-          onPress={() => navigation.navigate('InterviewerStatements')}
-        >
-          <Text style={styles.linkIcon}>📊</Text>
-          <Text style={styles.linkTitle}>Tax & Statements</Text>
-          <Text style={styles.linkSub}>Monthly 1% TDS summary →</Text>
+        <Pressable style={styles.linkWrap} onPress={() => navigation.navigate('InterviewerStatements')}>
+          <Card style={styles.linkCard}>
+            <Text style={styles.linkIcon}>📊</Text>
+            <Body size="md" weight="semibold">
+              Tax & Statements
+            </Body>
+            <Body size="2xs" tone="subtle">
+              Monthly 1% TDS summary →
+            </Body>
+          </Card>
         </Pressable>
       </View>
 
       {/* Recent Ledger Entries */}
       <View style={styles.ledgerSection}>
         <View style={styles.ledgerHeader}>
-          <Text style={styles.sectionTitle}>Recent Transactions</Text>
-          <Pressable onPress={() => navigation.navigate('InterviewerLedger')}>
-            <Text style={styles.viewAllLink}>View All</Text>
-          </Pressable>
+          <Body size="sm" weight="semibold">
+            Recent Transactions
+          </Body>
+          <Button
+            variant="outline"
+            size="sm"
+            label="View All"
+            onPress={() => navigation.navigate('InterviewerLedger')}
+          />
         </View>
 
-        {!wallet?.ledger || wallet.ledger.length === 0 ? (
-          <Card style={styles.emptyLedger}>
-            <Text style={styles.emptyText}>No transactions yet.</Text>
-            <Text style={styles.emptySub}>
-              Conduct sessions and submit scorecards to earn fees.
-            </Text>
+        {recentEntries.length === 0 ? (
+          <Card>
+            <EmptyState
+              title="No transactions yet."
+              body="Conduct sessions and submit scorecards to earn fees."
+            />
           </Card>
         ) : (
-          <Card style={styles.ledgerList}>
-            {wallet.ledger.slice(0, 5).map((entry) => {
+          <Card>
+            {recentEntries.map((entry, i) => {
               const isCredit = entry.type === 'FEE_CREDIT'
               const isForfeit = entry.type === 'FORFEIT'
 
               return (
-                <View key={entry.id} style={styles.txRow}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.txDesc}>{entry.description || entry.type}</Text>
-                    <Text style={styles.txDate}>{formatTxDate(entry.createdAt)}</Text>
-                  </View>
-                  <Text
-                    style={[
-                      styles.txAmount,
-                      isCredit && styles.txCredit,
-                      isForfeit && styles.txForfeit,
-                    ]}
-                  >
-                    {isCredit ? '+' : '−'}
-                    {formatPaise(Math.abs(entry.amountPaise))}
-                  </Text>
-                </View>
+                <ObjectRow
+                  key={entry.id}
+                  last={i === recentEntries.length - 1}
+                  title={entry.description || entry.type}
+                  meta={formatTxDate(entry.createdAt)}
+                  status={
+                    <Body
+                      size="sm"
+                      weight="semibold"
+                      style={[styles.txAmount, isCredit && styles.txCredit, isForfeit && styles.txForfeit]}
+                    >
+                      {isCredit ? '+' : '−'}
+                      {formatPaise(Math.abs(entry.amountPaise))}
+                    </Body>
+                  }
+                />
               )
             })}
           </Card>
@@ -168,13 +227,10 @@ export function InterviewerWalletScreen() {
 
 const styles = StyleSheet.create({
   header: {
-    gap: space['2xs'],
-  },
-  title: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 24,
-    fontWeight: '700',
-    color: color.text,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: space.sm,
   },
   heroCard: {
     padding: space.lg,
@@ -182,17 +238,6 @@ const styles = StyleSheet.create({
   },
   heroHeader: {
     gap: space['2xs'],
-  },
-  heroLabel: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    color: color.textMuted,
-  },
-  heroAmount: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 32,
-    fontWeight: '700',
-    color: color.text,
   },
   statsRow: {
     flexDirection: 'row',
@@ -205,19 +250,8 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 2,
   },
-  statLabel: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 11,
-    color: color.textSubtle,
-  },
-  statVal: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 15,
-    fontWeight: '700',
-    color: color.text,
-  },
   divider: {
-    width: 1,
+    width: borderWidth.thin,
     height: 30,
     backgroundColor: color.border,
     marginHorizontal: space.sm,
@@ -225,57 +259,33 @@ const styles = StyleSheet.create({
   withdrawAction: {
     marginTop: space['2xs'],
   },
-  bankCard: {
-    padding: space.md,
-  },
-  bankHeader: {
-    flexDirection: 'row',
+  bankAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.pill,
+    backgroundColor: color.surfaceSubtle,
+    borderWidth: borderWidth.thin,
+    borderColor: color.border,
     alignItems: 'center',
-    gap: space.sm,
+    justifyContent: 'center',
   },
   bankIcon: {
-    fontSize: 24,
-  },
-  bankTitle: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 14,
-    fontWeight: '700',
-    color: color.text,
-  },
-  bankSub: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 12,
-    color: color.textMuted,
-    marginTop: 2,
+    fontSize: 20,
   },
   linksRow: {
     flexDirection: 'row',
     gap: space.md,
   },
-  linkCard: {
+  linkWrap: {
     flex: 1,
-    backgroundColor: color.surface,
-    borderWidth: borderWidth.thin,
-    borderColor: color.border,
-    borderRadius: radius.md,
+  },
+  linkCard: {
     padding: space.md,
     gap: space['2xs'],
   },
   linkIcon: {
     fontSize: 20,
     marginBottom: 2,
-  },
-  linkTitle: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 14,
-    fontWeight: '700',
-    color: color.text,
-  },
-  linkSub: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 11,
-    color: color.textSubtle,
-    marginTop: 2,
   },
   ledgerSection: {
     gap: space.xs,
@@ -285,68 +295,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  sectionTitle: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 16,
-    fontWeight: '700',
-    color: color.text,
-  },
-  viewAllLink: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    fontWeight: '600',
-    color: color.accent,
-  },
-  emptyLedger: {
-    padding: space.lg,
-    alignItems: 'center',
-    gap: space['2xs'],
-  },
-  emptyText: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 14,
-    fontWeight: '600',
-    color: color.text,
-  },
-  emptySub: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 12,
-    color: color.textMuted,
-  },
-  ledgerList: {
-    padding: space.xs,
-  },
-  txRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: space.sm,
-    paddingHorizontal: space.sm,
-    borderBottomWidth: borderWidth.thin,
-    borderBottomColor: color.border,
-  },
-  txDesc: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    fontWeight: '600',
-    color: color.text,
-  },
-  txDate: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 11,
-    color: color.textSubtle,
-    marginTop: 2,
-  },
   txAmount: {
     fontFamily: fontFamilyNative.mono,
-    fontSize: 14,
-    fontWeight: '700',
-    color: color.text,
   },
   txCredit: {
-    color: '#059669',
+    color: color.success,
   },
   txForfeit: {
-    color: color.accent,
+    color: color.danger,
   },
 })

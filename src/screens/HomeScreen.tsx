@@ -6,7 +6,8 @@ import { Logo } from '../components/Logo'
 import { UnfinishedCard } from '../components/UnfinishedCard'
 import { PayBar } from '../components/PayBar'
 import { api } from '../lib/api'
-import { color, space, radius, fontSize, fontWeight, fontFamilyNative, borderWidth, height, leadingNative, trackingNative } from '../theme'
+import { Body, Card, Display, ErrorState, Eyebrow, Meta, ObjectRow } from '../components/ui'
+import { color, space, radius, fontSize, fontWeight, borderWidth, height } from '../theme'
 
 interface Me {
   paid: boolean
@@ -58,7 +59,7 @@ export function HomeScreen({
   if (me.isError || !me.data || !config.data) {
     return (
       <View style={[styles.page, styles.centre, { paddingTop: insets.top }]}>
-        <Text style={styles.muted}>Could not load your account.</Text>
+        <ErrorState title="Could not load your account." />
       </View>
     )
   }
@@ -71,49 +72,39 @@ export function HomeScreen({
     : undefined
 
   if (me.data.paid) {
+    // Same destinations, same conditions, same handlers as before — only
+    // reshaped into data so the list can render through `ObjectRow` inside a
+    // `Card`, the way a drill-in menu reads elsewhere in the app (see e.g.
+    // InterviewerAccountScreen's "Account Actions & Shortcuts").
+    const links: { label: string; onPress: () => void }[] = [
+      { label: 'Continue where you left off →', onPress: onProfile },
+      ...(onInterviews ? [{ label: 'My interviews →', onPress: onInterviews }] : []),
+      ...(onProfileView ? [{ label: 'My profile →', onPress: onProfileView }] : []),
+      ...(onJobs ? [{ label: 'Job feed →', onPress: onJobs }] : []),
+      ...(onApplications ? [{ label: 'My applications →', onPress: onApplications }] : []),
+      ...(onInterests ? [{ label: 'Interests →', onPress: onInterests }] : []),
+      ...(onConnections ? [{ label: 'Connections →', onPress: onConnections }] : []),
+      ...(onChats ? [{ label: 'Chats →', onPress: onChats }] : []),
+      ...(onNotifications ? [{ label: 'Notifications →', onPress: onNotifications }] : []),
+      ...(onStats ? [{ label: 'Your stats →', onPress: onStats }] : []),
+      ...(onAccount ? [{ label: 'Account →', onPress: onAccount }] : []),
+      ...(onVisibility ? [{ label: 'Visibility →', onPress: onVisibility }] : []),
+    ]
+
     return (
       <View style={[styles.page, { paddingTop: insets.top }]}>
         <Header name={me.data.name} />
         <View style={styles.paid}>
-          <Text style={styles.eyebrow}>
+          <Eyebrow>
             {me.data.unusedCount > 0 ? 'YOUR INTERVIEW IS WAITING' : 'WELCOME BACK'}
-          </Text>
-          <Text style={styles.headline}>Let&apos;s finish</Text>
-          <Text style={[styles.headline, styles.headlineMuted]}>your profile.</Text>
-          <Text style={styles.link} onPress={onProfile}>Continue where you left off →</Text>
-          {onInterviews && (
-            <Text style={[styles.link, { marginTop: space.md }]} onPress={onInterviews}>My interviews →</Text>
-          )}
-          {onProfileView && (
-            <Text style={[styles.link, { marginTop: space.md }]} onPress={onProfileView}>My profile →</Text>
-          )}
-          {onJobs && (
-            <Text style={[styles.link, { marginTop: space.md }]} onPress={onJobs}>Job feed →</Text>
-          )}
-          {onApplications && (
-            <Text style={[styles.link, { marginTop: space.md }]} onPress={onApplications}>My applications →</Text>
-          )}
-          {onInterests && (
-            <Text style={[styles.link, { marginTop: space.md }]} onPress={onInterests}>Interests →</Text>
-          )}
-          {onConnections && (
-            <Text style={[styles.link, { marginTop: space.md }]} onPress={onConnections}>Connections →</Text>
-          )}
-          {onChats && (
-            <Text style={[styles.link, { marginTop: space.md }]} onPress={onChats}>Chats →</Text>
-          )}
-          {onNotifications && (
-            <Text style={[styles.link, { marginTop: space.md }]} onPress={onNotifications}>Notifications →</Text>
-          )}
-          {onStats && (
-            <Text style={[styles.link, { marginTop: space.md }]} onPress={onStats}>Your stats →</Text>
-          )}
-          {onAccount && (
-            <Text style={[styles.link, { marginTop: space.md }]} onPress={onAccount}>Account →</Text>
-          )}
-          {onVisibility && (
-            <Text style={[styles.link, { marginTop: space.md }]} onPress={onVisibility}>Visibility →</Text>
-          )}
+          </Eyebrow>
+          <Display level="md" style={styles.headline}>Let&apos;s finish</Display>
+          <Display level="md" style={styles.headlineMuted}>your profile.</Display>
+          <Card style={styles.linksCard}>
+            {links.map((l, i) => (
+              <ObjectRow key={l.label} title={l.label} onPress={l.onPress} last={i === links.length - 1} />
+            ))}
+          </Card>
         </View>
       </View>
     )
@@ -124,11 +115,11 @@ export function HomeScreen({
       <Header name={me.data.name} />
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        <Text style={styles.eyebrow}>
+        <Eyebrow>
           {firstName ? `${firstName.toUpperCase()} · ACCOUNT CREATED` : 'ACCOUNT CREATED'}
-        </Text>
-        <Text style={styles.headline}>One conversation</Text>
-        <Text style={[styles.headline, styles.headlineMuted]}>away from being seen.</Text>
+        </Eyebrow>
+        <Display level="md" style={styles.headline}>One conversation</Display>
+        <Display level="md" style={styles.headlineMuted}>away from being seen.</Display>
 
         <View style={styles.cardWrap}>
           <UnfinishedCard
@@ -136,18 +127,18 @@ export function HomeScreen({
             city={me.data.city}
             qualificationLabel={qualificationLabel}
           />
-          <Text style={styles.caption}>
+          <Body size="sm" tone="subtle" style={styles.caption}>
             This is the card an employer sees. Everything but the film is already yours.
-          </Text>
+          </Body>
         </View>
 
         <View style={styles.beats}>
           {BEATS.map((b) => (
             <View key={b.n} style={styles.beat}>
-              <Text style={styles.beatNumber}>{b.n}</Text>
+              <Meta style={styles.beatNumber}>{b.n}</Meta>
               <View style={styles.beatBody}>
-                <Text style={styles.beatTitle}>{b.title}</Text>
-                <Text style={styles.beatText}>{b.body}</Text>
+                <Body size="sm" weight="medium">{b.title}</Body>
+                <Body size="sm" tone="muted" style={styles.beatText}>{b.body}</Body>
               </View>
             </View>
           ))}
@@ -183,7 +174,6 @@ function Header({ name }: { name?: string }) {
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.background },
   centre: { alignItems: 'center', justifyContent: 'center' },
-  muted: { color: color.textMuted, fontSize: fontSize['ui-base'] },
   header: {
     height: height['app-bar'],
     flexDirection: 'row',
@@ -200,23 +190,15 @@ const styles = StyleSheet.create({
   },
   avatarText: { fontSize: fontSize['ui-xs'], color: color.textMuted, fontWeight: fontWeight.medium },
   scroll: { paddingHorizontal: space.xl, paddingTop: space.lg, paddingBottom: space['2xl'] },
-  eyebrow: { fontSize: fontSize['ui-2xs'], letterSpacing: trackingNative.widest, color: color.textSubtle },
-  headline: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: fontSize['display-md'],
-    lineHeight: leadingNative['display-md'],
-    color: color.text,
-    marginTop: space.md,
-  },
+  headline: { marginTop: space.md },
   headlineMuted: { color: color.textMuted, marginTop: 0 },
   cardWrap: { marginTop: space.xl },
-  caption: { marginTop: space.lg, fontSize: fontSize['ui-sm'], lineHeight: leadingNative['ui-md'], color: color.textSubtle },
+  caption: { marginTop: space.lg },
   beats: { marginTop: space.xl, borderTopWidth: borderWidth.thin, borderTopColor: color.border },
   beat: { flexDirection: 'row', gap: space.md, paddingVertical: space.lg, borderBottomWidth: borderWidth.thin, borderBottomColor: color.border },
-  beatNumber: { fontFamily: fontFamilyNative.display, fontSize: fontSize['ui-xs'], color: color.accent, width: space.xl, paddingTop: space['2xs'] },
+  beatNumber: { width: space.xl, paddingTop: space['2xs'] },
   beatBody: { flex: 1 },
-  beatTitle: { fontSize: fontSize['ui-sm'], fontWeight: fontWeight.medium, color: color.text },
-  beatText: { marginTop: space['2xs'], fontSize: fontSize['ui-sm'], lineHeight: leadingNative['ui-md'], color: color.textMuted },
+  beatText: { marginTop: space['2xs'] },
   paid: { paddingHorizontal: space.xl, paddingTop: space['3xl'] },
-  link: { marginTop: space.xl, fontSize: fontSize['ui-base'], color: color.accent, fontWeight: fontWeight.semibold },
+  linksCard: { marginTop: space.xl },
 })

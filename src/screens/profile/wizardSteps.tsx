@@ -1,7 +1,7 @@
 import React from 'react'
 import { StyleSheet, View } from 'react-native'
-import { color, space, radius, borderWidth } from '../../theme'
-import { Body, Chip, Eyebrow, Field, Input, StatusPill } from '../../components/ui'
+import { color, space } from '../../theme'
+import { Banner, Body, Card, Chip, Eyebrow, Field, FileField, Input, StatusPill } from '../../components/ui'
 
 /**
  * The six step bodies of the profile wizard — the app half of the web step
@@ -133,14 +133,19 @@ export function EducationStep({ draft, patch, config }: StepProps) {
           ))}
         </View>
       </Field>
-      <View style={styles.proof}>
+      <Card style={styles.proof}>
         <View style={styles.proofHead}>
           <Eyebrow>Proof of qualification</Eyebrow>
           <StatusPill tone="warning" label="required" />
         </View>
         <Body size="sm" tone="muted">Your interviewer checks this against what you enter. Never shown to employers. PDF, JPG or PNG up to 10 MB.</Body>
-        <Chip label={draft.documentKey ? 'Replace file' : 'Choose a file'} add onPress={() => patch({ __pickDoc: Date.now() })} />
-      </View>
+        <FileField
+          filename={draft.documentKey ? 'Qualification document' : undefined}
+          detail={draft.documentKey ? 'Tap to replace' : undefined}
+          state={draft.documentKey ? 'uploaded' : 'idle'}
+          onPress={() => patch({ __pickDoc: Date.now() })}
+        />
+      </Card>
     </View>
   )
 }
@@ -153,11 +158,11 @@ export function ExperienceStep({ draft, patch }: StepProps) {
     <View style={styles.stack}>
       <Body size="sm" tone="muted">Internships and part-time work count. This step is optional.</Body>
       {entries.map((e, i) => (
-        <View key={i} style={styles.entry}>
+        <Card key={i} style={styles.entry}>
           <Field label="Company"><Input value={String(e.company ?? '')} onChangeText={(v) => setEntry(i, { company: v })} placeholder="Where you worked" /></Field>
           <Field label="Role"><Input value={String(e.role ?? '')} onChangeText={(v) => setEntry(i, { role: v })} placeholder="What you did" /></Field>
           <Chip label="Remove" onPress={() => patch({ experience: entries.filter((_, n) => n !== i) })} />
-        </View>
+        </Card>
       ))}
       <Chip label="Add another role" add onPress={() => patch({ experience: [...entries, {}] })} />
     </View>
@@ -184,11 +189,9 @@ export function SkillsStep({ draft, patch, config, profile }: StepProps) {
         {skills.length} of {min}{short > 0 ? ` · ${short} to go` : ' · minimum met'}
       </Body>
       {pending.length > 0 && (
-        <View style={styles.pendingCard}>
-          <Body size="sm" tone="default">
-            {pending.join(', ')} {pending.length === 1 ? 'is' : 'are'} not in our list yet, so {pending.length === 1 ? 'it is' : 'they are'} on your profile already and queued for review. {pending.length === 1 ? 'It counts' : 'They count'} towards your {min} either way.
-          </Body>
-        </View>
+        <Banner tone="info">
+          {`${pending.join(', ')} ${pending.length === 1 ? 'is' : 'are'} not in our list yet, so ${pending.length === 1 ? 'it is' : 'they are'} on your profile already and queued for review. ${pending.length === 1 ? 'It counts' : 'They count'} towards your ${min} either way.`}
+        </Banner>
       )}
     </View>
   )
@@ -249,11 +252,11 @@ export function DocumentsStep({ draft, patch }: StepProps) {
   return (
     <View style={styles.stack}>
       <Body size="sm" tone="muted">Your résumé and any supporting files. Private, reachable only through a signed link. This step is optional.</Body>
-      <View style={styles.proof}>
+      <Card style={styles.proof}>
         <Eyebrow>Résumé</Eyebrow>
         <Body size="sm" tone="muted">PDF, DOC or DOCX.</Body>
-        <Chip label="Choose a file" add onPress={() => patch({ __pickResume: Date.now() })} />
-      </View>
+        <FileField onPress={() => patch({ __pickResume: Date.now() })} />
+      </Card>
       <Field label="Portfolio links" helper="A site, a repo, a reel.">
         <ChipRow values={links} onRemove={(i) => patch({ portfolioLinks: links.filter((_, n) => n !== i) })} />
         <Input value="" onSubmitEditing={(e) => { const v = e.nativeEvent.text.trim(); if (v) patch({ portfolioLinks: [...links, v] }) }} placeholder="https://… , press return" autoCapitalize="none" />
@@ -267,8 +270,7 @@ const styles = StyleSheet.create({
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   pair: { flexDirection: 'row', gap: space.md },
   pairItem: { flex: 1 },
-  proof: { gap: space.sm, borderRadius: radius.md, borderWidth: borderWidth.thin, borderColor: color.border, backgroundColor: color.surfaceMuted, padding: space.lg },
+  proof: { gap: space.sm, padding: space.lg, backgroundColor: color.surfaceMuted },
   proofHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  entry: { gap: space.md, borderRadius: radius.lg, borderWidth: borderWidth.thin, borderColor: color.border, padding: space.lg },
-  pendingCard: { borderRadius: radius.md, backgroundColor: color.infoSoft, padding: space.lg },
+  entry: { gap: space.md, padding: space.lg },
 })

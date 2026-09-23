@@ -4,8 +4,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { getNotifications, markNotificationsRead, type NotificationRow } from '../../lib/api/account'
 import { fmtClock, fmtDayDivider, fmtDayMonthYear } from '../../lib/chat/format'
-import { color, space, borderWidth, radius } from '../../theme'
-import { AppBar, Body, Display, Eyebrow, Meta } from '../../components/ui'
+import { color, space, radius } from '../../theme'
+import { AppBar, Body, Display, EmptyState, Eyebrow, Meta } from '../../components/ui'
 
 /**
  * ST-46 — a day-grouped list kept for NINETY DAYS. Read/unread are a MARKER and
@@ -47,10 +47,7 @@ export function NotificationsScreen({ onBack, onNavigate }: {
         <Display level="lg">Notifications</Display>
 
         {rows!.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <Display level="xs">Nothing yet.</Display>
-            <Body size="sm" tone="muted" style={{ marginTop: space.xs }}>When an employer is interested, or your interview moves, it lands here.</Body>
-          </View>
+          <EmptyState title="Nothing yet." body="When an employer is interested, or your interview moves, it lands here." />
         ) : (
           <>
             {groups.map((g) => (
@@ -59,7 +56,7 @@ export function NotificationsScreen({ onBack, onNavigate }: {
                 {g.items.map((n) => (
                   <Pressable key={n.id} onPress={() => open(n)} style={styles.row}>
                     <View style={styles.gutter}>{!n.read && <View style={styles.dot} />}</View>
-                    <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+                    <View style={{ flex: 1, minWidth: 0, gap: space['2xs'] }}>
                       <View style={styles.rowTop}>
                         <Body size="base" weight={n.read ? 'regular' : 'semibold'} tone={n.read ? 'muted' : 'default'} style={{ flex: 1 }}>{n.title}</Body>
                         <Meta style={{ color: color.textSubtle }}>{fmtClock(n.createdAt)}</Meta>
@@ -108,9 +105,8 @@ const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.surface },
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   body: { padding: space.xl, gap: space['2xl'], paddingBottom: space['4xl'] },
-  emptyCard: { borderRadius: radius.lg, borderWidth: borderWidth.thin, borderColor: color.border, padding: space.lg },
   row: { flexDirection: 'row', alignItems: 'flex-start', gap: space.md, paddingVertical: space.md },
-  gutter: { width: 8, alignItems: 'center', paddingTop: 7 },
-  dot: { width: 7, height: 7, borderRadius: 999, backgroundColor: color.ink },
+  gutter: { width: space.sm, alignItems: 'center', paddingTop: 7 },
+  dot: { width: 7, height: 7, borderRadius: radius.pill, backgroundColor: color.ink },
   rowTop: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: space.md },
 })

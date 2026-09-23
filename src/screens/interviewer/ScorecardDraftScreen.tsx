@@ -1,19 +1,22 @@
 import React, { useEffect, useState } from 'react'
-import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native'
+import { Alert, Pressable, StyleSheet, View } from 'react-native'
 import { useNavigation, useRoute } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { borderWidth, color, fontFamilyNative, radius, space } from '../../theme'
-import { Button, Card, Eyebrow, Field, StatusPill } from '../../components/ui'
+import { borderWidth, color, height, radius, space } from '../../theme'
+import {
+  Banner,
+  Body,
+  Button,
+  Card,
+  Display,
+  ErrorState,
+  Eyebrow,
+  Field,
+  Input,
+  Meta,
+  Skeleton,
+  StatusPill,
+} from '../../components/ui'
 import { InterviewerShell } from '../../components/interviewer/InterviewerShell'
 import { interviewerApi, type InterviewSessionDto } from '../../lib/api/interviewer'
 import { useInterviewer } from '../../lib/interviewer/useInterviewer'
@@ -36,6 +39,7 @@ export function ScorecardDraftScreen() {
 
   const [session, setSession] = useState<InterviewSessionDto | null>(null)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<Error | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
   // Scores 1 to 5
@@ -61,14 +65,36 @@ export function ScorecardDraftScreen() {
       })
       .catch((err) => {
         Alert.alert('Error', err?.message || 'Unable to load scorecard session.')
+        setLoadError(err instanceof Error ? err : new Error(err?.message || 'Unable to load scorecard session.'))
       })
       .finally(() => setLoading(false))
   }, [id])
 
-  if (loading || !session) {
+  if (loading) {
     return (
       <InterviewerShell back={{ label: 'Interviews', onPress: () => navigation.goBack() }}>
-        <Text style={styles.loadingText}>Loading scorecard...</Text>
+        <Skeleton lines={4} />
+      </InterviewerShell>
+    )
+  }
+
+  if (!session) {
+    return (
+      <InterviewerShell back={{ label: 'Interviews', onPress: () => navigation.goBack() }}>
+        <ErrorState
+          title="We could not load this scorecard."
+          body={loadError?.message}
+          action={
+            <Button
+              variant="outline"
+              size="sm"
+              label="Go back"
+              // The error state's small button is 40 tall; the slop brings its tap box to the 44 floor.
+              hitSlop={(height.tap - height['control-xs']) / 2}
+              onPress={() => navigation.goBack()}
+            />
+          }
+        />
       </InterviewerShell>
     )
   }
@@ -132,72 +158,64 @@ export function ScorecardDraftScreen() {
       }
     >
       <View style={styles.header}>
-        <Eyebrow>OFFICIAL EVALUATION</Eyebrow>
-        <Text style={styles.title}>Candidate Scorecard</Text>
-        <Text style={styles.subtitle}>
-          Candidate: {session.student?.name || 'Student'} · {session.tier.replace('_', ' ')}
-        </Text>
+        <View style={styles.grow}>
+          <Eyebrow>OFFICIAL EVALUATION</Eyebrow>
+          <Display level="sm" style={styles.title}>
+            Candidate Scorecard
+          </Display>
+          <Meta style={styles.subtitle}>
+            {`${session.student?.name || 'Student'} · ${session.tier.replace('_', ' ')}`}
+          </Meta>
+        </View>
+        <StatusPill tone={overdue ? 'danger' : 'warning'} label={overdue ? 'FORFEITED' : 'SCORECARD OWED'} />
       </View>
 
-      {/* Countdown Clock / Forfeiture Warning */}
-      <View style={[styles.clockCard, overdue && styles.clockCardOverdue]}>
-        <Text style={styles.clockIcon}>{overdue ? '❌' : '⏱️'}</Text>
-        <View style={{ flex: 1 }}>
-          <Text style={[styles.clockTitle, overdue && styles.clockTitleOverdue]}>
-            {overdue ? 'Scorecard Window Forfeited (IV-13b)' : '24-Hour Submission Window'}
-          </Text>
-          <Text style={[styles.clockBody, overdue && styles.clockBodyOverdue]}>
-            {overdue
-              ? `The 24-hour evaluation deadline has passed. Session fee of ${formatPaise(fee)} is permanently forfeited per platform governance terms.`
-              : `Submit within ${formatScorecardCountdown(session.slotEnd)} to unlock immediate fee credit to your balance.`}
-          </Text>
-        </View>
-      </View>
+      {/* Countdown / forfeiture notice */}
+      <Banner
+        tone={overdue ? 'danger' : 'warning'}
+        title={overdue ? 'Scorecard Window Forfeited (IV-13b)' : '24-Hour Submission Window'}
+      >
+        {overdue
+          ? `The 24-hour evaluation deadline has passed. Session fee of ${formatPaise(fee)} is permanently forfeited per platform governance terms.`
+          : `Submit within ${formatScorecardCountdown(session.slotEnd)} to unlock immediate fee credit to your balance.`}
+      </Banner>
 
       {overdue ? (
         <Card style={styles.overdueNoticeCard}>
-          <Text style={styles.overdueHeading}>Submission Closed</Text>
-          <Text style={styles.overdueDesc}>
-            To maintain high trust with candidates and partner employers, scorecards cannot be submitted after the 24-hour window expires. If you encountered an extenuating technical glitch, contact support.
-          </Text>
-          <Button
-            label="Return to Interviews"
-            variant="secondary"
-            onPress={() => navigation.goBack()}
-          />
+          <Display level="xs">Submission Closed</Display>
+          <Body size="sm" tone="muted">
+            To maintain high trust with candidates and partner employers, scorecards cannot be submitted after the
+            24-hour window expires. If you encountered an extenuating technical glitch, contact support.
+          </Body>
+          <Button label="Return to Interviews" variant="secondary" onPress={() => navigation.goBack()} />
         </Card>
       ) : (
         <>
           {/* Rating Scales */}
           <Card style={styles.ratingsCard}>
-            <Text style={styles.sectionHeading}>Quantitative Evaluation (1 to 5)</Text>
+            <Eyebrow>Quantitative Evaluation (1 to 5)</Eyebrow>
 
             {CRITERIA.map((crit) => {
               const currentVal = scores[crit.key] ?? 3
 
               return (
                 <View key={crit.key} style={styles.criteriaRow}>
-                  <Text style={styles.criteriaLabel}>{crit.label}</Text>
+                  <Body size="sm" weight="medium">
+                    {crit.label}
+                  </Body>
                   <View style={styles.starsRow}>
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <Pressable
-                        key={star}
-                        onPress={() => handleScoreSelect(crit.key, star)}
-                        style={[
-                          styles.starBtn,
-                          currentVal >= star && styles.starBtnActive,
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.starText,
-                            currentVal >= star && styles.starTextActive,
-                          ]}
+                    {[1, 2, 3, 4, 5].map((star) => {
+                      const active = currentVal >= star
+                      return (
+                        <Pressable
+                          key={star}
+                          onPress={() => handleScoreSelect(crit.key, star)}
+                          style={[styles.starBtn, active && styles.starBtnActive]}
                         >
-                          {star}
-                        </Text>
-                      </Pressable>
-                    ))}
+                          <Meta style={active ? styles.starTextActive : styles.starText}>{star}</Meta>
+                        </Pressable>
+                      )
+                    })}
                   </View>
                 </View>
               )
@@ -206,11 +224,10 @@ export function ScorecardDraftScreen() {
 
           {/* Qualitative Written Feedback */}
           <Card style={styles.feedbackCard}>
-            <Text style={styles.sectionHeading}>Qualitative Candidate Feedback</Text>
+            <Eyebrow>Qualitative Candidate Feedback</Eyebrow>
 
             <Field label="Key Strengths (Shared with candidate & employers) *">
-              <TextInput
-                style={styles.textArea}
+              <Input
                 value={strengths}
                 onChangeText={setStrengths}
                 placeholder="Specific technical depth, clear communication, robust problem decomposition..."
@@ -221,8 +238,7 @@ export function ScorecardDraftScreen() {
             </Field>
 
             <Field label="Areas for Growth & Improvement *">
-              <TextInput
-                style={styles.textArea}
+              <Input
                 value={areasForImprovement}
                 onChangeText={setAreasForImprovement}
                 placeholder="Topics to study deeper, edge cases overlooked, architectural trade-offs..."
@@ -233,8 +249,7 @@ export function ScorecardDraftScreen() {
             </Field>
 
             <Field label="Internal Confidential Notes (Platform staff only)">
-              <TextInput
-                style={styles.textArea}
+              <Input
                 value={internalNotes}
                 onChangeText={setInternalNotes}
                 placeholder="Any cheating suspicion, identity discrepancy, or video audio quality flags..."
@@ -251,97 +266,31 @@ export function ScorecardDraftScreen() {
 }
 
 const styles = StyleSheet.create({
-  loadingText: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 14,
-    color: color.textMuted,
-    textAlign: 'center',
-    marginTop: space['2xl'],
-  },
   header: {
-    gap: space['2xs'],
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: space.xs,
+  },
+  grow: {
+    flex: 1,
   },
   title: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 24,
-    fontWeight: '700',
-    color: color.text,
+    marginTop: space['2xs'],
   },
   subtitle: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    color: color.textMuted,
-  },
-  clockCard: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: space.sm,
-    backgroundColor: '#fffbeb',
-    padding: space.md,
-    borderRadius: radius.md,
-    borderWidth: borderWidth.thin,
-    borderColor: '#fde68a',
-  },
-  clockCardOverdue: {
-    backgroundColor: '#fef2f2',
-    borderColor: '#fecaca',
-  },
-  clockIcon: {
-    fontSize: 20,
-  },
-  clockTitle: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#92400e',
-  },
-  clockTitleOverdue: {
-    color: '#991b1b',
-  },
-  clockBody: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 12,
-    color: '#b45309',
-    lineHeight: 16,
-    marginTop: 2,
-  },
-  clockBodyOverdue: {
-    color: '#b91c1c',
+    marginTop: space['2xs'],
   },
   overdueNoticeCard: {
     padding: space.lg,
     gap: space.sm,
   },
-  overdueHeading: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 16,
-    fontWeight: '700',
-    color: color.text,
-  },
-  overdueDesc: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    color: color.textMuted,
-    lineHeight: 18,
-  },
   ratingsCard: {
     padding: space.md,
     gap: space.md,
   },
-  sectionHeading: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 15,
-    fontWeight: '700',
-    color: color.text,
-  },
   criteriaRow: {
     gap: space['2xs'],
-  },
-  criteriaLabel: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    fontWeight: '600',
-    color: color.text,
   },
   starsRow: {
     flexDirection: 'row',
@@ -349,7 +298,7 @@ const styles = StyleSheet.create({
   },
   starBtn: {
     flex: 1,
-    height: 36,
+    height: height.chip,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: color.surfaceSubtle,
@@ -358,31 +307,17 @@ const styles = StyleSheet.create({
     borderColor: color.border,
   },
   starBtnActive: {
-    backgroundColor: color.accent,
-    borderColor: color.accent,
+    backgroundColor: color.ink,
+    borderColor: color.ink,
   },
   starText: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 14,
-    fontWeight: '700',
     color: color.textMuted,
   },
   starTextActive: {
-    color: color.surface,
+    color: color.textInverse,
   },
   feedbackCard: {
     padding: space.md,
     gap: space.md,
-  },
-  textArea: {
-    borderWidth: borderWidth.thin,
-    borderColor: color.border,
-    borderRadius: radius.sm,
-    padding: space.sm,
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    color: color.text,
-    backgroundColor: color.surfaceSubtle,
-    minHeight: 70,
   },
 })

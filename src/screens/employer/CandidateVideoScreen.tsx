@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react'
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native'
+import { StyleSheet, View } from 'react-native'
 import Video from 'react-native-video'
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { color, radius, space, fontFamilyNative } from '../../theme'
+import { aspect, color, radius, space } from '../../theme'
+import { Display, EmptyState, Eyebrow, Meta, Skeleton } from '../../components/ui'
 import { EmployerShell } from '../../components/employer/EmployerShell'
 import {
   playCandidateRecording,
@@ -45,17 +46,14 @@ export function CandidateVideoScreen() {
     <EmployerShell back={{ label: 'PROFILE', onPress: () => navigation.goBack() }}>
       <View style={styles.container}>
         {loading ? (
-          <View style={styles.centre}>
-            <ActivityIndicator color={color.text} size="small" />
-            <Text style={styles.loadingText}>Loading 16:9 recording…</Text>
-          </View>
+          <Skeleton lines={2} />
         ) : limitReached ? (
-          <View style={styles.limitCard}>
-            <Text style={styles.limitEyebrow}>DAILY VIDEO LIMIT REACHED</Text>
-            <Text style={styles.limitTitle}>100 full plays watched today</Text>
-            <Text style={styles.limitBody}>
-              Full video plays reset at midnight IST. Vertical card previews remain unmetered.
-            </Text>
+          <View style={styles.limitState}>
+            <Eyebrow tone="muted">Daily video limit reached</Eyebrow>
+            <EmptyState
+              title="100 full plays watched today"
+              body="Full video plays reset at midnight IST. Vertical card previews remain unmetered."
+            />
           </View>
         ) : recording?.url ? (
           <View style={styles.playerContainer}>
@@ -69,20 +67,18 @@ export function CandidateVideoScreen() {
               />
             </View>
             <View style={styles.metaRow}>
-              <Text style={styles.titleText}>Full 16:9 Interview Recording</Text>
-              <Text style={styles.durationText}>
+              <Display level="xs">Full 16:9 Interview Recording</Display>
+              <Meta>
                 Duration: {Math.floor(recording.durationSec / 60)}:
                 {String(recording.durationSec % 60).padStart(2, '0')} min
-              </Text>
+              </Meta>
             </View>
           </View>
         ) : (
-          <View style={styles.limitCard}>
-            <Text style={styles.limitTitle}>Recording unavailable</Text>
-            <Text style={styles.limitBody}>
-              The 16:9 composite recording is currently being processed.
-            </Text>
-          </View>
+          <EmptyState
+            title="Recording unavailable"
+            body="The 16:9 composite recording is currently being processed."
+          />
         )}
       </View>
     </EmployerShell>
@@ -95,64 +91,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.sm,
     paddingVertical: space.md,
   },
-  centre: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 64,
-  },
-  loadingText: {
-    fontSize: 13,
-    color: color.textMuted,
-    marginTop: space.sm,
-  },
   playerContainer: {
     gap: space.sm,
   },
   videoBox: {
     width: '100%',
-    aspectRatio: 16 / 9,
+    aspectRatio: aspect.fullVideo,
     backgroundColor: color.ink,
     borderRadius: radius.lg,
     overflow: 'hidden',
   },
   metaRow: {
-    gap: 2,
+    gap: space['2xs'],
   },
-  titleText: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: 18,
-    color: color.text,
-  },
-  durationText: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 11,
-    color: color.textMuted,
-  },
-  limitCard: {
-    backgroundColor: color.surfaceMuted,
-    borderWidth: 1,
-    borderColor: color.border,
-    borderRadius: radius.lg,
-    padding: space.lg,
+  limitState: {
     alignItems: 'center',
-    gap: space.xs,
-    marginTop: space.xl,
-  },
-  limitEyebrow: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 9,
-    color: color.textMuted,
-  },
-  limitTitle: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: 18,
-    color: color.text,
-    textAlign: 'center',
-  },
-  limitBody: {
-    fontSize: 12,
-    color: color.textMuted,
-    textAlign: 'center',
-    lineHeight: 16,
+    gap: space.sm,
+    marginTop: space.lg,
   },
 })

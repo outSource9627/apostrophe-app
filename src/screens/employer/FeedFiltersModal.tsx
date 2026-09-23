@@ -1,15 +1,9 @@
 import React, { useState } from 'react'
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native'
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { color, radius, space, fontFamilyNative } from '../../theme'
+import { space } from '../../theme'
+import { Banner, Body, Button, Card, Chip, Display, Divider, Field, Input } from '../../components/ui'
 import { EmployerShell } from '../../components/employer/EmployerShell'
 import { saveSearch } from '../../lib/api/employerFeed'
 import type { RootStackParamList } from '../../../App'
@@ -31,6 +25,8 @@ export function FeedFiltersModal() {
   const [maxSalaryLakh, setMaxSalaryLakh] = useState('')
   const [searchName, setSearchName] = useState('')
   const [savedSuccess, setSavedSuccess] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   const handleApply = () => {
     navigation.navigate('EmployerFeed')
@@ -39,6 +35,8 @@ export function FeedFiltersModal() {
   const handleSaveSearch = async () => {
     if (!searchName.trim()) return
     try {
+      setSaving(true)
+      setSaveError(null)
       await saveSearch(searchName.trim(), {
         city: city.trim() || undefined,
         skill: skill.trim() || undefined,
@@ -49,15 +47,20 @@ export function FeedFiltersModal() {
       setSavedSuccess(true)
       setSearchName('')
       setTimeout(() => setSavedSuccess(false), 3000)
-    } catch {
-      // Ignored
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Could not save this search. Please try again.')
+    } finally {
+      setSaving(false)
     }
   }
 
   const footActions = (
     <View style={styles.footRow}>
-      <TouchableOpacity
-        activeOpacity={0.8}
+      <Button
+        variant="outline"
+        size="block"
+        label="Clear"
+        style={styles.grow}
         onPress={() => {
           setCity('')
           setSkill('')
@@ -65,17 +68,14 @@ export function FeedFiltersModal() {
           setMinExp('')
           setMaxSalaryLakh('')
         }}
-        style={styles.clearBtn}
-      >
-        <Text style={styles.clearBtnText}>Clear</Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        activeOpacity={0.8}
+      />
+      <Button
+        variant="primary"
+        size="block"
+        label="Show candidates"
+        style={styles.grow}
         onPress={handleApply}
-        style={styles.applyBtn}
-      >
-        <Text style={styles.applyBtnText}>Show candidates</Text>
-      </TouchableOpacity>
+      />
     </View>
   )
 
@@ -86,110 +86,95 @@ export function FeedFiltersModal() {
     >
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-          <Text style={styles.title}>Filter candidate feed</Text>
-          <TouchableOpacity
-            activeOpacity={0.7}
+          <Display level="sm">Filter candidate feed</Display>
+          <Pressable
+            accessibilityRole="button"
+            hitSlop={8}
             onPress={() => navigation.navigate('SavedSearches')}
           >
-            <Text style={styles.savedLink}>Saved searches →</Text>
-          </TouchableOpacity>
+            <Body size="sm" weight="medium">
+              Saved searches →
+            </Body>
+          </Pressable>
         </View>
+        <Divider />
 
         {/* City */}
-        <View style={styles.fieldGroup}>
-          <Text style={styles.fieldLabel}>CITY</Text>
-          <TextInput
+        <Field label="City">
+          <Input
             value={city}
             onChangeText={setCity}
             placeholder="e.g. Bengaluru, Mumbai"
-            placeholderTextColor={color.textSubtle}
-            style={styles.input}
           />
-        </View>
+        </Field>
 
         {/* Skill */}
-        <View style={styles.fieldGroup}>
-          <Text style={styles.fieldLabel}>KEY SKILL</Text>
-          <TextInput
+        <Field label="Key skill">
+          <Input
             value={skill}
             onChangeText={setSkill}
             placeholder="e.g. Python, React"
-            placeholderTextColor={color.textSubtle}
-            style={styles.input}
           />
-        </View>
+        </Field>
 
         {/* Availability */}
-        <View style={styles.fieldGroup}>
-          <Text style={styles.fieldLabel}>AVAILABILITY</Text>
-          <View style={styles.chipsRow}>
+        <Field label="Availability">
+          <View style={styles.chipWrap}>
             {AVAILABILITY_OPTIONS.map((opt) => {
               const active = availability === opt.value
               return (
-                <TouchableOpacity
+                <Chip
                   key={opt.value}
-                  activeOpacity={0.8}
+                  label={opt.label}
+                  selected={active}
                   onPress={() => setAvailability(active ? '' : opt.value)}
-                  style={[styles.chip, active && styles.chipActive]}
-                >
-                  <Text style={[styles.chipText, active && styles.chipTextActive]}>
-                    {opt.label}
-                  </Text>
-                </TouchableOpacity>
+                />
               )
             })}
           </View>
-        </View>
+        </Field>
 
         {/* Minimum Experience */}
-        <View style={styles.fieldGroup}>
-          <Text style={styles.fieldLabel}>MINIMUM EXPERIENCE (YEARS)</Text>
-          <TextInput
+        <Field label="Minimum experience (years)">
+          <Input
             value={minExp}
             onChangeText={setMinExp}
             keyboardType="numeric"
             placeholder="e.g. 2"
-            placeholderTextColor={color.textSubtle}
-            style={styles.input}
           />
-        </View>
+        </Field>
 
         {/* Maximum Salary */}
-        <View style={styles.fieldGroup}>
-          <Text style={styles.fieldLabel}>MAX EXPECTED SALARY (LAKH / YR)</Text>
-          <TextInput
+        <Field label="Max expected salary (lakh / yr)">
+          <Input
             value={maxSalaryLakh}
             onChangeText={setMaxSalaryLakh}
             keyboardType="numeric"
             placeholder="e.g. 15"
-            placeholderTextColor={color.textSubtle}
-            style={styles.input}
           />
-        </View>
+        </Field>
 
         {/* Save Search Section */}
-        <View style={styles.saveBox}>
-          <Text style={styles.saveBoxTitle}>Save this search</Text>
-          <View style={styles.saveInputRow}>
-            <TextInput
+        <Card style={styles.saveCard}>
+          <Display level="xs">Save this search</Display>
+          <View style={styles.saveRow}>
+            <Input
               value={searchName}
               onChangeText={setSearchName}
               placeholder="Search name"
-              placeholderTextColor={color.textSubtle}
-              style={[styles.input, { flex: 1 }]}
+              style={styles.grow}
             />
-            <TouchableOpacity
-              activeOpacity={0.8}
+            <Button
+              variant="secondary"
+              size="lg"
+              label="Save"
+              busy={saving}
               onPress={handleSaveSearch}
-              style={styles.saveBtn}
-            >
-              <Text style={styles.saveBtnText}>Save</Text>
-            </TouchableOpacity>
+            />
           </View>
-          {savedSuccess && (
-            <Text style={styles.successText}>Search saved successfully!</Text>
-          )}
-        </View>
+          {!!saveError && <Banner tone="danger">{saveError}</Banner>}
+          {savedSuccess && <Banner tone="success">Search saved successfully!</Banner>}
+        </Card>
       </ScrollView>
     </EmployerShell>
   )
@@ -205,130 +190,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'baseline',
-    borderBottomWidth: 1,
-    borderBottomColor: color.border,
-    paddingBottom: space.sm,
   },
-  title: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: 22,
-    color: color.text,
+  grow: {
+    flex: 1,
   },
-  savedLink: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: color.text,
-  },
-  fieldGroup: {
-    gap: space.xs,
-  },
-  fieldLabel: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 10,
-    fontWeight: '600',
-    color: color.textMuted,
-  },
-  input: {
-    height: 44,
-    borderWidth: 1,
-    borderColor: color.border,
-    backgroundColor: color.surface,
-    borderRadius: radius.md,
-    paddingHorizontal: space.sm,
-    fontSize: 14,
-    color: color.text,
-  },
-  chipsRow: {
+  chipWrap: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
+    gap: space.sm,
   },
-  chip: {
-    borderWidth: 1,
-    borderColor: color.border,
-    backgroundColor: color.surfaceMuted,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: radius.md,
-  },
-  chipActive: {
-    borderColor: color.text,
-    backgroundColor: color.text,
-  },
-  chipText: {
-    fontSize: 12,
-    color: color.textMuted,
-    fontWeight: '500',
-  },
-  chipTextActive: {
-    color: color.textInverse,
-    fontWeight: '600',
-  },
-  saveBox: {
-    backgroundColor: color.surfaceMuted,
-    borderRadius: radius.lg,
-    padding: space.sm,
-    gap: space.xs,
+  saveCard: {
+    padding: space.lg,
+    gap: space.sm,
     marginTop: space.sm,
   },
-  saveBoxTitle: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: 15,
-    color: color.text,
-  },
-  saveInputRow: {
+  saveRow: {
     flexDirection: 'row',
-    gap: space.xs,
-  },
-  saveBtn: {
-    backgroundColor: color.text,
-    paddingHorizontal: space.md,
-    borderRadius: radius.md,
+    gap: space.sm,
     alignItems: 'center',
-    justifyContent: 'center',
-  },
-  saveBtnText: {
-    color: color.textInverse,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  successText: {
-    fontSize: 11,
-    color: color.accent,
-    fontWeight: '600',
   },
   footRow: {
     flexDirection: 'row',
     gap: space.sm,
     paddingHorizontal: space.sm,
     paddingVertical: space.xs,
-  },
-  clearBtn: {
-    flex: 1,
-    height: 44,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: color.border,
-    backgroundColor: color.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  clearBtnText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: color.text,
-  },
-  applyBtn: {
-    flex: 1,
-    height: 44,
-    borderRadius: radius.md,
-    backgroundColor: color.text,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  applyBtnText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: color.textInverse,
   },
 })

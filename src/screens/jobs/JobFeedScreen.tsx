@@ -5,8 +5,8 @@ import Svg, { Path } from 'react-native-svg'
 import { ApiClientError } from '../../lib/api'
 import { getFeed, getFilters, swipeJob, undoSwipe, type JobCard, type JobFilters } from '../../lib/api/jobs'
 import { activeFilterCount, deadlineLine, employmentLabel, experienceLine, locationLine, salaryRange } from '../../lib/jobs/format'
-import { color, space, radius, borderWidth } from '../../theme'
-import { AppBar, Banner, Body, Button, Display, Figure, Meta, StatusPill } from '../../components/ui'
+import { color, space, radius, borderWidth, height } from '../../theme'
+import { AppBar, Banner, Body, Button, Display, EmptyState, ErrorState, Figure, Meta, Skeleton, StatusPill, Tag } from '../../components/ui'
 import { JobFilterSheet } from './JobFilterSheet'
 
 /**
@@ -126,10 +126,30 @@ export function JobFeedScreen({ onBack, onOpen, onSaved }: {
       />
 
       <View style={styles.body}>
-        {error ? <Banner tone="danger">{error}</Banner> : null}
+        {/* A load failure with nothing on screen gets the full ErrorState below;
+            the banner is for a swipe-commit failure, which happens with a card
+            already showing, so the two never stack. */}
+        {error && cards.length > 0 ? <Banner tone="danger">{error}</Banner> : null}
 
         {loading && cards.length === 0 ? (
-          <View style={styles.deck}><View style={[styles.card, styles.skeleton]} /></View>
+          <View style={styles.deck}><Skeleton lines={3} block /></View>
+        ) : error && cards.length === 0 ? (
+          <View style={styles.deck}>
+            <ErrorState
+              title="Could not load jobs."
+              body={error}
+              action={
+                <Button
+                  variant="outline"
+                  size="sm"
+                  label="Try again"
+                  // The error state's small button is 40 tall; the slop brings its tap box to the 44 floor.
+                  hitSlop={(height.tap - height['control-xs']) / 2}
+                  onPress={() => fetchMore(true)}
+                />
+              }
+            />
+          </View>
         ) : current ? (
           <>
             <View style={styles.deck}>
@@ -151,15 +171,13 @@ export function JobFeedScreen({ onBack, onOpen, onSaved }: {
           </>
         ) : (
           <View style={styles.empty}>
-            <Display level="sm">{activeCount > 0 ? 'No jobs match your filters.' : 'You are all caught up.'}</Display>
-            <Body size="sm" tone="muted" style={{ marginTop: space.sm, textAlign: 'center' }}>
-              {activeCount > 0 ? 'Widen or clear your filters to see more.' : 'New posts land here as employers publish them.'}
-            </Body>
-            <View style={{ marginTop: space.lg }}>
-              {activeCount > 0
+            <EmptyState
+              title={activeCount > 0 ? 'No jobs match your filters.' : 'You are all caught up.'}
+              body={activeCount > 0 ? 'Widen or clear your filters to see more.' : 'New posts land here as employers publish them.'}
+              action={activeCount > 0
                 ? <Button variant="outline" size="md" label="Adjust filters" onPress={() => setSheetOpen(true)} />
                 : <Button variant="primary" size="md" label="Your saved jobs" onPress={onSaved} />}
-            </View>
+            />
           </View>
         )}
       </View>
@@ -198,7 +216,7 @@ function JobCardBody({ card, onOpen }: { card: JobCard; onOpen: () => void }) {
       </View>
       {card.skills.length > 0 && (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
-          {card.skills.slice(0, 6).map((s) => <View key={s} style={styles.skill}><Body size="xs" tone="muted">{s}</Body></View>)}
+          {card.skills.slice(0, 6).map((s) => <Tag key={s} label={s} />)}
         </View>
       )}
       {card.saved ? <StatusPill tone="success" label="Saved" /> : null}
@@ -211,13 +229,11 @@ const styles = StyleSheet.create({
   body: { flex: 1, padding: space.xl },
   deck: { flex: 1, justifyContent: 'center' },
   card: { borderRadius: radius.lg, borderWidth: borderWidth.thin, borderColor: color.border, backgroundColor: color.surface, padding: space.lg, gap: space.md },
-  skeleton: { height: 320, backgroundColor: color.surfaceMuted },
   video: { aspectRatio: 9 / 16, maxHeight: 360, borderRadius: radius.md, backgroundColor: color.ink },
   stamp: { position: 'absolute', top: space.lg, zIndex: 2, borderRadius: radius.sm, borderWidth: borderWidth.medium, paddingHorizontal: space.sm, paddingVertical: space.xs },
   stampSave: { right: space.lg, borderColor: color.success },
   stampPass: { left: space.lg, borderColor: color.borderStrong },
   actions: { flexDirection: 'row', marginTop: space.lg },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingBottom: space['4xl'] },
-  skill: { borderRadius: radius.sm, backgroundColor: color.surfaceMuted, paddingHorizontal: space.sm, paddingVertical: space.xs },
   undo: { flexDirection: 'row', alignItems: 'center', gap: space.md, borderTopWidth: borderWidth.thin, borderTopColor: color.border, backgroundColor: color.surface, paddingHorizontal: space.xl, paddingTop: space.md },
 })

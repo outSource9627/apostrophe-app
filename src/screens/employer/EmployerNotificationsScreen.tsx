@@ -1,15 +1,18 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import {
-  ActivityIndicator,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native'
+import { Pressable, StyleSheet, View } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { color, radius, space, fontFamilyNative } from '../../theme'
+import { borderWidth, color, radius, space } from '../../theme'
+import {
+  Body,
+  Button,
+  Display,
+  EmptyState,
+  ErrorState,
+  Eyebrow,
+  Meta,
+  Skeleton,
+} from '../../components/ui'
 import { EmployerShell } from '../../components/employer/EmployerShell'
 import {
   getNotifications,
@@ -84,14 +87,17 @@ export function EmployerNotificationsScreen() {
 
   const [rows, setRows] = useState<NotificationRow[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
 
   const load = useCallback(async () => {
     try {
       setLoading(true)
+      setError(null)
       const res = await getNotifications({ perPage: 100 })
       setRows(res.rows)
     } catch (err) {
       console.error('Failed to load notifications', err)
+      setError(err instanceof Error ? err : new Error('We could not load your notifications.'))
     } finally {
       setLoading(false)
     }
@@ -146,168 +152,106 @@ export function EmployerNotificationsScreen() {
   const groups = groupByDay(rows)
 
   return (
-    <EmployerShell
-      back={{ label: 'ACCOUNT', onPress: () => navigation.goBack() }}
-      scroll={false}
-    >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerRow}>
-            <View>
-              <Text style={styles.eyebrow}>{`${unreadCount} unread · the last 90 days`}</Text>
-              <Text style={styles.title}>Notifications</Text>
-            </View>
-            {unreadCount > 0 && (
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={handleMarkAllRead}
-                style={styles.markReadBtn}
-              >
-                <Text style={styles.markReadText}>Mark all read</Text>
-              </TouchableOpacity>
-            )}
-          </View>
+    <EmployerShell back={{ label: 'ACCOUNT', onPress: () => navigation.goBack() }}>
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.headerTop}>
+          <Eyebrow>{`${unreadCount} unread · the last 90 days`}</Eyebrow>
+          {unreadCount > 0 && (
+            <Button variant="outline" size="sm" label="Mark all read" onPress={handleMarkAllRead} />
+          )}
         </View>
+        <Display level="lg">Notifications</Display>
+      </View>
 
-        {loading ? (
-          <View style={styles.centerBox}>
-            <ActivityIndicator size="large" color={color.ink} />
-            <Text style={styles.loadingText}>Loading notifications…</Text>
-          </View>
-        ) : rows.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyTitle}>Nothing in the last 90 days.</Text>
-            <Text style={styles.emptySubtitle}>
-              Accepted Interests, new applications, messages and verification decisions land here.
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.listContainer}>
-            {groups.map((group) => (
-              <View key={group.key} style={styles.groupSection}>
-                <Text style={styles.groupLabel}>{group.label}</Text>
-                <View style={styles.groupCard}>
-                  {group.items.map((n) => (
-                    <TouchableOpacity
-                      key={n.id}
-                      activeOpacity={0.7}
-                      onPress={() => handleOpenItem(n)}
-                      style={styles.itemRow}
-                    >
-                      <View style={styles.unreadCol}>
-                        {!n.read && <View style={styles.unreadDot} />}
-                      </View>
-
-                      <View style={styles.itemContent}>
-                        <View style={styles.itemTop}>
-                          <Text
-                            style={[styles.itemTitle, !n.read && styles.unreadTitle]}
-                            numberOfLines={1}
-                          >
-                            {n.title}
-                          </Text>
-                          <Text style={styles.itemTime}>{formatTime(n.createdAt)}</Text>
-                        </View>
-
-                        {n.body && (
-                          <Text style={styles.itemBody} numberOfLines={2}>
-                            {n.body}
-                          </Text>
-                        )}
-
-                        <Text style={styles.itemMeta}>{formatTime(n.createdAt)}</Text>
-                      </View>
-                    </TouchableOpacity>
-                  ))}
-                </View>
+      {loading ? (
+        <Skeleton lines={4} />
+      ) : error ? (
+        <ErrorState
+          title="We could not load your notifications."
+          body={error.message}
+          action={<Button variant="outline" size="sm" label="Try again" onPress={() => load()} />}
+        />
+      ) : rows.length === 0 ? (
+        <EmptyState
+          title="Nothing in the last 90 days."
+          body="Accepted Interests, new applications, messages and verification decisions land here."
+        />
+      ) : (
+        <View style={styles.listContainer}>
+          {groups.map((group) => (
+            <View key={group.key} style={styles.groupSection}>
+              <Eyebrow>{group.label}</Eyebrow>
+              <View style={styles.groupCard}>
+                {group.items.map((n, i) => (
+                  <NotificationItem
+                    key={n.id}
+                    notification={n}
+                    last={i === group.items.length - 1}
+                    onPress={() => handleOpenItem(n)}
+                  />
+                ))}
               </View>
-            ))}
+            </View>
+          ))}
 
-            <Text style={styles.footnote}>
-              Kept for 90 days · notifications auto-expire after 90 days
-            </Text>
-          </View>
-        )}
-      </ScrollView>
+          <Meta style={styles.footnote}>
+            Kept for 90 days · notifications auto-expire after 90 days
+          </Meta>
+        </View>
+      )}
     </EmployerShell>
   )
 }
 
+function NotificationItem({
+  notification, last = false, onPress,
+}: { notification: NotificationRow; last?: boolean; onPress: () => void }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={[styles.itemRow, last && styles.itemRowLast]}
+    >
+      <View style={styles.unreadCol}>{!notification.read && <View style={styles.unreadDot} />}</View>
+
+      <View style={styles.itemContent}>
+        <View style={styles.itemTop}>
+          <Body
+            size="sm"
+            weight={notification.read ? 'regular' : 'semibold'}
+            tone={notification.read ? 'muted' : 'default'}
+            numberOfLines={1}
+            style={styles.grow}
+          >
+            {notification.title}
+          </Body>
+          <Meta>{formatTime(notification.createdAt)}</Meta>
+        </View>
+
+        {!!notification.body && (
+          <Body size="xs" tone="muted" numberOfLines={2}>
+            {notification.body}
+          </Body>
+        )}
+      </View>
+    </Pressable>
+  )
+}
+
 const styles = StyleSheet.create({
-  scrollContent: {
-    paddingHorizontal: space.lg,
-    paddingTop: space.md,
-    paddingBottom: space['2xl'] * 2,
-  },
+  grow: { flex: 1 },
   header: {
-    marginBottom: space.lg,
+    gap: space.xs,
     paddingBottom: space.md,
-    borderBottomWidth: 1,
+    borderBottomWidth: borderWidth.thin,
     borderBottomColor: color.border,
   },
-  headerRow: {
+  headerTop: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'center',
     justifyContent: 'space-between',
-  },
-  markReadBtn: {
-    paddingVertical: space.xs,
-    paddingHorizontal: space.sm,
-    borderRadius: radius.pill,
-    backgroundColor: color.surfaceMuted,
-  },
-  markReadText: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 12,
-    fontWeight: '600',
-    color: color.text,
-  },
-  eyebrow: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    color: color.textSubtle,
-    marginBottom: space.xs,
-  },
-  title: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: 26,
-    fontWeight: 'bold',
-    color: color.text,
-  },
-  centerBox: {
-    paddingVertical: space['2xl'],
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: space.sm,
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    color: color.textMuted,
-  },
-  emptyCard: {
-    padding: space.xl,
-    alignItems: 'center',
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: color.border,
-    backgroundColor: color.surfaceMuted,
-    marginVertical: space.xl,
-  },
-  emptyTitle: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: color.text,
-    marginBottom: space.sm,
-  },
-  emptySubtitle: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 14,
-    color: color.textMuted,
-    textAlign: 'center',
+    gap: space.sm,
   },
   listContainer: {
     gap: space.lg,
@@ -315,17 +259,10 @@ const styles = StyleSheet.create({
   groupSection: {
     gap: space.xs,
   },
-  groupLabel: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 11,
-    fontWeight: '700',
-    color: color.textSubtle,
-    paddingHorizontal: 4,
-  },
   groupCard: {
-    backgroundColor: color.background,
+    backgroundColor: color.surface,
     borderRadius: radius.md,
-    borderWidth: 1,
+    borderWidth: borderWidth.thin,
     borderColor: color.border,
     overflow: 'hidden',
   },
@@ -333,65 +270,36 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     padding: space.md,
-    borderBottomWidth: 1,
+    borderBottomWidth: borderWidth.thin,
     borderBottomColor: color.border,
-    gap: space.xs,
+    gap: space.sm,
+  },
+  itemRowLast: {
+    borderBottomWidth: 0,
   },
   unreadCol: {
-    width: 14,
-    paddingTop: 6,
+    width: space.lg,
+    paddingTop: space.xs,
     alignItems: 'center',
   },
   unreadDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: space.sm,
+    height: space.sm,
+    borderRadius: radius.pill,
     backgroundColor: color.ink,
   },
   itemContent: {
     flex: 1,
-    gap: 3,
+    gap: space['2xs'],
   },
   itemTop: {
     flexDirection: 'row',
     alignItems: 'baseline',
     justifyContent: 'space-between',
-  },
-  itemTitle: {
-    flex: 1,
-    fontFamily: fontFamilyNative.body,
-    fontSize: 14,
-    color: color.textMuted,
-    marginRight: space.xs,
-  },
-  unreadTitle: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: 15,
-    fontWeight: 'bold',
-    color: color.text,
-  },
-  itemTime: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 11,
-    color: color.textSubtle,
-  },
-  itemBody: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    lineHeight: 18,
-    color: color.textMuted,
-  },
-  itemMeta: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 10,
-    color: color.textSubtle,
-    marginTop: 2,
+    gap: space.sm,
   },
   footnote: {
     textAlign: 'center',
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 11,
-    color: color.textSubtle,
     marginTop: space.sm,
   },
 })

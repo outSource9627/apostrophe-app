@@ -1,10 +1,10 @@
 import React from 'react'
-import { StyleSheet, Text, View } from 'react-native'
+import { StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useQuery } from '@tanstack/react-query'
 import { getInterview, type StudentInterview } from '../../lib/api/interviews'
-import { color, space, radius, borderWidth, fontFamilyNative, fontSize } from '../../theme'
-import { AppBar, Body, Button, Display, Eyebrow, Meta } from '../../components/ui'
+import { color, space } from '../../theme'
+import { AppBar, Body, Button, Card, Display, Divider, Eyebrow, Figure, Meta } from '../../components/ui'
 
 /**
  * ST-34 — top-up required. When the interviewer confirms a higher qualification
@@ -49,14 +49,15 @@ export function TopUpScreen({ id, onBack, onPay }: { id: string; onBack: () => v
           <Display level="lg">A little more is owed.</Display>
           <Body size="base" tone="muted">Your interviewer confirmed a higher qualification than the tier you paid for. Settle the difference and your video resume publishes right away.</Body>
         </View>
-        <View style={styles.card}>
+        <Card>
           <KV k="You paid for" v={topup.claimedTier} />
           <KV k="Confirmed as" v={topup.confirmedTier} />
-          <View style={[styles.kv, styles.kvBorder]}>
+          <Divider />
+          <View style={styles.kv}>
             <Body size="base" style={{ color: color.text }}>Difference owed</Body>
-            <Text style={styles.amount}>{rupees(topup.differencePaise)}</Text>
+            <Figure value={rupees(topup.differencePaise)} />
           </View>
-        </View>
+        </Card>
         <View style={{ gap: space.sm }}>
           <Button variant="primary" size="block" full busy={topup.status === 'PAYING'} label="Pay the difference" onPress={onPay} />
           <Meta style={{ color: color.textSubtle }}>Your video resume publishes the moment this is settled.</Meta>
@@ -79,8 +80,5 @@ const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.surface },
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   body: { padding: space.xl, gap: space.xl },
-  card: { borderRadius: radius.lg, borderWidth: borderWidth.thin, borderColor: color.border },
   kv: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: space.lg, paddingVertical: space.md, gap: space.lg },
-  kvBorder: { borderTopWidth: borderWidth.thin, borderTopColor: color.border },
-  amount: { fontFamily: fontFamilyNative.display, fontSize: fontSize['display-num'], color: color.text },
 })

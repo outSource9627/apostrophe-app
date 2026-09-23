@@ -1,16 +1,21 @@
 import React, { useEffect, useState } from 'react'
-import {
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native'
+import { Alert, Pressable, StyleSheet, View } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { borderWidth, color, fontFamilyNative, radius, space } from '../../theme'
-import { Button, Card, Eyebrow } from '../../components/ui'
+import { space } from '../../theme'
+import {
+  Body,
+  Button,
+  Card,
+  Chip,
+  Display,
+  ErrorState,
+  Eyebrow,
+  Meta,
+  ObjectRow,
+  Skeleton,
+  Toggle,
+} from '../../components/ui'
 import { InterviewerShell } from '../../components/interviewer/InterviewerShell'
 import { useInterviewer } from '../../lib/interviewer/useInterviewer'
 import { interviewerApi, type AvailabilityRuleDto, type AvailabilityOverrideDto } from '../../lib/api/interviewer'
@@ -42,7 +47,7 @@ for (let m = 480; m < 1320; m += 30) {
 
 export function AvailabilityScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<any>>()
-  const { availability, refresh } = useInterviewer()
+  const { availability, error, refresh } = useInterviewer()
 
   const [selectedDay, setSelectedDay] = useState<number>(1) // Monday default
   const [rules, setRules] = useState<AvailabilityRuleDto[]>([])
@@ -133,280 +138,132 @@ export function AvailabilityScreen() {
       }
     >
       <View style={styles.header}>
-        <View>
-          <Eyebrow>WEEKLY SCHEDULE</Eyebrow>
-          <Text style={styles.title}>Manage Availability</Text>
-        </View>
+        <Eyebrow>WEEKLY SCHEDULE</Eyebrow>
+        <Display level="lg">Manage Availability</Display>
       </View>
 
-      <Text style={styles.intro}>
-        Set your weekly recurring hours. Students book 20-minute sessions during your active 30-minute slots.
-      </Text>
+      {availability ? (
+        <>
+          <Body size="sm" tone="muted">
+            Set your weekly recurring hours. Students book 20-minute sessions during your active 30-minute slots.
+          </Body>
 
-      {/* Stats row & overrides button */}
-      <View style={styles.summaryCard}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.summaryLabel}>Weekly Commitment</Text>
-          <Text style={styles.summaryValue}>{totalHoursWeekly} hrs / week</Text>
-          <Text style={styles.summarySub}>{totalSlotsWeekly} slots open</Text>
-        </View>
-        <Button
-          label={`Overrides (${overrides.length})`}
-          variant="secondary"
-          size="sm"
-          onPress={() => navigation.navigate('InterviewerOverrides')}
+          {/* Stats row & overrides button */}
+          <Card style={styles.summaryCard}>
+            <View style={styles.grow}>
+              <Eyebrow>Weekly Commitment</Eyebrow>
+              <Display level="xs">{totalHoursWeekly} hrs / week</Display>
+              <Meta style={styles.summarySub}>{totalSlotsWeekly} slots open</Meta>
+            </View>
+            <Button
+              label={`Overrides (${overrides.length})`}
+              variant="secondary"
+              size="sm"
+              onPress={() => navigation.navigate('InterviewerOverrides')}
+            />
+          </Card>
+
+          {/* Day Selector */}
+          <View style={styles.dayRow}>
+            {DAYS.map((d) => {
+              const isSelected = d.weekday === selectedDay
+              const ruleForDay = rules.find((r) => r.weekday === d.weekday)
+              const slotCount = ruleForDay?.blocks?.length || 0
+
+              return (
+                <Chip
+                  key={d.weekday}
+                  label={`${d.label} · ${slotCount}`}
+                  selected={isSelected}
+                  onPress={() => setSelectedDay(d.weekday)}
+                  style={styles.dayChip}
+                />
+              )
+            })}
+          </View>
+
+          {/* Day Actions */}
+          <View style={styles.quickActions}>
+            <Body size="sm" weight="semibold">
+              {DAYS.find((d) => d.weekday === selectedDay)?.label} Schedule ({currentBlocks.length} slots)
+            </Body>
+            <View style={styles.quickActionBtns}>
+              <Pressable onPress={() => handleSetFullDay(true)}>
+                <Body size="xs" weight="semibold">Standard 9–6</Body>
+              </Pressable>
+              <Meta>•</Meta>
+              <Pressable onPress={() => handleSetFullDay(false)}>
+                <Body size="xs" weight="semibold" tone="muted">Clear Day</Body>
+              </Pressable>
+            </View>
+          </View>
+
+          {/* 30-min Slot Grid */}
+          <Card>
+            {SLOTS.map((s, i) => {
+              const active = isSlotActive(s.startMin, s.endMin)
+
+              return (
+                <ObjectRow
+                  key={`${s.startMin}-${s.endMin}`}
+                  title={s.label}
+                  status={
+                    <Toggle
+                      on={active}
+                      onChange={() => toggleSlot(s.startMin, s.endMin)}
+                      label={`${s.label} availability`}
+                    />
+                  }
+                  last={i === SLOTS.length - 1}
+                />
+              )
+            })}
+          </Card>
+        </>
+      ) : error ? (
+        <ErrorState
+          title="We could not load your availability."
+          body={error.message}
+          action={<Button variant="outline" size="sm" label="Try again" onPress={() => refresh()} />}
         />
-      </View>
-
-      {/* Day Selector */}
-      <View style={styles.dayRow}>
-        {DAYS.map((d) => {
-          const isSelected = d.weekday === selectedDay
-          const ruleForDay = rules.find((r) => r.weekday === d.weekday)
-          const slotCount = ruleForDay?.blocks?.length || 0
-
-          return (
-            <Pressable
-              key={d.weekday}
-              onPress={() => setSelectedDay(d.weekday)}
-              style={[styles.dayTab, isSelected && styles.dayTabActive]}
-            >
-              <Text style={[styles.dayLabel, isSelected && styles.dayLabelActive]}>
-                {d.label}
-              </Text>
-              <View
-                style={[
-                  styles.slotIndicator,
-                  slotCount > 0 && styles.slotIndicatorActive,
-                  isSelected && styles.slotIndicatorSelected,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.slotIndicatorText,
-                    isSelected && styles.slotIndicatorTextSelected,
-                  ]}
-                >
-                  {slotCount}
-                </Text>
-              </View>
-            </Pressable>
-          )
-        })}
-      </View>
-
-      {/* Day Actions */}
-      <View style={styles.quickActions}>
-        <Text style={styles.dayHeading}>
-          {DAYS.find((d) => d.weekday === selectedDay)?.label} Schedule ({currentBlocks.length} slots)
-        </Text>
-        <View style={styles.quickActionBtns}>
-          <Pressable onPress={() => handleSetFullDay(true)}>
-            <Text style={styles.quickLink}>Standard 9–6</Text>
-          </Pressable>
-          <Text style={styles.bullet}>•</Text>
-          <Pressable onPress={() => handleSetFullDay(false)}>
-            <Text style={styles.quickLinkClear}>Clear Day</Text>
-          </Pressable>
-        </View>
-      </View>
-
-      {/* 30-min Slot Grid */}
-      <Card style={styles.slotsCard}>
-        {SLOTS.map((s) => {
-          const active = isSlotActive(s.startMin, s.endMin)
-
-          return (
-            <Pressable
-              key={`${s.startMin}-${s.endMin}`}
-              onPress={() => toggleSlot(s.startMin, s.endMin)}
-              style={[styles.slotRow, active && styles.slotRowActive]}
-            >
-              <Text style={[styles.slotTime, active && styles.slotTimeActive]}>
-                {s.label}
-              </Text>
-              <View style={[styles.slotCheckbox, active && styles.slotCheckboxActive]}>
-                {active && <Text style={styles.checkmark}>✓</Text>}
-              </View>
-            </Pressable>
-          )
-        })}
-      </Card>
+      ) : (
+        <Skeleton lines={4} />
+      )}
     </InterviewerShell>
   )
 }
 
 const styles = StyleSheet.create({
   header: {
-    paddingVertical: space['2xs'],
+    gap: space['2xs'],
   },
-  title: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 22,
-    fontWeight: '700',
-    color: color.text,
-    marginTop: 2,
-  },
-  intro: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    color: color.textMuted,
-    lineHeight: 18,
+  grow: {
+    flex: 1,
   },
   summaryCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: color.surfaceSubtle,
     padding: space.md,
-    borderRadius: radius.md,
-    borderWidth: borderWidth.thin,
-    borderColor: color.border,
-  },
-  summaryLabel: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 12,
-    color: color.textMuted,
-  },
-  summaryValue: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 16,
-    fontWeight: '700',
-    color: color.text,
-    marginTop: 2,
+    gap: space.md,
   },
   summarySub: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 11,
-    color: color.textSubtle,
+    marginTop: space['2xs'],
   },
   dayRow: {
     flexDirection: 'row',
     gap: space['2xs'],
-    justifyContent: 'space-between',
   },
-  dayTab: {
+  dayChip: {
     flex: 1,
-    alignItems: 'center',
-    paddingVertical: space.xs,
-    paddingHorizontal: 2,
-    borderRadius: radius.sm,
-    backgroundColor: color.surface,
-    borderWidth: borderWidth.thin,
-    borderColor: color.border,
-    gap: 4,
-  },
-  dayTabActive: {
-    backgroundColor: color.accent,
-    borderColor: color.accent,
-  },
-  dayLabel: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 12,
-    fontWeight: '600',
-    color: color.text,
-  },
-  dayLabelActive: {
-    color: color.surface,
-    fontWeight: '700',
-  },
-  slotIndicator: {
-    minWidth: 18,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: color.surfaceSubtle,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 4,
-  },
-  slotIndicatorActive: {
-    backgroundColor: '#dbeafe',
-  },
-  slotIndicatorSelected: {
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-  },
-  slotIndicatorText: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 9,
-    fontWeight: '700',
-    color: color.textSubtle,
-  },
-  slotIndicatorTextSelected: {
-    color: color.surface,
   },
   quickActions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: space['2xs'],
-  },
-  dayHeading: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 14,
-    fontWeight: '600',
-    color: color.text,
   },
   quickActionBtns: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.xs,
-  },
-  quickLink: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 12,
-    fontWeight: '600',
-    color: color.accent,
-  },
-  quickLinkClear: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 12,
-    fontWeight: '600',
-    color: color.textMuted,
-  },
-  bullet: {
-    fontSize: 10,
-    color: color.textSubtle,
-  },
-  slotsCard: {
-    padding: space.xs,
-    gap: 2,
-  },
-  slotRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: space.xs,
-    paddingHorizontal: space.sm,
-    borderRadius: radius.sm,
-  },
-  slotRowActive: {
-    backgroundColor: '#eff6ff',
-  },
-  slotTime: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 13,
-    color: color.textMuted,
-  },
-  slotTimeActive: {
-    color: color.text,
-    fontWeight: '600',
-  },
-  slotCheckbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: color.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: color.surface,
-  },
-  slotCheckboxActive: {
-    backgroundColor: color.accent,
-    borderColor: color.accent,
-  },
-  checkmark: {
-    color: color.surface,
-    fontSize: 12,
-    fontWeight: '700',
   },
 })

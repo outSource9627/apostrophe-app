@@ -1,23 +1,28 @@
-import React, { useState } from 'react'
-import {
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native'
+import React from 'react'
+import { Alert, StyleSheet, View } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { borderWidth, color, fontFamilyNative, radius, space } from '../../theme'
-import { Button, Card, Eyebrow } from '../../components/ui'
+import { borderWidth, color, radius, space } from '../../theme'
+import {
+  Body,
+  Button,
+  Card,
+  Display,
+  Divider,
+  EmptyState,
+  ErrorState,
+  Eyebrow,
+  Figure,
+  Meta,
+  Skeleton,
+} from '../../components/ui'
 import { InterviewerShell } from '../../components/interviewer/InterviewerShell'
 import { useInterviewer } from '../../lib/interviewer/useInterviewer'
 import { formatPaise } from '../../lib/format/money'
 
 export function StatementsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<any>>()
-  const { wallet } = useInterviewer()
+  const { wallet, loading, error, refresh } = useInterviewer()
 
   const lifetimePaise = wallet?.lifetimePaise ?? 0
   // 1% TDS standard under Indian Income Tax Act (194J/194C)
@@ -48,74 +53,123 @@ export function StatementsScreen() {
     },
   ]
 
+  if (loading) {
+    return (
+      <InterviewerShell back={{ label: 'Wallet', onPress: () => navigation.goBack() }}>
+        <Skeleton lines={4} />
+      </InterviewerShell>
+    )
+  }
+
+  if (error && !wallet) {
+    return (
+      <InterviewerShell back={{ label: 'Wallet', onPress: () => navigation.goBack() }}>
+        <ErrorState
+          title="We could not load your statements."
+          body={error.message}
+          action={<Button variant="outline" size="sm" label="Try again" onPress={refresh} />}
+        />
+      </InterviewerShell>
+    )
+  }
+
   return (
     <InterviewerShell back={{ label: 'Wallet', onPress: () => navigation.goBack() }}>
       <View style={styles.header}>
         <Eyebrow>TAX & ANNUAL SUMMARY</Eyebrow>
-        <Text style={styles.title}>Monthly Statements</Text>
-        <Text style={styles.subtitle}>
+        <Display level="lg">Monthly Statements</Display>
+        <Body size="sm" tone="muted">
           Summary of gross fees credited, 1% TDS statutory deductions, and net disbursed earnings.
-        </Text>
+        </Body>
       </View>
 
       {/* Summary Card */}
       <Card style={styles.summaryCard}>
-        <Text style={styles.summaryTitle}>FY 2026–27 Cumulative Summary</Text>
+        <Eyebrow>FY 2026–27 Cumulative Summary</Eyebrow>
+
         <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>Gross Interviewer Fees</Text>
-          <Text style={styles.summaryVal}>{formatPaise(lifetimePaise)}</Text>
+          <Body size="sm" tone="muted">
+            Gross Interviewer Fees
+          </Body>
+          <Body size="sm" weight="semibold">
+            {formatPaise(lifetimePaise)}
+          </Body>
         </View>
         <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>1% TDS Deducted (Sec 194J)</Text>
-          <Text style={[styles.summaryVal, styles.tdsVal]}>
+          <Body size="sm" tone="muted">
+            1% TDS Deducted (Sec 194J)
+          </Body>
+          <Body size="sm" weight="semibold" tone="danger">
             −{formatPaise(tdsPaise)}
-          </Text>
+          </Body>
         </View>
-        <View style={[styles.summaryRow, styles.netRow]}>
-          <Text style={styles.netLabel}>Net Disbursed to Bank</Text>
-          <Text style={styles.netVal}>{formatPaise(netDisbursedPaise)}</Text>
+
+        <Divider />
+
+        <View style={styles.netRow}>
+          <Body weight="semibold">Net Disbursed to Bank</Body>
+          <Figure value={formatPaise(netDisbursedPaise)} style={styles.successText} />
         </View>
       </Card>
 
       {/* Monthly Statements List */}
       <View style={styles.listSection}>
-        <Text style={styles.sectionTitle}>Monthly Breakdown</Text>
-        <View style={styles.list}>
-          {months.map((m) => (
-            <Card key={m.month} style={styles.monthCard}>
-              <View style={styles.monthHeader}>
-                <Text style={styles.monthName}>{m.month}</Text>
-                <Text style={styles.sessionCount}>{m.sessions} interviews</Text>
-              </View>
+        <Body size="sm" weight="semibold">
+          Monthly Breakdown
+        </Body>
 
-              <View style={styles.metricGrid}>
-                <View style={styles.metricItem}>
-                  <Text style={styles.metricLabel}>Gross Fees</Text>
-                  <Text style={styles.metricVal}>{formatPaise(m.grossPaise)}</Text>
+        {months.length === 0 ? (
+          <Card>
+            <EmptyState
+              title="No statements yet"
+              body="Monthly statements appear here once fees have been credited to your wallet."
+            />
+          </Card>
+        ) : (
+          <View style={styles.list}>
+            {months.map((m) => (
+              <Card key={m.month} style={styles.monthCard}>
+                <View style={styles.monthHeader}>
+                  <Display level="xs">{m.month}</Display>
+                  <Meta>{`${m.sessions} interviews`}</Meta>
                 </View>
-                <View style={styles.metricItem}>
-                  <Text style={styles.metricLabel}>TDS (1%)</Text>
-                  <Text style={[styles.metricVal, styles.tdsVal]}>
-                    −{formatPaise(m.tdsPaise)}
-                  </Text>
-                </View>
-                <View style={styles.metricItem}>
-                  <Text style={styles.metricLabel}>Net Payout</Text>
-                  <Text style={[styles.metricVal, styles.netMetricVal]}>
-                    {formatPaise(m.netPaise)}
-                  </Text>
-                </View>
-              </View>
 
-              <Pressable
-                style={styles.downloadBtn}
-                onPress={() => Alert.alert('Statement Dispatched', `Monthly summary for ${m.month} has been emailed to your registered address.`)}
-              >
-                <Text style={styles.downloadText}>Download Form 16A / PDF →</Text>
-              </Pressable>
-            </Card>
-          ))}
-        </View>
+                <View style={styles.metricGrid}>
+                  <View style={styles.metricBox}>
+                    <Eyebrow>Gross Fees</Eyebrow>
+                    <Display level="xs">{formatPaise(m.grossPaise)}</Display>
+                  </View>
+                  <View style={styles.metricBox}>
+                    <Eyebrow>TDS (1%)</Eyebrow>
+                    <Display level="xs" style={styles.dangerText}>
+                      −{formatPaise(m.tdsPaise)}
+                    </Display>
+                  </View>
+                  <View style={styles.metricBox}>
+                    <Eyebrow>Net Payout</Eyebrow>
+                    <Display level="xs" style={styles.successText}>
+                      {formatPaise(m.netPaise)}
+                    </Display>
+                  </View>
+                </View>
+
+                <View style={styles.actionsRow}>
+                  <Button
+                    label="Download Form 16A / PDF"
+                    variant="secondary"
+                    size="sm"
+                    onPress={() =>
+                      Alert.alert(
+                        'Statement Dispatched',
+                        `Monthly summary for ${m.month} has been emailed to your registered address.`,
+                      )
+                    }
+                  />
+                </View>
+              </Card>
+            ))}
+          </View>
+        )}
       </View>
     </InterviewerShell>
   )
@@ -125,98 +179,41 @@ const styles = StyleSheet.create({
   header: {
     gap: space['2xs'],
   },
-  title: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 24,
-    fontWeight: '700',
-    color: color.text,
-  },
-  subtitle: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    color: color.textMuted,
-    lineHeight: 18,
-  },
   summaryCard: {
-    padding: space.md,
-    gap: space.xs,
-    backgroundColor: color.surfaceSubtle,
-  },
-  summaryTitle: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 15,
-    fontWeight: '700',
-    color: color.text,
-    marginBottom: space['2xs'],
+    padding: space.lg,
+    gap: space.sm,
   },
   summaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 2,
-  },
-  summaryLabel: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    color: color.textMuted,
-  },
-  summaryVal: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 14,
-    fontWeight: '600',
-    color: color.text,
-  },
-  tdsVal: {
-    color: color.accent,
+    alignItems: 'center',
   },
   netRow: {
-    borderTopWidth: borderWidth.thin,
-    borderTopColor: color.border,
-    paddingTop: space.xs,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginTop: space['2xs'],
   },
-  netLabel: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 14,
-    fontWeight: '700',
-    color: color.text,
+  dangerText: {
+    color: color.danger,
   },
-  netVal: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#059669',
+  successText: {
+    color: color.success,
   },
   listSection: {
     gap: space.sm,
   },
-  sectionTitle: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 16,
-    fontWeight: '700',
-    color: color.text,
-  },
   list: {
-    gap: space.sm,
+    gap: space.md,
   },
   monthCard: {
     padding: space.md,
-    gap: space.sm,
+    gap: space.md,
   },
   monthHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-  },
-  monthName: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 15,
-    fontWeight: '700',
-    color: color.text,
-  },
-  sessionCount: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 12,
-    color: color.textMuted,
   },
   metricGrid: {
     flexDirection: 'row',
@@ -224,32 +221,15 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
     padding: space.sm,
   },
-  metricItem: {
+  metricBox: {
     flex: 1,
-    gap: 2,
+    gap: space['2xs'],
   },
-  metricLabel: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 10,
-    color: color.textSubtle,
-  },
-  metricVal: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 12,
-    fontWeight: '600',
-    color: color.text,
-  },
-  netMetricVal: {
-    color: '#059669',
-    fontWeight: '700',
-  },
-  downloadBtn: {
-    paddingTop: space['2xs'],
-  },
-  downloadText: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 12,
-    fontWeight: '600',
-    color: color.accent,
+  actionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    borderTopWidth: borderWidth.thin,
+    borderTopColor: color.border,
+    paddingTop: space.sm,
   },
 })

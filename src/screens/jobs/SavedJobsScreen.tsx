@@ -5,8 +5,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { getSaved, removeSaved, type SavedRow } from '../../lib/api/jobs'
 import { deadlineLine, employmentLabel, locationLine, salaryRange } from '../../lib/jobs/format'
-import { color, space, radius, borderWidth } from '../../theme'
-import { AppBar, Body, Button, Display, Meta, StatusPill } from '../../components/ui'
+import { color, space, borderWidth } from '../../theme'
+import { AppBar, Body, Button, Card, Display, Meta, StatusPill } from '../../components/ui'
 
 /**
  * ST-38 — everything swiped right; where applying usually begins. Deadline on
@@ -44,7 +44,7 @@ export function SavedJobsScreen({ onBack, onOpen, onApply, onFeed }: {
           const deadline = deadlineLine(r.applicationDeadline)
           const applied = r.applicationStatus != null
           return (
-            <View key={r.id} style={styles.card}>
+            <Card key={r.id} style={styles.cardInner}>
               <Pressable onPress={() => onOpen(r.jobId)} style={{ gap: space.xs }}>
                 <Display level="sm">{r.title}</Display>
                 <Body size="sm" tone="muted">{r.company.name}</Body>
@@ -56,12 +56,24 @@ export function SavedJobsScreen({ onBack, onOpen, onApply, onFeed }: {
                 </View>
               </Pressable>
               <View style={styles.rowFoot}>
-                <Pressable onPress={() => remove.mutate(r.id)}><Body size="sm" tone="muted">Remove</Body></Pressable>
-                {applied ? <StatusPill tone="neutral" label="Applied" />
-                  : r.open ? <Button variant="primary" size="md" label="Apply" onPress={() => onApply(r.jobId)} />
-                  : <Meta style={{ color: color.textSubtle }}>CLOSED</Meta>}
+                <Button variant="destructive" size="sm" label="Remove" onPress={() => remove.mutate(r.id)} />
+                {applied ? (
+                  <StatusPill tone="neutral" label="Applied" />
+                ) : r.open ? (
+                  // `secondary` (ink), not `primary` (accent) — every open row in this
+                  // list can show its Apply button at once, and crimson is capped at
+                  // one button per screen (same reasoning as ApplicationsScreen's
+                  // "Open chat", the sibling list row in this persona).
+                  <Button variant="secondary" size="md" label="Apply" onPress={() => onApply(r.jobId)} />
+                ) : (
+                  // Sixth state — the action exists but isn't available, and the
+                  // reason rides with the control (Foundations §05/§10), the same
+                  // "closed disables Apply" rule JobDetailScreen renders for a
+                  // single post, here for a saved one.
+                  <Button variant="secondary" size="md" label="Apply" disabled reason="Applications for this job have closed." />
+                )}
               </View>
-            </View>
+            </Card>
           )
         })}
       </ScrollView>
@@ -74,6 +86,6 @@ const styles = StyleSheet.create({
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: space.xl },
   body: { padding: space.xl, gap: space.md, paddingBottom: space['4xl'] },
-  card: { borderRadius: radius.lg, borderWidth: borderWidth.thin, borderColor: color.border, padding: space.lg, gap: space.md },
+  cardInner: { padding: space.lg, gap: space.md },
   rowFoot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: borderWidth.thin, borderTopColor: color.border, paddingTop: space.md },
 })

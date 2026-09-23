@@ -1,20 +1,23 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
-import {
-  ActivityIndicator,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native'
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native'
+import Svg, { Circle } from 'react-native-svg'
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { color, radius, space, fontFamilyNative } from '../../theme'
+import { borderWidth, color, radius, space } from '../../theme'
 import { EmployerShell } from '../../components/employer/EmployerShell'
+import {
+  Banner,
+  Body,
+  Button,
+  Display,
+  ErrorState,
+  Eyebrow,
+  IconButton,
+  Input,
+  Meta,
+  Skeleton,
+  StatusPill,
+} from '../../components/ui'
 import {
   getEmployerThread,
   sendEmployerMessage,
@@ -59,6 +62,17 @@ function formatDayDivider(isoStr?: string | null): string {
   return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`
 }
 
+/** The header's overflow glyph — no icon set exists yet, so this is drawn inline the same way every other screen's small glyphs are (see e.g. chat/ThreadScreen's Dots). */
+function Dots() {
+  return (
+    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={color.textMuted} strokeWidth={1.5}>
+      <Circle cx={12} cy={5} r={1} />
+      <Circle cx={12} cy={12} r={1} />
+      <Circle cx={12} cy={19} r={1} />
+    </Svg>
+  )
+}
+
 export function EmployerThreadScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
   const route = useRoute<RouteProp<RootStackParamList, 'EmployerThread'>>()
@@ -67,6 +81,7 @@ export function EmployerThreadScreen() {
   const [thread, setThread] = useState<ThreadDto | null>(null)
   const [messages, setMessages] = useState<MessageDto[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
   const scrollViewRef = useRef<any>(null)
@@ -74,12 +89,14 @@ export function EmployerThreadScreen() {
   const load = useCallback(async () => {
     try {
       setLoading(true)
+      setError(null)
       const page = await getEmployerThread(id, { limit: 50 })
       setThread(page.thread)
       setMessages([...page.rows].reverse())
       void markEmployerThreadRead(id).catch(() => {})
     } catch (err) {
       console.error('Failed to load thread', err)
+      setError(err instanceof Error ? err : new Error('We could not load this conversation.'))
     } finally {
       setLoading(false)
     }
@@ -167,22 +184,18 @@ export function EmployerThreadScreen() {
         {/* Title Bar */}
         <View style={styles.titleBar}>
           <View style={styles.titleLeft}>
-            <Text style={styles.titleName}>{name}</Text>
-            {isSupport && (
-              <View style={styles.supportTag}>
-                <Text style={styles.supportTagText}>Support</Text>
-              </View>
-            )}
+            <Display level="xs" numberOfLines={1} style={styles.grow}>{name}</Display>
+            {isSupport && <StatusPill tone="info" label="Support" />}
             {isReadOnly && (
-              <View style={styles.readOnlyTag}>
-                <Text style={styles.readOnlyTagText}>
-                  {thread?.archivedReason === 'BLOCKED' ? 'Blocked' : 'Read-only'}
-                </Text>
-              </View>
+              <StatusPill
+                tone={thread?.archivedReason === 'BLOCKED' ? 'danger' : 'neutral'}
+                label={thread?.archivedReason === 'BLOCKED' ? 'Blocked' : 'Read-only'}
+              />
             )}
           </View>
-          <TouchableOpacity
-            activeOpacity={0.7}
+          <IconButton
+            tone="outline"
+            label="More options"
             onPress={() => {
               Alert.alert('Options', undefined, [
                 { text: 'Report', onPress: handleReport },
@@ -192,10 +205,9 @@ export function EmployerThreadScreen() {
                 { text: 'Cancel', style: 'cancel' },
               ])
             }}
-            style={styles.optionsBtn}
           >
-            <Text style={styles.optionsBtnText}>⋯</Text>
-          </TouchableOpacity>
+            <Dots />
+          </IconButton>
         </View>
 
         {/* Transcript Area */}
@@ -205,10 +217,13 @@ export function EmployerThreadScreen() {
           onContentSizeChange={() => scrollViewRef.current?.scrollToEnd?.({ animated: false })}
         >
           {loading ? (
-            <View style={styles.centerBox}>
-              <ActivityIndicator size="small" color={color.ink} />
-              <Text style={styles.loadingText}>Loading messages…</Text>
-            </View>
+            <Skeleton lines={4} />
+          ) : error ? (
+            <ErrorState
+              title="We could not load this conversation."
+              body={error.message}
+              action={<Button variant="outline" size="sm" label="Try again" onPress={() => load()} />}
+            />
           ) : (
             messages.map((msg, idx) => {
               const prev = messages[idx - 1]
@@ -220,40 +235,38 @@ export function EmployerThreadScreen() {
                 <View key={msg.id} style={styles.messageGroup}>
                   {showDay && (
                     <View style={styles.dayDivider}>
-                      <Text style={styles.dayText}>{formatDayDivider(msg.createdAt)}</Text>
+                      <Meta style={styles.dayText}>{formatDayDivider(msg.createdAt)}</Meta>
                     </View>
                   )}
 
                   {msg.kind === 'SYSTEM' ? (
                     <View style={styles.systemBox}>
-                      <Text style={styles.systemText}>
+                      <Meta style={styles.systemText}>
                         {msg.body || 'Chat event'} · {formatMessageTime(msg.createdAt)}
-                      </Text>
+                      </Meta>
                     </View>
                   ) : (
                     <View style={[styles.bubbleWrap, msg.mine ? styles.mineWrap : styles.peerWrap]}>
                       <View style={[styles.bubble, msg.mine ? styles.mineBubble : styles.peerBubble]}>
                         {msg.body ? (
-                          <Text style={[styles.bubbleText, msg.mine ? styles.mineText : styles.peerText]}>
+                          <Body size="md" tone={msg.mine ? 'inverse' : 'default'}>
                             {msg.body}
-                          </Text>
+                          </Body>
                         ) : null}
 
                         {msg.attachment && (
-                          <View style={styles.attachmentBox}>
-                            <Text style={styles.attachmentName}>
-                              📄 {msg.attachment.fileName || 'Attachment'}
-                            </Text>
+                          <View style={msg.mine ? styles.attachmentBoxMine : styles.attachmentBoxPeer}>
+                            <Body size="xs" weight="medium" tone={msg.mine ? 'inverse' : 'default'}>
+                              {`📄 ${msg.attachment.fileName || 'Attachment'}`}
+                            </Body>
                           </View>
                         )}
                       </View>
 
                       <View style={styles.receiptRow}>
-                        <Text style={styles.receiptTime}>{formatMessageTime(msg.createdAt)}</Text>
+                        <Eyebrow>{formatMessageTime(msg.createdAt)}</Eyebrow>
                         {msg.mine && (
-                          <Text style={styles.receiptStatus}>
-                            {msg.readAt ? ' · Read' : msg.deliveredAt ? ' · Delivered' : ' · Sent'}
-                          </Text>
+                          <Eyebrow>{msg.readAt ? ' · Read' : msg.deliveredAt ? ' · Delivered' : ' · Sent'}</Eyebrow>
                         )}
                       </View>
                     </View>
@@ -266,35 +279,33 @@ export function EmployerThreadScreen() {
 
         {/* Bottom Composer or Read-Only Banner */}
         {isReadOnly ? (
-          <View style={styles.readOnlyBanner}>
-            <Text style={styles.readOnlyEyebrow}>READ-ONLY · CONVERSATION ARCHIVED</Text>
-            <Text style={styles.readOnlyTitle}>
-              {thread?.archivedReason === 'BLOCKED'
+          <View style={styles.readOnlyFooter}>
+            <Eyebrow tone="muted">Read-only · conversation archived</Eyebrow>
+            <Banner tone={thread?.archivedReason === 'BLOCKED' ? 'danger' : 'neutral'} title={
+              thread?.archivedReason === 'BLOCKED'
                 ? `${name} was blocked by you.`
-                : 'This conversation has been archived.'}
-            </Text>
-            <Text style={styles.readOnlyDetail}>
+                : 'This conversation has been archived.'
+            }>
               You can’t send messages here any more. The conversation stays readable for both of you, and nothing was deleted.
-            </Text>
+            </Banner>
           </View>
         ) : (
           <View style={styles.composerBar}>
-            <TextInput
+            <Input
               value={text}
               onChangeText={setText}
               placeholder="Write a message…"
-              placeholderTextColor={color.textSubtle}
-              style={styles.composerInput}
               multiline
+              style={styles.composerInput}
             />
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={handleSend}
+            <Button
+              variant="primary"
+              size="sm"
+              label="Send"
               disabled={!text.trim() || sending}
-              style={[styles.sendBtn, (!text.trim() || sending) && styles.sendBtnDisabled]}
-            >
-              <Text style={styles.sendBtnText}>Send</Text>
-            </TouchableOpacity>
+              busy={sending}
+              onPress={handleSend}
+            />
           </View>
         )}
       </KeyboardAvoidingView>
@@ -306,6 +317,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  grow: {
+    flex: 1,
+  },
   titleBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -313,7 +327,7 @@ const styles = StyleSheet.create({
     gap: space.xs,
     paddingHorizontal: space.lg,
     paddingVertical: space.sm,
-    borderBottomWidth: 1,
+    borderBottomWidth: borderWidth.thin,
     borderBottomColor: color.border,
     backgroundColor: color.background,
   },
@@ -321,63 +335,15 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: space.xs,
-  },
-  optionsBtn: {
-    padding: space.xs,
-  },
-  optionsBtnText: {
-    fontSize: 20,
-    color: color.textMuted,
-    lineHeight: 20,
-  },
-  titleName: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: color.text,
-  },
-  supportTag: {
-    backgroundColor: '#EFF8FF',
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderRadius: radius.pill,
-  },
-  supportTagText: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#175CD3',
-  },
-  readOnlyTag: {
-    backgroundColor: '#F2F2F0',
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderRadius: radius.pill,
-  },
-  readOnlyTagText: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 10,
-    fontWeight: '500',
-    color: color.textMuted,
+    gap: space.sm,
   },
   messageScroll: {
     paddingHorizontal: space.lg,
     paddingVertical: space.md,
     gap: space.sm,
   },
-  centerBox: {
-    paddingVertical: space['2xl'],
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: space.sm,
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    color: color.textMuted,
-  },
   messageGroup: {
-    gap: 6,
+    gap: space.xs,
   },
   dayDivider: {
     alignItems: 'center',
@@ -386,25 +352,19 @@ const styles = StyleSheet.create({
   dayText: {
     backgroundColor: color.surfaceMuted,
     paddingHorizontal: space.sm,
-    paddingVertical: 2,
+    paddingVertical: space['2xs'],
     borderRadius: radius.pill,
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 11,
-    color: color.textSubtle,
   },
   systemBox: {
     alignItems: 'center',
-    paddingVertical: 4,
+    paddingVertical: space.xs,
   },
   systemText: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 11,
-    color: color.textSubtle,
     textAlign: 'center',
   },
   bubbleWrap: {
     maxWidth: '82%',
-    gap: 2,
+    gap: space['2xs'],
   },
   mineWrap: {
     alignSelf: 'flex-end',
@@ -421,111 +381,49 @@ const styles = StyleSheet.create({
   },
   mineBubble: {
     backgroundColor: color.ink,
-    borderBottomRightRadius: 2,
+    borderBottomRightRadius: radius.sm,
   },
   peerBubble: {
     backgroundColor: color.surfaceMuted,
-    borderBottomLeftRadius: 2,
+    borderBottomLeftRadius: radius.sm,
   },
-  bubbleText: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  mineText: {
-    color: '#FFFFFF',
-  },
-  peerText: {
-    color: color.text,
-  },
-  attachmentBox: {
-    marginTop: 6,
-    padding: 8,
-    backgroundColor: 'rgba(0,0,0,0.06)',
+  attachmentBoxMine: {
+    marginTop: space.xs,
+    padding: space.sm,
+    backgroundColor: color.inkRaised,
     borderRadius: radius.sm,
   },
-  attachmentName: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 12,
-    fontWeight: '500',
-    color: color.text,
+  attachmentBoxPeer: {
+    marginTop: space.xs,
+    padding: space.sm,
+    backgroundColor: color.surfaceSunken,
+    borderRadius: radius.sm,
   },
   receiptRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 4,
+    paddingHorizontal: space.xs,
   },
-  receiptTime: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 10,
-    color: color.textSubtle,
-  },
-  receiptStatus: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 10,
-    color: color.textSubtle,
-  },
-  readOnlyBanner: {
-    borderTopWidth: 1,
+  readOnlyFooter: {
+    borderTopWidth: borderWidth.thin,
     borderTopColor: color.border,
-    backgroundColor: color.surfaceMuted,
+    backgroundColor: color.surface,
     padding: space.md,
-    gap: 4,
-  },
-  readOnlyEyebrow: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 10,
-    fontWeight: '700',
-    color: color.textSubtle,
-  },
-  readOnlyTitle: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    fontWeight: '700',
-    color: color.text,
-  },
-  readOnlyDetail: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 12,
-    lineHeight: 16,
-    color: color.textMuted,
+    gap: space.sm,
   },
   composerBar: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     gap: space.sm,
     paddingHorizontal: space.md,
     paddingVertical: space.sm,
-    borderTopWidth: 1,
+    borderTopWidth: borderWidth.thin,
     borderTopColor: color.border,
     backgroundColor: color.background,
   },
   composerInput: {
     flex: 1,
-    minHeight: 40,
+    minHeight: 44,
     maxHeight: 100,
-    borderWidth: 1,
-    borderColor: color.border,
-    borderRadius: radius.md,
-    paddingHorizontal: space.sm,
-    paddingVertical: 8,
-    fontFamily: fontFamilyNative.body,
-    fontSize: 14,
-    color: color.text,
-  },
-  sendBtn: {
-    backgroundColor: color.accent,
-    paddingHorizontal: space.md,
-    paddingVertical: 10,
-    borderRadius: radius.md,
-  },
-  sendBtnDisabled: {
-    opacity: 0.5,
-  },
-  sendBtnText: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#FFFFFF',
   },
 })

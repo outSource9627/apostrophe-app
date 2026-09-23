@@ -23,15 +23,6 @@ type Errors = { email?: string; password?: string }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-/** The banner's ink per tone, for a sentence composed beside an action. */
-const INK: Record<BannerTone, string> = {
-  danger: color.danger,
-  warning: color.warning,
-  info: color.info,
-  neutral: color.text,
-  success: color.success,
-}
-
 type TextInputRef = React.ComponentRef<typeof TextInput>
 
 /**
@@ -128,13 +119,12 @@ export function EmployerSignInScreen({ onBack, onRegister, onSignedIn }: Employe
 
         {!!refusal && (
           <View accessibilityLiveRegion="polite">
-            <Banner tone={refusal.tone}>
-              <Body size="xs" style={{ color: INK[refusal.tone] }}>
-                {refusal.body}
-              </Body>
-              {refusal.home && (
-                <TextAction label="Go to your home" onPress={() => onSignedIn('STUDENT')} style={styles.start} />
-              )}
+            <Banner
+              tone={refusal.tone}
+              actionLabel={refusal.home ? 'Go to your home' : undefined}
+              onAction={refusal.home ? () => onSignedIn('STUDENT') : undefined}
+            >
+              {refusal.body}
             </Banner>
           </View>
         )}
@@ -196,7 +186,6 @@ export function EmployerSignInScreen({ onBack, onRegister, onSignedIn }: Employe
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.background },
   grow: { flex: 1 },
-  start: { alignSelf: 'flex-start' },
   pressed: { opacity: opacity.pressed },
 
   bar: {

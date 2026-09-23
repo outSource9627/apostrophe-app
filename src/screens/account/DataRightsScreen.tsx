@@ -1,16 +1,15 @@
 import React, { useState } from 'react'
-import { ScrollView, StyleSheet, Text, View } from 'react-native'
+import { ScrollView, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Linking } from 'react-native'
-import Svg, { Path } from 'react-native-svg'
 import {
   cancelDeletion, getDataExports, getDeletion, getMe, requestDataExport, requestDeletion,
   type DataExportRow, type DeletionRequest, type Me,
 } from '../../lib/api/account'
 import { fmtISODate, fmtStampFull } from '../../lib/chat/format'
-import { color, space, radius, borderWidth, fontFamilyNative, fontSize } from '../../theme'
-import { AppBar, Body, Button, Display, Eyebrow, Meta, Sheet } from '../../components/ui'
+import { color, space } from '../../theme'
+import { AppBar, Body, Button, Card, Display, Eyebrow, Meta, Sheet, StatusDot, StatusPill } from '../../components/ui'
 
 const fmtDate = (iso: string) => fmtStampFull(iso).replace(/,.*$/, '')
 const fmtSize = (b?: number) => (b ? (b >= 1024 * 1024 ? `${(b / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`) : '')
@@ -59,13 +58,13 @@ export function DataRightsScreen({ onBack }: { onBack: () => void }) {
         <View style={{ gap: space.md }}>
           <Eyebrow>Export</Eyebrow>
           {pendingExport ? (
-            <View style={styles.card}>
-              <View style={[styles.statePill, { backgroundColor: color.surfaceSunken }]}><Text style={[styles.pillText, { color: color.textMuted }]}>PREPARING</Text></View>
+            <Card style={styles.cardPad}>
+              <StatusPill tone="neutral" label="PREPARING" />
               <Body size="sm" tone="muted" style={{ marginTop: space.sm }}>We&rsquo;re building your file. We&rsquo;ll email you when it&rsquo;s ready — you don&rsquo;t need to keep this open.</Body>
-            </View>
+            </Card>
           ) : readyExport ? (
-            <View style={styles.card}>
-              <View style={[styles.statePill, { backgroundColor: color.infoSoft }]}><Text style={[styles.pillText, { color: color.info }]}>READY</Text></View>
+            <Card style={styles.cardPad}>
+              <StatusPill tone="info" label="READY" />
               <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: space.sm, marginTop: space.sm }}>
                 <Meta style={{ color: color.text }}>{`apostrophe-export-${fmtISODate(readyExport.readyAt ?? readyExport.requestedAt)}.zip`}</Meta>
                 <Meta style={{ color: color.textSubtle }}>{fmtSize(readyExport.sizeBytes)}</Meta>
@@ -74,14 +73,14 @@ export function DataRightsScreen({ onBack }: { onBack: () => void }) {
                 <Button variant="secondary" size="md" disabled={!readyExport.url} label="Download" onPress={() => readyExport.url && Linking.openURL(readyExport.url)} />
               </View>
               {!!readyExport.url && <Meta style={{ color: color.textSubtle, marginTop: space.sm }}>This link is short-lived — request a fresh export if it stops working.</Meta>}
-            </View>
+            </Card>
           ) : (
-            <View style={styles.card}>
+            <Card style={styles.cardPad}>
               <Display level="xs">Take a copy with you.</Display>
               <Body size="sm" tone="muted" style={{ marginTop: space.sm }}>We build the file in the background and email you a link when it&rsquo;s ready. It&rsquo;s JSON you can open anywhere, plus the documents you uploaded.</Body>
               <View style={{ marginTop: space.md }}><Button variant="secondary" size="block" full busy={exportMut.isPending} label="Request my export" onPress={() => exportMut.mutate()} /></View>
               <Meta style={{ color: color.textSubtle, marginTop: space.sm }}>Usually ready within 24 hours</Meta>
-            </View>
+            </Card>
           )}
         </View>
 
@@ -118,11 +117,11 @@ export function DataRightsScreen({ onBack }: { onBack: () => void }) {
 function PendingDeletion({ request, busy, onCancel }: { request: DeletionRequest; busy: boolean; onCancel: () => void }) {
   return (
     <View style={{ gap: space.lg }}>
-      <View style={styles.pendingCard}>
-        <View style={[styles.statePill, { backgroundColor: color.warningSoft }]}><Text style={[styles.pillText, { color: color.warning }]}>DELETION PENDING</Text></View>
+      <Card style={styles.pendingCardPad}>
+        <StatusPill tone="warning" label="DELETION PENDING" />
         <Display level="xs" style={{ marginTop: space.sm }}>{`We’re deleting your account by ${fmtDate(request.dueAt)}.`}</Display>
         <Meta style={{ color: color.textSubtle, marginTop: space.xs }}>{`Requested ${fmtStampFull(request.requestedAt)}`}</Meta>
-      </View>
+      </Card>
       <View style={{ gap: space.sm }}>
         <Eyebrow>Done</Eyebrow>
         <MixedItem done text={`Your profile left every employer feed on ${fmtStampFull(request.requestedAt)}.`} />
@@ -142,9 +141,7 @@ function PendingDeletion({ request, busy, onCancel }: { request: DeletionRequest
 function MixedItem({ done, text }: { done?: boolean; text: string }) {
   return (
     <View style={styles.mixed}>
-      {done
-        ? <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={color.success} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" style={{ marginTop: 2 }}><Path d="M20 6 9 17l-5-5" /></Svg>
-        : <View style={styles.ring} />}
+      <StatusDot tone={done ? 'success' : 'neutral'} style={styles.mixedDot} />
       <Body size="sm" style={{ flex: 1, color: color.text }}>{text}</Body>
     </View>
   )
@@ -163,11 +160,9 @@ const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.surface },
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   body: { padding: space.xl, gap: space['2xl'], paddingBottom: space['4xl'] },
-  card: { borderRadius: radius.lg, borderWidth: borderWidth.thin, borderColor: color.border, padding: space.lg },
-  pendingCard: { borderRadius: radius.lg, borderWidth: borderWidth.thin, borderColor: color.dangerBorder, backgroundColor: color.dangerSoft, padding: space.lg },
-  statePill: { alignSelf: 'flex-start', borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 5 },
-  pillText: { fontFamily: fontFamilyNative.monoMedium, fontSize: fontSize['meta-sm'], letterSpacing: 1, textTransform: 'uppercase' },
+  cardPad: { padding: space.lg },
+  pendingCardPad: { backgroundColor: color.dangerSoft, borderColor: color.dangerBorder, padding: space.lg },
   mixed: { flexDirection: 'row', alignItems: 'flex-start', gap: space.sm },
-  ring: { width: 16, height: 16, borderRadius: 999, borderWidth: 1, borderColor: color.borderStrong, marginTop: 2 },
+  mixedDot: { marginTop: space['2xs'] },
   split: { flexDirection: 'row', gap: space.md },
 })

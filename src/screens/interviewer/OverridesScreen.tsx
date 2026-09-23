@@ -1,23 +1,32 @@
 import React, { useState } from 'react'
-import {
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native'
+import { Alert, StyleSheet, View } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { borderWidth, color, fontFamilyNative, radius, space } from '../../theme'
-import { Button, Card, Eyebrow, Field, Input } from '../../components/ui'
+import { borderWidth, color, space } from '../../theme'
+import {
+  Body,
+  Button,
+  Card,
+  Display,
+  EmptyState,
+  ErrorState,
+  Eyebrow,
+  Field,
+  Input,
+  ObjectRow,
+  Segmented,
+  Skeleton,
+  StatusPill,
+} from '../../components/ui'
 import { InterviewerShell } from '../../components/interviewer/InterviewerShell'
 import { useInterviewer } from '../../lib/interviewer/useInterviewer'
 import { interviewerApi, type AvailabilityOverrideDto } from '../../lib/api/interviewer'
 
+const AVAILABILITY_OPTIONS = ['Unavailable', 'Available'] as const
+
 export function OverridesScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<any>>()
-  const { availability, refresh } = useInterviewer()
+  const { availability, loading, error, refresh } = useInterviewer()
 
   const [overrides, setOverrides] = useState<AvailabilityOverrideDto[]>(
     availability?.overrides || [],
@@ -72,6 +81,26 @@ export function OverridesScreen() {
     }
   }
 
+  if (loading && !availability) {
+    return (
+      <InterviewerShell back={{ label: 'Availability', onPress: () => navigation.goBack() }}>
+        <Skeleton lines={4} />
+      </InterviewerShell>
+    )
+  }
+
+  if (error && !availability) {
+    return (
+      <InterviewerShell back={{ label: 'Availability', onPress: () => navigation.goBack() }}>
+        <ErrorState
+          title="We could not load your overrides."
+          body={error.message}
+          action={<Button variant="outline" size="sm" label="Try again" onPress={refresh} />}
+        />
+      </InterviewerShell>
+    )
+  }
+
   return (
     <InterviewerShell
       back={{ label: 'Availability', onPress: () => navigation.goBack() }}
@@ -87,15 +116,17 @@ export function OverridesScreen() {
     >
       <View style={styles.header}>
         <Eyebrow>SCHEDULE EXCEPTIONS</Eyebrow>
-        <Text style={styles.title}>Date Overrides</Text>
-        <Text style={styles.subtitle}>
+        <Display level="lg">Date Overrides</Display>
+        <Body size="sm" tone="muted">
           Block off holidays, travel days, or add special availability outside your recurring weekly routine.
-        </Text>
+        </Body>
       </View>
 
       {/* Add Override Form */}
       <Card style={styles.addCard}>
-        <Text style={styles.cardTitle}>Add Specific Date Exception</Text>
+        <Body size="sm" weight="semibold">
+          Add Specific Date Exception
+        </Body>
         <Field label="Date (YYYY-MM-DD)">
           <Input
             value={newDate}
@@ -106,24 +137,20 @@ export function OverridesScreen() {
           />
         </Field>
 
-        <View style={styles.toggleRow}>
-          <Pressable
-            onPress={() => setIsAvailable(false)}
-            style={[styles.togglePill, !isAvailable && styles.togglePillActive]}
-          >
-            <Text style={[styles.toggleText, !isAvailable && styles.toggleTextActive]}>
-              Unavailable All Day
-            </Text>
-          </Pressable>
-          <Pressable
-            onPress={() => setIsAvailable(true)}
-            style={[styles.togglePill, isAvailable && styles.togglePillActive]}
-          >
-            <Text style={[styles.toggleText, isAvailable && styles.toggleTextActive]}>
-              Available (9 AM – 6 PM)
-            </Text>
-          </Pressable>
-        </View>
+        <Field
+          label="Availability Type"
+          helper={
+            isAvailable
+              ? 'Special hours apply: 9 AM – 6 PM.'
+              : 'Blocked off all day — no bookings allowed.'
+          }
+        >
+          <Segmented
+            options={AVAILABILITY_OPTIONS}
+            value={isAvailable ? 'Available' : 'Unavailable'}
+            onChange={(next) => setIsAvailable(next === 'Available')}
+          />
+        </Field>
 
         <Button
           label="Add Override"
@@ -134,32 +161,44 @@ export function OverridesScreen() {
 
       {/* Overrides List */}
       <View style={styles.listSection}>
-        <Text style={styles.listHeading}>Active Exceptions ({overrides.length})</Text>
+        <Body size="sm" weight="semibold">
+          {`Active Exceptions (${overrides.length})`}
+        </Body>
 
         {overrides.length === 0 ? (
-          <Card style={styles.emptyCard}>
-            <Text style={styles.emptyText}>No date overrides defined.</Text>
-            <Text style={styles.emptySub}>
-              Your regular weekly recurring schedule will apply on all days.
-            </Text>
+          <Card>
+            <EmptyState
+              title="No date overrides"
+              body="Your regular weekly recurring schedule will apply on all days."
+            />
           </Card>
         ) : (
-          <View style={styles.overrideList}>
+          <View style={styles.list}>
             {overrides.map((o) => (
-              <Card key={o.date} style={styles.overrideItem}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.overrideDate}>{o.date}</Text>
-                  <Text style={[styles.overrideStatus, !o.available && styles.overrideUnavailable]}>
-                    {o.available ? 'Special Availability (9 AM – 6 PM)' : 'Unavailable (Blocked Off)'}
-                  </Text>
+              <Card key={o.date} style={styles.overrideCard}>
+                <ObjectRow
+                  last
+                  title={o.date}
+                  meta={
+                    o.available
+                      ? 'Special availability · 9 AM – 6 PM'
+                      : 'Blocked off — regular hours do not apply'
+                  }
+                  status={
+                    <StatusPill
+                      tone={o.available ? 'success' : 'neutral'}
+                      label={o.available ? 'Available' : 'Unavailable'}
+                    />
+                  }
+                />
+                <View style={styles.actionsRow}>
+                  <Button
+                    label="Remove"
+                    variant="destructive"
+                    size="sm"
+                    onPress={() => handleRemoveOverride(o.date)}
+                  />
                 </View>
-                <Pressable
-                  onPress={() => handleRemoveOverride(o.date)}
-                  hitSlop={8}
-                  style={styles.deleteBtn}
-                >
-                  <Text style={styles.deleteText}>Remove</Text>
-                </Pressable>
               </Card>
             ))}
           </View>
@@ -173,111 +212,25 @@ const styles = StyleSheet.create({
   header: {
     gap: space['2xs'],
   },
-  title: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 24,
-    fontWeight: '700',
-    color: color.text,
-  },
-  subtitle: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 14,
-    color: color.textMuted,
-    lineHeight: 20,
-  },
   addCard: {
     padding: space.md,
     gap: space.sm,
   },
-  cardTitle: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 16,
-    fontWeight: '600',
-    color: color.text,
-  },
-  toggleRow: {
-    flexDirection: 'row',
-    gap: space.xs,
-  },
-  togglePill: {
-    flex: 1,
-    paddingVertical: space.xs,
-    paddingHorizontal: space.xs,
-    borderRadius: radius.sm,
-    borderWidth: borderWidth.thin,
-    borderColor: color.border,
-    alignItems: 'center',
-    backgroundColor: color.surface,
-  },
-  togglePillActive: {
-    backgroundColor: color.accent,
-    borderColor: color.accent,
-  },
-  toggleText: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 12,
-    fontWeight: '600',
-    color: color.textMuted,
-  },
-  toggleTextActive: {
-    color: color.surface,
-  },
   listSection: {
     gap: space.xs,
   },
-  listHeading: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 16,
-    fontWeight: '600',
-    color: color.text,
+  list: {
+    gap: space.sm,
   },
-  emptyCard: {
-    padding: space.lg,
-    alignItems: 'center',
-    gap: space['2xs'],
-  },
-  emptyText: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 14,
-    fontWeight: '600',
-    color: color.text,
-  },
-  emptySub: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 12,
-    color: color.textMuted,
-  },
-  overrideList: {
-    gap: space.xs,
-  },
-  overrideItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  overrideCard: {
     padding: space.md,
+    gap: space.sm,
   },
-  overrideDate: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 15,
-    fontWeight: '700',
-    color: color.text,
-  },
-  overrideStatus: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 12,
-    color: '#059669',
-    marginTop: 2,
-  },
-  overrideUnavailable: {
-    color: color.accent,
-  },
-  deleteBtn: {
-    paddingHorizontal: space.xs,
-    paddingVertical: space['2xs'],
-  },
-  deleteText: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 12,
-    fontWeight: '600',
-    color: color.accent,
+  actionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    borderTopWidth: borderWidth.thin,
+    borderTopColor: color.border,
+    paddingTop: space.sm,
   },
 })

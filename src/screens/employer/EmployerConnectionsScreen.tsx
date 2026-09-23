@@ -1,16 +1,21 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import {
-  ActivityIndicator,
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native'
+import { Alert, Pressable, StyleSheet, View } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { color, radius, space, fontFamilyNative } from '../../theme'
+import { borderWidth, color, height, opacity, radius, space } from '../../theme'
+import {
+  Body,
+  Button,
+  Card,
+  Display,
+  EmptyState,
+  ErrorState,
+  Eyebrow,
+  Meta,
+  Skeleton,
+  StatusPill,
+  VerifiedSeal,
+} from '../../components/ui'
 import { EmployerShell } from '../../components/employer/EmployerShell'
 import { EmployerNav, type EmployerNavKey } from '../../components/employer/EmployerNav'
 import {
@@ -30,20 +35,32 @@ function formatIstDate(isoStr?: string | null): string {
   return `${day} ${mon}`
 }
 
+function initialsFor(name?: string | null): string {
+  return (name || 'C')
+    .split(' ')
+    .map((n) => n[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase()
+}
+
 export function EmployerConnectionsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
 
   const [rows, setRows] = useState<EmployerConnectionRow[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
   const [actionBusyId, setActionBusyId] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     try {
       setLoading(true)
+      setError(null)
       const res = await getEmployerConnections({ statuses: ['ACTIVE', 'CLOSED', 'BLOCKED'] })
       setRows(res.rows)
     } catch (err) {
       console.error('Failed to load connections', err)
+      setError(err instanceof Error ? err : new Error('We could not load your connections.'))
     } finally {
       setLoading(false)
     }
@@ -129,485 +146,209 @@ export function EmployerConnectionsScreen() {
 
   return (
     <EmployerShell nav={<EmployerNav current="chat" onSelect={handleNavSelect} />}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerTop}>
-            <Text style={styles.eyebrow}>
-              {`${activeRows.length} accepted · ${archivedRows.length} in archive · times in IST`}
-            </Text>
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => navigation.navigate('EmployerChats')}
-            >
-              <Text style={styles.chatLink}>Chats →</Text>
-            </TouchableOpacity>
-          </View>
-          <Text style={styles.title}>Connections</Text>
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.headerTop}>
+          <Eyebrow>
+            {`${activeRows.length} accepted · ${archivedRows.length} in archive · times in IST`}
+          </Eyebrow>
+          <Pressable
+            accessibilityRole="button"
+            hitSlop={8}
+            onPress={() => navigation.navigate('EmployerChats')}
+          >
+            <Body size="sm" weight="medium">
+              Chats →
+            </Body>
+          </Pressable>
         </View>
+        <Display level="lg" accessibilityRole="header">
+          Connections
+        </Display>
+      </View>
 
-        {loading ? (
-          <View style={styles.centerBox}>
-            <ActivityIndicator size="large" color={color.ink} />
-            <Text style={styles.loadingText}>Loading connections…</Text>
-          </View>
-        ) : rows.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyTitle}>No one has accepted yet.</Text>
-            <Text style={styles.emptySubtitle}>
-              A candidate appears here when they accept your Interest, or when they apply to one of your jobs after you shortlisted them.
-            </Text>
-            <Text style={styles.emptyFootnote}>Interests stay open for 14 days</Text>
-            <TouchableOpacity
-              activeOpacity={0.8}
+      {/* Content */}
+      {loading ? (
+        <Skeleton lines={4} />
+      ) : error ? (
+        <ErrorState
+          title="We could not load your connections."
+          body={error.message}
+          action={<Button variant="outline" size="sm" label="Try again" onPress={() => load()} />}
+        />
+      ) : rows.length === 0 ? (
+        <EmptyState
+          title="No one has accepted yet."
+          body="A candidate appears here when they accept your Interest, or when they apply to one of your jobs after you shortlisted them. Interests stay open for 14 days."
+          action={
+            <Button
+              variant="outline"
+              size="sm"
+              label="Browse candidates"
               onPress={() => navigation.navigate('EmployerFeed')}
-              style={styles.browseBtn}
-            >
-              <Text style={styles.browseBtnText}>Browse candidates</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <View style={styles.listContainer}>
-            {/* Active Accepted Rows */}
+            />
+          }
+        />
+      ) : (
+        <View style={styles.content}>
+          {/* Active, accepted connections */}
+          <View style={styles.list}>
             {activeRows.map((row) => (
-              <View key={row.id} style={styles.card}>
-                <View style={styles.cardHeader}>
+              <Card key={row.id} style={styles.card}>
+                <View style={styles.cardTop}>
                   <View style={styles.avatar}>
-                    <Text style={styles.avatarText}>
-                      {(row.counterparty.name || 'C')
-                        .split(' ')
-                        .map((n) => n[0])
-                        .slice(0, 2)
-                        .join('')
-                        .toUpperCase()}
-                    </Text>
+                    <Body weight="semibold">{initialsFor(row.counterparty.name)}</Body>
                   </View>
-                  <View style={styles.headerMeta}>
+                  <View style={styles.cardInfo}>
                     <View style={styles.nameRow}>
-                      <Text style={styles.name}>{row.counterparty.name || 'Candidate'}</Text>
-                      <View style={styles.acceptedPill}>
-                        <Text style={styles.acceptedPillText}>Accepted</Text>
-                      </View>
+                      <Display level="xs" style={styles.grow} numberOfLines={1}>
+                        {row.counterparty.name || 'Candidate'}
+                      </Display>
+                      <StatusPill tone="success" label="Accepted" />
                     </View>
                     <View style={styles.subRow}>
-                      {row.interviewedAt && (
-                        <View style={styles.verifiedTag}>
-                          <Text style={styles.verifiedTagText}>
-                            Verified · {formatIstDate(row.interviewedAt)}
-                          </Text>
-                        </View>
-                      )}
-                      <Text style={styles.originText}>
+                      {row.interviewedAt && <VerifiedSeal date={formatIstDate(row.interviewedAt)} />}
+                      <Meta>
                         {row.origin === 'INTEREST' ? 'Interest accepted' : 'Applied · shortlisted'}
                         {row.openedAt ? ` · ${formatIstDate(row.openedAt)}` : ''}
-                      </Text>
+                      </Meta>
                     </View>
                   </View>
                 </View>
 
                 <View style={styles.actionRow}>
-                  <TouchableOpacity
-                    activeOpacity={0.8}
-                    onPress={() => handleOpenChat(row)}
-                    style={styles.openBtn}
-                  >
-                    <Text style={styles.openBtnText}>Open chat</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    activeOpacity={0.7}
-                    disabled={actionBusyId === row.id}
+                  <Button variant="secondary" size="sm" label="Open chat" onPress={() => handleOpenChat(row)} />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    label="Withdraw"
+                    busy={actionBusyId === row.id}
                     onPress={() => handleWithdraw(row)}
-                    style={styles.outlineBtn}
-                  >
-                    <Text style={styles.outlineBtnText}>Withdraw</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    activeOpacity={0.7}
-                    disabled={actionBusyId === row.id}
+                  />
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    label="Block"
+                    busy={actionBusyId === row.id}
                     onPress={() => handleBlock(row)}
-                    style={styles.dangerBtn}
-                  >
-                    <Text style={styles.dangerBtnText}>Block</Text>
-                  </TouchableOpacity>
+                  />
                 </View>
-              </View>
+              </Card>
             ))}
-
-            {/* Archive Section */}
-            {archivedRows.length > 0 && (
-              <View style={styles.archiveSection}>
-                <View style={styles.sectionDivider}>
-                  <Text style={styles.archiveTitle}>Archive ({archivedRows.length})</Text>
-                </View>
-                <Text style={styles.archiveSubtitle}>
-                  Withdrawn and blocked connections stay on this list.
-                </Text>
-
-                {archivedRows.map((row) => {
-                  const isBlocked = row.status === 'BLOCKED'
-                  return (
-                    <View key={row.id} style={styles.archiveCard}>
-                      <View style={styles.cardHeader}>
-                        <View
-                          style={[
-                            styles.avatar,
-                            isBlocked && { backgroundColor: '#FBECEC' },
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.avatarText,
-                              isBlocked && { color: color.accent },
-                            ]}
-                          >
-                            {(row.counterparty.name || 'C')
-                              .split(' ')
-                              .map((n) => n[0])
-                              .slice(0, 2)
-                              .join('')
-                              .toUpperCase()}
-                          </Text>
-                        </View>
-                        <View style={styles.headerMeta}>
-                          <View style={styles.nameRow}>
-                            <Text style={styles.name}>{row.counterparty.name || 'Candidate'}</Text>
-                            <View
-                              style={[
-                                styles.pill,
-                                isBlocked ? styles.blockedPill : styles.withdrawnPill,
-                              ]}
-                            >
-                              <Text
-                                style={[
-                                  styles.pillText,
-                                  isBlocked ? styles.blockedPillText : styles.withdrawnPillText,
-                                ]}
-                              >
-                                {isBlocked ? 'Blocked' : 'Withdrawn'}
-                              </Text>
-                            </View>
-                          </View>
-                          <Text style={styles.originText}>
-                            {row.closedByMe ? 'By you' : 'By the candidate'}
-                            {row.closedAt ? ` · ${formatIstDate(row.closedAt)}` : ''}
-                          </Text>
-                        </View>
-                      </View>
-
-                      <Text style={styles.archiveNote}>
-                        {isBlocked
-                          ? 'Permanently removed from your candidate feed. This can’t be undone from here.'
-                          : 'The chat is kept, read-only. Nothing was deleted.'}
-                      </Text>
-
-                      <TouchableOpacity
-                        activeOpacity={0.7}
-                        onPress={() => handleOpenChat(row)}
-                        style={styles.viewChatBtn}
-                      >
-                        <Text style={styles.viewChatBtnText}>View chat (read-only)</Text>
-                      </TouchableOpacity>
-                    </View>
-                  )
-                })}
-              </View>
-            )}
           </View>
-        )}
-      </ScrollView>
+
+          {/* Archive: withdrawn and blocked connections */}
+          {archivedRows.length > 0 && (
+            <View style={styles.archiveSection}>
+              <View style={styles.sectionHeader}>
+                <Eyebrow>{`Archive (${archivedRows.length})`}</Eyebrow>
+              </View>
+              <Body size="xs" tone="muted">
+                Withdrawn and blocked connections stay on this list.
+              </Body>
+
+              {archivedRows.map((row) => {
+                const isBlocked = row.status === 'BLOCKED'
+                return (
+                  <Card key={row.id} style={[styles.card, styles.cardArchived]}>
+                    <View style={styles.cardTop}>
+                      <View style={styles.avatar}>
+                        <Body weight="semibold">{initialsFor(row.counterparty.name)}</Body>
+                      </View>
+                      <View style={styles.cardInfo}>
+                        <View style={styles.nameRow}>
+                          <Display level="xs" style={styles.grow} numberOfLines={1}>
+                            {row.counterparty.name || 'Candidate'}
+                          </Display>
+                          <StatusPill tone={isBlocked ? 'danger' : 'neutral'} label={isBlocked ? 'Blocked' : 'Withdrawn'} />
+                        </View>
+                        <Meta>
+                          {row.closedByMe ? 'By you' : 'By the candidate'}
+                          {row.closedAt ? ` · ${formatIstDate(row.closedAt)}` : ''}
+                        </Meta>
+                      </View>
+                    </View>
+
+                    <Body size="xs" tone="muted">
+                      {isBlocked
+                        ? 'Permanently removed from your candidate feed. This can’t be undone from here.'
+                        : 'The chat is kept, read-only. Nothing was deleted.'}
+                    </Body>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      label="View chat (read-only)"
+                      onPress={() => handleOpenChat(row)}
+                    />
+                  </Card>
+                )
+              })}
+            </View>
+          )}
+        </View>
+      )}
     </EmployerShell>
   )
 }
 
 const styles = StyleSheet.create({
-  scrollContent: {
-    paddingHorizontal: space.lg,
-    paddingTop: space.md,
-    paddingBottom: space['2xl'] * 2,
-  },
+  grow: { flex: 1 },
   header: {
-    marginBottom: space.lg,
+    gap: space.xs,
     paddingBottom: space.md,
-    borderBottomWidth: 1,
+    borderBottomWidth: borderWidth.thin,
     borderBottomColor: color.border,
   },
   headerTop: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: space.xs,
   },
-  eyebrow: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    color: color.textSubtle,
-    textTransform: 'uppercase',
-  },
-  chatLink: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    fontWeight: '600',
-    color: color.accent,
-  },
-  title: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: 26,
-    fontWeight: 'bold',
-    color: color.text,
-  },
-  centerBox: {
-    paddingVertical: space['2xl'],
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: space.sm,
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    color: color.textMuted,
-  },
-  emptyCard: {
-    padding: space.xl,
-    alignItems: 'center',
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: color.border,
-    borderStyle: 'dashed',
-    backgroundColor: color.background,
-    marginVertical: space.xl,
-  },
-  emptyTitle: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: color.text,
-    marginBottom: space.sm,
-    textAlign: 'center',
-  },
-  emptySubtitle: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 14,
-    lineHeight: 20,
-    color: color.textMuted,
-    textAlign: 'center',
-    marginBottom: space.md,
-  },
-  emptyFootnote: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 11,
-    color: color.textSubtle,
-    marginBottom: space.lg,
-  },
-  browseBtn: {
-    backgroundColor: color.accent,
-    paddingHorizontal: space.xl,
-    paddingVertical: space.sm,
-    borderRadius: radius.md,
-  },
-  browseBtnText: {
-    color: '#FFFFFF',
-    fontFamily: fontFamilyNative.body,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  listContainer: {
-    gap: space.md,
-  },
-  card: {
-    backgroundColor: color.background,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: color.border,
-    padding: space.md,
-    gap: space.sm,
-  },
-  cardHeader: {
+  content: { gap: space.lg },
+  list: { gap: space.md },
+  card: { padding: space.lg, gap: space.sm },
+  cardArchived: { opacity: opacity.disabled },
+  cardTop: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
     gap: space.sm,
+    alignItems: 'flex-start',
   },
   avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: height.tap,
+    height: height.tap,
+    borderRadius: radius.pill,
     backgroundColor: color.surfaceMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarText: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: color.text,
-  },
-  headerMeta: {
+  cardInfo: {
     flex: 1,
-    gap: 2,
+    gap: space['2xs'],
   },
   nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-  },
-  name: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: color.text,
+    gap: space.sm,
   },
   subRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: space.xs,
+    gap: space.sm,
     flexWrap: 'wrap',
-    marginTop: 2,
-  },
-  verifiedTag: {
-    backgroundColor: '#FBECEC',
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderRadius: radius.pill,
-  },
-  verifiedTagText: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 10,
-    fontWeight: '700',
-    color: color.accent,
-  },
-  originText: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 11,
-    color: color.textSubtle,
-  },
-  acceptedPill: {
-    backgroundColor: '#ECFDF3',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: radius.pill,
-  },
-  acceptedPillText: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#027A48',
   },
   actionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: space.xs,
-    marginTop: space.xs,
-  },
-  openBtn: {
-    backgroundColor: color.accent,
-    paddingHorizontal: space.md,
-    paddingVertical: space.xs,
-    borderRadius: radius.md,
-  },
-  openBtnText: {
-    color: '#FFFFFF',
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  outlineBtn: {
-    borderWidth: 1,
-    borderColor: color.border,
-    paddingHorizontal: space.md,
-    paddingVertical: space.xs,
-    borderRadius: radius.md,
-  },
-  outlineBtnText: {
-    color: color.text,
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  dangerBtn: {
-    borderWidth: 1,
-    borderColor: '#E4CDC9',
-    backgroundColor: '#FDF2F2',
-    paddingHorizontal: space.md,
-    paddingVertical: space.xs,
-    borderRadius: radius.md,
-  },
-  dangerBtnText: {
-    color: color.accent,
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  archiveSection: {
-    marginTop: space.lg,
     gap: space.sm,
   },
-  sectionDivider: {
-    borderTopWidth: 1,
-    borderTopColor: color.border,
-    paddingTop: space.md,
+  archiveSection: {
+    gap: space.sm,
   },
-  archiveTitle: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 12,
-    fontWeight: '700',
-    color: color.textSubtle,
-    textTransform: 'uppercase',
-  },
-  archiveSubtitle: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 12,
-    color: color.textMuted,
-    marginBottom: space.xs,
-  },
-  archiveCard: {
-    backgroundColor: color.surfaceMuted,
-    borderRadius: radius.md,
-    padding: space.md,
-    gap: space.xs,
-  },
-  pill: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: radius.pill,
-  },
-  pillText: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  withdrawnPill: {
-    backgroundColor: '#F2F2F0',
-  },
-  withdrawnPillText: {
-    color: color.textMuted,
-  },
-  blockedPill: {
-    backgroundColor: '#FBECEC',
-  },
-  blockedPillText: {
-    color: color.accent,
-  },
-  archiveNote: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 12,
-    lineHeight: 16,
-    color: color.textMuted,
-    marginVertical: 4,
-  },
-  viewChatBtn: {
-    alignSelf: 'flex-start',
-    borderWidth: 1,
-    borderColor: color.border,
-    paddingHorizontal: space.md,
-    paddingVertical: space.xs,
-    borderRadius: radius.md,
-    backgroundColor: '#FFFFFF',
-    marginTop: 2,
-  },
-  viewChatBtnText: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 12,
-    fontWeight: '500',
-    color: color.text,
+  sectionHeader: {
+    paddingBottom: space.xs,
+    borderBottomWidth: borderWidth.thin,
+    borderBottomColor: color.border,
   },
 })

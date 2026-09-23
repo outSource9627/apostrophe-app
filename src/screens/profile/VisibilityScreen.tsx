@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import Svg, { Path } from 'react-native-svg'
 import { api, ApiClientError } from '../../lib/api'
 import { color, space, radius, borderWidth } from '../../theme'
-import { AppBar, Banner, Body, Button, Display, Eyebrow, Meta, Toggle } from '../../components/ui'
+import { AppBar, Banner, Body, Button, Card, Display, Eyebrow, Meta, Toggle } from '../../components/ui'
 
 interface Audience { hiddenFromFeed: boolean; published: boolean }
 
@@ -61,10 +61,10 @@ export function VisibilityScreen({ onBack, onBook }: { onBack: () => void; onBoo
     hidden ? (
       <ScrollView contentContainerStyle={styles.body}>
         <Display level="lg">You are hidden.</Display>
-        <View style={styles.card}>
+        <Card style={styles.card}>
           <Toggle on={false} onChange={toggle} disabled={mut.isPending} label="Show me in the employer feed" />
           {changedAt && <Meta style={{ color: color.textSubtle, marginTop: space.md }}>Off since {fmtWhen(changedAt)}</Meta>}
-        </View>
+        </Card>
         <View style={{ gap: space.sm }}>
           <Eyebrow>What changed</Eyebrow>
           <Body size="sm">Employers cannot find you in the feed. New employers will not come across your profile.</Body>
@@ -82,10 +82,10 @@ export function VisibilityScreen({ onBack, onBook }: { onBack: () => void; onBoo
     ) : (
       <ScrollView contentContainerStyle={styles.body}>
         <Display level="lg">Who can find you.</Display>
-        <View style={styles.card}>
+        <Card style={styles.card}>
           <Toggle on onChange={toggle} disabled={mut.isPending} label="Show me in the employer feed" />
           <Body size="sm" tone="muted" style={{ marginTop: space.md }}>Employers swiping the feed see your video resume and your profile, and can send you an Interest.</Body>
-        </View>
+        </Card>
         <View style={{ gap: space.sm }}>
           <Eyebrow>If you turn this off</Eyebrow>
           <Body size="sm" tone="muted">You stop appearing in the employer feed. That is the whole of it — everything below stays exactly as it is.</Body>
@@ -126,5 +126,5 @@ const styles = StyleSheet.create({
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   body: { padding: space.xl, gap: space.xl, paddingBottom: space['4xl'] },
   well: { borderRadius: radius.md, borderWidth: borderWidth.thin, borderColor: color.border, backgroundColor: color.surfaceMuted, padding: space.lg },
-  card: { borderRadius: radius.md, borderWidth: borderWidth.thin, borderColor: color.border, backgroundColor: color.surface, padding: space.lg },
+  card: { padding: space.lg },
 })

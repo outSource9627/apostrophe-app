@@ -5,8 +5,8 @@ import { useQuery } from '@tanstack/react-query'
 import Svg, { Path } from 'react-native-svg'
 import { api, ApiClientError } from '../../lib/api'
 import { applyToJob, type JobDetail } from '../../lib/api/jobs'
-import { color, space, radius, borderWidth } from '../../theme'
-import { AppBar, Banner, Body, Button, Display, Eyebrow, Field, Input, Meta, StatusPill, VerifiedSeal } from '../../components/ui'
+import { color, space, borderWidth } from '../../theme'
+import { AppBar, Banner, Body, Button, Card, Display, Eyebrow, Field, Input, Meta, StatusPill, VerifiedSeal } from '../../components/ui'
 
 interface Profile { publishedAt: string | null }
 type Phase = 'ready' | 'sending' | 'sent' | 'connected' | 'already' | 'unpublished' | 'closed'
@@ -102,12 +102,12 @@ export function ApplyScreen({ id, onBack, onApplications, onBook, onFeed }: {
           <Fact t="Your full profile — education, experience, skills and preferences." />
           <Fact t="Your verified video resume, from your interview." />
         </View>
-        <View style={styles.videoCard}>
+        <Card style={styles.videoCard}>
           <View style={{ gap: space.sm }}>
             <Body weight="medium">Your video resume</Body>
             <VerifiedSeal date={profile.publishedAt ? fmtDate(profile.publishedAt) : undefined} />
           </View>
-        </View>
+        </Card>
         <Field label="Add a note" helper="Optional — one or two lines to the employer.">
           <Input value={message} onChangeText={(v) => setMessage(v.slice(0, 600))} placeholder="Why this role, in a sentence." multiline maxLength={600} />
         </Field>
@@ -135,6 +135,6 @@ const styles = StyleSheet.create({
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   centreBody: { flex: 1, padding: space.xl, justifyContent: 'center', alignItems: 'flex-start' },
   body: { padding: space.xl, gap: space.lg },
-  videoCard: { borderRadius: radius.lg, borderWidth: borderWidth.thin, borderColor: color.border, padding: space.lg },
+  videoCard: { padding: space.lg },
   foot: { borderTopWidth: borderWidth.thin, borderTopColor: color.border, paddingHorizontal: space.xl, paddingTop: space.md },
 })

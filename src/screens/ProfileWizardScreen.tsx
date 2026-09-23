@@ -2,10 +2,9 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useQuery } from '@tanstack/react-query'
-import Svg, { Path } from 'react-native-svg'
 import { api, ApiClientError } from '../lib/api'
-import { color, space, radius, borderWidth } from '../theme'
-import { AppBar, Banner, Body, Button, Display, Eyebrow, Figure, Meta, ProgressBar, StatusPill } from '../components/ui'
+import { color, space, radius, borderWidth, height } from '../theme'
+import { AppBar, Banner, Body, Button, Display, ErrorState, Eyebrow, Figure, Meta, ProgressBar, StatusDot, StatusPill } from '../components/ui'
 import { useOnline } from '../lib/useOnline'
 import { clockTime, dequeue, enqueue, peek, readQueue, type StepKey } from '../lib/profile/queue'
 import {
@@ -148,10 +147,33 @@ export function ProfileWizardScreen({ onExit, onBook }: { onExit: () => void; on
     return <View style={[styles.page, styles.centre, { paddingTop: insets.top }]}><ActivityIndicator color={color.textSubtle} /></View>
   }
 
+  if (profileQ.isError || configQ.isError) {
+    return (
+      <View style={[styles.page, { paddingTop: insets.top }]}>
+        <AppBar title="Save & exit" onBack={onExit} />
+        <View style={styles.centre}>
+          <ErrorState
+            title="Could not load your profile."
+            body="Check your connection and try again."
+            action={
+              <Button
+                variant="outline"
+                size="sm"
+                label="Try again"
+                // The error state's small button is 40 tall; the slop brings its tap box to the 44 floor.
+                hitSlop={(height.tap - height['control-xs']) / 2}
+                onPress={() => { profileQ.refetch(); configQ.refetch() }}
+              />
+            }
+          />
+        </View>
+      </View>
+    )
+  }
+
   const steps = configQ.data!.profile.steps
   const current = steps.find((s) => s.key === stepKey)!
   const isLast = current.step === steps.length
-  const done = new Set(profile.stepsCompleted)
   const gate = configQ.data!.booking.minProfileCompletionPct ?? 80
   const comp = profile.completion
   const Body_ = BODIES[stepKey]
@@ -187,21 +209,19 @@ export function ProfileWizardScreen({ onExit, onBook }: { onExit: () => void; on
       <AppBar title="Save & exit" onBack={onExit} />
 
       {!online && (
-        <View style={styles.offline}>
-          <View style={styles.offlineHead}>
-            <Meta style={{ color: color.info }}>OFFLINE</Meta>
-            {queued > 0 && <StatusPill tone="info" label={`Queued · ${queued} ${queued === 1 ? 'change' : 'changes'}`} />}
-          </View>
-          <Body size="sm" style={{ color: color.info }}>What you type is saved on this phone and syncs the moment you are back. Keep going — nothing is lost.</Body>
+        <View style={styles.offlineWrap}>
+          <Banner
+            tone="info"
+            title="Offline"
+            reference={queued > 0 ? `Queued · ${queued} ${queued === 1 ? 'change' : 'changes'}` : undefined}
+          >
+            What you type is saved on this phone and syncs the moment you are back. Keep going — nothing is lost.
+          </Banner>
         </View>
       )}
 
       <View style={styles.gate}>
-        <View style={styles.segments}>
-          {steps.map((s) => (
-            <View key={s.step} style={[styles.segment, done.has(s.step) && { backgroundColor: color.success }, s.key === stepKey && { backgroundColor: color.accent }]} />
-          ))}
-        </View>
+        <ProgressBar pct={comp.pct} gate={gate} />
         <View style={styles.gateLabels}>
           <Meta style={{ color: color.textSubtle }}>{online ? `NOW ${comp.pct}%` : `${comp.pct}% AS OF ${savedAt ? clockTime(savedAt).toUpperCase() : 'LAST SAVE'}`}</Meta>
           <Meta style={{ color: color.text }}>{comp.canBook ? `PAST ${gate}%` : `BOOK AT ${gate}% · ${toGo}% TO GO`}</Meta>
@@ -218,7 +238,7 @@ export function ProfileWizardScreen({ onExit, onBook }: { onExit: () => void; on
 
       <View style={[styles.footer, { paddingBottom: insets.bottom + space.lg }]}>
         <View style={styles.savedRow}>
-          {saving === 'saved' && <Svg width={13} height={13} viewBox="0 0 24 24" fill="none"><Path d="M20 6 9 17l-5-5" stroke={color.success} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /></Svg>}
+          {saving === 'saved' && <StatusDot tone="success" />}
           <Meta style={{ color: saving === 'queued' ? color.info : color.textSubtle }}>
             {saving === 'saving' ? 'SAVING…' : saving === 'saved' ? `SAVED${savedAt ? ` · ${clockTime(savedAt).toUpperCase()}` : ''}` : saving === 'queued' ? `QUEUED${queued > 1 ? ` · ${queued}` : ''} · WILL SYNC` : 'SAVES AS YOU TYPE'}
           </Meta>
@@ -318,12 +338,9 @@ function DoneView({ insets, comp, gate, onBook, onBack }: { insets: { top: numbe
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.surface },
-  centre: { alignItems: 'center', justifyContent: 'center' },
-  offline: { backgroundColor: color.infoSoft, paddingHorizontal: space.xl, paddingVertical: space.md, gap: space.xs },
-  offlineHead: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  offlineWrap: { paddingHorizontal: space.xl, paddingTop: space.md },
   gate: { paddingHorizontal: space.xl, paddingVertical: space.md, gap: space.sm, borderBottomWidth: borderWidth.thin, borderBottomColor: color.border },
-  segments: { flexDirection: 'row', gap: space.xs },
-  segment: { flex: 1, height: 4, borderRadius: radius.pill, backgroundColor: color.surfaceSunken },
   gateLabels: { flexDirection: 'row', justifyContent: 'space-between' },
   scroll: { padding: space.xl, paddingBottom: space['4xl'] },
   needed: { marginTop: space['2xl'], borderRadius: radius.md, backgroundColor: color.surfaceMuted, padding: space.lg, gap: space.sm },

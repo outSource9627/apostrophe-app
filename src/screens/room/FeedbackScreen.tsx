@@ -5,8 +5,8 @@ import { useQuery } from '@tanstack/react-query'
 import { ApiClientError } from '../../lib/api'
 import { getFeedback, type Feedback } from '../../lib/api/interviews'
 import { fmtStampZone } from '../../lib/chat/format'
-import { color, space, radius, borderWidth, fontFamilyNative, fontSize } from '../../theme'
-import { AppBar, Body, Button, Display, Eyebrow, Meta } from '../../components/ui'
+import { color, space, radius, fontFamilyNative, fontSize, leadingNative } from '../../theme'
+import { AppBar, Body, Button, Card, Display, Divider, ErrorState, Eyebrow, ScoreRow, Skeleton } from '../../components/ui'
 
 const SCORES: { key: keyof Feedback['scorecard']['scores']; label: string }[] = [
   { key: 'communication', label: 'Communication' },
@@ -33,7 +33,7 @@ export function FeedbackScreen({ id, onBack }: { id: string; onBack: () => void 
 
   const bar = <AppBar onBack={onBack} />
   const frame = (c: React.ReactNode) => <View style={[styles.page, { paddingTop: insets.top }]}>{bar}{c}</View>
-  if (q.isPending) return frame(<View style={styles.centre}><Meta style={{ color: color.textMuted }}>LOADING…</Meta></View>)
+  if (q.isPending) return frame(<Skeleton lines={4} />)
 
   if (awaiting) {
     return (
@@ -48,7 +48,7 @@ export function FeedbackScreen({ id, onBack }: { id: string; onBack: () => void 
       </View>
     )
   }
-  if (q.isError || !q.data) return frame(<View style={styles.centre}><Body tone="muted">Could not load your feedback.</Body></View>)
+  if (q.isError || !q.data) return frame(<ErrorState title="Could not load your feedback." />)
 
   const s = q.data.scorecard
   return (
@@ -64,14 +64,14 @@ export function FeedbackScreen({ id, onBack }: { id: string; onBack: () => void 
           <Body size="sm" style={{ color: color.info }}>This is for you. Employers never see your scores or this note — only your video resume.</Body>
         </View>
 
-        <View style={styles.scores}>
+        <Card style={styles.scores}>
           {SCORES.map((row, i) => (
-            <View key={row.key} style={[styles.scoreRow, i === 0 ? null : styles.scoreBorder]}>
-              <Body size="base" style={{ flex: 1, color: color.text }}>{row.label}</Body>
-              <Text style={styles.score}>{s.scores[row.key]}<Text style={styles.denom}>/10</Text></Text>
-            </View>
+            <React.Fragment key={row.key}>
+              {i > 0 && <Divider />}
+              <ScoreRow label={row.label} value={s.scores[row.key]} />
+            </React.Fragment>
           ))}
-        </View>
+        </Card>
 
         <Section title="What you did well" body={s.strengths} />
         <Section title="Where to sharpen" body={s.improvements} />
@@ -92,13 +92,12 @@ function Section({ title, body }: { title: string; body: string }) {
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.surface },
-  centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   body: { padding: space.xl, gap: space['2xl'], paddingBottom: space['4xl'] },
-  scores: { borderRadius: radius.lg, borderWidth: borderWidth.thin, borderColor: color.border },
-  scoreRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: space.lg, paddingVertical: space.md, gap: space.lg },
-  scoreBorder: { borderTopWidth: borderWidth.thin, borderTopColor: color.border },
-  score: { fontFamily: fontFamilyNative.display, fontSize: fontSize['display-num'], color: color.text, fontVariant: ['tabular-nums'] },
-  denom: { fontFamily: fontFamilyNative.body, fontSize: fontSize['ui-sm'], color: color.textSubtle },
-  prose: { fontFamily: fontFamilyNative.display, fontSize: fontSize['display-xs'], lineHeight: 27, color: color.text },
+  scores: { padding: space.lg, gap: space.md },
+  // The one long-form serif step (tokens.ts `fontSize.prose` / `leadingNative.prose`),
+  // named for this exact screen (ST-33-delivered). `Display` has no `prose` level to
+  // reuse yet — its `level` union stops at `lg` — so this stays a local styled `Text`
+  // rather than a shared primitive.
+  prose: { fontFamily: fontFamilyNative.display, fontSize: fontSize.prose, lineHeight: leadingNative.prose, color: color.text },
   infoWell: { borderRadius: radius.md, backgroundColor: color.infoSoft, padding: space.md },
 })
