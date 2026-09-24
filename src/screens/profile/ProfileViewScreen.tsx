@@ -1,11 +1,11 @@
 import React, { useState } from 'react'
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native'
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import Svg, { Path } from 'react-native-svg'
 import { api, ApiClientError } from '../../lib/api'
-import { color, space, radius, borderWidth, height } from '../../theme'
-import { AppBar, Banner, Body, Button, Card, Chip, Display, Eyebrow, Figure, Meta, Sheet, VerifiedSeal } from '../../components/ui'
+import { color, space, spaceHalf, radius, borderWidth, height, trackingNative } from '../../theme'
+import { Banner, Body, Button, Card, Chip, Meta, ProgressBar, ScreenHeader, Sheet, Skeleton, VerifiedSeal, text } from '../../components/ui'
 import {
   PersonalStep, EducationStep, ExperienceStep, SkillsStep, PreferencesStep, DocumentsStep,
   type Config, type StepProps,
@@ -63,9 +63,9 @@ export function ProfileViewScreen({ onBack, onBook, onVisibility, onVideos }: {
   const meQ = useQuery({ queryKey: ['me'], queryFn: () => api.get<{ name?: string; city?: string }>('/students/me') })
 
   const frame = (child: React.ReactNode) => (
-    <View style={[styles.page, { paddingTop: insets.top }]}><AppBar title="Your videos" onBack={onBack} action={undefined} />{child}</View>
+    <View style={[styles.page, { paddingTop: insets.top }]}><ScreenHeader onBack={onBack} />{child}</View>
   )
-  if (profileQ.isPending || configQ.isPending) return frame(<View style={styles.centre}><Meta style={{ color: color.textMuted }}>LOADING…</Meta></View>)
+  if (profileQ.isPending || configQ.isPending) return frame(<View style={styles.body}><Skeleton lines={4} /></View>)
   if (profileQ.isError) return frame(<View style={styles.centre}><Body tone="muted">Could not load your profile.</Body></View>)
 
   const p = profileQ.data!, cfg = configQ.data!
@@ -75,11 +75,14 @@ export function ProfileViewScreen({ onBack, onBook, onVisibility, onVideos }: {
 
   return (
     <View style={[styles.page, { paddingTop: insets.top }]}>
-      <AppBar title="Your videos" onBack={onBack} action={<Pressable onPress={onVideos}><Meta style={{ color: color.textMuted }}>VIDEOS</Meta></Pressable>} />
-      <ScrollView contentContainerStyle={styles.body}>
-        <View style={{ gap: space.sm }}>
-          <Eyebrow>Your profile</Eyebrow>
-          <Display level="lg">This is what an employer sees.</Display>
+      <ScreenHeader
+        onBack={onBack}
+        right={<Pressable accessibilityRole="button" onPress={onVideos} hitSlop={space.sm} style={styles.headLink}><Body size="md" weight="semibold" tone="accent">Videos</Body></Pressable>}
+      />
+      <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
+        <View style={styles.titleBlock}>
+          <Text style={[text.metaMd, styles.eyebrow]}>YOUR PROFILE</Text>
+          <Text style={text.displayMd}>This is what an employer sees.</Text>
         </View>
 
         {published ? (
@@ -100,11 +103,13 @@ export function ProfileViewScreen({ onBack, onBook, onVisibility, onVideos }: {
           </Card>
         )}
 
-        <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: space.sm }}>
-          <Figure value={`${p.completion.pct}%`} />
-          <Body size="sm" tone="muted">of your profile is filled in</Body>
-        </View>
-        {firstMissing ? <Meta style={{ color: color.textSubtle }}>Still empty — {firstMissing}.</Meta> : null}
+        <Card style={styles.completion}>
+          <View style={styles.pctRow}>
+            <Text style={[text.meta2xl, styles.pct]}>{`${p.completion.pct}%`}</Text>
+            <Text style={[text.uiSm, styles.muted]}>{firstMissing ? `filled in · still empty: ${firstMissing}` : 'of your profile is filled in'}</Text>
+          </View>
+          <ProgressBar pct={p.completion.pct} tone="accent" thin />
+        </Card>
 
         <Pressable onPress={onVisibility}>
           <Card style={styles.feedRow}>
@@ -138,7 +143,7 @@ export function ProfileViewScreen({ onBack, onBook, onVisibility, onVideos }: {
         <Section title="Experience" onEdit={() => setEditing('experience')}>
           {p.experience.length === 0 ? <Body size="sm" tone="subtle">Nothing added yet.</Body> : p.experience.map((e, i) => (
             <View key={e.id ?? i} style={{ gap: space['2xs'], marginBottom: space.md }}>
-              <Display level="xs">{e.role ?? 'Role'}</Display>
+              <Text style={text.uiBaseSemi}>{e.role ?? 'Role'}</Text>
               <Body size="sm" tone="muted">{[e.company, dateRange(e.from, e.to)].filter(Boolean).join(' · ')}</Body>
               {e.description ? <Body size="sm" tone="muted" style={{ marginTop: space['2xs'] }}>{e.description}</Body> : null}
             </View>
@@ -223,10 +228,9 @@ function Section({ title, onEdit, children }: { title: string; onEdit: () => voi
   return (
     <View style={styles.section}>
       <View style={styles.sectionHead}>
-        <Eyebrow>{title}</Eyebrow>
-        <Pressable onPress={onEdit} style={styles.editBtn} hitSlop={8}>
-          <Svg width={14} height={14} viewBox="0 0 24 24" fill="none"><Path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" stroke={color.textMuted} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" /></Svg>
-          <Meta style={{ color: color.textMuted }}>EDIT</Meta>
+        <Text style={[text.metaMd, styles.eyebrow]}>{title.toUpperCase()}</Text>
+        <Pressable accessibilityRole="button" onPress={onEdit} style={styles.editBtn} hitSlop={space.sm}>
+          <Text style={[text.uiSmSemi, styles.editText]}>Edit</Text>
         </Pressable>
       </View>
       {children}
@@ -275,18 +279,26 @@ function salary(min?: number, max?: number): string | undefined {
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: color.surface },
+  page: { flex: 1, backgroundColor: color.background },
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  body: { padding: space.xl, gap: space.xl, paddingBottom: space['4xl'] },
+  body: { paddingHorizontal: space.lg, paddingTop: space.xs, gap: spaceHalf['2.5'], paddingBottom: space.xl },
+  headLink: { height: height.tap, justifyContent: 'center', paddingRight: space.md },
+  titleBlock: { gap: space.xs, paddingHorizontal: space.xs, paddingBottom: space.xs },
+  eyebrow: { color: color.textMuted, letterSpacing: trackingNative.eyebrow },
+  muted: { color: color.textMuted },
+  completion: { paddingHorizontal: spaceHalf['3.5'], paddingVertical: space.md, gap: space.sm },
+  pctRow: { flexDirection: 'row', alignItems: 'baseline', gap: space.sm },
+  pct: { color: color.successFill },
+  editText: { color: color.accent },
   card: { padding: space.lg },
   // Sunken well, not the bordered Card default — the same override the booking
   // detail screen's `well` and the shared `CompletionCard`/`NextAction` make on
   // top of the shared `Card` surface.
   wellCard: { borderWidth: 0, backgroundColor: color.surfaceMuted, padding: space.lg },
   feedRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.lg },
-  section: { gap: space.md, borderTopWidth: borderWidth.thin, borderTopColor: color.border, paddingTop: space.lg },
+  section: { gap: spaceHalf['2.5'], backgroundColor: color.surface, borderWidth: borderWidth.thin, borderColor: color.border, borderRadius: radius.lg, padding: spaceHalf['3.5'] },
   sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  editBtn: { flexDirection: 'row', alignItems: 'center', gap: space.xs, minHeight: height.chip },
+  editBtn: { minHeight: height.chip, justifyContent: 'center' },
   kv: { gap: space['2xs'], marginBottom: space.sm },
   doc: { flexDirection: 'row', alignItems: 'center', gap: space.sm, borderRadius: radius.md, backgroundColor: color.surfaceMuted, padding: space.md, marginTop: space.xs },
 })

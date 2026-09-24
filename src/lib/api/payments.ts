@@ -44,3 +44,38 @@ export const getPaymentStatus = (paymentId: string) =>
  */
 export const mockSettle = (paymentId?: string) =>
   api.post<{ success: boolean; paymentId: string }>('/payments/mock-settle', paymentId ? { paymentId } : {})
+
+/** One settled payment and, once issued, its numbered GST receipt. */
+export interface PaymentRow {
+  id: string
+  status: 'SUCCESS' | 'REFUNDED'
+  tier: string
+  amountPaise: number
+  method: string | null
+  gatewayPaymentId: string | null
+  paidAt: string | null
+  createdAt: string
+  receipt: {
+    id: string
+    number: string
+    breakdown: { basePaise: number; gstPaise: number; totalPaise: number; ratePct: number }
+    issuedAt: string
+    /** A signed PDF link good for about fifteen minutes; null until the PDF exists. */
+    url: string | null
+  } | null
+}
+
+/** ST-25/ST-26 — the student's own payments, newest first. */
+export const listPayments = () => api.get<{ payments: PaymentRow[] }>('/payments')
+
+/**
+ * DEV ONLY — stand in for the Razorpay webhook, which cannot reach a server on
+ * a laptop. Called after the gateway reports a captured payment, exactly as the
+ * web does (apostrophe-user app/pay/usePayment.ts `devSettle`). In a release
+ * build this is a no-op: the real webhook settles, and /status reports it.
+ * A failure is swallowed — the Confirming screen's poll and timeout take over.
+ */
+export async function settleInDev(paymentId: string): Promise<void> {
+  if (!__DEV__) return
+  try { await mockSettle(paymentId) } catch { /* the poll will time out and show support */ }
+}

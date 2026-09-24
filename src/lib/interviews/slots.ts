@@ -34,6 +34,9 @@ function ist(iso: string | Date) {
 
 const pad = (n: number) => String(n).padStart(2, '0')
 
+/** The IST hour of day, 0–23 — what a slot's Morning / Afternoon / Evening group is decided by. */
+export const istHour = (iso: string): number => ist(iso).h
+
 /** The IST calendar day, as a stable YYYY-MM-DD key for grouping. */
 export function istDayKey(iso: string): string {
   const p = ist(iso)
@@ -90,9 +93,12 @@ export function groupByDay(slots: CapacitySlot[]): DaySlots[] {
 }
 
 /** The whole window in one call: [now + 12h, now + 21d], as ISO bounds capacity wants. */
-export function bookingWindow(now = new Date()): { fromIso: string; untilIso: string } {
-  const from = new Date(now.getTime() + 12 * 60 * 60 * 1000)
-  const until = new Date(now.getTime() + 21 * 24 * 60 * 60 * 1000)
+export function bookingWindow(
+  rules: { windowMinHours: number; windowMaxDays: number },
+  now = new Date(),
+): { fromIso: string; untilIso: string } {
+  const from = new Date(now.getTime() + rules.windowMinHours * 60 * 60 * 1000)
+  const until = new Date(now.getTime() + rules.windowMaxDays * 24 * 60 * 60 * 1000)
   from.setUTCMilliseconds(0)
   until.setUTCMilliseconds(0)
   return { fromIso: from.toISOString(), untilIso: until.toISOString() }

@@ -5,8 +5,8 @@ import { useQuery } from '@tanstack/react-query'
 import { ApiClientError } from '../../lib/api'
 import { getFeedback, type Feedback } from '../../lib/api/interviews'
 import { fmtStampZone } from '../../lib/chat/format'
-import { color, space, radius, fontFamilyNative, fontSize, leadingNative } from '../../theme'
-import { AppBar, Body, Button, Card, Display, Divider, ErrorState, Eyebrow, ScoreRow, Skeleton } from '../../components/ui'
+import { color, space, spaceHalf, radius, trackingNative } from '../../theme'
+import { Body, Button, Card, ErrorState, Eyebrow, InkCard, ScoreRow, ScreenHeader, Skeleton, text } from '../../components/ui'
 
 const SCORES: { key: keyof Feedback['scorecard']['scores']; label: string }[] = [
   { key: 'communication', label: 'Communication' },
@@ -31,73 +31,81 @@ export function FeedbackScreen({ id, onBack }: { id: string; onBack: () => void 
   })
   const awaiting = q.error instanceof ApiClientError && q.error.status === 404
 
-  const bar = <AppBar onBack={onBack} />
-  const frame = (c: React.ReactNode) => <View style={[styles.page, { paddingTop: insets.top }]}>{bar}{c}</View>
-  if (q.isPending) return frame(<Skeleton lines={4} />)
+  const frame = (c: React.ReactNode, subtitle?: string) => (
+    <View style={[styles.page, { paddingTop: insets.top }]}>
+      <ScreenHeader title="Your scorecard" subtitle={subtitle} onBack={onBack} />
+      {c}
+    </View>
+  )
+  if (q.isPending) return frame(<View style={styles.body}><Skeleton lines={4} /></View>)
 
   if (awaiting) {
-    return (
-      <View style={[styles.page, { paddingTop: insets.top }]}>
-        {bar}
-        <View style={[styles.body, { flex: 1, justifyContent: 'center' }]}>
-          <Eyebrow>Feedback</Eyebrow>
-          <Display level="lg">Your feedback is on its way.</Display>
-          <Body size="base" tone="muted">Your interviewer writes it up after the session. It usually lands within a day of your interview — we&rsquo;ll notify you the moment it does.</Body>
-          <View style={{ marginTop: space.md }}><Button variant="outline" size="md" label="Back to my interviews" onPress={onBack} /></View>
-        </View>
-      </View>
+    return frame(
+      <View style={[styles.body, styles.centred]}>
+        <Eyebrow tone="accent">Feedback</Eyebrow>
+        <Text style={text.displayLead}>Your feedback is on its way.</Text>
+        <Body size="base" tone="muted">Your interviewer writes it up after the session. It usually lands within a day of your interview — we&rsquo;ll notify you the moment it does.</Body>
+        <View style={styles.awaitAction}><Button variant="outline" size="md" label="Back to my interviews" onPress={onBack} /></View>
+      </View>,
     )
   }
-  if (q.isError || !q.data) return frame(<ErrorState title="Could not load your feedback." />)
+  if (q.isError || !q.data) return frame(<View style={styles.centred}><ErrorState title="Could not load your feedback." body="Nothing was changed. Try again in a moment." /></View>)
 
   const s = q.data.scorecard
-  return (
-    <View style={[styles.page, { paddingTop: insets.top }]}>
-      {bar}
-      <ScrollView contentContainerStyle={styles.body}>
-        <View style={{ gap: space.sm }}>
-          <Eyebrow>{`Feedback · ${fmtStampZone(q.data.slotStart)}`}</Eyebrow>
-          <Display level="lg">How it went</Display>
+  return frame(
+    <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
+      <InkCard style={styles.hero}>
+        <View style={styles.heroScore}>
+          <Text style={text.displayScore}>{s.scores.overall}</Text>
+          <Text style={[text.uiMd, styles.outOf]}>/10</Text>
         </View>
-
-        <View style={styles.infoWell}>
-          <Body size="sm" style={{ color: color.info }}>This is for you. Employers never see your scores or this note — only your video resume.</Body>
+        <View style={styles.heroText}>
+          <Text style={[text.metaSm, styles.heroEyebrow]}>OVERALL SCORE</Text>
+          <Text style={[text.uiSm, styles.heroBody]}>From your interviewer, out of ten.</Text>
         </View>
+      </InkCard>
 
-        <Card style={styles.scores}>
-          {SCORES.map((row, i) => (
-            <React.Fragment key={row.key}>
-              {i > 0 && <Divider />}
-              <ScoreRow label={row.label} value={s.scores[row.key]} />
-            </React.Fragment>
-          ))}
-        </Card>
+      <View style={styles.private}>
+        <Text style={[text.metaSm, styles.privateTag]}>PRIVATE</Text>
+        <Text style={[text.uiXs, styles.privateText]}>Employers never see your scores or this note — only your video resume.</Text>
+      </View>
 
-        <Section title="What you did well" body={s.strengths} />
-        <Section title="Where to sharpen" body={s.improvements} />
+      <Card style={styles.scores}>
+        {SCORES.filter((r) => r.key !== 'overall').map((row) => (
+          <ScoreRow key={row.key} label={row.label} value={s.scores[row.key]} />
+        ))}
+      </Card>
 
-      </ScrollView>
-    </View>
+      <Section tone="good" title="↑ Did well" body={s.strengths} />
+      <Section tone="warn" title="→ Sharpen" body={s.improvements} />
+    </ScrollView>,
+    fmtStampZone(q.data.slotStart),
   )
 }
 
-function Section({ title, body }: { title: string; body: string }) {
+function Section({ title, body, tone }: { title: string; body: string; tone: 'good' | 'warn' }) {
   return (
-    <View style={{ gap: space.sm }}>
-      <Display level="xs">{title}</Display>
-      <Text style={styles.prose}>{body}</Text>
-    </View>
+    <Card style={styles.section}>
+      <Text style={[text.uiSmSemi, { color: tone === 'good' ? color.success : color.warning }]}>{title}</Text>
+      <Text style={text.uiMd}>{body}</Text>
+    </Card>
   )
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: color.surface },
-  body: { padding: space.xl, gap: space['2xl'], paddingBottom: space['4xl'] },
-  scores: { padding: space.lg, gap: space.md },
-  // The one long-form serif step (tokens.ts `fontSize.prose` / `leadingNative.prose`),
-  // named for this exact screen (ST-33-delivered). `Display` has no `prose` level to
-  // reuse yet — its `level` union stops at `lg` — so this stays a local styled `Text`
-  // rather than a shared primitive.
-  prose: { fontFamily: fontFamilyNative.display, fontSize: fontSize.prose, lineHeight: leadingNative.prose, color: color.text },
-  infoWell: { borderRadius: radius.md, backgroundColor: color.infoSoft, padding: space.md },
+  page: { flex: 1, backgroundColor: color.background },
+  body: { paddingHorizontal: space.lg, paddingTop: space.xs, gap: space.md, paddingBottom: space.xl },
+  centred: { flex: 1, justifyContent: 'center', paddingHorizontal: space.xl, gap: space.md },
+  awaitAction: { marginTop: space.md, alignItems: 'flex-start' },
+  hero: { flexDirection: 'row', alignItems: 'center', gap: spaceHalf['4.5'] },
+  heroScore: { flexDirection: 'row', alignItems: 'baseline', gap: space.xs },
+  outOf: { color: color.textOnInkSubtle },
+  heroText: { flex: 1, gap: space.xs },
+  heroEyebrow: { color: color.accentMuted, letterSpacing: trackingNative.eyebrow },
+  heroBody: { color: color.textOnInkSoft },
+  private: { flexDirection: 'row', alignItems: 'center', gap: spaceHalf['2.5'], paddingVertical: spaceHalf['2.5'], paddingHorizontal: space.md, borderRadius: radius.tile, backgroundColor: color.successSoft },
+  privateTag: { color: color.textInverse, backgroundColor: color.successFill, paddingHorizontal: spaceHalf['1.5'], paddingVertical: space['2xs'], borderRadius: radius.sm, overflow: 'hidden' },
+  privateText: { flex: 1, color: color.success },
+  scores: { paddingHorizontal: spaceHalf['3.5'], paddingVertical: space.sm },
+  section: { padding: space.md, gap: space.xs, borderRadius: radius.panel },
 })

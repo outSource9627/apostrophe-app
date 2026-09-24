@@ -9,21 +9,20 @@ import {
   View,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Logo } from '../components/Logo'
 import { Field, Input } from '../components/ui/fields'
-import { Chip } from '../components/ui/controls'
-import { Body, Display, Eyebrow } from '../components/ui/Type'
+import { Body } from '../components/ui/Type'
 import { Button } from '../components/ui/Button'
 import { GoogleButton } from '../components/ui/GoogleButton'
+import { BrandMark, OptionTile, PhoneInput, text } from '../components/ui'
 import { api } from '../lib/api'
 import { ApiClientError } from '../lib/api/types'
 import {
   borderWidth,
   color,
-  fontSize,
   height,
-  radius,
   space,
+  spaceHalf,
+  trackingNative,
 } from '../theme'
 
 export interface RegistrationData {
@@ -134,37 +133,34 @@ export function CreateAccountScreen({ onSignIn, onOtpSent }: Props) {
     }
   }
 
+  const canSend = !(
+    pending ||
+    form.mobile.length !== 10 ||
+    !form.name.trim() ||
+    !form.city.trim()
+  )
+
   return (
     <KeyboardAvoidingView
-      style={styles.root}
+      style={[styles.root, { paddingTop: insets.top }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      {/* ── App bar (52px) ─────────────────────────────────────────────── */}
-      <View style={[styles.appBar, { paddingTop: insets.top }]}>
-        <Logo size={20} />
-        <Pressable onPress={onSignIn} hitSlop={12} style={styles.appBarAction}>
-          <Body size="sm" tone="muted">Sign in</Body>
+      <View style={styles.appBar}>
+        <BrandMark />
+        <Pressable onPress={onSignIn} hitSlop={space.md} style={styles.appBarAction}>
+          <Body size="md" weight="semibold" tone="accent">Sign in</Body>
         </Pressable>
       </View>
 
-      <ScrollView
-        contentContainerStyle={[
-          styles.scroll,
-          { paddingBottom: insets.bottom + space.xl },
-        ]}
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* Title */}
+      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
-          <Eyebrow>CREATE YOUR ACCOUNT</Eyebrow>
-          <Display level="lg">
-            Five things, and <Text style={styles.headlineMuted}>we’re off.</Text>
-          </Display>
+          <Text style={[text.metaMd, styles.eyebrow]}>CREATE YOUR ACCOUNT</Text>
+          <Text style={text.displayGreet}>
+            Five things,{'\n'}and <Text style={styles.headlineAccent}>we’re off.</Text>
+          </Text>
         </View>
 
-        {/* Form */}
         <View style={styles.form}>
-          {/* 1 · Full name */}
           <Field label="Full name">
             <Input
               value={form.name}
@@ -175,26 +171,13 @@ export function CreateAccountScreen({ onSignIn, onOtpSent }: Props) {
             />
           </Field>
 
-          {/* 2 · Mobile */}
-          <View style={styles.fieldBlock}>
-            <Eyebrow>Mobile</Eyebrow>
-            <View
-              style={[
-                styles.mobileControl,
-                isMobileRegistered && styles.controlInvalid,
-              ]}
-            >
-              <Body size="base" tone="subtle">+91</Body>
-              <View style={styles.mobileDivider} />
-              <Input
-                value={form.mobile}
-                onChangeText={(v) => setField('mobile')(v.replace(/\D/g, '').slice(0, 10))}
-                keyboardType="number-pad"
-                placeholder="98765 43210"
-                editable={!pending}
-                style={styles.mobileInput}
-              />
-            </View>
+          <Field label="Mobile">
+            <PhoneInput
+              value={form.mobile}
+              onChangeText={setField('mobile')}
+              editable={!pending}
+              invalid={isMobileRegistered}
+            />
             {isMobileRegistered && (
               <Body size="xs" tone="danger">
                 This mobile number is already registered.{' '}
@@ -203,13 +186,9 @@ export function CreateAccountScreen({ onSignIn, onOtpSent }: Props) {
                 </Body>
               </Body>
             )}
-          </View>
+          </Field>
 
-          {/* 3 · Email */}
-          <Field
-            label="Email"
-            helper="We’ll email a verification link. It won’t hold you up."
-          >
+          <Field label="Email" helper="We’ll email a verification link. It won’t hold you up.">
             <Input
               value={form.email}
               onChangeText={setField('email')}
@@ -220,7 +199,6 @@ export function CreateAccountScreen({ onSignIn, onOtpSent }: Props) {
             />
           </Field>
 
-          {/* 4 · City */}
           <Field label="City">
             <Input
               value={form.city}
@@ -230,147 +208,76 @@ export function CreateAccountScreen({ onSignIn, onOtpSent }: Props) {
             />
           </Field>
 
-          {/* 5 · Highest qualification */}
-          <View style={styles.fieldBlock}>
+          <View style={styles.qual}>
             <View style={styles.qualHeader}>
-              <Eyebrow>Highest qualification</Eyebrow>
-              <Display level="md">
+              <Text style={text.uiSmSemi}>Highest qualification</Text>
+              <Text style={text.displayXs}>
                 {selectedTier.price}
-                <Text style={styles.qualDuration}> / {selectedTier.duration}</Text>
-              </Display>
+                <Text style={[text.uiSm, styles.qualDuration]}> / {selectedTier.duration}</Text>
+              </Text>
             </View>
-
-            <View style={styles.chips}>
+            <View style={styles.grid}>
               {prices.map((q) => (
-                <Chip
-                  key={q.value}
-                  label={q.label}
-                  selected={form.qualification === q.value}
-                  onPress={() => {
-                    if (pending) return
-                    setField('qualification')(q.value)
-                  }}
-                />
+                <View key={q.value} style={styles.gridCell}>
+                  <OptionTile
+                    label={q.label}
+                    selected={form.qualification === q.value}
+                    disabled={pending}
+                    onPress={() => setField('qualification')(q.value)}
+                  />
+                </View>
               ))}
             </View>
-            <Body size="xs" tone="subtle">
-              This sets your interview length and what it costs.
-            </Body>
+            <Body size="xs" tone="muted">This sets your interview length and what it costs.</Body>
           </View>
 
-          {!!error && !isMobileRegistered && (
-            <Body size="sm" tone="danger">{error}</Body>
-          )}
+          {!!error && !isMobileRegistered && <Body size="sm" tone="danger">{error}</Body>}
 
-          {/* ── Actions (Lower third) ────────────────────────────────────────── */}
-          <View style={styles.actions}>
-            <Button
-              label={pending ? 'Sending verification code…' : 'Send verification code'}
-              variant="primary"
-              size="lg"
-              full
-              disabled={
-                pending ||
-                form.mobile.length !== 10 ||
-                !form.name.trim() ||
-                !form.city.trim()
-              }
-              busy={pending}
-              onPress={handleSendCode}
-            />
-
-            <GoogleButton disabled={pending} />
-          </View>
+          <GoogleButton disabled={pending} />
         </View>
       </ScrollView>
+
+      <View style={[styles.footer, { paddingBottom: space.md + insets.bottom }]}>
+        <Button
+          label={pending ? 'Sending verification code…' : 'Continue · verify mobile'}
+          variant="primary"
+          size="lg"
+          full
+          disabled={!canSend}
+          busy={pending}
+          onPress={handleSendCode}
+        />
+      </View>
     </KeyboardAvoidingView>
   )
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: color.background,
-  },
+  root: { flex: 1, backgroundColor: color.background },
   appBar: {
-    height: height['app-bar'],
+    height: height['screen-header'],
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: space.xl,
-    backgroundColor: color.surface,
   },
-  appBarAction: {
-    height: height.tap,
-    justifyContent: 'center',
-    paddingHorizontal: space.md,
-    marginRight: -space.md,
-  },
-  scroll: {
+  appBarAction: { height: height.tap, justifyContent: 'center' },
+  scroll: { paddingHorizontal: space.xl, paddingTop: space.xs, paddingBottom: space.xl, gap: spaceHalf['3.5'] },
+  header: { gap: space.sm },
+  eyebrow: { color: color.textMuted, letterSpacing: trackingNative.eyebrow },
+  headlineAccent: { color: color.accent },
+  form: { gap: spaceHalf['3.5'] },
+  qual: { gap: spaceHalf['1.5'] },
+  qualHeader: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: space.md },
+  qualDuration: { color: color.textMuted },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
+  gridCell: { width: '48.5%' },
+  link: { textDecorationLine: 'underline' },
+  footer: {
     paddingHorizontal: space.xl,
-    paddingTop: space.md,
-  },
-  header: {
-    gap: space.sm,
-    marginBottom: space.lg,
-  },
-  headlineMuted: {
-    color: color.textMuted,
-    fontStyle: 'italic',
-  },
-  form: {
-    gap: space.md,
-  },
-  fieldBlock: {
-    gap: space.sm,
-  },
-  mobileControl: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    height: height.control,
-    borderRadius: radius.md,
-    borderWidth: borderWidth.thin,
-    borderColor: color.borderStrong,
+    paddingTop: spaceHalf['3.5'],
     backgroundColor: color.surface,
-    paddingHorizontal: space.lg,
-    gap: space.md,
-  },
-  controlInvalid: {
-    borderColor: color.danger,
-    backgroundColor: color.dangerSoft,
-  },
-  mobileDivider: {
-    width: borderWidth.thin,
-    height: space.xl,
-    backgroundColor: color.border,
-  },
-  mobileInput: {
-    flex: 1,
-    height: height.control,
-    borderWidth: 0,
-    paddingHorizontal: 0,
-    backgroundColor: 'transparent',
-  },
-  qualHeader: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    justifyContent: 'space-between',
-    gap: space.md,
-  },
-  qualDuration: {
-    fontSize: fontSize['display-sm'],
-    color: color.textMuted,
-  },
-  chips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: space.sm,
-  },
-  link: {
-    textDecorationLine: 'underline',
-  },
-  actions: {
-    marginTop: space.xl,
-    gap: space.md,
+    borderTopWidth: borderWidth.thin,
+    borderTopColor: color.border,
   },
 })

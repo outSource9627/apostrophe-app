@@ -56,3 +56,7 @@ export { GoogleButton } from './GoogleButton'
 
 // The job feed — student app only
 export { SwipeCard, SwipeActions } from './SwipeCard'
+
+// The Student app's shell — top bar, credit chip, ink card, floating action
+export { MenuGroup, MenuRow, StickyFooter, StepBars, PhoneInput, OptionTile, ScreenHeader, TabTitle, BrandMark, Avatar, CreditChip, AppHeader, InkCard, InkPill, InkButton, FilmThumb, Fab } from './student'
+export { JobsHeader, PipelineDots, JobDeckCard, DeckStamp, DeckActions, UndoToast } from './student-jobs'

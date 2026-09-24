@@ -2,13 +2,13 @@ import React, { useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ApiClientError } from '../../lib/api'
+import { api, ApiClientError } from '../../lib/api'
 import { getInterests, respondToInterest, type InterestRow } from '../../lib/api/chat'
 import { fmtDayMon, fmtDayMonthLong, interestClock } from '../../lib/chat/format'
 import { employmentLabel } from '../../lib/jobs/format'
 import type { EmploymentType } from '../../lib/api/jobs'
-import { color, space, radius, borderWidth } from '../../theme'
-import { AppBar, Body, Button, Card, Display, Eyebrow, Meta, StatusPill } from '../../components/ui'
+import { color, space, spaceHalf, radius, borderWidth } from '../../theme'
+import { Body, Button, Card, Display, Eyebrow, Meta, StatusPill, TabTitle, Skeleton } from '../../components/ui'
 import type { Tone } from '../../components/ui/status'
 import { CompanyMark, InterestClock } from './parts'
 
@@ -21,13 +21,17 @@ import { CompanyMark, InterestClock } from './parts'
  * card; Decline is the outline variant. There is no message affordance on a
  * pending, declined or expired Interest.
  */
-export function InterestsScreen({ onBack, onConnections, onVideoResume }: {
-  onBack: () => void; onConnections: () => void; onVideoResume: () => void
+export function InterestsScreen({ onConnections, onVideoResume }: {
+  onBack?: () => void; onConnections: () => void; onVideoResume: () => void
 }) {
   const insets = useSafeAreaInsets()
   const qc = useQueryClient()
   const [now] = useState(() => Date.now())
   const q = useQuery({ queryKey: ['interests'], queryFn: () => getInterests() })
+  const cfg = useQuery({ queryKey: ['config'], queryFn: () => api.get<{ employer?: { interest?: { cooldownDays?: number; expiryDays?: number } } }>('/config') })
+  // Admin settings; 0 or absent means "not stated", so the sentence that would quote it drops the number.
+  const cooldownDays = cfg.data?.employer?.interest?.cooldownDays || undefined
+  const expiryDays = cfg.data?.employer?.interest?.expiryDays || undefined
   const respond = useMutation({
     mutationFn: ({ id, response }: { id: string; response: 'ACCEPT' | 'DECLINE' }) => respondToInterest(id, response),
     // NOT IDEMPOTENT — a 404 after a timeout means it probably landed. Refetch either way.
@@ -36,11 +40,13 @@ export function InterestsScreen({ onBack, onConnections, onVideoResume }: {
   })
 
   const bar = (
-    <AppBar title="Home" onBack={onBack}
-      action={<Pressable onPress={onConnections} hitSlop={8}><Body size="sm" weight="medium" style={{ color: color.text }}>Connections</Body></Pressable>} />
+    <TabTitle
+      title="Interests"
+      right={<Pressable accessibilityRole="button" onPress={onConnections} hitSlop={8}><Body size="md" weight="semibold" tone="accent">Connections</Body></Pressable>}
+    />
   )
   const frame = (c: React.ReactNode) => <View style={[styles.page, { paddingTop: insets.top }]}>{bar}{c}</View>
-  if (q.isPending) return frame(<View style={styles.centre}><Meta style={{ color: color.textMuted }}>LOADING…</Meta></View>)
+  if (q.isPending) return frame(<View style={styles.loading}><Skeleton lines={3} /></View>)
   if (q.isError) return frame(<View style={styles.centre}><Body tone="muted">Could not load your Interests.</Body></View>)
 
   const rows = q.data!
@@ -57,11 +63,8 @@ export function InterestsScreen({ onBack, onConnections, onVideoResume }: {
   return (
     <View style={[styles.page, { paddingTop: insets.top }]}>
       {bar}
-      <ScrollView contentContainerStyle={styles.body}>
-        <View style={{ gap: space.sm }}>
-          <Eyebrow>{`${pending.length} awaiting your answer · ${closed.length} closed`}</Eyebrow>
-          <Display level="lg">Interests</Display>
-        </View>
+      <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
+        <Eyebrow>{`${pending.length} awaiting your answer · ${closed.length} closed`}</Eyebrow>
 
         {pending.length > 0 ? (
           pending.map((r) => (
@@ -72,15 +75,15 @@ export function InterestsScreen({ onBack, onConnections, onVideoResume }: {
         ) : (
           <View style={{ gap: space.lg }}>
             <ExpiredEmpty onVideoResume={onVideoResume} />
-            {topLapsed && <LapsedCard row={topLapsed} />}
-            <Meta style={{ color: color.textSubtle }}>An interest lapses 14 days after it is sent · nothing is ever removed from this list</Meta>
+            {topLapsed && <LapsedCard row={topLapsed} cooldownDays={cooldownDays} />}
+            <Meta style={{ color: color.textSubtle }}>{`${expiryDays ? `An interest lapses ${expiryDays} days after it is sent · ` : ''}nothing is ever removed from this list`}</Meta>
           </View>
         )}
 
         {closedRest.length > 0 && (
           <View style={styles.closedGroup}>
             <Eyebrow>{`${topLapsed ? 'The rest of the closed list' : 'Further down the list · closed'} · ${closedRest.length}`}</Eyebrow>
-            <View>{closedRest.map((r, i) => <ClosedRow key={r.id} row={r} first={i === 0} />)}</View>
+            <View style={styles.closedCard}>{closedRest.map((r, i) => <ClosedRow key={r.id} row={r} first={i === 0} />)}</View>
           </View>
         )}
       </ScrollView>
@@ -96,7 +99,7 @@ function PendingCard({ row, now, busy, onAccept, onDecline }: {
     <Card style={styles.card}>
       <View style={styles.cardHead}>
         <CompanyMark name={c?.name} size={44} />
-        <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
+        <View style={{ flex: 1, minWidth: 0, gap: space['2xs'] }}>
           <Display level="sm">{c?.name ?? 'A company'}</Display>
           {!!c && <Meta style={{ color: color.textSubtle }}>{[c.industry, c.size, c.officeLocation].filter(Boolean).join(' · ')}</Meta>}
         </View>
@@ -157,8 +160,6 @@ function ClosedRow({ row, first }: { row: InterestRow; first: boolean }) {
   )
 }
 
-const COOLDOWN_DAYS = 30 // employer.interestCooldownDays — for the 'may not write until' line
-
 function ExpiredEmpty({ onVideoResume }: { onVideoResume: () => void }) {
   return (
     <Card style={styles.emptyCard}>
@@ -170,14 +171,14 @@ function ExpiredEmpty({ onVideoResume }: { onVideoResume: () => void }) {
 }
 
 /** The most-recently-lapsed Interest, INTACT but drained — buttons gone, clock replaced by an expired mark, cooldown stated. */
-function LapsedCard({ row }: { row: InterestRow }) {
+function LapsedCard({ row, cooldownDays }: { row: InterestRow; cooldownDays?: number }) {
   const c = row.company
-  const cooldown = new Date(+new Date(row.sentAt) + COOLDOWN_DAYS * 86_400_000).toISOString()
+  const cooldown = cooldownDays ? new Date(+new Date(row.sentAt) + cooldownDays * 86_400_000).toISOString() : null
   return (
     <Card style={styles.card}>
       <View style={styles.cardHead}>
         <CompanyMark name={c?.name} size={44} />
-        <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
+        <View style={{ flex: 1, minWidth: 0, gap: space['2xs'] }}>
           <Display level="sm" style={{ color: color.textMuted }}>{c?.name ?? 'A company'}</Display>
           {!!c && <Meta style={{ color: color.textSubtle }}>{[c.industry, c.size, c.officeLocation].filter(Boolean).join(' · ')}</Meta>}
         </View>
@@ -196,22 +197,24 @@ function LapsedCard({ row }: { row: InterestRow }) {
         <StatusPill tone="neutral" label={`Expired ${fmtDayMon(row.respondedAt ?? row.expiresAt)}`} />
         <Meta style={{ color: color.textSubtle }}>{`sent ${fmtDayMon(row.sentAt)}`}</Meta>
       </View>
-      <Body size="xs" tone="muted">{`${c?.name ?? 'They'} was not told. Their list shows only that it was not accepted — a lapse and a decline are the same thing from their side — and they may not write to you again until ${fmtDayMonthLong(cooldown)}.`}</Body>
+      <Body size="xs" tone="muted">{`${c?.name ?? 'They'} was not told. Their list shows only that it was not accepted — a lapse and a decline are the same thing from their side — ${cooldown ? ` and they may not write to you again until ${fmtDayMonthLong(cooldown)}` : ''}.`}</Body>
     </Card>
   )
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: color.surface },
+  page: { flex: 1, backgroundColor: color.background },
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  body: { padding: space.xl, gap: space.lg, paddingBottom: space['4xl'] },
+  loading: { padding: space.xl },
+  body: { paddingHorizontal: space.lg, paddingTop: space.xs, gap: space.md, paddingBottom: space.xl },
   card: { padding: space.lg, gap: space.md },
   cardHead: { flexDirection: 'row', alignItems: 'center', gap: space.md },
-  roleWell: { borderRadius: radius.md, backgroundColor: color.surfaceMuted, paddingHorizontal: space.md, paddingVertical: 10, gap: 2 },
+  roleWell: { borderRadius: radius.tile, backgroundColor: color.surfaceMuted, paddingHorizontal: space.md, paddingVertical: spaceHalf['2.5'], gap: space['2xs'] },
   cardActions: { flexDirection: 'row', gap: space.sm },
-  closedGroup: { gap: space.lg, borderTopWidth: borderWidth.thin, borderTopColor: color.border, paddingTop: space.lg },
+  closedGroup: { gap: space.sm, paddingTop: space.sm },
+  closedCard: { backgroundColor: color.surface, borderRadius: radius.lg, borderWidth: borderWidth.thin, borderColor: color.border, paddingHorizontal: spaceHalf['3.5'] },
   closedRow: { flexDirection: 'row', alignItems: 'flex-start', gap: space.md, paddingVertical: space.md },
-  closedRowBorder: { borderTopWidth: borderWidth.thin, borderTopColor: color.border },
+  closedRowBorder: { borderTopWidth: borderWidth.thin, borderTopColor: color.borderSoft },
   rowTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.md },
   emptyCard: { padding: space.xl },
 })

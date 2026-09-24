@@ -8,8 +8,8 @@ import {
   type DataExportRow, type DeletionRequest, type Me,
 } from '../../lib/api/account'
 import { fmtISODate, fmtStampFull } from '../../lib/chat/format'
-import { color, space } from '../../theme'
-import { AppBar, Body, Button, Card, Display, Eyebrow, Meta, Sheet, StatusDot, StatusPill } from '../../components/ui'
+import { color, height, space } from '../../theme'
+import { Body, Button, Card, Display, Eyebrow, Meta, Sheet, StatusDot, StatusPill, Skeleton, ScreenHeader, ErrorState } from '../../components/ui'
 
 const fmtDate = (iso: string) => fmtStampFull(iso).replace(/,.*$/, '')
 const fmtSize = (b?: number) => (b ? (b >= 1024 * 1024 ? `${(b / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`) : '')
@@ -37,10 +37,10 @@ export function DataRightsScreen({ onBack }: { onBack: () => void }) {
   const deleteMut = useMutation({ mutationFn: (confirm: string) => requestDeletion(confirm), onSettled: () => { setConfirmOpen(false); invalidate() } })
   const cancelMut = useMutation({ mutationFn: () => cancelDeletion(), onSettled: invalidate })
 
-  const bar = <AppBar onBack={onBack} />
+  const bar = <ScreenHeader title="Your data" subtitle="Export a copy, or delete your account" onBack={onBack} />
   const frame = (c: React.ReactNode) => <View style={[styles.page, { paddingTop: insets.top }]}>{bar}{c}</View>
-  if (q.isPending) return frame(<View style={styles.centre}><Meta style={{ color: color.textMuted }}>LOADING…</Meta></View>)
-  if (q.isError) return frame(<View style={styles.centre}><Body tone="muted">Could not load your data settings.</Body></View>)
+  if (q.isPending) return frame(<View style={styles.loading}><Skeleton lines={3} /></View>)
+  if (q.isError) return frame(<View style={styles.centre}><ErrorState title="Could not load your data settings." body="Nothing was changed. Try again in a moment." /></View>)
 
   const { me, exports, deletion } = q.data!
   const pendingExport = exports.find((e) => e.status === 'PENDING')
@@ -51,8 +51,7 @@ export function DataRightsScreen({ onBack }: { onBack: () => void }) {
   return (
     <View style={[styles.page, { paddingTop: insets.top }]}>
       {bar}
-      <ScrollView contentContainerStyle={styles.body}>
-        <Display level="lg">Your data</Display>
+      <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
 
         {/* Export */}
         <View style={{ gap: space.md }}>
@@ -90,14 +89,14 @@ export function DataRightsScreen({ onBack }: { onBack: () => void }) {
           {pendingDeletion ? (
             <PendingDeletion request={pendingDeletion} busy={cancelMut.isPending} onCancel={() => cancelMut.mutate()} />
           ) : (
-            <View style={{ gap: space.md }}>
+            <Card style={[styles.cardPad, { gap: space.md }]}>
               <Display level="xs">Deleting is permanent. We finish it within thirty days.</Display>
               <Split label="Immediately" body="Your profile leaves every employer feed. Nobody new can find you." />
               <Split label="Within thirty days" body="Both recordings are purged — the raw interview and the edited video resume." />
               <Split label="Kept by law" body="Payment and invoice records stay for as long as Indian tax law requires. Your name, email and mobile are replaced with a reference number inside them." />
               <Button variant="destructive" size="block" full label="Delete my account" onPress={() => setConfirmOpen(true)} />
               <Meta style={{ color: color.textSubtle }}>We&rsquo;ll ask you to confirm once. You can cancel any time in the next thirty days.</Meta>
-            </View>
+            </Card>
           )}
         </View>
       </ScrollView>
@@ -150,16 +149,17 @@ function MixedItem({ done, text }: { done?: boolean; text: string }) {
 function Split({ label, body }: { label: string; body: string }) {
   return (
     <View style={styles.split}>
-      <View style={{ width: 128, paddingTop: 2 }}><Eyebrow>{label}</Eyebrow></View>
+      <View style={{ width: height['label-col-lg'], paddingTop: space['2xs'] }}><Eyebrow>{label}</Eyebrow></View>
       <Body size="sm" style={{ flex: 1, color: color.text }}>{body}</Body>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: color.surface },
-  centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  body: { padding: space.xl, gap: space['2xl'], paddingBottom: space['4xl'] },
+  page: { flex: 1, backgroundColor: color.background },
+  centre: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.xl },
+  loading: { padding: space.xl },
+  body: { paddingHorizontal: space.lg, paddingTop: space.xs, gap: space.xl, paddingBottom: space.xl },
   cardPad: { padding: space.lg },
   pendingCardPad: { backgroundColor: color.dangerSoft, borderColor: color.dangerBorder, padding: space.lg },
   mixed: { flexDirection: 'row', alignItems: 'flex-start', gap: space.sm },

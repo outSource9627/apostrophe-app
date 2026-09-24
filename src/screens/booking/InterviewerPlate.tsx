@@ -1,6 +1,6 @@
 import React from 'react'
 import { StyleSheet, View } from 'react-native'
-import { color, space, radius, borderWidth } from '../../theme'
+import { color, space, radius, borderWidth, height } from '../../theme'
 import { Body, Card } from '../../components/ui'
 import { LogoMark } from '../../components/Logo'
 
@@ -35,7 +35,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', gap: space.md, padding: space.lg,
   },
   disc: {
-    width: 56, height: 56, borderRadius: radius.pill, borderWidth: borderWidth.thin,
+    width: height.fab, height: height.fab, borderRadius: radius.pill, borderWidth: borderWidth.thin,
     borderColor: color.border, backgroundColor: color.surfaceMuted, alignItems: 'center', justifyContent: 'center',
   },
   body: { flex: 1, minWidth: 0, gap: space.xs, justifyContent: 'center' },

@@ -1,5 +1,5 @@
 import React from 'react'
-import { ActivityIndicator, Pressable, StyleSheet, View, type PressableProps } from 'react-native'
+import { ActivityIndicator, Pressable, StyleSheet, Text, View, type PressableProps } from 'react-native'
 import { borderWidth, color, height, opacity, radius, space } from '../../theme'
 import { Body } from './Type'
 import { text } from './typography'
@@ -25,7 +25,7 @@ type Variant = 'primary' | 'secondary' | 'outline' | 'quiet' | 'text' | 'destruc
 type Size = 'lg' | 'block' | 'md' | 'sm'
 
 const SIZE_HEIGHT: Record<Size, number> = {
-  lg: height.control,
+  lg: height['control-lg'],
   block: height['control-block'],
   md: height['control-sm'],
   sm: height['control-xs'],
@@ -73,13 +73,13 @@ export function Button({
       {...rest}
     >
       {busy && <ActivityIndicator size="small" color={onDark ? color.textInverse : color.textMuted} />}
-      <Body
-        size={size === 'lg' ? 'base' : size === 'sm' ? 'sm' : 'md'}
-        weight="semibold"
-        style={{ color: tint }}
-      >
-        {label}
-      </Body>
+      {size === 'lg' ? (
+        <Text style={[text.uiLeadSemi, { color: tint }]}>{label}</Text>
+      ) : (
+        <Body size={size === 'sm' ? 'sm' : 'md'} weight="semibold" style={{ color: tint }}>
+          {label}
+        </Body>
+      )}
     </Pressable>
   )
 

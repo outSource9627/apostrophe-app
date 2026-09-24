@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { ScrollView, StyleSheet, View } from 'react-native'
+import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useQuery } from '@tanstack/react-query'
 import { api, ApiClientError } from '../../lib/api'
@@ -7,11 +7,12 @@ import {
   bookInterview, getCapacity, type CapacitySlot,
 } from '../../lib/api/interviews'
 import { bookingWindow, fmtShortDate, fmtStamp, fmtTime, groupByDay, type DaySlots } from '../../lib/interviews/slots'
-import { color, space, radius, borderWidth } from '../../theme'
+import { color, space, spaceHalf, radius, borderWidth, height, trackingNative } from '../../theme'
 import {
-  AppBar, Banner, Button, Card, Display, Eyebrow, Figure, Meta, Body, ProgressBar, StatusPill,
+  Banner, Button, Card, EmptyState, ErrorState, Eyebrow, ProgressBar, ScreenHeader, Skeleton, StickyFooter, text,
 } from '../../components/ui'
 import { SlotPicker } from './SlotPicker'
+import { hoursPhrase, nextDaysPhrase, useBookingRules, type BookingRules } from '../../lib/interviews/rules'
 
 interface Me { paid: boolean; qualification?: string; entitlements: { tier: string; status: string; durationMin: number }[]; unusedCount: number }
 interface Completion { pct: number; canBook: boolean; steps: { key: string; label: string; weight: number; earned: number; optional: boolean; missing: string[] }[] }
@@ -36,53 +37,76 @@ export function BookInterviewScreen({
   const config = useQuery({ queryKey: ['config'], queryFn: () => api.get<Config>('/config') })
   const profile = useQuery({ queryKey: ['profile'], queryFn: () => api.get<{ completion: Completion }>('/students/me/profile') })
 
-  const pending = me.isPending || config.isPending || profile.isPending
+  const booking = useBookingRules()
+  const pending = me.isPending || config.isPending || profile.isPending || booking.pending
   const frame = (child: React.ReactNode) => (
     <View style={[styles.page, { paddingTop: insets.top }]}>
-      <AppBar title="Home" onBack={onBack} />
+      <ScreenHeader title="Book an interview" onBack={onBack} />
       {child}
     </View>
   )
 
-  if (pending) return frame(<View style={styles.centre}><Meta style={{ color: color.textMuted }}>OPENING THE CALENDAR…</Meta></View>)
-  if (me.isError || config.isError || profile.isError) {
-    return frame(<View style={{ padding: space.xl }}><Banner tone="danger">Could not open the calendar.</Banner></View>)
+  if (pending) return frame(<View style={styles.body}><Skeleton lines={4} /></View>)
+  if (me.isError || config.isError || profile.isError || !booking.rules) {
+    return frame(
+      <View style={styles.centre}>
+        <ErrorState
+          title="Could not open the calendar."
+          body={booking.error ?? 'Nothing was booked. Check your connection and try again.'}
+          action={<Button variant="outline" size="sm" label="Try again" onPress={() => { void me.refetch(); void profile.refetch(); booking.retry() }} />}
+        />
+      </View>,
+    )
   }
+  const rules = booking.rules
 
   const m = me.data!, cfg = config.data!, comp = profile.data!.completion
-  if (!m.paid) return frame(<View style={{ padding: space.xl }}><Banner tone="warning">Buy an interview to open the calendar.</Banner></View>)
+  if (!m.paid) {
+    return frame(
+      <View style={styles.centre}>
+        <EmptyState
+          title="Buy an interview to open the calendar."
+          body="The calendar opens the moment your payment is confirmed."
+          action={<Button variant="primary" size="md" label="See pricing" onPress={onBuy} />}
+        />
+      </View>,
+    )
+  }
 
   if (!comp.canBook) {
-    const toGo = Math.max(0, 80 - Math.floor(comp.pct))
-    const short = comp.steps.filter((s) => !s.optional && s.missing.length > 0).slice(0, 3)
+    const gate = rules.minProfileCompletionPct
+    const toGo = Math.max(0, gate - Math.floor(comp.pct))
+    const short = comp.steps.filter((st) => !st.optional && st.missing.length > 0).slice(0, 3)
     return frame(
       <>
-        <ScrollView contentContainerStyle={styles.body}>
-          <View style={{ gap: space.sm }}>
-            <Eyebrow>Booking opens at 80%</Eyebrow>
-            <Display level="lg">{short.length || 'Two'} sections to go.</Display>
+        <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
+          <View style={styles.head}>
+            <Eyebrow tone="accent">{`Booking opens at ${gate}%`}</Eyebrow>
+            <Text style={text.displayLead}>{short.length === 1 ? 'One section to go.' : `${short.length} sections to go.`}</Text>
+            <Text style={[text.uiBase, styles.muted]}>{`Interviewers are matched on what your profile says. Below ${gate}% there is not enough of it to match on.`}</Text>
           </View>
-          <Body tone="muted">Interviewers are matched on what your profile says. Below 80% there is not enough of it to match on.</Body>
-          <View style={{ gap: space.md }}>
-            <View style={styles.rowBetween}><Eyebrow>Your profile</Eyebrow><Figure value={`${comp.pct}%`} /></View>
-            <ProgressBar pct={comp.pct} gate={80} />
-            <Meta style={{ color: color.textSubtle }}>book at 80% · {toGo}% to go</Meta>
-          </View>
-          <View>
-            {short.map((s) => (
-              <View key={s.key} style={styles.stepRow}>
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Body weight="medium">{s.label}</Body>
-                  <Body size="xs" tone="subtle">{s.missing.join(' · ')}</Body>
-                </View>
-                <Meta style={{ color: color.text }}>+{Math.round(s.weight - s.earned)}%</Meta>
+
+          <Card style={styles.gateCard}>
+            <View style={styles.rowBetween}>
+              <Text style={[text.meta2xl, styles.pct]}>{`${comp.pct}%`}</Text>
+              <Text style={[text.uiSm, styles.muted]}>{`book at ${gate}% · ${toGo}% to go`}</Text>
+            </View>
+            <ProgressBar pct={comp.pct} gate={gate} tone="accent" />
+          </Card>
+
+          {short.map((st) => (
+            <Card key={st.key} style={styles.stepCard}>
+              <View style={styles.grow}>
+                <Text style={text.uiBaseSemi}>{st.label}</Text>
+                <Text style={[text.uiXs, styles.muted]}>{st.missing.join(' · ')}</Text>
               </View>
-            ))}
-          </View>
+              <View style={styles.gain}><Text style={[text.metaSm, styles.gainText]}>{`+${Math.round(st.weight - st.earned)}%`}</Text></View>
+            </Card>
+          ))}
         </ScrollView>
-        <View style={[styles.foot, { paddingBottom: insets.bottom + space.xl }]}>
+        <StickyFooter>
           <Button variant="primary" size="lg" full label="Finish your profile" onPress={onFinishProfile} />
-        </View>
+        </StickyFooter>
       </>,
     )
   }
@@ -92,28 +116,52 @@ export function BookInterviewScreen({
     const tier = cfg.qualifications.find((q) => q.value === m.qualification)?.tier
     const price = cfg.tiers.find((t) => t.tier === tier)
     const rupees = price ? `₹${Math.round(price.amountPaise / 100).toLocaleString('en-IN')}` : null
+    const minutes = price?.durationMin
+    const included = [
+      minutes ? `A live ${minutes}-minute interview with a real interviewer` : 'A live interview with a real interviewer',
+      'The edited film, as your video resume',
+      'Written feedback and five scores',
+    ]
     return frame(
       <>
-        <ScrollView contentContainerStyle={styles.body}>
-          <View style={{ gap: space.sm }}>
-            <Eyebrow>Nothing to book with</Eyebrow>
-            <Display level="lg">You have no interview left.</Display>
+        <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
+          <View style={styles.head}>
+            <Eyebrow tone="accent">Nothing to book with</Eyebrow>
+            <Text style={text.displayLead}>You have no interview left.</Text>
+            <Text style={[text.uiBase, styles.muted]}>The one you bought has been used. Buy another and this calendar opens again straight away.</Text>
           </View>
-          <Body tone="muted">The one you bought has been used. Buy another and this calendar opens again straight away.</Body>
-          <Card>
-            <Eyebrow>{tier}{m.qualification ? ` · ${QUAL[m.qualification] ?? m.qualification}` : ''}</Eyebrow>
-            <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: space.sm, marginTop: space.sm }}>
-              {rupees ? <Figure value={rupees} /> : null}
-              <Body size="sm" tone="muted">one-time</Body>
+
+          <View style={styles.tierRow}>
+            <View style={styles.tierText}>
+              <View style={styles.tierTitle}>
+                <Text style={text.uiBaseSemi}>{[tier, m.qualification ? QUAL[m.qualification] ?? m.qualification : null].filter(Boolean).join(' · ')}</Text>
+                <View style={styles.yours}><Text style={[text.metaXs, styles.yoursText]}>YOURS</Text></View>
+              </View>
+              {!!minutes && <Text style={[text.uiXs, styles.muted]}>{minutes}-minute interview · one-time</Text>}
             </View>
-            <Body size="sm" tone="muted" style={{ marginTop: space.sm }}>
-              A live {price?.durationMin ?? 20}-minute interview, the edited film as your video resume, and written feedback.
-            </Body>
-          </Card>
+            {rupees ? <Text style={text.displaySm}>{rupees}</Text> : null}
+          </View>
+
+          <View style={styles.included}>
+            <Text style={[text.metaMd, styles.eyebrow]}>WHAT YOU GET</Text>
+            {included.map((line) => (
+              <View key={line} style={styles.bullet}>
+                <Text style={[text.uiMd, styles.dash]}>—</Text>
+                <Text style={[text.uiMd, styles.grow]}>{line}</Text>
+              </View>
+            ))}
+          </View>
         </ScrollView>
-        <View style={[styles.foot, { paddingBottom: insets.bottom + space.xl }]}>
+        <StickyFooter>
+          {rupees ? (
+            <View style={styles.rowBetween}>
+              <Text style={text.uiMdSemi}>Total</Text>
+              <Text style={text.displaySm}>{rupees}</Text>
+            </View>
+          ) : null}
           <Button variant="primary" size="lg" full label={rupees ? `Buy an interview · ${rupees}` : 'Buy an interview'} onPress={onBuy} />
-        </View>
+          <Text style={[text.metaXs, styles.secured]}>Secured by Razorpay · UPI, cards, netbanking</Text>
+        </StickyFooter>
       </>,
     )
   }
@@ -124,6 +172,7 @@ export function BookInterviewScreen({
       tier={unused.tier}
       durationMin={unused.durationMin}
       qualLabel={m.qualification ? QUAL[m.qualification] ?? m.qualification : undefined}
+      rules={rules}
       onBack={onBack}
       onBooked={onBooked}
     />
@@ -131,10 +180,10 @@ export function BookInterviewScreen({
 }
 
 function Picker({
-  insets, tier, durationMin, qualLabel, onBack, onBooked,
+  insets, tier, durationMin, qualLabel, rules, onBack, onBooked,
 }: {
   insets: { top: number; bottom: number }
-  tier: string; durationMin: number; qualLabel?: string
+  tier: string; durationMin: number; qualLabel?: string; rules: BookingRules
   onBack: () => void; onBooked: (id: string) => void
 }) {
   const [dayKey, setDayKey] = useState<string | null>(null)
@@ -152,7 +201,7 @@ function Picker({
     return () => clearInterval(t)
   }, [])
 
-  const win = useMemo(() => bookingWindow(), [])
+  const win = useMemo(() => bookingWindow(rules), [rules])
   const cap = useQuery({
     queryKey: ['capacity', win.fromIso],
     queryFn: () => getCapacity(win.fromIso, win.untilIso),
@@ -204,29 +253,25 @@ function Picker({
 
   return (
     <View style={[styles.page, { paddingTop: insets.top }]}>
-      <AppBar title="Home" onBack={onBack} />
-      <ScrollView contentContainerStyle={styles.body}>
-        <View style={{ gap: space.sm }}>
-          <Eyebrow>Step 1 of 1 · Asia/Kolkata</Eyebrow>
-          <Display level="lg">Book your interview.</Display>
-          <Meta style={{ color: color.textSubtle }}>
-            It's {fmtStamp(now.toISOString())} right now. Earliest open slot is {fmtShortDate(win.fromIso)}, {fmtTime(win.fromIso)} — bookings need at least 12 hours' notice.
-          </Meta>
-        </View>
-
-        <View style={styles.tierWell}>
-          <View style={styles.rowBetween}>
-            <Body weight="semibold" size="lg">{durationMin}-minute interview</Body>
-            <StatusPill tone="neutral" label={`${tier}${qualLabel ? ` · ${qualLabel}` : ''}`} />
+      <ScreenHeader title={`Pick a ${durationMin}-min slot`} subtitle="IST · Asia/Kolkata" onBack={onBack} />
+      <ScrollView contentContainerStyle={styles.pickBody} showsVerticalScrollIndicator={false}>
+        <Card style={styles.match}>
+          <View style={styles.matchTick}><Text style={styles.matchTickText}>✓</Text></View>
+          <View style={styles.matchText}>
+            <Text style={text.uiSmSemi}>{durationMin}-minute interview</Text>
+            <Text style={[text.uiXs, styles.muted]}>{`${tier}${qualLabel ? ` · ${qualLabel}` : ''} · spends the one interview you have`}</Text>
           </View>
-          <Body size="xs" tone="muted" style={{ marginTop: space.xs }}>Held in a 30-minute block. Spends the one interview you have.</Body>
-        </View>
+        </Card>
+
+        <Text style={[text.uiXs, styles.muted]}>
+          It's {fmtStamp(now.toISOString())} right now. Earliest open slot is {fmtShortDate(win.fromIso)}, {fmtTime(win.fromIso)} — bookings need at least {hoursPhrase(rules.windowMinHours)}' notice.
+        </Text>
 
         {error ? <Banner tone="danger">{error}</Banner> : null}
 
         <SlotPicker
           days={days}
-          windowLabel="Next 21 days"
+          windowLabel={nextDaysPhrase(rules.windowMaxDays)}
           selectedDayKey={dayKey}
           onSelectDay={selectDay}
           selectedSlotIso={slotIso}
@@ -240,15 +285,13 @@ function Picker({
         />
       </ScrollView>
 
-      <View style={[styles.foot, { paddingBottom: insets.bottom + space.xl }]}>
-        {slotIso ? (
-          <View style={[styles.rowBetween, { marginBottom: space.md }]}>
-            <Meta style={{ color: color.text }}>{fmtStamp(slotIso)}</Meta>
-            <Body size="sm" tone="muted">{durationMin} minutes</Body>
-          </View>
-        ) : null}
-        <Button variant="primary" size="lg" full busy={busy} disabled={!slotIso || loading} label="Confirm this slot" onPress={confirm} />
-      </View>
+      <StickyFooter>
+        <View style={styles.rowBetween}>
+          <Text style={[text.uiSm, styles.muted]}>Selected</Text>
+          <Text style={text.uiSmSemi}>{slotIso ? fmtStamp(slotIso) : 'Pick a time'}</Text>
+        </View>
+        <Button variant="primary" size="lg" full busy={busy} disabled={!slotIso || loading} label="Confirm · uses 1 credit" onPress={confirm} />
+      </StickyFooter>
     </View>
   )
 }
@@ -268,11 +311,36 @@ const istTime = (iso: string) => {
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: color.surface },
-  centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  body: { padding: space.xl, gap: space.xl, paddingBottom: space['4xl'] },
+  page: { flex: 1, backgroundColor: color.background },
+  centre: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.xl },
+  body: { paddingHorizontal: space.xl, paddingTop: space.xs, gap: space.xl, paddingBottom: space['4xl'] },
+  pickBody: { paddingHorizontal: space.lg, paddingTop: space.xs, gap: spaceHalf['3.5'], paddingBottom: space.xl },
+  muted: { color: color.textMuted },
+  grow: { flex: 1, gap: space['2xs'] },
+  gateCard: { padding: space.lg, gap: spaceHalf['2.5'] },
+  pct: { color: color.accent },
+  stepCard: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingHorizontal: space.lg, paddingVertical: space.md },
+  gain: { paddingHorizontal: space.sm, paddingVertical: space.xs, borderRadius: radius.pill, backgroundColor: color.accentSoft },
+  gainText: { color: color.accentText },
+  head: { gap: space.sm },
+  eyebrow: { color: color.textMuted, letterSpacing: trackingNative.eyebrow },
+  tierRow: {
+    minHeight: height['tier-row'], flexDirection: 'row', alignItems: 'center', gap: spaceHalf['3.5'],
+    paddingHorizontal: space.lg, paddingVertical: space.md, borderRadius: radius.panel,
+    backgroundColor: color.surface, borderWidth: borderWidth.medium, borderColor: color.accent,
+  },
+  tierText: { flex: 1, gap: space['2xs'] },
+  tierTitle: { flexDirection: 'row', alignItems: 'center', gap: space.sm, flexWrap: 'wrap' },
+  yours: { paddingHorizontal: spaceHalf['1.5'], paddingVertical: space['2xs'], borderRadius: radius.pill, backgroundColor: color.accentSoft },
+  yoursText: { color: color.accentText },
+  included: { gap: space.sm, paddingHorizontal: space.xs },
+  bullet: { flexDirection: 'row', gap: spaceHalf['2.5'] },
+  dash: { color: color.accent },
+  secured: { color: color.textMuted, textAlign: 'center', textTransform: 'none' },
   rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.md },
-  tierWell: { borderRadius: radius.md, backgroundColor: color.surfaceMuted, padding: space.lg },
+  match: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingHorizontal: spaceHalf['3.5'], paddingVertical: space.md, borderRadius: radius.panel },
+  matchTick: { width: height.avatar, height: height.avatar, borderRadius: radius.pill, backgroundColor: color.successSoft, alignItems: 'center', justifyContent: 'center' },
+  matchTickText: { color: color.successFill },
+  matchText: { flex: 1, gap: space['2xs'] },
   stepRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space.md, borderTopWidth: borderWidth.thin, borderTopColor: color.border },
-  foot: { borderTopWidth: borderWidth.thin, borderTopColor: color.border, backgroundColor: color.surface, paddingHorizontal: space.xl, paddingTop: space.lg },
 })

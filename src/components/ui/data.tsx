@@ -1,7 +1,7 @@
 import React from 'react'
 import { Pressable, StyleSheet, Text, View, type ViewProps } from 'react-native'
 import Svg, { Circle } from 'react-native-svg'
-import { borderWidth, color, radius, space } from '../../theme'
+import { borderWidth, color, height, radius, space } from '../../theme'
 import { Body, Display, Eyebrow } from './Type'
 import { text } from './typography'
 
@@ -218,18 +218,22 @@ export function CompletionCard({ pct, gate = 80, note }: { pct: number; gate?: n
 export function ScoreRow({
   label, value, outOf = 10, emphasis = false,
 }: { label: string; value: number; outOf?: number; emphasis?: boolean }) {
+  const cells = Math.max(1, Math.round(outOf))
   return (
     <View style={styles.score}>
       <View style={styles.scoreHead}>
-        <Body size="xs" weight="medium">
+        <Body size="md" weight={emphasis ? 'semibold' : 'medium'}>
           {label}
         </Body>
-        <Body size="lg">
+        <Body size="lg" style={{ color: emphasis ? color.accentText : color.text }}>
           {value}
-          <Body size="lg" style={{ color: color.borderStrong }}>{`/${outOf}`}</Body>
         </Body>
       </View>
-      <ProgressBar pct={(value / outOf) * 100} tone={emphasis ? 'accent' : 'ink'} thin />
+      <View style={styles.cells}>
+        {Array.from({ length: cells }).map((_, i) => (
+          <View key={i} style={[styles.cell, { backgroundColor: i < Math.round(value) ? color.accent : color.surfaceSunken }]} />
+        ))}
+      </View>
     </View>
   )
 }
@@ -249,6 +253,8 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   grow: { flex: 1 },
+  cells: { flexDirection: 'row', gap: space['2xs'] + 1 },
+  cell: { flex: 1, height: height['score-cell'], borderRadius: radius.bar - 1 },
 
   ringRotate: { transform: [{ rotate: '-90deg' }] },
   ringCenter: {
@@ -295,6 +301,6 @@ const styles = StyleSheet.create({
   completionHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
   completionNote: {},
 
-  score: { gap: space.sm },
+  score: { gap: space.sm, paddingVertical: space.md },
   scoreHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
 })

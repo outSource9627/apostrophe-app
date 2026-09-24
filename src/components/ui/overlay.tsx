@@ -12,7 +12,7 @@ import { text } from './typography'
 /**
  * Sheets carry confirmations and short forms.
  *
- * Grab handle, 22pt top radius, scrim at ink 40%. A destructive confirmation
+ * Grab handle, 24pt top radius, scrim at ink 40%. A destructive confirmation
  * uses this same shell with a danger-outlined action rather than a different,
  * scarier component — the shape stays familiar so only the action reads as
  * dangerous.
@@ -105,15 +105,15 @@ export function AppBar({
     <View style={styles.appBar}>
       {!!onBack && (
         <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={onBack} style={styles.back}>
-          <Svg viewBox="0 0 16 16" width={space.lg} height={space.lg}>
-            <Path d="M10 2 4 8l6 6" stroke={color.textMuted} strokeWidth={2} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          <Svg viewBox="0 0 24 24" width={height.glyph - 2} height={height.glyph - 2} fill="none">
+            <Path d="M19 12H5M11 6l-6 6 6 6" stroke={color.text} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
           </Svg>
         </Pressable>
       )}
       {title ? (
-        <Body size="lg" numberOfLines={1} style={styles.grow}>
+        <Text style={[text.displayXs, styles.grow]} numberOfLines={1}>
           {title}
-        </Body>
+        </Text>
       ) : (
         <View style={styles.grow} />
       )}
@@ -155,7 +155,7 @@ export function TabBar({
             style={({ pressed }) => [styles.tab, pressed && { opacity: opacity.pressed }]}
           >
             <View style={android && active ? styles.tabIndicator : styles.tabIndicatorOff}>
-              <View style={[styles.glyph, active ? styles.glyphOn : styles.glyphOff]}>{it.glyph}</View>
+              {it.glyph ? it.glyph : <View style={[styles.glyph, active ? styles.glyphOn : styles.glyphOff]} />}
               {!!it.badge && (
                 <View style={styles.badge}>
                   {android ? (
@@ -166,9 +166,8 @@ export function TabBar({
             </View>
             <Text
               style={[
-                android ? text.metaSm : text.metaSm,
-                styles.tabLabel,
-                { color: active ? color.accent : android ? color.textMuted : color.textSubtle },
+                active ? text.uiXsSemi : text.uiXsMedium,
+                { color: active ? color.accentText : android ? color.textMuted : color.textSubtle },
               ]}
             >
               {it.label}
@@ -199,8 +198,8 @@ const styles = StyleSheet.create({
   scrim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: color.scrim },
   sheet: {
     backgroundColor: color.surface,
-    borderTopLeftRadius: radius.xl,
-    borderTopRightRadius: radius.xl,
+    borderTopLeftRadius: radius.frame,
+    borderTopRightRadius: radius.frame,
     paddingHorizontal: space.xl,
     paddingTop: space.md,
     gap: space.md,
@@ -238,24 +237,19 @@ const styles = StyleSheet.create({
     padding: space.lg,
   },
 
+  // The design's drill-in header: no fill, no rule, a bare 48 back target (Android M2/M3/M5).
   appBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: space.md,
-    height: height['app-bar'],
-    paddingHorizontal: space.lg,
-    backgroundColor: color.surfaceMuted,
-    borderBottomWidth: borderWidth.thin,
-    borderBottomColor: color.border,
+    gap: space.xs,
+    height: height['screen-header'],
+    paddingHorizontal: space.md,
   },
   back: {
-    width: height.avatar,
-    height: height.avatar,
+    width: height.control,
+    height: height.control,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: radius.md,
-    borderWidth: borderWidth.thin,
-    borderColor: color.borderStrong,
   },
 
   tabBar: {
@@ -268,8 +262,8 @@ const styles = StyleSheet.create({
   tabBarAndroid: { backgroundColor: color.surface },
   tab: { flex: 1, alignItems: 'center', gap: space.xs, paddingVertical: space.xs },
   tabIndicator: {
-    width: height['app-bar'],
-    height: height['tab-indicator'],
+    width: height['tab-pill-w'],
+    height: height['tab-pill-h'],
     borderRadius: radius.pill,
     backgroundColor: color.accentSoft,
     alignItems: 'center',
@@ -299,7 +293,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: space['2xs'],
   },
   badgeText: { color: color.textInverse },
-  tabLabel: { letterSpacing: 0 },
 
   section: { marginBottom: space.xl },
   sectionHead: {

@@ -1,10 +1,10 @@
 import React, { useState } from 'react'
-import { StyleSheet, View } from 'react-native'
+import { StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ApiClientError } from '../../lib/api'
-import { createOrder, mockSettle } from '../../lib/api/payments'
+import { createOrder, mockSettle, settleInDev } from '../../lib/api/payments'
 import { color, space } from '../../theme'
-import { AppBar, Banner, Button, Display, Eyebrow } from '../../components/ui'
+import { Banner, Button, Eyebrow, ScreenHeader, text } from '../../components/ui'
 
 /**
  * ST-09 — payment failed. The reason is quoted in the gateway's own words, not
@@ -30,8 +30,9 @@ export function PaymentFailedScreen({
           const RazorpayCheckout = require('react-native-razorpay').default
           await RazorpayCheckout.open({
             key: order.keyId, order_id: order.orderId, amount: order.amountPaise,
-            currency: 'INR', name: 'Apostrophe', theme: { color: '#B01E24' },
+            currency: 'INR', name: 'Apostrophe', theme: { color: color.accent },
           })
+          await settleInDev(order.paymentId)
           onConfirming(order.paymentId); return
         } catch (sdkErr) {
           const code = (sdkErr as { code?: number })?.code
@@ -57,10 +58,10 @@ export function PaymentFailedScreen({
 
   return (
     <View style={[styles.page, { paddingTop: insets.top }]}>
-      <AppBar title="" onBack={onPricing} />
+      <ScreenHeader onBack={onPricing} />
       <View style={styles.body}>
         <Eyebrow tone="danger">Payment failed</Eyebrow>
-        <Display level="lg" style={{ marginTop: space.sm }}>That didn&apos;t go through.</Display>
+        <Text style={[text.displayLead, { marginTop: space.sm }]}>That didn&apos;t go through.</Text>
         <Banner tone="danger" style={styles.reasonCard}>
           {reason ? `"${reason}"` : 'The gateway declined the payment. No money was taken.'}
         </Banner>
@@ -75,7 +76,7 @@ export function PaymentFailedScreen({
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: color.surface },
+  page: { flex: 1, backgroundColor: color.background },
   body: { flex: 1, padding: space.xl, justifyContent: 'center' },
   reasonCard: { marginTop: space.lg },
 })

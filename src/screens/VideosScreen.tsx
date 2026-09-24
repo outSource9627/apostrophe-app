@@ -1,22 +1,27 @@
-import React from 'react'
-import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native'
+import React, { useRef, useState } from 'react'
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
-import { color, space, height, borderWidth } from '../theme'
+import { getVideoResume } from '../lib/api/student'
+import { megabytes, pickVideo, uploadErrorText, uploadMedia, UPLOAD_CANCELLED, type PickedMedia } from '../lib/api/uploads'
+import { color, space, spaceHalf, height, trackingNative } from '../theme'
 import {
+  Banner,
   Body,
   Button,
   Card,
-  Display,
+  Chip,
   ErrorState,
-  Eyebrow,
-  FileField,
-  ObjectRow,
+  FilmThumb,
+  ProgressBar,
+  ScreenHeader,
+  Skeleton,
   StatusPill,
   Toggle,
   VerifiedSeal,
   VideoThumb,
+  text,
 } from '../components/ui'
 import type { Tone } from '../components/ui'
 
@@ -30,7 +35,10 @@ interface SelfVideo {
   rejectionReason: string | null
 }
 interface Profile { hiddenFromFeed: boolean }
-interface Config { limits: { selfVideoMaxCount: number; selfVideoMaxSeconds: number } }
+interface Config {
+  limits: { selfVideoMaxCount: number; selfVideoMaxSeconds: number }
+  uploads?: Record<string, { contentTypes: string[]; maxBytes: number; label: string }>
+}
 
 const STATUS: Record<SelfVideo['status'], { label: string; tone: Tone }> = {
   APPROVED: { label: 'Live on your profile', tone: 'success' },
@@ -45,9 +53,20 @@ const STATUS: Record<SelfVideo['status'], { label: string; tone: Tone }> = {
  * target. The verified interview is set apart at the top because SP-05 means it
  * always leads — these sit behind it, marked as self-recorded.
  */
-export function VideosScreen({ onRecord }: { onRecord: () => void }) {
+const KINDS = [
+  { value: 'INTRO', label: 'Introduction' },
+  { value: 'PROJECT', label: 'A project' },
+  { value: 'SKILL', label: 'A skill' },
+] as const
+type Kind = (typeof KINDS)[number]['value']
+
+export function VideosScreen({ onBack }: { onBack?: () => void }) {
   const insets = useSafeAreaInsets()
   const qc = useQueryClient()
+  const [kind, setKind] = useState<Kind>('INTRO')
+  const [progress, setProgress] = useState<number | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const abort = useRef<AbortController | null>(null)
 
   const videos = useQuery({
     queryKey: ['videos'],
@@ -58,6 +77,7 @@ export function VideosScreen({ onRecord }: { onRecord: () => void }) {
     queryFn: () => api.get<Profile>('/students/me/profile'),
   })
   const config = useQuery({ queryKey: ['config'], queryFn: () => api.get<Config>('/config') })
+  const film = useQuery({ queryKey: ['video-resume'], queryFn: () => getVideoResume().catch(() => null) })
 
   const setVisibility = useMutation({
     mutationFn: (hiddenFromFeed: boolean) =>
@@ -69,17 +89,20 @@ export function VideosScreen({ onRecord }: { onRecord: () => void }) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['videos'] }),
   })
 
+  const frame = (child: React.ReactNode) => (
+    <View style={[styles.page, { paddingTop: insets.top }]}>
+      <ScreenHeader title="Your videos" onBack={onBack} />
+      {child}
+    </View>
+  )
+
   if (videos.isPending || profile.isPending || config.isPending) {
-    return (
-      <View style={[styles.page, styles.centre, { paddingTop: insets.top }]}>
-        <ActivityIndicator color={color.textSubtle} />
-      </View>
-    )
+    return frame(<View style={styles.loading}><Skeleton lines={3} /></View>)
   }
 
   if (videos.isError || profile.isError || config.isError) {
-    return (
-      <View style={[styles.page, styles.centre, { paddingTop: insets.top }]}>
+    return frame(
+      <View style={styles.centre}>
         <ErrorState
           title="Could not load your videos."
           body="Check your connection and try again."
@@ -98,96 +121,145 @@ export function VideosScreen({ onRecord }: { onRecord: () => void }) {
             />
           }
         />
-      </View>
+      </View>,
     )
   }
 
   const list = videos.data?.videos ?? []
-  const max = config.data?.limits.selfVideoMaxCount ?? 3
-  const seconds = config.data?.limits.selfVideoMaxSeconds ?? 90
+  const max = config.data!.limits.selfVideoMaxCount
+  const seconds = config.data!.limits.selfVideoMaxSeconds
+  const rule = config.data!.uploads?.SELF_VIDEO
   const visible = !profile.data?.hiddenFromFeed
+  const published = film.data?.status === 'PUBLISHED'
+  const uploading = progress !== null
 
-  return (
-    <View style={[styles.page, { paddingTop: insets.top }]}>
-      <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + space['2xl'] }]}
-        showsVerticalScrollIndicator={false}
-      >
-        <Eyebrow>YOUR OWN RECORDINGS · {list.length} OF {max}</Eyebrow>
-        <Display style={styles.headline}>Say a bit more.</Display>
-        <Body size="sm" tone="muted" style={styles.lede}>
-          {seconds} seconds each. Marked as self-recorded — your verified interview still leads.
-        </Body>
+  async function addFromGallery() {
+    setError(null)
+    let picked: PickedMedia | null
+    try { picked = await pickVideo() } catch (e) { setError(uploadErrorText(e)); return }
+    if (!picked) return
+    if (rule && !rule.contentTypes.includes(picked.type)) { setError(`Choose ${rule.label}.`); return }
+    if (rule && picked.size > rule.maxBytes) {
+      setError(`That video is ${megabytes(picked.size)}. The limit is ${megabytes(rule.maxBytes)}.`)
+      return
+    }
+    if (picked.durationSec > seconds) {
+      setError(`That video is ${Math.round(picked.durationSec)} seconds. Keep it under ${seconds}.`)
+      return
+    }
+    const ctl = new AbortController()
+    abort.current = ctl
+    try {
+      setProgress(0)
+      const key = await uploadMedia('SELF_VIDEO', picked, { onProgress: setProgress, signal: ctl.signal })
+      await api.post('/students/me/videos', { kind, key, durationSec: Math.round(picked.durationSec) || 1, sizeBytes: picked.size })
+      await qc.invalidateQueries({ queryKey: ['videos'] })
+    } catch (e) {
+      if (!(e instanceof Error && e.message === UPLOAD_CANCELLED)) setError(uploadErrorText(e))
+    } finally {
+      setProgress(null)
+      abort.current = null
+    }
+  }
 
-        <View style={styles.list}>
-          <Card>
-            <ObjectRow
-              last
-              thumb={<VideoThumb verified />}
-              title="Your interview"
-              meta="Leads your card"
-              status={<VerifiedSeal label="Verified interview" />}
-            />
+  return frame(
+    <ScrollView
+      contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + space.xl }]}
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={styles.head}>
+        <Text style={[text.metaMd, styles.eyebrow]}>YOUR OWN RECORDINGS · {list.length} OF {max}</Text>
+        <Text style={text.displayMd}>Say a bit more.</Text>
+        <Text style={[text.uiMd, styles.muted]}>
+          Up to {seconds} seconds each. Marked as self-recorded — your verified interview still leads.
+        </Text>
+      </View>
+
+      <Card style={styles.row}>
+        <FilmThumb />
+        <View style={styles.rowText}>
+          <Text style={text.uiBaseSemi}>Your interview</Text>
+          <Text style={[text.uiXs, styles.muted]}>{published ? 'Leads your card' : 'Filmed at your interview'}</Text>
+        </View>
+        {published ? <VerifiedSeal label="Verified" /> : <StatusPill tone="neutral" label="Not yet" />}
+      </Card>
+
+      {list.map((v) => {
+        const mark = STATUS[v.status]
+        return (
+          <Card key={v.id} style={styles.videoCard}>
+            <View style={styles.rowInner}>
+              <VideoThumb verified={false} />
+              <View style={styles.rowText}>
+                <Text style={text.uiBaseSemi}>{v.title ?? KINDS.find((k) => k.value === v.kind)?.label ?? v.kind}</Text>
+                {!!v.durationSec && <Text style={[text.uiXs, styles.muted]}>{v.durationSec}s · self-recorded</Text>}
+                <StatusPill tone={mark.tone} label={mark.label} />
+              </View>
+            </View>
+            {v.status === 'REJECTED' && !!v.rejectionReason && <Body size="xs" tone="danger">{v.rejectionReason}</Body>}
+            <Pressable accessibilityRole="button" onPress={() => remove.mutate(v.id)} style={styles.delete}>
+              <Text style={[text.uiSmSemi, styles.deleteText]}>Delete</Text>
+            </Pressable>
           </Card>
+        )
+      })}
 
-          {list.map((v) => {
-            const mark = STATUS[v.status]
-            return (
-              <Card key={v.id}>
-                <ObjectRow
-                  last
-                  thumb={<VideoThumb verified={false} />}
-                  title={v.title ?? v.kind}
-                  meta={v.durationSec ? `${v.durationSec}s` : undefined}
-                  status={<StatusPill tone={mark.tone} label={mark.label} />}
-                />
-                <View style={styles.cardFoot}>
-                  {v.status === 'REJECTED' && !!v.rejectionReason && (
-                    <Body size="xs" tone="danger">{v.rejectionReason}</Body>
-                  )}
-                  <View style={styles.deleteRow}>
-                    <Button variant="destructive" size="sm" label="Delete" onPress={() => remove.mutate(v.id)} />
-                  </View>
-                </View>
-              </Card>
-            )
-          })}
-
-          {list.length < max && (
-            <FileField
-              filename={max - list.length === 1 ? 'One slot left' : `${max - list.length} slots left`}
-              detail="Record now, or pick a file"
-              onPress={onRecord}
-            />
-          )}
-        </View>
-
-        {/* SP-12 / SP-13 */}
-        <View style={styles.toggleRow}>
-          <View style={styles.toggleText}>
-            <Body size="md" weight="medium">Appear in employer searches</Body>
-            <Body size="xs" tone="muted" style={styles.toggleBody}>Nothing is deleted when this is off.</Body>
+      {list.length < max && (
+        <Card style={styles.addCard}>
+          <Text style={text.uiBaseSemi}>{max - list.length === 1 ? 'One slot left' : `${max - list.length} slots left`}</Text>
+          <Text style={[text.uiXs, styles.muted]}>What is this one about?</Text>
+          <View style={styles.kinds}>
+            {KINDS.map((k) => (
+              <Chip key={k.value} label={k.label} selected={kind === k.value} onPress={() => !uploading && setKind(k.value)} />
+            ))}
           </View>
-          <Toggle on={visible} onChange={(next) => setVisibility.mutate(!next)} label="Appear in employer searches" />
+          {uploading ? (
+            <View style={styles.progress}>
+              <View style={styles.progressHead}>
+                <Text style={[text.uiSm, styles.muted]}>Uploading…</Text>
+                <Text style={[text.metaMd, styles.pct]}>{Math.round((progress ?? 0) * 100)}%</Text>
+              </View>
+              <ProgressBar pct={(progress ?? 0) * 100} tone="accent" thin />
+              <Button variant="outline" size="sm" label="Cancel" onPress={() => abort.current?.abort()} />
+            </View>
+          ) : (
+            <Button variant="secondary" size="lg" full label="Choose a video from your gallery" onPress={addFromGallery} />
+          )}
+          {!!rule && <Text style={[text.uiXs, styles.subtle]}>{`${rule.label} · up to ${megabytes(rule.maxBytes)} · ${seconds} seconds`}</Text>}
+          {!!error && <Banner tone="danger">{error}</Banner>}
+        </Card>
+      )}
+
+      {/* SP-12 / SP-13 */}
+      <Card style={styles.row}>
+        <View style={styles.rowText}>
+          <Text style={text.uiMdSemi}>Appear in employer searches</Text>
+          <Text style={[text.uiXs, styles.muted]}>Nothing is deleted when this is off.</Text>
         </View>
-      </ScrollView>
-    </View>
+        <Toggle on={visible} tone="success" onChange={(next) => setVisibility.mutate(!next)} label="Appear in employer searches" />
+      </Card>
+    </ScrollView>,
   )
 }
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.background },
-  centre: { alignItems: 'center', justifyContent: 'center' },
-  scroll: { paddingHorizontal: space.xl, paddingTop: space.sm },
-  headline: { marginTop: space.md },
-  lede: { marginTop: space.sm },
-  list: { marginTop: space.xl, gap: space.md },
-  cardFoot: { paddingHorizontal: space.lg, paddingBottom: space.lg, gap: space.sm },
-  deleteRow: { flexDirection: 'row', justifyContent: 'flex-end' },
-  toggleRow: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.lg,
-    marginTop: space.xl, paddingTop: space.lg, borderTopWidth: borderWidth.thin, borderTopColor: color.border,
-  },
-  toggleText: { flex: 1 },
-  toggleBody: { marginTop: space.xs },
+  centre: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.xl },
+  loading: { padding: space.xl },
+  scroll: { paddingHorizontal: space.lg, paddingTop: space.xs, gap: spaceHalf['2.5'] },
+  head: { gap: space.xs, paddingHorizontal: space.xs, paddingBottom: space.sm },
+  eyebrow: { color: color.textMuted, letterSpacing: trackingNative.eyebrow },
+  muted: { color: color.textMuted },
+  subtle: { color: color.textSubtle },
+  row: { flexDirection: 'row', alignItems: 'center', gap: spaceHalf['3.5'], paddingHorizontal: space.lg, paddingVertical: space.md },
+  rowInner: { flexDirection: 'row', alignItems: 'center', gap: spaceHalf['3.5'] },
+  rowText: { flex: 1, gap: space.xs, alignItems: 'flex-start' },
+  videoCard: { paddingHorizontal: space.lg, paddingVertical: space.md, gap: space.sm },
+  delete: { alignSelf: 'flex-end', height: height.tap, justifyContent: 'center', paddingHorizontal: space.sm },
+  deleteText: { color: color.danger },
+  addCard: { padding: space.lg, gap: space.md, borderStyle: 'dashed', borderColor: color.borderStrong },
+  kinds: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
+  progress: { gap: space.sm },
+  progressHead: { flexDirection: 'row', justifyContent: 'space-between' },
+  pct: { color: color.text },
 })

@@ -51,8 +51,8 @@ const TRACK_W = height['toggle-knob'] * 2 + space['2xs']
 const KNOB_INSET = (height.toggle - height['toggle-knob']) / 2
 
 export function Toggle({
-  on, onChange, label, disabled = false,
-}: { on: boolean; onChange?: (next: boolean) => void; label: string; disabled?: boolean }) {
+  on, onChange, label, disabled = false, tone = 'ink',
+}: { on: boolean; onChange?: (next: boolean) => void; label: string; disabled?: boolean; tone?: 'ink' | 'success' }) {
   return (
     <Pressable
       accessibilityRole="switch"
@@ -63,7 +63,7 @@ export function Toggle({
       style={[
         styles.track,
         { width: TRACK_W },
-        disabled ? styles.trackOff : on ? styles.trackOn : styles.trackIdle,
+        disabled ? styles.trackOff : on ? (tone === 'success' ? styles.trackSuccess : styles.trackOn) : styles.trackIdle,
       ]}
     >
       <View
@@ -130,6 +130,8 @@ const styles = StyleSheet.create({
 
   track: { height: height.toggle, borderRadius: radius.pill },
   trackOn: { backgroundColor: color.ink },
+  /** A switch that means "live" — the dashboard's feed visibility. */
+  trackSuccess: { backgroundColor: color.successFill },
   trackIdle: { backgroundColor: color.borderStrong },
   trackOff: { backgroundColor: color.surfaceSunken },
   knob: {

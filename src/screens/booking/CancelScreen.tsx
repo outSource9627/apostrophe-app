@@ -1,13 +1,13 @@
 import React, { useState } from 'react'
-import { ScrollView, StyleSheet, View } from 'react-native'
+import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { api, ApiClientError } from '../../lib/api'
 import { cancelInterview, type CancelOutcome, type StudentInterview } from '../../lib/api/interviews'
 import { bookingRef, fmtShortDate, fmtTime, weekdayLong } from '../../lib/interviews/slots'
-import { color, space } from '../../theme'
-import { AppBar, Banner, Body, Button, Card, Display, Divider, Eyebrow, Figure, Meta, StatusPill } from '../../components/ui'
-import { Field, Input } from '../../components/ui'
+import { color, space, spaceHalf, trackingNative } from '../../theme'
+import { Banner, Button, Card, ErrorState, Field, InkButton, InkCard, InkPill, Input, ScreenHeader, Skeleton, StickyFooter, text } from '../../components/ui'
+import { hoursPhrase, useBookingRules } from '../../lib/interviews/rules'
 
 interface Config { tiers: { tier: string; amountPaise: number }[] }
 
@@ -30,126 +30,162 @@ export function CancelScreen({
 
   const iv = useQuery({ queryKey: ['interview', id], queryFn: () => api.get<StudentInterview>(`/interviews/${id}`) })
   const cfg = useQuery({ queryKey: ['config'], queryFn: () => api.get<Config>('/config') })
+  const booking = useBookingRules()
   const mut = useMutation({
     mutationFn: () => cancelInterview(id, reason.trim()),
     onSuccess: setOutcome,
   })
 
   const frame = (child: React.ReactNode) => (
-    <View style={[styles.page, { paddingTop: insets.top }]}><AppBar title="Interview" onBack={onBack} />{child}</View>
+    <View style={[styles.page, { paddingTop: insets.top }]}><ScreenHeader title="Cancel interview" onBack={onBack} />{child}</View>
   )
-  if (iv.isPending || cfg.isPending) return frame(<View style={styles.centre}><Meta style={{ color: color.textMuted }}>LOADING…</Meta></View>)
-  if (iv.isError) return frame(<View style={styles.centre}><Body tone="muted">Could not load this interview.</Body></View>)
+  if (iv.isPending || cfg.isPending || booking.pending) return frame(<View style={styles.loading}><Skeleton lines={3} /></View>)
+  if (iv.isError || !booking.rules) return frame(
+    <View style={styles.centre}>
+      <ErrorState
+        title="Could not load this interview."
+        body={booking.error ?? 'Nothing was cancelled. Try again.'}
+        action={<Button variant="outline" size="sm" label="Try again" onPress={() => { void iv.refetch(); booking.retry() }} />}
+      />
+    </View>,
+  )
 
+  const rules = booking.rules
   const data = iv.data!
-  const amountPaise = cfg.data!.tiers.find((t) => t.tier === data.tier)?.amountPaise
+  const amountPaise = cfg.data?.tiers.find((t) => t.tier === data.tier)?.amountPaise
   const amount = amountPaise != null ? `₹${Math.round(amountPaise / 100).toLocaleString('en-IN')}` : null
   const hoursToSlot = (new Date(data.slotStart).getTime() - now) / 3_600_000
-  const refundable = hoursToSlot > 12
+  const windowHours = rules.freeCancellationHours
+  // Null when the backend does not say the window: the outcome is then the server's to state.
+  const refundable = windowHours == null ? null : hoursToSlot > windowHours
+  const windowText = windowHours == null ? 'the free-cancellation window' : hoursPhrase(windowHours)
   const wk = weekdayLong(data.slotStart), t = fmtTime(data.slotStart)
-  const err = mut.error instanceof ApiClientError ? mut.error.message : mut.isError ? 'Could not cancel. Try again.' : null
+  const err = mut.error instanceof ApiClientError ? mut.error.message : mut.isError ? 'Could not cancel. Nothing has changed — try again.' : null
+  const short = reason.trim().length < 3
 
   if (outcome) {
     const gotRefund = outcome.outcomeOwed === 'FULL_REFUND'
     return frame(
-      <ScrollView contentContainerStyle={styles.body}>
-        <StatusPill tone="neutral" label="Cancelled" />
-        <Display level="sm">{wk} {t} is cancelled.</Display>
-        <View style={{ gap: space.sm }}>
-          <View style={styles.figureRow}>
-            <Figure value={gotRefund && amount ? amount : '₹0'} />
-            <Body size="sm" tone="muted">{gotRefund ? 'owed back in full' : 'back — this was inside twelve hours'}</Body>
+      <>
+        <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
+          <View style={styles.head}>
+            <Text style={[text.metaMd, styles.eyebrow]}>{`CANCELLED · ${bookingRef(data.id)}`}</Text>
+            <Text style={text.displayLead}>{wk} {t} is cancelled.</Text>
           </View>
-          <Meta style={{ color: color.textSubtle }}>Booking #{bookingRef(data.id)} · cancelled {fmtShortDate(new Date(now).toISOString())}</Meta>
-        </View>
-        {outcome.entitlementRestored && (
-          <Banner tone="neutral">Your interview is unused again. Book whenever you are ready.</Banner>
-        )}
-        <View style={{ marginTop: 'auto', paddingBottom: insets.bottom }}>
+          <Card style={styles.money}>
+            <Text style={text.displayMd}>{gotRefund && amount ? amount : '₹0'}</Text>
+            <Text style={[text.uiMd, styles.muted]}>{gotRefund ? 'owed back in full, the way you paid' : `back — this was inside ${windowText}`}</Text>
+          </Card>
+          {outcome.entitlementRestored && (
+            <Banner tone="neutral">Your interview is unused again. Book whenever you are ready.</Banner>
+          )}
+          <Text style={[text.uiXs, styles.subtle]}>{`Cancelled ${fmtShortDate(new Date(now).toISOString())}`}</Text>
+        </ScrollView>
+        <StickyFooter inset={false}>
           <Button variant="primary" size="lg" full label="Book another interview" onPress={onBooked} />
-        </View>
-      </ScrollView>,
+        </StickyFooter>
+      </>,
     )
   }
 
   return frame(
-    <ScrollView contentContainerStyle={styles.body}>
-      <View style={{ gap: space.sm }}>
-        <Eyebrow>
-          {refundable
-            ? `${fmtShortDate(data.slotStart)} · ${t} · ${data.tier}`
-            : `${fmtShortDate(data.slotStart)} · ${t} · in ${Math.max(1, Math.round(hoursToSlot))} hours`}
-        </Eyebrow>
-        <Display level="lg">Cancel this interview.</Display>
-      </View>
+    <>
+      <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <View style={styles.head}>
+          <Text style={[text.metaMd, styles.eyebrow]}>
+            {`${fmtShortDate(data.slotStart)} · ${t} · ${refundable === false ? `IN ${Math.max(1, Math.round(hoursToSlot))} HOURS` : data.tier}`.toUpperCase()}
+          </Text>
+          <Text style={text.displayLead}>Cancel this interview.</Text>
+        </View>
 
-      {refundable ? (
-        <Card>
-          <Eyebrow tone="muted">If you cancel now</Eyebrow>
-          <View style={[styles.figureRow, { marginTop: space.sm }]}>
-            {amount ? <Figure value={amount} /> : null}
-            <Body size="sm" tone="muted">owed back in full</Body>
+        {refundable === true && (
+          <Card style={styles.money}>
+            <Text style={[text.metaSm, styles.eyebrow]}>IF YOU CANCEL NOW</Text>
+            <View style={styles.figureRow}>
+              {amount ? <Text style={[text.displayMd, styles.good]}>{amount}</Text> : null}
+              <Text style={[text.uiMd, styles.muted]}>owed back in full</Text>
+            </View>
+            <Text style={text.uiMd}>Your interview comes back unused. You can book again straight away. {wk} {t} goes back to the interviewers.</Text>
+          </Card>
+        )}
+
+        {refundable === false && (
+          <>
+            <Card style={[styles.money, styles.danger]}>
+              <Text style={[text.metaSm, styles.dangerText]}>IF YOU CANCEL NOW</Text>
+              <View style={styles.figureRow}>
+                <Text style={text.displayMd}>₹0</Text>
+                <Text style={[text.uiMd, styles.muted]}>back</Text>
+              </View>
+              <Text style={text.uiMd}>{`You are inside ${windowText} of the start, so the ${amount ?? 'fee'} is forfeit and your interview is spent.`}</Text>
+            </Card>
+            <InkCard>
+              <InkPill label="Your one free move" />
+              <Text style={[text.displaySm, styles.onInk]}>Move it instead. It costs nothing.</Text>
+              <Text style={[text.uiSm, styles.onInkMuted]}>{`We put you in another slot and your ${amount ?? 'fee'} stays where it is. Inside ${hoursPhrase(rules.rescheduleCutoffHours)} an admin confirms the new slot, the same day.`}</Text>
+              <InkButton label="Move my interview instead" onPress={() => onReschedule(id)} />
+            </InkCard>
+          </>
+        )}
+
+        {refundable === null && (
+          <Card style={styles.money}>
+            <Text style={[text.metaSm, styles.eyebrow]}>IF YOU CANCEL NOW</Text>
+            <Text style={text.uiMd}>{`Cancelling ahead of ${windowText} refunds ${amount ?? 'the fee'} in full; inside it, nothing comes back. We confirm which applies when you cancel.`}</Text>
+          </Card>
+        )}
+
+        <Field label="Why are you cancelling?" helper="One line, for our records — it is how a refund gets settled.">
+          <Input value={reason} onChangeText={setReason} placeholder="Something came up…" multiline maxLength={500} />
+        </Field>
+        {err ? <Banner tone="danger">{err}</Banner> : null}
+      </ScrollView>
+
+      <StickyFooter inset={false}>
+        <Text style={[text.uiXs, styles.muted]}>
+          {refundable === false
+            ? `Confirm and ${wk} ${t} is cancelled, nothing comes back, and the interview you paid for is gone.`
+            : `Confirm and ${wk} ${t} is cancelled.${refundable && amount ? ` ${amount} is owed back the way you paid it.` : ''}`}
+        </Text>
+        <View style={styles.footRow}>
+          {refundable !== false && (
+            <View style={styles.keep}><Button variant="outline" size="lg" full label="Keep it" onPress={onKeep} /></View>
+          )}
+          <View style={styles.grow}>
+            <Button
+              variant="destructive"
+              size="lg"
+              full
+              busy={mut.isPending}
+              disabled={short}
+              label={refundable === true && amount ? `Cancel · refund ${amount}` : refundable === false ? 'Cancel — no refund' : 'Cancel interview'}
+              onPress={() => mut.mutate()}
+            />
           </View>
-          <Divider style={styles.hr} />
-          <Body size="sm">Your interview comes back unused. You can book again straight away.</Body>
-          <Body size="sm" style={{ marginTop: space.sm }}>{wk} {t} goes back to the interviewers.</Body>
-        </Card>
-      ) : (
-        <>
-          <Card style={styles.dangerCard}>
-            <Eyebrow tone="danger">If you cancel now</Eyebrow>
-            <View style={[styles.figureRow, { marginTop: space.sm }]}>
-              <Figure value="₹0" />
-              <Body size="sm">back</Body>
-            </View>
-            <Body size="sm" style={{ marginTop: space.sm }}>You are inside twelve hours of the start, so the {amount ?? 'fee'} is forfeit and your interview is spent. Your interviewer has held this slot since you booked it.</Body>
-          </Card>
-          <Card raised>
-            <Eyebrow tone="muted">Your one free move</Eyebrow>
-            <Display level="sm" style={{ marginTop: space.sm }}>Move it instead. It costs nothing.</Display>
-            <Body size="sm" tone="muted" style={{ marginTop: space.sm }}>We will put you in another slot and your {amount ?? 'fee'} stays where it is.</Body>
-            <View style={{ marginTop: space.md }}>
-              <Button variant="primary" size="lg" full label="Move my interview instead" onPress={() => onReschedule(id)} />
-            </View>
-            <Body size="xs" tone="subtle" style={{ marginTop: space.sm }}>Inside twelve hours an admin confirms the new slot. You will hear the same day.</Body>
-          </Card>
-        </>
-      )}
-
-      <Field label="Why are you cancelling?" helper="One line, for our records — it is how a refund gets settled.">
-        <Input value={reason} onChangeText={setReason} placeholder="Something came up…" multiline maxLength={500} />
-      </Field>
-      {err ? <Banner tone="danger">{err}</Banner> : null}
-
-      <View style={styles.footBlock}>
-        <Divider />
-        <Body size="sm" tone={refundable ? 'default' : 'muted'}>
-          {refundable
-            ? `Confirm and ${wk} ${t} is cancelled. ${amount ? `${amount} is owed back the way you paid it, ` : ''}and your interview is yours to use again.`
-            : `Confirm and ${wk} ${t} is cancelled, nothing comes back, and the interview you paid for is gone.`}
-        </Body>
-        <Button
-          variant="destructive"
-          size={refundable ? 'block' : 'md'}
-          full
-          busy={mut.isPending}
-          disabled={reason.trim().length < 3}
-          reason={reason.trim().length < 3 ? (refundable ? 'Add a line above so we can settle your refund.' : 'Add a line above so an admin can see why.') : undefined}
-          label={refundable ? (amount ? `Cancel and refund ${amount}` : 'Cancel interview') : 'Cancel anyway — no refund'}
-          onPress={() => mut.mutate()}
-        />
-        {refundable && <Button variant="text" size="md" label="Keep this interview" onPress={onKeep} />}
-      </View>
-    </ScrollView>,
+        </View>
+        {short && <Text style={[text.uiXs, styles.subtle]}>Add a line above so we can see why.</Text>}
+      </StickyFooter>
+    </>,
   )
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: color.surface },
-  centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  body: { padding: space.xl, gap: space.xl, paddingBottom: space['4xl'] },
+  page: { flex: 1, backgroundColor: color.background },
+  centre: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.xl },
+  loading: { padding: space.xl },
+  body: { paddingHorizontal: space.lg, paddingTop: space.xs, gap: space.md, paddingBottom: space.xl },
+  head: { gap: space.sm, paddingHorizontal: space.xs, paddingBottom: space.xs },
+  eyebrow: { color: color.textMuted, letterSpacing: trackingNative.eyebrow },
+  muted: { color: color.textMuted },
+  subtle: { color: color.textSubtle },
+  good: { color: color.success },
+  money: { padding: space.lg, gap: space.sm },
   figureRow: { flexDirection: 'row', alignItems: 'baseline', gap: space.sm },
-  hr: { marginVertical: space.md },
-  dangerCard: { borderColor: color.dangerBorder, backgroundColor: color.dangerSoft, padding: space.lg },
-  footBlock: { gap: space.md },
+  danger: { borderColor: color.dangerBorder, backgroundColor: color.dangerSoft },
+  dangerText: { color: color.danger, letterSpacing: trackingNative.eyebrow },
+  onInk: { color: color.textOnInk },
+  onInkMuted: { color: color.textOnInkMuted },
+  footRow: { flexDirection: 'row', gap: spaceHalf['2.5'] },
+  keep: { width: '34%' },
+  grow: { flex: 1 },
 })

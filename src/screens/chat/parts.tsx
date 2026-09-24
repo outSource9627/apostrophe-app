@@ -1,7 +1,8 @@
 import React, { useState } from 'react'
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import Svg, { Circle, Path, Rect } from 'react-native-svg'
-import { color, space, radius, borderWidth, fontFamilyNative, fontSize } from '../../theme'
+import { color, space, spaceHalf, radius, borderWidth, height, trackingNative } from '../../theme'
+import { text } from '../../components/ui/typography'
 import { Body, Eyebrow, Meta } from '../../components/ui/Type'
 import { Button, Chip, Divider, IconButton, Sheet, StatusPill } from '../../components/ui'
 import { LogoMark } from '../../components/Logo'
@@ -41,7 +42,7 @@ function PersonFigure({ size }: { size: number }) {
 export function CompanyMark({ name, size = 44 }: { name: string | null | undefined; size?: number }) {
   return (
     <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center', borderWidth: borderWidth.thin, borderColor: color.border, backgroundColor: color.surfaceMuted, borderRadius: radius.md }}>
-      <Text style={{ fontFamily: fontFamilyNative.monoMedium, fontSize: size >= 44 ? fontSize['ui-sm'] : fontSize['ui-xs'], color: color.textMuted, letterSpacing: 0.6 }}>{monogram(name)}</Text>
+      <Text style={[size >= 44 ? text.metaLg : text.metaMd, styles.monogram]}>{monogram(name)}</Text>
     </View>
   )
 }
@@ -61,7 +62,7 @@ export function CounterpartyPlate({ thread, size = 44 }: { thread: Pick<ThreadDt
   }
   return (
     <View style={[base, { borderRadius: radius.md, backgroundColor: color.surfaceMuted, borderColor: color.border }]}>
-      <Text style={{ fontFamily: fontFamilyNative.monoMedium, fontSize: size >= 44 ? fontSize['ui-sm'] : fontSize['ui-xs'], color: color.textMuted, letterSpacing: 0.6 }}>{monogram(counterparty.name)}</Text>
+      <Text style={[size >= 44 ? text.metaLg : text.metaMd, styles.monogram]}>{monogram(counterparty.name)}</Text>
     </View>
   )
 }
@@ -122,7 +123,7 @@ export function Bubble({ msg, now }: { msg: MessageDto; now: number }) {
         <AttachmentBubble msg={msg} mine={mine} corner={corner} />
       ) : (
         <View style={[styles.bubble, corner, mine ? styles.bubbleMine : styles.bubbleTheirs]}>
-          <Body size="base" style={{ color: color.text }}>{msg.body}</Body>
+          <Body size="base" style={{ color: mine ? color.textInverse : color.text }}>{msg.body}</Body>
         </View>
       )}
       {mine
@@ -137,7 +138,7 @@ function AttachmentBubble({ msg, mine, corner }: { msg: MessageDto; mine: boolea
   const skin = mine ? styles.bubbleMine : styles.bubbleTheirs
   if (att.kind === 'IMAGE') {
     return (
-      <View style={[{ width: 196, padding: space.xs, gap: space.xs }, corner, skin]}>
+      <View style={[styles.imageBubble, corner, skin]}>
         <View style={styles.imageBox}><ImageGlyph stroke={color.textSubtle} /></View>
         <Meta style={{ color: color.textMuted, paddingHorizontal: space.xs }}>{attachmentMeta(att)}</Meta>
       </View>
@@ -220,7 +221,7 @@ export function Composer({ value, busy, error, onChange, onSend }: {
           multiline
           style={styles.input}
         />
-        <IconButton tone="ink" label="Send" disabled={!canSend} onPress={onSend} style={{ opacity: canSend ? 1 : 0.4 }}>
+        <IconButton tone="accent" label="Send" disabled={!canSend} onPress={onSend} style={{ opacity: canSend ? 1 : 0.4 }}>
           <Stroke size={20} stroke={color.textInverse}><Path d="M4 12h15" /><Path d="m13 6 6 6-6 6" /></Stroke>
         </IconButton>
       </View>
@@ -248,7 +249,7 @@ export function BlockSheet({ open, name, busy, onConfirm, onClose }: { open: boo
 function Consequence({ label, body }: { label: string; body: string }) {
   return (
     <View style={styles.consequence}>
-      <View style={{ width: 92, paddingTop: 2 }}><Eyebrow>{label}</Eyebrow></View>
+      <View style={styles.sysLabel}><Eyebrow>{label}</Eyebrow></View>
       <Body size="sm" style={{ flex: 1, color: color.text }}>{body}</Body>
     </View>
   )
@@ -325,39 +326,42 @@ export function InterestClock({ sentAt, expiresAt, now }: { sentAt: string; expi
         <Meta style={{ color: t.abs }}>{c.absolute}</Meta>
       </View>
       <View style={styles.clockTrack}>
-        <View style={{ height: 3, width: `${c.pct}%`, borderRadius: radius.pill, backgroundColor: t.fill }} />
+        <View style={{ height: height['step-bar'] - 1, width: `${c.pct}%`, borderRadius: radius.pill, backgroundColor: t.fill }} />
       </View>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  dividerRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: 2 },
+  dividerRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space['2xs'] },
   clockRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.md },
-  clockPill: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 5 },
-  clockPillText: { fontFamily: fontFamilyNative.monoMedium, fontSize: fontSize['ui-2xs'], letterSpacing: 1, textTransform: 'uppercase' },
-  clockTrack: { height: 3, borderRadius: radius.pill, backgroundColor: color.surfaceSunken, overflow: 'hidden' },
+  clockPill: { flexDirection: 'row', alignItems: 'center', gap: spaceHalf['1.5'], borderRadius: radius.pill, paddingHorizontal: spaceHalf['2.5'], paddingVertical: space.xs },
+  clockPillText: { ...text.metaMd, letterSpacing: trackingNative.meta },
+  clockTrack: { height: height['step-bar'] - 1, borderRadius: radius.pill, backgroundColor: color.surfaceSunken, overflow: 'hidden' },
   rule: { flex: 1 },
   systemLine: { alignItems: 'center', gap: space.xs, paddingVertical: space.xs },
-  deliveryRow: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingRight: space.xs },
-  spinner: { width: 11, height: 11, borderRadius: radius.pill, borderWidth: 2, borderColor: color.borderStrong, borderTopColor: color.textSubtle },
+  deliveryRow: { flexDirection: 'row', alignItems: 'center', gap: space.xs, paddingRight: space.xs },
+  spinner: { width: space.md, height: space.md, borderRadius: radius.pill, borderWidth: borderWidth.accent, borderColor: color.borderStrong, borderTopColor: color.textSubtle },
   bubbleWrap: { gap: space.xs },
-  bubble: { maxWidth: 300, paddingHorizontal: 14, paddingVertical: 10 },
-  bubbleMine: { backgroundColor: color.surfaceSunken },
+  bubble: { maxWidth: height['bubble-max'], paddingHorizontal: spaceHalf['3.5'], paddingVertical: spaceHalf['2.5'] },
+  imageBubble: { width: height['bubble-image-w'], padding: space.xs, gap: space.xs },
+  sysLabel: { width: height['label-col'], paddingTop: space['2xs'] },
+  monogram: { color: color.textMuted, letterSpacing: trackingNative.meta },
+  bubbleMine: { backgroundColor: color.accent },
   bubbleTheirs: { backgroundColor: color.surface, borderWidth: borderWidth.thin, borderColor: color.border },
-  docBubble: { maxWidth: 300, flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingHorizontal: 14, paddingVertical: 10 },
-  imageBox: { height: 108, alignItems: 'center', justifyContent: 'center', borderRadius: radius.md, backgroundColor: color.surfaceSunken, borderWidth: borderWidth.thin, borderColor: color.borderStrong },
-  typing: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingVertical: 13 },
-  dot: { width: 5, height: 5, borderRadius: radius.pill },
-  reconnect: { flexDirection: 'row', alignItems: 'center', gap: space.sm, backgroundColor: color.warningSoft, paddingHorizontal: space.xl, paddingVertical: 9 },
+  docBubble: { maxWidth: height['bubble-max'], flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingHorizontal: spaceHalf['3.5'], paddingVertical: spaceHalf['2.5'] },
+  imageBox: { height: height['bubble-image-h'], alignItems: 'center', justifyContent: 'center', borderRadius: radius.md, backgroundColor: color.surfaceSunken, borderWidth: borderWidth.thin, borderColor: color.borderStrong },
+  typing: { flexDirection: 'row', alignItems: 'center', gap: space.xs, paddingVertical: spaceHalf['3.5'] },
+  dot: { width: space.xs, height: space.xs, borderRadius: radius.pill },
+  reconnect: { flexDirection: 'row', alignItems: 'center', gap: space.sm, backgroundColor: color.warningSoft, paddingHorizontal: space.xl, paddingVertical: space.sm },
   readOnlyFoot: { borderTopWidth: borderWidth.thin, borderTopColor: color.border, backgroundColor: color.surfaceSunken, paddingHorizontal: space.xl, paddingTop: space.lg, paddingBottom: space.xl },
   maskInfo: { backgroundColor: color.infoSoft, paddingHorizontal: space.xl, paddingVertical: space.md },
-  composer: { borderTopWidth: borderWidth.thin, borderTopColor: color.border, backgroundColor: color.surface, paddingHorizontal: space.xl, paddingTop: space.md, paddingBottom: space.lg },
+  composer: { borderTopWidth: borderWidth.thin, borderTopColor: color.border, backgroundColor: color.surface, paddingHorizontal: space.md, paddingVertical: spaceHalf['2.5'] },
   composerRow: { flexDirection: 'row', alignItems: 'flex-end', gap: space.sm },
-  input: { flex: 1, minHeight: 44, maxHeight: 120, borderRadius: radius.xl, borderWidth: borderWidth.thin, borderColor: color.borderStrong, backgroundColor: color.surface, paddingHorizontal: space.lg, paddingVertical: 10, fontSize: fontSize['ui-base'], color: color.text },
-  consequences: { marginTop: space.lg, backgroundColor: color.surfaceMuted, borderRadius: radius.md, padding: 14, gap: space.md },
+  input: { flex: 1, minHeight: height.tap, maxHeight: height['composer-max'], borderRadius: radius.pill, borderWidth: borderWidth.thin, borderColor: color.borderStrong, backgroundColor: color.surface, paddingHorizontal: space.lg, paddingVertical: space.sm + space['2xs'], ...text.uiBase, color: color.text },
+  consequences: { marginTop: space.lg, backgroundColor: color.surfaceMuted, borderRadius: radius.md, padding: spaceHalf['3.5'], gap: space.md },
   consequence: { flexDirection: 'row', gap: space.md },
-  menuItem: { flexDirection: 'row', alignItems: 'center', gap: space.md, height: 44, paddingHorizontal: space.sm },
+  menuItem: { flexDirection: 'row', alignItems: 'center', gap: space.md, height: height.tap, paddingHorizontal: space.sm },
   reasonWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: space.md },
-  noteInput: { marginTop: space.md, minHeight: 72, borderRadius: radius.md, borderWidth: borderWidth.thin, borderColor: color.borderStrong, backgroundColor: color.surface, paddingHorizontal: space.md, paddingVertical: space.sm, fontSize: fontSize['ui-sm'], color: color.text, textAlignVertical: 'top' },
+  noteInput: { marginTop: space.md, minHeight: height['note-field'], borderRadius: radius.md, borderWidth: borderWidth.thin, borderColor: color.borderStrong, backgroundColor: color.surface, paddingHorizontal: space.md, paddingVertical: space.sm, ...text.uiSm, color: color.text, textAlignVertical: 'top' },
 })

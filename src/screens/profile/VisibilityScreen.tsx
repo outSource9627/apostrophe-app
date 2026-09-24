@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import Svg, { Path } from 'react-native-svg'
 import { api, ApiClientError } from '../../lib/api'
 import { color, space, radius, borderWidth } from '../../theme'
-import { AppBar, Banner, Body, Button, Card, Display, Eyebrow, Meta, Toggle } from '../../components/ui'
+import { AppBar, Banner, Body, Button, Card, Display, Eyebrow, Meta, Skeleton, Toggle } from '../../components/ui'
 
 interface Audience { hiddenFromFeed: boolean; published: boolean }
 
@@ -33,9 +33,9 @@ export function VisibilityScreen({ onBack, onBook }: { onBack: () => void; onBoo
   const toggle = (next: boolean) => { setHidden(next); mut.mutate(next) }
 
   const frame = (child: React.ReactNode) => (
-    <View style={[styles.page, { paddingTop: insets.top }]}><AppBar title="Account" onBack={onBack} />{child}</View>
+    <View style={[styles.page, { paddingTop: insets.top }]}><AppBar title="Visibility" onBack={onBack} />{child}</View>
   )
-  if (q.isPending) return frame(<View style={styles.centre}><Meta style={{ color: color.textMuted }}>LOADING…</Meta></View>)
+  if (q.isPending) return frame(<View style={styles.body}><Skeleton lines={3} /></View>)
   if (q.isError && !(q.error instanceof ApiClientError && q.error.status === 404)) {
     return frame(<View style={styles.centre}><Body tone="muted">Could not load your visibility.</Body></View>)
   }
@@ -83,7 +83,7 @@ export function VisibilityScreen({ onBack, onBook }: { onBack: () => void; onBoo
       <ScrollView contentContainerStyle={styles.body}>
         <Display level="lg">Who can find you.</Display>
         <Card style={styles.card}>
-          <Toggle on onChange={toggle} disabled={mut.isPending} label="Show me in the employer feed" />
+          <Toggle on tone="success" onChange={toggle} disabled={mut.isPending} label="Show me in the employer feed" />
           <Body size="sm" tone="muted" style={{ marginTop: space.md }}>Employers swiping the feed see your video resume and your profile, and can send you an Interest.</Body>
         </Card>
         <View style={{ gap: space.sm }}>
@@ -103,7 +103,7 @@ function Facts({ items }: { items: string[] }) {
     <View style={{ gap: space.sm }}>
       {items.map((t) => (
         <View key={t} style={{ flexDirection: 'row', gap: space.sm }}>
-          <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" style={{ marginTop: 2 }}>
+          <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" style={{ marginTop: space['2xs'] }}>
             <Path d="M20 6 9 17l-5-5" stroke={color.success} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" />
           </Svg>
           <Body size="sm" style={{ flex: 1 }}>{t}</Body>
@@ -122,7 +122,7 @@ function fmtWhen(iso: string): string {
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: color.surface },
+  page: { flex: 1, backgroundColor: color.background },
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   body: { padding: space.xl, gap: space.xl, paddingBottom: space['4xl'] },
   well: { borderRadius: radius.md, borderWidth: borderWidth.thin, borderColor: color.border, backgroundColor: color.surfaceMuted, padding: space.lg },

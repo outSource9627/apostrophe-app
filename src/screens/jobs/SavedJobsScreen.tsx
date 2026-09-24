@@ -1,91 +1,114 @@
 import React from 'react'
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native'
+import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { getSaved, removeSaved, type SavedRow } from '../../lib/api/jobs'
 import { deadlineLine, employmentLabel, locationLine, salaryRange } from '../../lib/jobs/format'
-import { color, space, borderWidth } from '../../theme'
-import { AppBar, Body, Button, Card, Display, Meta, StatusPill } from '../../components/ui'
+import { borderWidth, color, height, opacity, radius, space, spaceHalf, trackingNative } from '../../theme'
+import { Button, Card, EmptyState, ErrorState, JobsHeader, Skeleton, StatusPill, text } from '../../components/ui'
 
 /**
  * ST-38 — everything swiped right; where applying usually begins. Deadline on
  * every row, Apply (while open) and Remove; a closed saved post keeps its row
  * and Remove, only Apply goes.
  */
-export function SavedJobsScreen({ onBack, onOpen, onApply, onFeed }: {
-  onBack: () => void; onOpen: (jobId: string) => void; onApply: (jobId: string) => void; onFeed: () => void
+export function SavedJobsScreen({ onOpen, onApply, onFeed, onApplied }: {
+  onBack?: () => void; onOpen: (jobId: string) => void; onApply: (jobId: string) => void; onFeed: () => void; onApplied?: () => void
 }) {
   const insets = useSafeAreaInsets()
   const qc = useQueryClient()
   const q = useQuery({ queryKey: ['saved'], queryFn: () => getSaved() })
   const remove = useMutation({ mutationFn: (rowId: string) => removeSaved(rowId), onSuccess: () => qc.invalidateQueries({ queryKey: ['saved'] }) })
 
-  const frame = (c: React.ReactNode) => <View style={[styles.page, { paddingTop: insets.top }]}><AppBar title="Jobs" onBack={onBack} />{c}</View>
-  if (q.isPending) return frame(<View style={styles.centre}><Meta style={{ color: color.textMuted }}>LOADING…</Meta></View>)
-  if (q.isError) return frame(<View style={styles.centre}><Body tone="muted">Could not load your saved jobs.</Body></View>)
+  const frame = (c: React.ReactNode) => (
+    <View style={[styles.page, { paddingTop: insets.top }]}>
+      <JobsHeader active="Saved" onFeed={onFeed} onApplied={onApplied} />
+      {c}
+    </View>
+  )
+  if (q.isPending) return frame(<View style={styles.body}><Skeleton lines={3} /></View>)
+  if (q.isError) return frame(<View style={styles.centre}><ErrorState title="Could not load your saved jobs." body="Nothing was changed. Pull down to try again." /></View>)
 
   const rows = q.data!.rows
   if (rows.length === 0) return frame(
-    <View style={styles.empty}>
-      <Display level="sm">Nothing saved yet.</Display>
-      <Body size="sm" tone="muted" style={{ marginTop: space.sm, textAlign: 'center' }}>Swipe right on the feed to keep a job here. Applying starts from this list.</Body>
-      <View style={{ marginTop: space.lg }}><Button variant="primary" size="md" label="Open the feed" onPress={onFeed} /></View>
+    <View style={styles.centre}>
+      <EmptyState
+        title="Nothing saved yet."
+        body="Swipe right on the feed to keep a job here. Applying starts from this list."
+        action={<Button variant="primary" size="md" label="Open the feed" onPress={onFeed} />}
+      />
     </View>,
   )
 
-  return (
-    <View style={[styles.page, { paddingTop: insets.top }]}>
-      <AppBar title="Jobs" onBack={onBack} />
-      <ScrollView contentContainerStyle={styles.body}>
-        <Display level="lg">Saved jobs</Display>
-        {rows.map((r: SavedRow) => {
-          const salary = salaryRange(r.salary)
-          const deadline = deadlineLine(r.applicationDeadline)
-          const applied = r.applicationStatus != null
-          return (
-            <Card key={r.id} style={styles.cardInner}>
-              <Pressable onPress={() => onOpen(r.jobId)} style={{ gap: space.xs }}>
-                <Display level="sm">{r.title}</Display>
-                <Body size="sm" tone="muted">{r.company.name}</Body>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.md, marginTop: 2 }}>
-                  <Meta style={{ color: color.textMuted }}>{locationLine(r.location, r.remote).toUpperCase()}</Meta>
-                  <Meta style={{ color: color.textMuted }}>{employmentLabel(r.employmentType).toUpperCase()}</Meta>
-                  {salary ? <Meta style={{ color: color.textMuted }}>{salary}</Meta> : null}
-                  {deadline ? <Meta style={{ color: r.open ? color.textMuted : color.textSubtle }}>{deadline.toUpperCase()}</Meta> : null}
-                </View>
-              </Pressable>
-              <View style={styles.rowFoot}>
-                <Button variant="destructive" size="sm" label="Remove" onPress={() => remove.mutate(r.id)} />
-                {applied ? (
-                  <StatusPill tone="neutral" label="Applied" />
-                ) : r.open ? (
-                  // `secondary` (ink), not `primary` (accent) — every open row in this
-                  // list can show its Apply button at once, and crimson is capped at
-                  // one button per screen (same reasoning as ApplicationsScreen's
-                  // "Open chat", the sibling list row in this persona).
-                  <Button variant="secondary" size="md" label="Apply" onPress={() => onApply(r.jobId)} />
-                ) : (
-                  // Sixth state — the action exists but isn't available, and the
-                  // reason rides with the control (Foundations §05/§10), the same
-                  // "closed disables Apply" rule JobDetailScreen renders for a
-                  // single post, here for a saved one.
-                  <Button variant="secondary" size="md" label="Apply" disabled reason="Applications for this job have closed." />
-                )}
-              </View>
-            </Card>
-          )
-        })}
-      </ScrollView>
-    </View>
+  const renderRow = ({ item: r }: { item: SavedRow }) => {
+    const salary = salaryRange(r.salary)
+    const deadline = deadlineLine(r.applicationDeadline)
+    const applied = r.applicationStatus != null
+    const meta = [locationLine(r.location, r.remote), employmentLabel(r.employmentType), salary, deadline].filter(Boolean).join('  ·  ').toUpperCase()
+    return (
+      <Card key={r.id} style={[styles.cardInner, !r.open && !applied && styles.closed]}>
+        <Pressable onPress={() => onOpen(r.jobId)} style={styles.cardTop}>
+          <View style={styles.cardTitle}>
+            <Text style={text.uiLgSemi}>{r.title}</Text>
+            <Text style={[text.uiSm, styles.muted]}>{r.company.name}</Text>
+          </View>
+          {applied ? <StatusPill tone="neutral" label="Applied" /> : !r.open ? <StatusPill tone="neutral" label="Closed" /> : null}
+        </Pressable>
+        <Text style={[text.metaMd, styles.meta]}>{meta}</Text>
+        <View style={styles.rowFoot}>
+          <Pressable accessibilityRole="button" onPress={() => remove.mutate(r.id)} style={styles.remove}>
+            <Text style={[text.uiSmSemi, styles.muted]}>Remove</Text>
+          </Pressable>
+          {applied ? null : (
+            <View style={styles.grow}>
+              {/* Ink, not accent: every open row can show Apply at once, and the accent is the one action on a screen. */}
+              <Button
+                variant="secondary"
+                size="sm"
+                full
+                label="Apply"
+                disabled={!r.open}
+                reason={r.open ? undefined : 'Applications for this job have closed.'}
+                onPress={() => onApply(r.jobId)}
+              />
+            </View>
+          )}
+        </View>
+      </Card>
+    )
+  }
+
+  return frame(
+    <FlatList
+      data={rows}
+      keyExtractor={(r) => r.id}
+      renderItem={renderRow}
+      contentContainerStyle={styles.body}
+      ItemSeparatorComponent={Gap}
+      showsVerticalScrollIndicator={false}
+      initialNumToRender={8}
+      windowSize={7}
+      removeClippedSubviews
+      refreshControl={<RefreshControl refreshing={q.isRefetching} onRefresh={() => q.refetch().then(() => undefined)} tintColor={color.textSubtle} />}
+    />,
   )
 }
 
+const Gap = () => <View style={styles.gap} />
+
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: color.surface },
-  centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: space.xl },
-  body: { padding: space.xl, gap: space.md, paddingBottom: space['4xl'] },
-  cardInner: { padding: space.lg, gap: space.md },
-  rowFoot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: borderWidth.thin, borderTopColor: color.border, paddingTop: space.md },
+  page: { flex: 1, backgroundColor: color.background },
+  centre: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.xl },
+  body: { paddingHorizontal: space.lg, paddingTop: space.lg, paddingBottom: space.xl },
+  gap: { height: spaceHalf['2.5'] },
+  cardInner: { paddingHorizontal: space.lg, paddingVertical: spaceHalf['3.5'], gap: spaceHalf['2.5'] },
+  closed: { opacity: opacity.disabled },
+  cardTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: spaceHalf['2.5'] },
+  cardTitle: { flex: 1, gap: space['2xs'] + 1 },
+  muted: { color: color.textMuted },
+  meta: { color: color.textSubtle, letterSpacing: trackingNative.meta },
+  grow: { flex: 1 },
+  rowFoot: { flexDirection: 'row', alignItems: 'flex-start', gap: space.sm },
+  remove: { height: height['control-xs'], paddingHorizontal: spaceHalf['3.5'], borderRadius: radius.pill, borderWidth: borderWidth.thin, borderColor: color.border, alignItems: 'center', justifyContent: 'center' },
 })

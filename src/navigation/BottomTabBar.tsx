@@ -1,6 +1,7 @@
 import React from 'react'
 import Svg, { Circle, Path, Rect } from 'react-native-svg'
-import { useNavigation, useNavigationState, type NavigationState, type PartialState } from '@react-navigation/native'
+import { useQuery } from '@tanstack/react-query'
+import { api } from '../lib/api'
 import { color } from '../theme'
 import { TabBar, type TabItem } from '../components/ui'
 import { tabBarInfoFor, type TabDef } from './tabConfig'
@@ -43,12 +44,18 @@ import { tabBarInfoFor, type TabDef } from './tabConfig'
  * screens and the shared flows (booking, payment, the room) that are
  * deliberately full-screen regardless of which tab they were entered from.
  */
-export function BottomTabBar() {
-  const navigation = useNavigation()
-  const routeName = useNavigationState((state) => activeRouteName(state))
+export function BottomTabBar({ routeName, onNavigate }: { routeName?: string; onNavigate: (root: string) => void }) {
   const info = tabBarInfoFor(routeName)
+  // ST-12: an unpaid student sees pricing and pays — no destinations to wander to.
+  // Same `me` the screens read, so this costs no extra request once one has run.
+  const me = useQuery({
+    queryKey: ['me'],
+    queryFn: () => api.get<{ paid: boolean }>('/students/me'),
+    enabled: info?.persona === 'student',
+  })
 
   if (!info) return null
+  if (info.persona === 'student' && me.data && !me.data.paid) return null
 
   const items: TabItem[] = info.tabs.map((tab) => ({
     key: tab.key,
@@ -62,7 +69,7 @@ export function BottomTabBar() {
       current={info.active}
       onSelect={(key) => {
         const tab = info.tabs.find((t) => t.key === key)
-        if (tab) navigation.navigate(tab.root as never)
+        if (tab) onNavigate(tab.root)
       }}
     />
   )
@@ -102,6 +109,12 @@ function TabIcon({ icon, color: tint }: { icon: TabDef['icon']; color: string })
           />
         </Svg>
       )
+    case 'heart':
+      return (
+        <Svg width={18} height={18} viewBox="0 0 20 20">
+          <Path d="M10 16.5C10 16.5 3 12.3 3 7.6C3 5.5 4.6 4 6.5 4C8 4 9.3 4.9 10 6.2C10.7 4.9 12 4 13.5 4C15.4 4 17 5.5 17 7.6C17 12.3 10 16.5 10 16.5Z" {...p} />
+        </Svg>
+      )
     case 'person':
       return (
         <Svg width={18} height={18} viewBox="0 0 20 20">
@@ -138,12 +151,4 @@ function TabIcon({ icon, color: tint }: { icon: TabDef['icon']; color: string })
         </Svg>
       )
   }
-}
-
-/** Walks to the deepest active route — a plain top-level name in this app's flat stack, but written to hold up if a screen ever grows its own nested navigator. */
-function activeRouteName(state: NavigationState | PartialState<NavigationState> | undefined): string | undefined {
-  if (!state || state.index == null) return undefined
-  let route = state.routes[state.index]
-  while (route?.state) route = route.state.routes[route.state.index ?? route.state.routes.length - 1]
-  return route?.name
 }

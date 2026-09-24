@@ -4,8 +4,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Svg, { Ellipse, Path, Rect } from 'react-native-svg'
 import { useRoom } from '../../lib/room/useRoom'
 import { LogoMark } from '../../components/Logo'
-import { color, space, radius, borderWidth, fontFamilyNative, fontSize, height } from '../../theme'
-import { Body, Button, Card, Display, ErrorState, Meta } from '../../components/ui'
+import { borderWidth, color, height, radius, space, spaceHalf } from '../../theme'
+import { Body, Button, Card, ErrorState, Meta, text } from '../../components/ui'
 
 /**
  * ST-30 — the interview room (student), the twin of the web room. Paper/ink only
@@ -30,7 +30,7 @@ export function RoomScreen({ id, onEnded }: { id: string; onEnded: () => void; o
     <View style={[styles.page, { paddingTop: insets.top }]}>
       <View style={styles.stage}>
         <View style={styles.previewNote}>
-          <Ico size={40} stroke={color.textOnInkSubtle}>{room.cameraOff || audioOnly ? <><Path d="M3 3l18 18" /><Path d="M16 10.5V7a1 1 0 0 0-1-1H8" /><Path d="M4 6.5V17a1 1 0 0 0 1 1h10" /></> : <><Path d="m16 10 5-3v10l-5-3" /><Rect x={3} y={6} width={13} height={12} rx={2} /></>}</Ico>
+          <Ico size={height['avatar-lg'] + space.xs} stroke={color.textOnInkSubtle}>{room.cameraOff || audioOnly ? <><Path d="M3 3l18 18" /><Path d="M16 10.5V7a1 1 0 0 0-1-1H8" /><Path d="M4 6.5V17a1 1 0 0 0 1 1h10" /></> : <><Path d="m16 10 5-3v10l-5-3" /><Rect x={3} y={6} width={13} height={12} rx={2} /></>}</Ico>
           <Meta style={{ color: color.textOnInkSubtle, marginTop: space.sm }}>{audioOnly ? 'Audio only' : room.cameraOff ? 'Your camera is off' : 'Your camera opens here'}</Meta>
         </View>
         {showGuide && (
@@ -41,15 +41,15 @@ export function RoomScreen({ id, onEnded }: { id: string; onEnded: () => void; o
 
         <View style={styles.topRow}>
           <View style={{ gap: space.sm }}>
-            {room.recording && <View style={styles.recChip}><View style={styles.recDot} /><Text style={styles.onInkMeta}>REC</Text></View>}
-            {room.state === 'live' && <View style={styles.recChip}><Text style={styles.onInkMeta}>{fmtElapsed(room.elapsedSec)}</Text><Text style={styles.onInkMeta}>ELAPSED</Text></View>}
+            {room.recording && <View style={styles.recChip}><View style={styles.recDot} /><Text style={[text.metaPill, styles.recText]}>REC</Text></View>}
+            {room.state === 'live' && <View style={styles.recChip}><Text style={[text.metaXl, styles.clock]}>{fmtElapsed(room.elapsedSec)}</Text></View>}
           </View>
           <InterviewerTile name={room.interviewer?.name ?? null} />
         </View>
 
         {room.state === 'waiting' && (
           <View style={styles.centre}>
-            <Display level="sm" style={{ color: color.textOnInk, textAlign: 'center' }}>Waiting for your interviewer</Display>
+            <Text style={[text.displaySm, styles.waitTitle]}>Waiting for your interviewer</Text>
             <Body size="sm" style={{ color: color.textOnInkMuted, textAlign: 'center', marginTop: space.sm }}>They will appear here the moment the session starts.</Body>
           </View>
         )}
@@ -95,17 +95,10 @@ export function RoomScreen({ id, onEnded }: { id: string; onEnded: () => void; o
         <Ctl caption="Camera" lit={room.cameraOff} onPress={room.toggleCamera}>
           {room.cameraOff ? <><Path d="M3 3l18 18" /><Path d="M16 10.5V7a1 1 0 0 0-1-1H8" /><Path d="M4 6.5V17a1 1 0 0 0 1 1h10" /></> : <><Path d="m16 10 5-3v10l-5-3" /><Rect x={3} y={6} width={13} height={12} rx={2} /></>}
         </Ctl>
-        <Ctl caption="Output"><><Path d="M11 5 6 9H3v6h3l5 4V5Z" /><Path d="M16 9a3 3 0 0 1 0 6" /></></Ctl>
-        <View style={styles.ctlCol}>
-          <View style={[styles.ctl, styles.ctlIdle]}><Quality quality={room.quality} /></View>
-          <Text style={styles.caption}>NETWORK</Text>
-        </View>
-        <View style={styles.ctlCol}>
-          <Pressable accessibilityLabel="Leave" onPress={room.leave} style={[styles.ctl, styles.leave]}>
-            <Ico size={20} stroke={color.text}><Path d="M4 12a8 8 0 0 1 16 0" /><Path d="M9 14l-1.5 2.5M15 14l1.5 2.5" /></Ico>
-          </Pressable>
-          <Text style={styles.caption}>LEAVE</Text>
-        </View>
+        <View style={[styles.ctl, styles.ctlIdle]} accessibilityLabel="Network quality"><Quality quality={room.quality} /></View>
+        <Pressable accessibilityRole="button" accessibilityLabel="Leave" onPress={room.leave} style={styles.leavePill}>
+          <Text style={[text.uiMdSemi, styles.leaveText]}>Leave</Text>
+        </Pressable>
       </View>
     </View>
   )
@@ -120,21 +113,18 @@ function InterviewerTile({ name }: { name: string | null }) {
   const initials = name?.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase()
   return (
     <View style={styles.tile}>
-      <View style={styles.plate}>{name ? <Text style={styles.initials}>{initials}</Text> : <LogoMark size={20} fill={color.ink} />}</View>
-      <Text style={styles.tileEyebrow}>YOUR INTERVIEWER</Text>
-      {!!name && <Text style={styles.tileName} numberOfLines={1}>{name}</Text>}
+      <View style={styles.plate}>{name ? <Text style={[text.uiSmSemi, styles.initials]}>{initials}</Text> : <LogoMark size={20} fill={color.ink} />}</View>
+      <Text style={[text.metaXs, styles.tileEyebrow]}>YOUR INTERVIEWER</Text>
+      {!!name && <Text style={[text.uiXs, styles.tileName]} numberOfLines={1}>{name}</Text>}
     </View>
   )
 }
 
 function Ctl({ caption, lit, onPress, children }: { caption: string; lit?: boolean; onPress?: () => void; children: React.ReactNode }) {
   return (
-    <View style={styles.ctlCol}>
-      <Pressable accessibilityLabel={caption} onPress={onPress} style={[styles.ctl, lit ? styles.leave : styles.ctlIdle]}>
-        <Ico size={20} stroke={lit ? color.text : color.textOnInk}>{children}</Ico>
-      </Pressable>
-      <Text style={styles.caption}>{caption.toUpperCase()}</Text>
-    </View>
+    <Pressable accessibilityRole="button" accessibilityLabel={caption} onPress={onPress} style={[styles.ctl, lit ? styles.leave : styles.ctlIdle]}>
+      <Ico size={height.glyph} stroke={lit ? color.text : color.textOnInk}>{children}</Ico>
+    </Pressable>
   )
 }
 
@@ -142,8 +132,8 @@ function Quality({ quality }: { quality: 'good' | 'fair' | 'poor' }) {
   const bars = quality === 'good' ? 3 : quality === 'fair' ? 2 : 1
   const c = quality === 'good' ? color.success : quality === 'fair' ? color.warning : color.danger
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 2 }}>
-      {[1, 2, 3].map((n) => <View key={n} style={{ width: 4, height: 4 + n * 3, borderRadius: 1, backgroundColor: c, opacity: n <= bars ? 1 : 0.25 }} />)}
+    <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: space['2xs'] }}>
+      {[1, 2, 3].map((n) => <View key={n} style={{ width: space.xs, height: space.xs + n * spaceHalf['1.5'] / 2, borderRadius: radius.bar / 3, backgroundColor: c, opacity: n <= bars ? 1 : 0.25 }} />)}
     </View>
   )
 }
@@ -153,23 +143,25 @@ const styles = StyleSheet.create({
   stage: { flex: 1, overflow: 'hidden' },
   previewNote: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
   topRow: { position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', padding: space.lg },
-  recChip: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: radius.sm, backgroundColor: color.scrim, paddingHorizontal: 8, paddingVertical: 4, alignSelf: 'flex-start' },
-  recDot: { width: 7, height: 7, borderRadius: 999, backgroundColor: color.accent },
-  onInkMeta: { fontFamily: fontFamilyNative.monoMedium, fontSize: fontSize['meta-sm'], letterSpacing: 1, color: color.textOnInk },
-  tile: { width: 112, alignItems: 'center', gap: 4, borderRadius: radius.lg, backgroundColor: color.inkRaised, padding: space.sm },
-  plate: { width: 44, height: 44, borderRadius: 999, alignItems: 'center', justifyContent: 'center', backgroundColor: color.surfaceMuted, borderWidth: borderWidth.thin, borderColor: color.border },
-  initials: { fontFamily: fontFamilyNative.monoMedium, fontSize: fontSize['ui-sm'], color: color.textMuted },
-  tileEyebrow: { fontFamily: fontFamilyNative.monoMedium, fontSize: fontSize['meta-sm'], letterSpacing: 1, color: color.textOnInkSubtle },
-  tileName: { fontFamily: fontFamilyNative.display, fontSize: fontSize['ui-sm'], color: color.textOnInk, maxWidth: '100%' },
+  recChip: { flexDirection: 'row', alignItems: 'center', gap: spaceHalf['1.5'], borderRadius: radius.pill, backgroundColor: color.onInkGlass, paddingHorizontal: spaceHalf['3.5'], paddingVertical: spaceHalf['1.5'], alignSelf: 'flex-start' },
+  recDot: { width: space.sm, height: space.sm, borderRadius: radius.pill, backgroundColor: color.dangerFill },
+  recText: { color: color.dangerOnInk },
+  clock: { color: color.textOnInk },
+  tile: { width: height['room-tile-w'], alignItems: 'center', gap: space.xs, borderRadius: radius.panel, backgroundColor: color.inkRaised, borderWidth: borderWidth.thin, borderColor: color.onInkEdge, padding: space.sm },
+  plate: { width: height.tap, height: height.tap, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', backgroundColor: color.onInkGround },
+  initials: { color: color.textOnInk },
+  tileEyebrow: { color: color.textOnInkSubtle },
+  tileName: { color: color.textOnInk, maxWidth: '100%' },
+  waitTitle: { color: color.textOnInk, textAlign: 'center' },
   centre: { position: 'absolute', top: '30%', left: space.xl, right: space.xl, alignItems: 'center' },
   errorCard: { alignSelf: 'stretch' },
-  reconnect: { position: 'absolute', left: space.lg, right: space.lg, bottom: 40, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderRadius: radius.md, backgroundColor: color.warningSoft, paddingHorizontal: space.md, paddingVertical: space.sm },
-  warnBand: { position: 'absolute', left: space.xl, right: space.xl, top: 84, alignItems: 'center', borderRadius: radius.md, backgroundColor: color.warningSoft, paddingVertical: space.sm },
+  reconnect: { position: 'absolute', left: space.lg, right: space.lg, bottom: space['3xl'], flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderRadius: radius.pill, backgroundColor: color.onInkGlass, paddingHorizontal: space.lg, paddingVertical: space.sm },
+  warnBand: { position: 'absolute', left: space.xl, right: space.xl, top: height['tap'] + height.control + space.md, alignItems: 'center', borderRadius: radius.pill, backgroundColor: color.onInkGlass, paddingVertical: space.sm },
   truth: { position: 'absolute', left: 0, right: 0, bottom: space.md, alignItems: 'center' },
-  controls: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'center', gap: space.lg, backgroundColor: color.ink, paddingHorizontal: space.xl, paddingTop: space.md },
-  ctlCol: { alignItems: 'center', gap: 6 },
-  ctl: { width: 44, height: 44, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
+  controls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spaceHalf['4.5'], backgroundColor: color.ink, paddingHorizontal: spaceHalf['6'], paddingTop: space.lg },
+  ctl: { width: height['room-ctl'], height: height['room-ctl'], borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
   ctlIdle: { backgroundColor: color.onInkGround },
   leave: { backgroundColor: color.surface },
-  caption: { fontFamily: fontFamilyNative.monoMedium, fontSize: fontSize['meta-xs'], letterSpacing: 1, color: color.textOnInkSubtle },
+  leavePill: { width: height['room-leave-w'], height: height['room-ctl'], borderRadius: radius.pill, backgroundColor: color.dangerFill, alignItems: 'center', justifyContent: 'center' },
+  leaveText: { color: color.textInverse },
 })

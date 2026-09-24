@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native'
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Svg, { Circle, Path } from 'react-native-svg'
 import {
@@ -10,7 +10,7 @@ import { ApiClientError } from '../../lib/api'
 import { ChatSendError, useThreadSocket } from '../../lib/chat/socket'
 import { fmtClock, fmtDayDivider, fmtDayMon, fmtStampZone, newClientMessageId, originLabel, refusalCopy } from '../../lib/chat/format'
 import { color, space, borderWidth, height } from '../../theme'
-import { Body, Display, EmptyState, Meta } from '../../components/ui'
+import { Body, EmptyState, Meta, text, Skeleton } from '../../components/ui'
 import {
   BlockSheet, Bubble, ClosesLine, Composer, CounterpartyPlate, DayDivider,
   MaskInfoLine, MenuSheet, ReadOnlyFoot, ReconnectingStrip, RecordingPill, ReportSheet, SystemLine, TypingDots,
@@ -124,7 +124,7 @@ export function ThreadScreen({ id, onBack, onSupport }: { id: string; onBack: ()
   }
 
   if (error) return <View style={[styles.page, { paddingTop: insets.top }]}><Header onBack={onBack} /><View style={styles.centre}><Body tone="muted">{error}</Body></View></View>
-  if (!thread) return <View style={[styles.page, { paddingTop: insets.top }]}><Header onBack={onBack} /><View style={styles.centre}><Meta style={{ color: color.textMuted }}>LOADING…</Meta></View></View>
+  if (!thread) return <View style={[styles.page, { paddingTop: insets.top }]}><Header onBack={onBack} /><View style={styles.loading}><Skeleton lines={3} /></View></View>
 
   const isInterviewer = thread.kind === 'STUDENT_INTERVIEWER'
   const isEmployer = thread.kind === 'STUDENT_EMPLOYER'
@@ -238,7 +238,7 @@ function Header({ onBack, plate, title, subtitle, right }: {
       {plate}
       {!!title && (
         <View style={{ flex: 1, minWidth: 0 }}>
-          <Display level="xs" numberOfLines={1}>{title}</Display>
+          <Text style={text.uiLgSemi} numberOfLines={1}>{title}</Text>
           {!!subtitle && <Meta style={{ color: color.textSubtle }} numberOfLines={1}>{subtitle}</Meta>}
         </View>
       )}
@@ -249,9 +249,10 @@ function Header({ onBack, plate, title, subtitle, right }: {
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: color.surface },
+  page: { flex: 1, backgroundColor: color.background },
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  header: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingHorizontal: space.lg, paddingVertical: space.sm, borderBottomWidth: borderWidth.thin, borderBottomColor: color.border, minHeight: height['app-bar'] },
-  headerBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  loading: { padding: space.xl },
+  header: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingHorizontal: space.md, backgroundColor: color.surface, borderBottomWidth: borderWidth.thin, borderBottomColor: color.border, height: height['chat-head'] - space.sm },
+  headerBtn: { width: height.tap, height: height.tap, alignItems: 'center', justifyContent: 'center' },
   transcript: { padding: space.xl, gap: space.md, flexGrow: 1, justifyContent: 'flex-end' },
 })

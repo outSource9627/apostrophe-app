@@ -1,13 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { ScrollView, StyleSheet, View } from 'react-native'
+import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useQuery } from '@tanstack/react-query'
 import { api, ApiClientError } from '../../lib/api'
 import { getCapacity, rescheduleInterview, type CapacitySlot, type StudentInterview } from '../../lib/api/interviews'
 import { bookingWindow, fmtShortDate, fmtStamp, fmtTime, groupByDay, weekdayLong, type DaySlots } from '../../lib/interviews/slots'
-import { color, space, borderWidth, height } from '../../theme'
-import { AppBar, Banner, Body, Button, Card, Display, ErrorState, Eyebrow, Meta, StatusPill } from '../../components/ui'
+import { color, space, height, trackingNative } from '../../theme'
+import { AppBar, Banner, Button, Card, ErrorState, Eyebrow, InkCard, InkPill, Skeleton, StatusPill, StickyFooter, text } from '../../components/ui'
 import { SlotPicker } from './SlotPicker'
+import { hoursPhrase, nextDaysPhrase, useBookingRules, type BookingRules } from '../../lib/interviews/rules'
 
 /**
  * ST-27 — the one free move, or the refusal that explains itself. `canReschedule`
@@ -20,16 +21,17 @@ export function RescheduleScreen({
 }: { id: string; onBack: () => void; onMoved: (newId: string) => void; onSupport: () => void }) {
   const insets = useSafeAreaInsets()
   const q = useQuery({ queryKey: ['interview', id], queryFn: () => api.get<StudentInterview>(`/interviews/${id}`) })
+  const booking = useBookingRules()
 
   const frame = (child: React.ReactNode) => (
-    <View style={[styles.page, { paddingTop: insets.top }]}><AppBar title="Interview" onBack={onBack} />{child}</View>
+    <View style={[styles.page, { paddingTop: insets.top }]}><AppBar title="Reschedule" onBack={onBack} />{child}</View>
   )
-  if (q.isPending) return frame(<View style={styles.centre}><Meta style={{ color: color.textMuted }}>LOADING…</Meta></View>)
-  if (q.isError) return frame(
+  if (q.isPending || booking.pending) return frame(<View style={styles.body}><Skeleton lines={3} /></View>)
+  if (q.isError || !booking.rules) return frame(
     <View style={styles.centre}>
       <ErrorState
         title="Could not load this interview."
-        body="Check your connection and try again."
+        body={booking.error ?? 'Check your connection and try again.'}
         action={
           <Button
             variant="outline"
@@ -37,7 +39,7 @@ export function RescheduleScreen({
             label="Try again"
             // The error state's small button is 40 tall; the slop brings its tap box to the 44 floor.
             hitSlop={(height.tap - height['control-xs']) / 2}
-            onPress={() => q.refetch()}
+            onPress={() => { void q.refetch(); booking.retry() }}
           />
         }
       />
@@ -45,16 +47,18 @@ export function RescheduleScreen({
   )
 
   const iv = q.data!
+  const rules = booking.rules
+  const cutoff = hoursPhrase(rules.rescheduleCutoffHours)
   if (iv.status === 'BOOKED' && iv.canReschedule) {
-    return <Eligible id={id} iv={iv} insets={insets} onBack={onBack} onMoved={onMoved} />
+    return <Eligible id={id} iv={iv} insets={insets} rules={rules} onBack={onBack} onMoved={onMoved} />
   }
 
   const hoursToSlot = (new Date(iv.slotStart).getTime() - Date.now()) / 3_600_000
-  const inside = iv.status === 'BOOKED' && hoursToSlot < 12
+  const inside = iv.status === 'BOOKED' && hoursToSlot < rules.rescheduleCutoffHours
   const copy = inside
     ? {
-        label: 'Inside twelve hours', title: 'It is too late to move it yourself.',
-        lines: [`Your interview starts at ${fmtTime(iv.slotStart)} today. Free moves close twelve hours before.`, 'Your interviewer has held this slot since you booked it.'],
+        label: `Inside ${cutoff}`, title: 'It is too late to move it yourself.',
+        lines: [`Your interview starts at ${fmtTime(iv.slotStart)} today. Free moves close ${cutoff} before.`, 'Your interviewer has held this slot since you booked it.'],
         note: 'If something has genuinely come up, an admin can still move it. Cancelling now would not refund you.',
       }
     : {
@@ -64,33 +68,33 @@ export function RescheduleScreen({
       }
 
   return frame(
-    <ScrollView contentContainerStyle={styles.body}>
-      <Card style={styles.refusedCard}>
-        <Eyebrow>{copy.label}</Eyebrow>
-        <Display level="sm">{copy.title}</Display>
-        {copy.lines.map((l) => <Body key={l} size="sm" tone="muted">{l}</Body>)}
-      </Card>
-      <Card>
-        <View style={styles.rowBetween}>
-          <View style={{ gap: space.xs }}>
-            <Eyebrow>Still booked</Eyebrow>
-            <Body weight="semibold" size="lg">{fmtShortDate(iv.slotStart)} · {fmtTime(iv.slotStart)}</Body>
+    <>
+      <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
+        <View style={styles.head}>
+          <Eyebrow tone="accent">{copy.label}</Eyebrow>
+          <Text style={text.displayLead}>{copy.title}</Text>
+          {copy.lines.map((l) => <Text key={l} style={[text.uiBase, styles.muted]}>{l}</Text>)}
+        </View>
+        <Card style={styles.booked}>
+          <View style={styles.bookedText}>
+            <Text style={[text.metaSm, styles.eyebrowMuted]}>STILL BOOKED</Text>
+            <Text style={text.uiBaseSemi}>{fmtShortDate(iv.slotStart)} · {fmtTime(iv.slotStart)}</Text>
           </View>
           <StatusPill tone="neutral" label={iv.tier} />
-        </View>
-      </Card>
-      <View style={{ marginTop: 'auto', gap: space.md, paddingBottom: insets.bottom }}>
+        </Card>
+      </ScrollView>
+      <StickyFooter inset={false}>
         <Button variant="primary" size="lg" full label="Ask admin to move it" onPress={onSupport} />
-        <Body size="xs" tone="subtle">{copy.note}</Body>
-      </View>
-    </ScrollView>,
+        <Text style={[text.uiXs, styles.muted]}>{copy.note}</Text>
+      </StickyFooter>
+    </>,
   )
 }
 
 function Eligible({
-  id, iv, insets, onBack, onMoved,
+  id, iv, insets, rules, onBack, onMoved,
 }: {
-  id: string; iv: StudentInterview; insets: { top: number; bottom: number }
+  id: string; iv: StudentInterview; insets: { top: number; bottom: number }; rules: BookingRules
   onBack: () => void; onMoved: (newId: string) => void
 }) {
   const [dayKey, setDayKey] = useState<string | null>(null)
@@ -101,7 +105,7 @@ function Eligible({
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const win = useMemo(() => bookingWindow(), [])
+  const win = useMemo(() => bookingWindow(rules), [rules])
   const cap = useQuery({ queryKey: ['capacity', win.fromIso], queryFn: () => getCapacity(win.fromIso, win.untilIso) })
   const days = useMemo<DaySlots[]>(() => (cap.data ? groupByDay(cap.data.slots) : []), [cap.data])
   const loading = cap.isPending
@@ -136,22 +140,22 @@ function Eligible({
     }
   }
 
-  const cutoffIso = new Date(new Date(iv.slotStart).getTime() - 12 * 3600000).toISOString()
+  const cutoffIso = new Date(new Date(iv.slotStart).getTime() - rules.rescheduleCutoffHours * 3600000).toISOString()
 
   return (
     <View style={[styles.page, { paddingTop: insets.top }]}>
-      <AppBar title="Interview" onBack={onBack} />
+      <AppBar title="Reschedule" onBack={onBack} />
       <ScrollView contentContainerStyle={styles.body}>
-        <Card>
-          <Eyebrow tone="accent">Your one free move</Eyebrow>
-          <Display level="sm" style={{ marginTop: space.sm }}>You can move this once, free.</Display>
-          <Body size="sm" tone="muted" style={{ marginTop: space.sm }}>
-            Free up to twelve hours before it starts — that is {fmtTime(cutoffIso)} on {weekdayLong(cutoffIso)}. After that an admin has to do it for you.
-          </Body>
-        </Card>
+        <InkCard>
+          <InkPill label="Your one free move" />
+          <Text style={[text.displaySm, styles.onInk]}>You can move this once, free.</Text>
+          <Text style={[text.uiSm, styles.onInkMuted]}>
+            Free up to {hoursPhrase(rules.rescheduleCutoffHours)} before it starts — that is {fmtTime(cutoffIso)} on {weekdayLong(cutoffIso)}. After that an admin has to do it for you.
+          </Text>
+        </InkCard>
         {error ? <Banner tone="danger">{error}</Banner> : null}
         <SlotPicker
-          days={days} windowLabel="Next 21 days"
+          days={days} windowLabel={nextDaysPhrase(rules.windowMaxDays)}
           selectedDayKey={dayKey} onSelectDay={selectDay}
           selectedSlotIso={slotIso} onSelectSlot={(iso) => { setSlotIso(iso); setNote(null) }}
           goneIso={goneIso} nearestIso={nearestIso} note={note ?? undefined}
@@ -160,16 +164,14 @@ function Eligible({
           loading={loading}
         />
       </ScrollView>
-      <View style={[styles.foot, { paddingBottom: insets.bottom + space.xl }]}>
-        {slotIso ? (
-          <View style={[styles.rowBetween, { marginBottom: space.sm }]}>
-            <Meta style={{ color: color.text }}>{fmtStamp(slotIso)}</Meta>
-            <Body size="sm" tone="muted">{iv.durationMin} minutes</Body>
-          </View>
-        ) : null}
-        <Body size="xs" tone="muted" style={{ marginBottom: space.md }}>Moving from {fmtShortDate(iv.slotStart)}, {fmtTime(iv.slotStart)}. This uses your free move.</Body>
+      <StickyFooter inset={false}>
+        <View style={styles.rowBetween}>
+          <Text style={[text.uiSm, styles.muted]}>Selected</Text>
+          <Text style={text.uiSmSemi}>{slotIso ? fmtStamp(slotIso) : 'Pick a time'}</Text>
+        </View>
+        <Text style={[text.uiXs, styles.muted]}>Moving from {fmtShortDate(iv.slotStart)}, {fmtTime(iv.slotStart)}. This uses your free move.</Text>
         <Button variant="primary" size="lg" full busy={busy} disabled={!slotIso || loading} label="Move to this slot" onPress={confirm} />
-      </View>
+      </StickyFooter>
     </View>
   )
 }
@@ -181,10 +183,15 @@ function nearestTo(goneIso: string, remaining: CapacitySlot[]): string | null {
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: color.surface },
+  page: { flex: 1, backgroundColor: color.background },
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  body: { padding: space.xl, gap: space.xl, paddingBottom: space['4xl'] },
+  body: { paddingHorizontal: space.lg, paddingTop: space.xs, gap: space.md, paddingBottom: space.xl },
   rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.md },
-  refusedCard: { borderColor: color.borderStrong, backgroundColor: color.surfaceMuted, padding: space.lg, gap: space.sm },
-  foot: { borderTopWidth: borderWidth.thin, borderTopColor: color.border, backgroundColor: color.surface, paddingHorizontal: space.xl, paddingTop: space.lg },
+  head: { gap: space.sm, paddingHorizontal: space.xs },
+  eyebrowMuted: { color: color.textMuted, letterSpacing: trackingNative.eyebrow },
+  booked: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.lg },
+  bookedText: { flex: 1, gap: space.xs },
+  onInk: { color: color.textOnInk },
+  onInkMuted: { color: color.textOnInkMuted },
+  muted: { color: color.textMuted },
 })

@@ -1,13 +1,15 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { Animated, PanResponder, Pressable, StyleSheet, View } from 'react-native'
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { Animated, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
+import { PanGestureHandler, State, type PanGestureHandlerStateChangeEvent } from 'react-native-gesture-handler'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Svg, { Path } from 'react-native-svg'
 import { ApiClientError } from '../../lib/api'
 import { getFeed, getFilters, swipeJob, undoSwipe, type JobCard, type JobFilters } from '../../lib/api/jobs'
 import { activeFilterCount, deadlineLine, employmentLabel, experienceLine, locationLine, salaryRange } from '../../lib/jobs/format'
 import { color, space, radius, borderWidth, height } from '../../theme'
-import { AppBar, Banner, Body, Button, Display, EmptyState, ErrorState, Figure, Meta, Skeleton, StatusPill, Tag } from '../../components/ui'
+import { Banner, Button, DeckActions, DeckStamp, EmptyState, ErrorState, JobDeckCard, JobsHeader, Skeleton, UndoToast, text } from '../../components/ui'
 import { JobFilterSheet } from './JobFilterSheet'
+import { JobDetailsSheet } from './JobDetailsSheet'
 
 /**
  * ST-35 — the job feed. A SWIPE SAVES; IT NEVER APPLIES. Right saves, left marks
@@ -16,10 +18,13 @@ import { JobFilterSheet } from './JobFilterSheet'
  * overlay reads only as "saved" or "dismissed" (muted, never crimson for
  * dismiss). Buttons back the gesture for reach and accessibility.
  */
-export function JobFeedScreen({ onBack, onOpen, onSaved }: {
+export function JobFeedScreen({ onBack, onOpen, onSaved, onApplied, onApply }: {
   onBack: () => void
+  /** The full Job page — kept for deep links; a tap in the deck opens the details sheet. */
   onOpen: (id: string) => void
   onSaved: () => void
+  onApplied?: () => void
+  onApply?: (id: string) => void
 }) {
   const insets = useSafeAreaInsets()
   const [cards, setCards] = useState<JobCard[]>([])
@@ -32,8 +37,15 @@ export function JobFeedScreen({ onBack, onOpen, onSaved }: {
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [sheetOpen, setSheetOpen] = useState(false)
+  const [details, setDetails] = useState<JobCard | null>(null)
 
-  const pos = useRef(new Animated.ValueXY()).current
+  // The drag runs on the UI thread: the finger drives these two values natively
+  // (Animated.event with the native driver), so the card tracks the thumb without
+  // a JS round trip per frame. JS only decides, on release, where the card goes.
+  const tx = useRef(new Animated.Value(0)).current
+  const ty = useRef(new Animated.Value(0)).current
+  const ty4 = useMemo(() => Animated.multiply(ty, 0.25), [ty])
+  const { width } = useWindowDimensions()
 
   const fetchMore = useCallback(async (reset: boolean, applyFilters?: JobFilters) => {
     setLoading(true)
@@ -78,26 +90,41 @@ export function JobFeedScreen({ onBack, onOpen, onSaved }: {
   }, [])
 
   const fling = useCallback((direction: 'RIGHT' | 'LEFT') => {
-    if (!current || busy) return
+    if (!current || busy) {
+      Animated.parallel([
+        Animated.spring(tx, { toValue: 0, useNativeDriver: true }),
+        Animated.spring(ty, { toValue: 0, useNativeDriver: true }),
+      ]).start()
+      return
+    }
     const card = current
-    Animated.timing(pos, { toValue: { x: direction === 'RIGHT' ? 500 : -500, y: 0 }, duration: 200, useNativeDriver: false }).start(() => {
-      pos.setValue({ x: 0, y: 0 })
+    Animated.timing(tx, { toValue: (direction === 'RIGHT' ? 1 : -1) * width * 1.4, duration: 220, useNativeDriver: true }).start(() => {
       setI((n) => n + 1)
       void commitSwipe(card, direction)
     })
-  }, [current, busy, pos, commitSwipe])
+  }, [current, busy, tx, ty, width, commitSwipe])
 
-  const panResponder = useRef(
-    PanResponder.create({
-      onMoveShouldSetPanResponder: (_e, g) => Math.abs(g.dx) > 8,
-      onPanResponderMove: (_e, g) => pos.setValue({ x: g.dx, y: g.dy / 4 }),
-      onPanResponderRelease: (_e, g) => {
-        if (g.dx > 120) fling('RIGHT')
-        else if (g.dx < -120) fling('LEFT')
-        else Animated.spring(pos, { toValue: { x: 0, y: 0 }, useNativeDriver: false }).start()
-      },
-    }),
-  ).current
+  // The next card is on top once React has drawn it; only then snap the values
+  // home, so the old card never flashes back to the centre for a frame.
+  useLayoutEffect(() => { tx.setValue(0); ty.setValue(0) }, [i, current?.id, tx, ty])
+
+  const onGestureEvent = useMemo(
+    () => Animated.event([{ nativeEvent: { translationX: tx, translationY: ty } }], { useNativeDriver: true }),
+    [tx, ty],
+  )
+  const onHandlerStateChange = useCallback((e: PanGestureHandlerStateChangeEvent) => {
+    const { state, translationX, velocityX } = e.nativeEvent
+    if (state !== State.END && state !== State.CANCELLED && state !== State.FAILED) return
+    // A committed drag, or a quick flick past a smaller distance.
+    if (translationX > 120 || (translationX > 40 && velocityX > 800)) fling('RIGHT')
+    else if (translationX < -120 || (translationX < -40 && velocityX < -800)) fling('LEFT')
+    else {
+      Animated.parallel([
+        Animated.spring(tx, { toValue: 0, friction: 6, useNativeDriver: true }),
+        Animated.spring(ty, { toValue: 0, friction: 6, useNativeDriver: true }),
+      ]).start()
+    }
+  }, [fling, tx, ty])
 
   async function undo() {
     setBusy(true)
@@ -108,19 +135,28 @@ export function JobFeedScreen({ onBack, onOpen, onSaved }: {
     } catch { /* nothing */ } finally { setBusy(false) }
   }
 
-  const rotate = pos.x.interpolate({ inputRange: [-300, 0, 300], outputRange: ['-6deg', '0deg', '6deg'] })
-  const saveOpacity = pos.x.interpolate({ inputRange: [40, 140], outputRange: [0, 1], extrapolate: 'clamp' })
-  const passOpacity = pos.x.interpolate({ inputRange: [-140, -40], outputRange: [1, 0], extrapolate: 'clamp' })
+  const rotate = tx.interpolate({ inputRange: [-300, 0, 300], outputRange: ['-6deg', '0deg', '6deg'] })
+  const saveOpacity = tx.interpolate({ inputRange: [40, 140], outputRange: [0, 1], extrapolate: 'clamp' })
+  const passOpacity = tx.interpolate({ inputRange: [-140, -40], outputRange: [1, 0], extrapolate: 'clamp' })
+  // The next card grows into place as the top one is dragged away.
+  const nextScale = tx.interpolate({ inputRange: [-160, 0, 160], outputRange: [1, 0.95, 1], extrapolate: 'clamp' })
+  const nextLift = tx.interpolate({ inputRange: [-160, 0, 160], outputRange: [0, space.md, 0], extrapolate: 'clamp' })
+
+  const fmtDuration = (sec: number) => `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`
+  const cardMeta = (c: JobCard) =>
+    [locationLine(c.location, c.remote), employmentLabel(c.employmentType), experienceLine(c.experience), deadlineLine(c.applicationDeadline)]
+      .filter(Boolean).join('  ·  ').toUpperCase()
 
   return (
     <View style={[styles.page, { paddingTop: insets.top }]}>
-      <AppBar
-        title="Home"
-        onBack={onBack}
-        action={
-          <Pressable onPress={() => setSheetOpen(true)} style={{ flexDirection: 'row', alignItems: 'center', gap: space.xs }}>
-            <Svg width={16} height={16} viewBox="0 0 24 24" fill="none"><Path d="M3 5h18M6 12h12M10 19h4" stroke={color.textMuted} strokeWidth={1.7} strokeLinecap="round" /></Svg>
-            <Meta style={{ color: color.textMuted }}>FILTERS{activeCount > 0 ? ` · ${activeCount}` : ''}</Meta>
+      <JobsHeader
+        active="For you"
+        onSaved={onSaved}
+        onApplied={onApplied}
+        right={
+          <Pressable accessibilityRole="button" accessibilityLabel="Filters" onPress={() => setSheetOpen(true)} style={styles.filterBtn}>
+            <Svg width={height.glyph - 6} height={height.glyph - 6} viewBox="0 0 24 24" fill="none"><Path d="M3 5h18M6 12h12M10 19h4" stroke={color.text} strokeWidth={1.8} strokeLinecap="round" /></Svg>
+            {activeCount > 0 && <View style={styles.filterBadge}><Text style={[text.metaXs, styles.filterBadgeText]}>{activeCount}</Text></View>}
           </Pressable>
         }
       />
@@ -153,21 +189,52 @@ export function JobFeedScreen({ onBack, onOpen, onSaved }: {
         ) : current ? (
           <>
             <View style={styles.deck}>
-              <Animated.View
-                {...panResponder.panHandlers}
-                style={[styles.card, { transform: [{ translateX: pos.x }, { translateY: pos.y }, { rotate }] }]}
+              {cards[i + 1] && (
+                <Animated.View style={[styles.behind, { transform: [{ scale: nextScale }, { translateY: nextLift }] }]} pointerEvents="none">
+                  <JobDeckCard
+                    company={cards[i + 1].company.name}
+                    title={cards[i + 1].title}
+                    pay={salaryRange(cards[i + 1].salary)}
+                    meta={cardMeta(cards[i + 1])}
+                    skills={cards[i + 1].skills}
+                    saved={cards[i + 1].saved}
+                    video={cards[i + 1].video?.url ? { duration: fmtDuration(cards[i + 1].video!.durationSec) } : null}
+                  />
+                </Animated.View>
+              )}
+              <PanGestureHandler
+                onGestureEvent={onGestureEvent}
+                onHandlerStateChange={onHandlerStateChange}
+                activeOffsetX={[-10, 10]}
               >
-                <Animated.View style={[styles.stamp, styles.stampSave, { opacity: saveOpacity }]}><Meta style={{ color: color.success }}>SAVE</Meta></Animated.View>
-                <Animated.View style={[styles.stamp, styles.stampPass, { opacity: passOpacity }]}><Meta style={{ color: color.textMuted }}>NOT INTERESTED</Meta></Animated.View>
-                <JobCardBody card={current} onOpen={() => onOpen(current.id)} />
+              <Animated.View
+                key={current.id}
+                style={[styles.card, { transform: [{ translateX: tx }, { translateY: ty4 }, { rotate }] }]}
+              >
+                <Animated.View style={[styles.stampWrap, styles.stampWrapLeft, { opacity: saveOpacity }]}><DeckStamp kind="save" /></Animated.View>
+                <Animated.View style={[styles.stampWrap, styles.stampWrapRight, { opacity: passOpacity }]}><DeckStamp kind="skip" /></Animated.View>
+                <Pressable accessibilityRole="button" accessibilityHint="Opens the full job" onPress={() => setDetails(current)} style={styles.cardPress}>
+                  <JobDeckCard
+                    company={current.company.name}
+                    title={current.title}
+                    pay={salaryRange(current.salary)}
+                    meta={cardMeta(current)}
+                    skills={current.skills}
+                    saved={current.saved}
+                    video={current.video?.url ? { duration: fmtDuration(current.video.durationSec) } : null}
+                  />
+                </Pressable>
               </Animated.View>
+              </PanGestureHandler>
             </View>
-            <View style={styles.actions}>
-              <Button variant="outline" size="block" full label="Not interested" onPress={() => fling('LEFT')} disabled={busy} />
-              <View style={{ width: space.md }} />
-              <Button variant="secondary" size="block" full label="Save" onPress={() => fling('RIGHT')} disabled={busy} />
-            </View>
-            <Meta style={{ color: color.textSubtle, textAlign: 'center', marginTop: space.sm }}>Swipe → to save · ← not interested</Meta>
+            <DeckActions
+              canUndo={!!last}
+              disabled={busy}
+              onUndo={undo}
+              onSkip={() => fling('LEFT')}
+              onSave={() => fling('RIGHT')}
+              onInfo={() => setDetails(current)}
+            />
           </>
         ) : (
           <View style={styles.empty}>
@@ -183,57 +250,43 @@ export function JobFeedScreen({ onBack, onOpen, onSaved }: {
       </View>
 
       {last && (
-        <View style={[styles.undo, { paddingBottom: insets.bottom + space.md }]}>
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <Body size="sm" weight="medium" numberOfLines={1}>{last.direction === 'RIGHT' ? 'Saved' : 'Not interested'} · {last.card.title}</Body>
-            <Meta style={{ color: color.textSubtle }}>Nothing was sent.{last.direction === 'LEFT' ? ' Hidden for 60 days.' : ''}</Meta>
-          </View>
-          <Button variant="text" size="md" label="Undo" onPress={undo} disabled={busy} />
+        <View style={styles.toastWrap}>
+          <UndoToast
+            title={`${last.direction === 'RIGHT' ? 'Saved' : 'Not interested'} · ${last.card.title}`}
+            note={`Nothing was sent.${last.direction === 'LEFT' ? ' Hidden for 60 days.' : ''}`}
+            onUndo={undo}
+            disabled={busy}
+          />
         </View>
       )}
+
+      <JobDetailsSheet
+        card={details}
+        busy={busy}
+        onClose={() => setDetails(null)}
+        onSkip={() => { setDetails(null); fling('LEFT') }}
+        onSave={() => { setDetails(null); fling('RIGHT') }}
+        onApply={(id) => { setDetails(null); if (onApply) onApply(id); else onOpen(id) }}
+      />
 
       <JobFilterSheet open={sheetOpen} initial={filters} onClose={() => setSheetOpen(false)} onApply={(f) => { setSheetOpen(false); applyFilters(f) }} />
     </View>
   )
 }
 
-function JobCardBody({ card, onOpen }: { card: JobCard; onOpen: () => void }) {
-  const salary = salaryRange(card.salary)
-  const deadline = deadlineLine(card.applicationDeadline)
-  return (
-    <Pressable onPress={onOpen} style={{ gap: space.md }}>
-      {card.video?.url ? <View style={styles.video} /> : null}
-      <View style={{ gap: space.xs }}>
-        <Display level="md">{card.title}</Display>
-        <Display level="xs" style={{ color: color.textMuted }}>{card.company.name}</Display>
-      </View>
-      {salary ? <Figure value={salary} /> : null}
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.md }}>
-        <Meta style={{ color: color.textMuted }}>{locationLine(card.location, card.remote).toUpperCase()}</Meta>
-        <Meta style={{ color: color.textMuted }}>{employmentLabel(card.employmentType).toUpperCase()}</Meta>
-        <Meta style={{ color: color.textMuted }}>{experienceLine(card.experience).toUpperCase()}</Meta>
-        {deadline ? <Meta style={{ color: color.textSubtle }}>{deadline.toUpperCase()}</Meta> : null}
-      </View>
-      {card.skills.length > 0 && (
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
-          {card.skills.slice(0, 6).map((s) => <Tag key={s} label={s} />)}
-        </View>
-      )}
-      {card.saved ? <StatusPill tone="success" label="Saved" /> : null}
-    </Pressable>
-  )
-}
-
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: color.surface },
-  body: { flex: 1, padding: space.xl },
-  deck: { flex: 1, justifyContent: 'center' },
-  card: { borderRadius: radius.lg, borderWidth: borderWidth.thin, borderColor: color.border, backgroundColor: color.surface, padding: space.lg, gap: space.md },
-  video: { aspectRatio: 9 / 16, maxHeight: 360, borderRadius: radius.md, backgroundColor: color.ink },
-  stamp: { position: 'absolute', top: space.lg, zIndex: 2, borderRadius: radius.sm, borderWidth: borderWidth.medium, paddingHorizontal: space.sm, paddingVertical: space.xs },
-  stampSave: { right: space.lg, borderColor: color.success },
-  stampPass: { left: space.lg, borderColor: color.borderStrong },
-  actions: { flexDirection: 'row', marginTop: space.lg },
+  page: { flex: 1, backgroundColor: color.background },
+  filterBtn: { width: height.tap, height: height.tap, borderRadius: radius.pill, borderWidth: borderWidth.thin, borderColor: color.borderStrong, alignItems: 'center', justifyContent: 'center' },
+  filterBadge: { position: 'absolute', top: -space['2xs'], right: -space['2xs'], minWidth: space.lg, height: space.lg, borderRadius: radius.pill, backgroundColor: color.accent, alignItems: 'center', justifyContent: 'center' },
+  filterBadgeText: { color: color.textInverse },
+  body: { flex: 1, paddingHorizontal: space.lg, paddingTop: space.lg },
+  deck: { flex: 1 },
+  behind: { ...StyleSheet.absoluteFill },
+  card: { flex: 1, borderRadius: radius.xl, backgroundColor: color.surface, shadowColor: color.ink, shadowOpacity: 0.1, shadowRadius: space.xl, shadowOffset: { width: 0, height: space.md }, elevation: 6 },
+  cardPress: { flex: 1 },
+  stampWrap: { position: 'absolute', top: 0, zIndex: 2 },
+  stampWrapLeft: { left: 0 },
+  stampWrapRight: { right: 0 },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingBottom: space['4xl'] },
-  undo: { flexDirection: 'row', alignItems: 'center', gap: space.md, borderTopWidth: borderWidth.thin, borderTopColor: color.border, backgroundColor: color.surface, paddingHorizontal: space.xl, paddingTop: space.md },
+  toastWrap: { position: 'absolute', left: 0, right: 0, bottom: space.lg },
 })

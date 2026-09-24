@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { ScrollView, StyleSheet, View } from 'react-native'
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -7,8 +7,8 @@ import {
   type ConnectionRow,
 } from '../../lib/api/chat'
 import { fmtDayMon, fmtDayMonthLong, originLabel } from '../../lib/chat/format'
-import { color, space, radius, borderWidth } from '../../theme'
-import { AppBar, Body, Button, Card, Display, Divider, Eyebrow, Meta, StatusPill } from '../../components/ui'
+import { color, height, space, spaceHalf, radius, borderWidth, trackingNative } from '../../theme'
+import { AppBar, Body, Button, Card, Meta, StatusPill, Skeleton, text } from '../../components/ui'
 import type { Tone } from '../../components/ui/status'
 import { BlockSheet, CompanyMark } from './parts'
 
@@ -46,11 +46,11 @@ export function ConnectionsScreen({ onBack, onChats, onOpenThread, onBrowseJobs,
   }
 
   const bar = (
-    <AppBar title="Home" onBack={onBack}
+    <AppBar title="Connections" onBack={onBack}
       action={<Body size="sm" weight="medium" style={{ color: color.text }} onPress={onChats}>Chats</Body>} />
   )
   const frame = (c: React.ReactNode) => <View style={[styles.page, { paddingTop: insets.top }]}>{bar}{c}</View>
-  if (q.isPending) return frame(<View style={styles.centre}><Meta style={{ color: color.textMuted }}>LOADING…</Meta></View>)
+  if (q.isPending) return frame(<View style={styles.loading}><Skeleton lines={3} /></View>)
   if (q.isError) return frame(<View style={styles.centre}><Body tone="muted">Could not load your connections.</Body></View>)
 
   const rows = q.data!
@@ -61,12 +61,7 @@ export function ConnectionsScreen({ onBack, onChats, onOpenThread, onBrowseJobs,
   return (
     <View style={[styles.page, { paddingTop: insets.top }]}>
       {bar}
-      <ScrollView contentContainerStyle={styles.body}>
-        <View style={{ gap: space.sm }}>
-          {/* <Eyebrow>{`${rows.length} connection${rows.length === 1 ? '' : 's'} · two doors, no third`}</Eyebrow> */}
-          <Display level="lg">Connections</Display>
-        </View>
-
+      <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
         {rows.length === 0 ? (
           <EmptyConnections onInterests={onInterests} onBrowseJobs={onBrowseJobs} />
         ) : (
@@ -76,11 +71,7 @@ export function ConnectionsScreen({ onBack, onChats, onOpenThread, onBrowseJobs,
                 onOpen={() => openChat(r.id)} onWithdraw={() => act.mutate({ id: r.id, action: 'WITHDRAW' })} onBlock={() => setBlocking(r)} />
             ))}
             {archived.length > 0 && (
-              <View style={styles.archHead}>
-                <Eyebrow>Archived</Eyebrow>
-                <Divider style={styles.rule} />
-                <Meta style={{ color: color.textSubtle }}>{String(archived.length)}</Meta>
-              </View>
+              <Text style={[text.metaMd, styles.archHead]}>{`ARCHIVED · ${archived.length}`}</Text>
             )}
             {archived.map((r) => (
               <ArchivedCard key={r.id} row={r} busy={busy} onRead={() => openChat(r.id)} onBlock={() => setBlocking(r)} />
@@ -107,7 +98,7 @@ function Head({ row, muted }: { row: ConnectionRow; muted?: boolean }) {
     <View style={styles.head}>
       <CompanyMark name={row.counterparty.name} size={44} />
       <View style={{ flex: 1, minWidth: 0, gap: space.xs }}>
-        <Display level="sm" style={muted ? { color: color.textMuted } : undefined}>{row.counterparty.name ?? 'A company'}</Display>
+        <Text style={[text.uiLgSemi, muted && styles.mutedText]} numberOfLines={1}>{row.counterparty.name ?? 'A company'}</Text>
         <View style={styles.pillRow}>
           <StatusPill tone={PILL[row.status].tone} label={PILL[row.status].label} />
           <Meta style={{ color: color.textSubtle }}>{originDate(row)}</Meta>
@@ -123,10 +114,16 @@ function ActiveCard({ row, busy, onOpen, onWithdraw, onBlock }: {
   return (
     <Card style={styles.card}>
       <Head row={row} />
-      <View style={styles.actions}>
-        <Button variant="primary" size="md" full disabled={busy} label="Open chat" onPress={onOpen} />
-        <Button variant="destructive" size="md" disabled={busy} label="Withdraw" onPress={onWithdraw} />
-        <Button variant="destructive" size="md" disabled={busy} label="Block" onPress={onBlock} />
+      {/* Ink, not accent: several cards can show Open chat at once. */}
+      <Button variant="secondary" size="md" full disabled={busy} label="Open chat" onPress={onOpen} />
+      <View style={styles.quiet}>
+        <Pressable accessibilityRole="button" disabled={busy} onPress={onWithdraw} style={styles.quietBtn}>
+          <Text style={[text.uiSmSemi, styles.mutedText]}>Withdraw</Text>
+        </Pressable>
+        <Text style={[text.uiSm, styles.subtle]}>·</Text>
+        <Pressable accessibilityRole="button" disabled={busy} onPress={onBlock} style={styles.quietBtn}>
+          <Text style={[text.uiSmSemi, styles.dangerText]}>Block</Text>
+        </Pressable>
       </View>
     </Card>
   )
@@ -160,7 +157,7 @@ function ArchivedCard({ row, busy, onRead, onBlock }: { row: ConnectionRow; busy
 function EmptyConnections({ onInterests, onBrowseJobs }: { onInterests: () => void; onBrowseJobs: () => void }) {
   return (
     <Card style={styles.emptyCard}>
-      <Display level="xs">No connections yet.</Display>
+      <Text style={text.displayXs}>No connections yet.</Text>
       <Body size="sm" tone="muted" style={{ marginTop: space.sm }}>One opens when you accept an Interest, or when you apply to an employer who had already shortlisted you. There is no third way in, and no way to follow anyone.</Body>
       <View style={[styles.actions, { marginTop: space.md }]}>
         <Button variant="secondary" size="md" full label="See your Interests" onPress={onInterests} />
@@ -171,17 +168,22 @@ function EmptyConnections({ onInterests, onBrowseJobs }: { onInterests: () => vo
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: color.surface },
+  page: { flex: 1, backgroundColor: color.background },
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  body: { padding: space.xl, gap: space.md, paddingBottom: space['4xl'] },
+  loading: { padding: space.xl },
+  body: { paddingHorizontal: space.lg, paddingTop: space.xs, gap: spaceHalf['2.5'], paddingBottom: space.xl },
   card: { padding: space.lg, gap: space.md },
   cardMuted: { backgroundColor: color.surfaceMuted },
   head: { flexDirection: 'row', alignItems: 'flex-start', gap: space.md },
   pillRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: space.sm },
   actions: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  archHead: { flexDirection: 'row', alignItems: 'center', gap: space.md, marginTop: space.xs },
-  rule: { flex: 1 },
-  well: { borderRadius: radius.md, backgroundColor: color.surfaceSunken, padding: space.md },
-  dangerWell: { borderRadius: radius.md, borderWidth: borderWidth.thin, borderColor: color.dangerBorder, backgroundColor: color.dangerSoft, padding: space.md },
-  emptyCard: { padding: space.xl },
+  archHead: { color: color.textMuted, letterSpacing: trackingNative.eyebrow, marginTop: space.md, paddingHorizontal: space.xs },
+  mutedText: { color: color.textMuted },
+  subtle: { color: color.textSubtle },
+  dangerText: { color: color.danger },
+  quiet: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.sm },
+  quietBtn: { minHeight: height.tap, justifyContent: 'center', paddingHorizontal: space.sm },
+  well: { borderRadius: radius.tile, backgroundColor: color.surfaceSunken, padding: space.md },
+  dangerWell: { borderRadius: radius.tile, borderWidth: borderWidth.thin, borderColor: color.dangerBorder, backgroundColor: color.dangerSoft, padding: space.md },
+  emptyCard: { padding: space.lg },
 })

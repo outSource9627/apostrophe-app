@@ -10,22 +10,22 @@ import type { RootStackParamList } from '../../App'
  * deliberately full-screen regardless of which tab they were entered from.
  */
 
-export type TabKey = 'home' | 'interviews' | 'jobs' | 'chat' | 'account' | 'availability' | 'wallet' | 'feed' | 'shortlist'
+export type TabKey = 'home' | 'interviews' | 'jobs' | 'interests' | 'chat' | 'account' | 'availability' | 'wallet' | 'feed' | 'shortlist'
 
 export type TabDef = {
   key: TabKey
   label: string
   /** The existing top-level route this tab's icon navigates to. Unchanged, already-working `navigate()` — see BottomTabBar.tsx. */
   root: keyof RootStackParamList
-  icon: 'home' | 'calendar' | 'briefcase' | 'chat' | 'person' | 'clock' | 'wallet' | 'feed' | 'star'
+  icon: 'home' | 'calendar' | 'briefcase' | 'heart' | 'chat' | 'person' | 'clock' | 'wallet' | 'feed' | 'star'
 }
 
 export const STUDENT_TABS: TabDef[] = [
   { key: 'home', label: 'Home', root: 'Home', icon: 'home' },
   { key: 'interviews', label: 'Interviews', root: 'Interviews', icon: 'calendar' },
   { key: 'jobs', label: 'Jobs', root: 'JobFeed', icon: 'briefcase' },
+  { key: 'interests', label: 'Interests', root: 'Interests', icon: 'heart' },
   { key: 'chat', label: 'Chat', root: 'Chats', icon: 'chat' },
-  { key: 'account', label: 'Profile', root: 'Account', icon: 'person' },
 ]
 
 export const INTERVIEWER_TABS: TabDef[] = [
@@ -60,13 +60,17 @@ const STUDENT_ROUTES: Partial<Record<keyof RootStackParamList, TabKey>> = {
   Chats: 'chat',
   Thread: 'chat',
   Connections: 'chat',
-  Interests: 'chat',
+  Interests: 'interests',
+  // The Student bar has no Profile tab (the design's five are Home, Interviews,
+  // Jobs, Interests, Chat) — Account is reached from the header avatar, and its
+  // routes keep the bar visible with no tab lit.
   Account: 'account',
   ProfileView: 'account',
   Visibility: 'account',
   Videos: 'account',
   Stats: 'account',
   DataRights: 'account',
+  Receipts: 'account',
   NotificationSettings: 'account',
   Notifications: 'account',
 }

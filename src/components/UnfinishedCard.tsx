@@ -1,7 +1,8 @@
 import React from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import Svg, { Path, Rect } from 'react-native-svg'
-import { color, space, radius, fontSize, fontFamilyNative, borderWidth, height, trackingNative } from '../theme'
+import { color, space, radius, borderWidth, height, trackingNative } from '../theme'
+import { text } from './ui'
 
 /**
  * The student's card, before the interview exists. Mirrors the web component of
@@ -37,16 +38,16 @@ export function UnfinishedCard({
           <Rect x={4} y={10.5} width={16} height={10} rx={2} stroke={color.textSubtle} strokeWidth={1.25} />
           <Path d="M8 10.5V7a4 4 0 0 1 8 0v3.5" stroke={color.textSubtle} strokeWidth={1.25} strokeLinecap="round" />
         </Svg>
-        <Text style={styles.wellLabel}>YOUR INTERVIEW GOES HERE</Text>
+        <Text style={[text.metaMd, styles.wellLabel]}>YOUR INTERVIEW GOES HERE</Text>
       </View>
 
       <View style={styles.body}>
         <View style={styles.nameRow}>
-          <Text style={styles.name} numberOfLines={1}>{name}</Text>
-          {!!city && <Text style={styles.city}>{city.toUpperCase()}</Text>}
+          <Text style={[text.displaySm, styles.name]} numberOfLines={1}>{name}</Text>
+          {!!city && <Text style={[text.metaSm, styles.city]}>{city.toUpperCase()}</Text>}
         </View>
-        {!!qualificationLabel && <Text style={styles.qualification}>{qualificationLabel}</Text>}
-        <Text style={styles.later}>Skills, experience and links are added after you pay.</Text>
+        {!!qualificationLabel && <Text style={[text.uiXs, styles.qualification]}>{qualificationLabel}</Text>}
+        <Text style={[text.uiSm, styles.later]}>Skills, experience and links are added after you pay.</Text>
       </View>
     </View>
   )
@@ -80,15 +81,11 @@ const styles = StyleSheet.create({
   tr: { borderRightWidth: borderWidth.thin, borderTopWidth: borderWidth.thin },
   bl: { borderLeftWidth: borderWidth.thin, borderBottomWidth: borderWidth.thin },
   br: { borderRightWidth: borderWidth.thin, borderBottomWidth: borderWidth.thin },
-  wellLabel: {
-    fontSize: fontSize['ui-2xs'],
-    letterSpacing: trackingNative.widest,
-    color: color.textSubtle,
-  },
+  wellLabel: { letterSpacing: trackingNative.widest, color: color.textSubtle },
   body: { paddingHorizontal: space.lg, paddingTop: space.lg, paddingBottom: space.lg },
   nameRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: space.md },
-  name: { fontFamily: fontFamilyNative.display, fontSize: fontSize['ui-xl'], color: color.text, flexShrink: 1 },
-  city: { fontSize: fontSize['meta-sm'], letterSpacing: trackingNative.meta, color: color.textSubtle },
-  qualification: { marginTop: space.xs, fontSize: fontSize['ui-xs'], color: color.textMuted },
-  later: { marginTop: space.md, fontSize: fontSize['ui-sm'], color: color.textSubtle },
+  name: { flexShrink: 1 },
+  city: { color: color.textSubtle },
+  qualification: { marginTop: space.xs, color: color.textMuted },
+  later: { marginTop: space.md, color: color.textSubtle },
 })

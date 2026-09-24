@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react'
-import { ScrollView, StyleSheet, View } from 'react-native'
+import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useQuery } from '@tanstack/react-query'
 import Svg, { Path } from 'react-native-svg'
 import { api, ApiClientError } from '../../lib/api'
 import { applyToJob, type JobDetail } from '../../lib/api/jobs'
-import { color, space, borderWidth } from '../../theme'
-import { AppBar, Banner, Body, Button, Card, Display, Eyebrow, Field, Input, Meta, StatusPill, VerifiedSeal } from '../../components/ui'
+import { color, space } from '../../theme'
+import { Banner, Body, Button, Card, Eyebrow, Field, Input, ScreenHeader, Skeleton, StatusPill, StickyFooter, VerifiedSeal, text } from '../../components/ui'
 
 interface Profile { publishedAt: string | null }
 type Phase = 'ready' | 'sending' | 'sent' | 'connected' | 'already' | 'unpublished' | 'closed'
@@ -34,8 +34,8 @@ export function ApplyScreen({ id, onBack, onApplications, onBook, onFeed }: {
     }
   }, [jobQ.data, profQ.data, phase])
 
-  const frame = (c: React.ReactNode) => <View style={[styles.page, { paddingTop: insets.top }]}><AppBar title="" onBack={onBack} />{c}</View>
-  if (jobQ.isPending || profQ.isPending) return frame(<View style={styles.centre}><Meta style={{ color: color.textMuted }}>LOADING…</Meta></View>)
+  const frame = (c: React.ReactNode) => <View style={[styles.page, { paddingTop: insets.top }]}><ScreenHeader onBack={onBack} />{c}</View>
+  if (jobQ.isPending || profQ.isPending) return frame(<View style={styles.body}><Skeleton lines={4} /></View>)
   if (jobQ.isError) {
     const closed = jobQ.error instanceof ApiClientError && jobQ.error.code === 'CONFLICT'
     return frame(<View style={{ padding: space.xl }}><Banner tone="warning">{closed ? 'Applications for this job have closed.' : 'This job is no longer available.'}</Banner></View>)
@@ -62,7 +62,7 @@ export function ApplyScreen({ id, onBack, onApplications, onBook, onFeed }: {
   if (phase === 'sent' || phase === 'connected') return frame(
     <View style={styles.centreBody}>
       <StatusPill tone="success" label={phase === 'connected' ? 'Connected' : 'Applied'} />
-      <Display level="lg" style={{ marginTop: space.md }}>{phase === 'connected' ? 'You are connected.' : 'Your application is in.'}</Display>
+      <Text style={[text.displayLead, styles.gapTop]}>{phase === 'connected' ? 'You are connected.' : 'Your application is in.'}</Text>
       <Body tone="muted" style={{ marginTop: space.sm }}>{phase === 'connected' ? `${job.company.name} had already shortlisted you — a chat is open.` : `${job.company.name} has your profile and verified video resume. You will hear at every step.`}</Body>
       <View style={{ marginTop: space.xl, gap: space.md, width: '100%' }}>
         <Button variant="primary" size="lg" full label="Track your applications" onPress={onApplications} />
@@ -73,7 +73,7 @@ export function ApplyScreen({ id, onBack, onApplications, onBook, onFeed }: {
   if (phase === 'already') return frame(
     <View style={styles.centreBody}>
       <StatusPill tone="neutral" label="Already applied" />
-      <Display level="lg" style={{ marginTop: space.md }}>This one is already in your pipeline.</Display>
+      <Text style={[text.displayLead, styles.gapTop]}>This one is already in your pipeline.</Text>
       <Body tone="muted" style={{ marginTop: space.sm }}>You cannot apply twice — track where it stands instead.</Body>
       <View style={{ marginTop: space.xl, width: '100%' }}><Button variant="primary" size="lg" full label="Track your applications" onPress={onApplications} /></View>
     </View>,
@@ -81,7 +81,7 @@ export function ApplyScreen({ id, onBack, onApplications, onBook, onFeed }: {
   if (phase === 'unpublished') return frame(
     <View style={styles.centreBody}>
       <Eyebrow>Before you can apply</Eyebrow>
-      <Display level="lg" style={{ marginTop: space.sm }}>Your video resume isn&rsquo;t ready yet.</Display>
+      <Text style={[text.displayLead, styles.gapTopSm]}>Your video resume isn&rsquo;t ready yet.</Text>
       <Body tone="muted" style={{ marginTop: space.sm }}>Employers see your verified interview with every application — so applying opens once your film is published.</Body>
       <View style={{ marginTop: space.xl, width: '100%' }}><Button variant="primary" size="lg" full label="Book an interview" onPress={onBook} /></View>
     </View>,
@@ -90,12 +90,12 @@ export function ApplyScreen({ id, onBack, onApplications, onBook, onFeed }: {
 
   return (
     <View style={[styles.page, { paddingTop: insets.top }]}>
-      <AppBar title="" onBack={onBack} />
+      <ScreenHeader onBack={onBack} />
       <ScrollView contentContainerStyle={styles.body}>
         <View style={{ gap: space.xs }}>
-          <Eyebrow>Applying to</Eyebrow>
-          <Display level="md">{job.title}</Display>
-          <Display level="xs" style={{ color: color.textMuted }}>{job.company.name}</Display>
+          <Eyebrow tone="accent">Applying to</Eyebrow>
+          <Text style={text.displayHeading}>{job.title}</Text>
+          <Text style={[text.uiBase, styles.muted]}>{job.company.name}</Text>
         </View>
         <View style={{ gap: space.sm }}>
           <Eyebrow>What {job.company.name} receives</Eyebrow>
@@ -113,9 +113,9 @@ export function ApplyScreen({ id, onBack, onApplications, onBook, onFeed }: {
         </Field>
         {error ? <Banner tone="danger">{error}</Banner> : null}
       </ScrollView>
-      <View style={[styles.foot, { paddingBottom: insets.bottom + space.lg }]}>
+      <StickyFooter>
         <Button variant="primary" size="lg" full busy={phase === 'sending'} label="Send application" onPress={send} />
-      </View>
+      </StickyFooter>
     </View>
   )
 }
@@ -123,7 +123,7 @@ export function ApplyScreen({ id, onBack, onApplications, onBook, onFeed }: {
 function Fact({ t }: { t: string }) {
   return (
     <View style={{ flexDirection: 'row', gap: space.sm }}>
-      <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" style={{ marginTop: 2 }}><Path d="M20 6 9 17l-5-5" stroke={color.success} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" /></Svg>
+      <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" style={{ marginTop: space['2xs'] }}><Path d="M20 6 9 17l-5-5" stroke={color.success} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" /></Svg>
       <Body size="sm" style={{ flex: 1 }}>{t}</Body>
     </View>
   )
@@ -131,10 +131,12 @@ function Fact({ t }: { t: string }) {
 function fmtDate(iso: string) { const d = new Date(iso); const M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']; return `${d.getUTCDate()} ${M[d.getUTCMonth()]} ${d.getUTCFullYear()}` }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: color.surface },
+  page: { flex: 1, backgroundColor: color.background },
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   centreBody: { flex: 1, padding: space.xl, justifyContent: 'center', alignItems: 'flex-start' },
-  body: { padding: space.xl, gap: space.lg },
+  body: { paddingHorizontal: space.xl, paddingTop: space.xs, gap: space.lg, paddingBottom: space.xl },
   videoCard: { padding: space.lg },
-  foot: { borderTopWidth: borderWidth.thin, borderTopColor: color.border, paddingHorizontal: space.xl, paddingTop: space.md },
+  gapTop: { marginTop: space.md },
+  gapTopSm: { marginTop: space.sm },
+  muted: { color: color.textMuted },
 })
