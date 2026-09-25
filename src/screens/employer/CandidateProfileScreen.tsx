@@ -1,328 +1,211 @@
-import React, { useState, useEffect } from 'react'
-import { Alert, Image, StyleSheet, View } from 'react-native'
+import React, { useCallback, useEffect, useState } from 'react'
+import { ActivityIndicator, Image, Linking, Pressable, StyleSheet, Text, View } from 'react-native'
 import Video from 'react-native-video'
-import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native'
+import { useIsFocused, useNavigation, useRoute, type RouteProp } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { aspect, borderWidth, color, radius, space } from '../../theme'
+import { color, height, opacity, radius, space, spaceHalf } from '../../theme'
+import { Button, text } from '../../components/ui'
+import { Icon } from '../../components/ui/Icon'
+import { EmployerShell } from '../../components/employer'
+import { EmError } from '../../components/employer/em'
+import { FeedFace } from '../../components/employer/feed'
+import { ClipPlayer, ProfileFacts, ProfileSections, VerifiedInterviewBadge } from '../../components/employer/profile'
+import { ApiClientError } from '../../lib/api'
 import {
-  Body,
-  Button,
-  Card,
-  Display,
-  DisabledAction,
-  Divider,
-  EmptyState,
-  Eyebrow,
-  Meta,
-  ObjectRow,
-  Skeleton,
-  Tag,
-  VerifiedSeal,
-} from '../../components/ui'
-import { EmployerShell } from '../../components/employer/EmployerShell'
-import {
-  fetchCandidateDetail,
-  postSwipe,
-  type CandidateDetail,
+  fetchCandidateDetail, fetchCandidateDocument, playSelfVideo, postSwipe, type CandidateDetail,
 } from '../../lib/api/employerFeed'
+import { interviewDate, nameInitials, tierLine } from '../../lib/employer/candidateFormat'
+import { SendInterestSheet } from './SendInterestModal'
 import type { RootStackParamList } from '../../../App'
 
 type ScreenRouteProp = RouteProp<RootStackParamList, 'CandidateProfile'>
 
+/** Past this, the bar carries the name (EM-09b). */
+const FILM_H = height['profile-film']
+
+/**
+ * EM-09 · the candidate profile page (from the shortlist, Interests, a
+ * connection or an applicant): the 9:16 film (muted; a tap turns the sound on),
+ * the name and the three facts; scrolled (EM-09b), the bar carries the name and
+ * the verified-interview date, and the page goes on to Watch full interview and
+ * the sections. The foot shortlists (a right swipe, as on the card) and sends an
+ * Interest — the same sheet as everywhere.
+ */
 export function CandidateProfileScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
   const route = useRoute<ScreenRouteProp>()
+  const focused = useIsFocused()
   const { id } = route.params
 
   const [candidate, setCandidate] = useState<CandidateDetail | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [shortlisted, setShortlisted] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [scrolled, setScrolled] = useState(false)
+  const [muted, setMuted] = useState(true)
+  const [shortlisting, setShortlisting] = useState(false)
+  const [interestOpen, setInterestOpen] = useState(false)
+  const [clip, setClip] = useState<{ url: string; title?: string } | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
+  const [openingDoc, setOpeningDoc] = useState<string | null>(null)
 
-  useEffect(() => {
-    let active = true
+  const load = useCallback(() => {
+    setError(null)
     fetchCandidateDetail(id)
-      .then((data) => {
-        if (active) {
-          setCandidate(data)
-          setShortlisted(data.shortlisted)
-        }
-      })
-      .finally(() => {
-        if (active) setLoading(false)
-      })
-    return () => {
-      active = false
-    }
+      .then(setCandidate)
+      .catch((e) => setError(e instanceof Error ? e.message : 'Could not load the profile.'))
   }, [id])
 
-  const toggleShortlist = async () => {
-    if (!candidate) return
-    const nextState = !shortlisted
-    setShortlisted(nextState)
-    try {
-      await postSwipe(candidate.id, nextState ? 'RIGHT' : 'LEFT')
-    } catch {
-      setShortlisted(!nextState)
-    }
-  }
+  useEffect(() => {
+    load()
+  }, [load])
 
-  if (loading) {
-    return (
-      <EmployerShell back={{ label: 'FEED', onPress: () => navigation.goBack() }}>
-        <Skeleton lines={4} />
-      </EmployerShell>
-    )
-  }
+  const back = () => navigation.goBack()
 
   if (!candidate) {
     return (
-      <EmployerShell back={{ label: 'FEED', onPress: () => navigation.goBack() }}>
-        <EmptyState title="Profile not found" />
+      <EmployerShell back={back}>
+        {error ? (
+          <EmError title="Couldn’t load this profile." body={error} action={<Button variant="secondary" size="pair" icon="refresh" label="Try again" onPress={load} />} />
+        ) : (
+          <ActivityIndicator color={color.textSubtle} style={styles.loading} />
+        )}
       </EmployerShell>
     )
   }
 
-  const interviewDateStr = candidate.verifiedInterview.at
-    ? new Date(candidate.verifiedInterview.at).toLocaleDateString('en-GB', {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-      })
-    : null
+  const c = candidate
+  const date = c.verifiedInterview?.verified ? interviewDate(c.verifiedInterview.at) : null
+  const poster = c.posterUrl ?? c.photoUrl
+  const interestLocked = c.interest === 'SENT' || c.interest === 'ACCEPTED'
+  const openFull = () => navigation.navigate('CandidateVideo', { id: c.id, name: c.name, photoUrl: c.photoUrl, interviewAt: c.verifiedInterview?.at })
 
-  const salaryLakh =
-    candidate.expectedSalary.minPaise || candidate.expectedSalary.maxPaise
-      ? `${Math.round((candidate.expectedSalary.minPaise || 0) / 10000000)}–${Math.round(
-          (candidate.expectedSalary.maxPaise || 0) / 10000000,
-        )} Lakh`
-      : 'Competitive'
+  async function shortlist() {
+    setShortlisting(true)
+    setNotice(null)
+    try {
+      await postSwipe(c.id, 'RIGHT')
+      setCandidate((prev) => (prev ? { ...prev, shortlisted: true } : prev))
+    } catch (e) {
+      setNotice(e instanceof ApiClientError ? e.message : 'Not shortlisted. Try again.')
+    } finally {
+      setShortlisting(false)
+    }
+  }
 
-  // Already-sent or already-accepted interest is real, already-fetched state
-  // (`candidate.interest`) the screen previously ignored — the disabled state
-  // below is what the sixth Foundations state exists for: the action is not
-  // available, and the reason rides along with it rather than a dead button.
-  const interestUnavailable = candidate.interest === 'SENT' || candidate.interest === 'ACCEPTED'
+  async function playClip(videoId: string) {
+    setNotice(null)
+    try {
+      const r = await playSelfVideo(c.id, videoId)
+      setClip({ url: r.url, title: c.videos.find((v) => v.id === videoId)?.title ?? undefined })
+    } catch (e) {
+      setNotice(e instanceof ApiClientError ? e.message : 'The clip did not load. Try again.')
+    }
+  }
 
-  const sendInterestAction = interestUnavailable ? (
-    <DisabledAction
-      tone="neutral"
-      action={<Button variant="primary" size="lg" full disabled label="Send Interest" />}
-      reason={
-        candidate.interest === 'ACCEPTED'
-          ? "You're already connected with this candidate."
-          : 'Interest already sent to this candidate.'
-      }
-    />
-  ) : (
-    <Button
-      variant="primary"
-      size="lg"
-      full
-      label="Send Interest"
-      onPress={() => Alert.alert('Send Interest', 'Send Interest sheet opens (EM-15 in Phase 2)')}
-    />
-  )
-
-  const footActions = (
-    <View style={styles.footRow}>
-      <Button
-        variant={shortlisted ? 'secondary' : 'outline'}
-        size="lg"
-        label={shortlisted ? '🔖 Shortlisted' : '🔖 Shortlist'}
-        onPress={toggleShortlist}
-        style={styles.grow}
-      />
-      <View style={styles.grow}>{sendInterestAction}</View>
-    </View>
-  )
+  async function openDocument(docId: string) {
+    setNotice(null)
+    setOpeningDoc(docId)
+    try {
+      const r = await fetchCandidateDocument(c.id, docId)
+      await Linking.openURL(r.url)
+    } catch (e) {
+      setNotice(e instanceof ApiClientError ? e.message : 'The document did not open. Try again.')
+    } finally {
+      setOpeningDoc(null)
+    }
+  }
 
   return (
     <EmployerShell
-      back={{ label: 'FEED', onPress: () => navigation.goBack() }}
-      footer={footActions}
+      back={back}
+      title={scrolled ? c.name : undefined}
+      sub={scrolled && date ? `VERIFIED INTERVIEW · ${date.toUpperCase()}` : undefined}
+      barBorder={scrolled}
+      onScroll={(e) => setScrolled(e.nativeEvent.contentOffset.y > FILM_H)}
+      footer={
+        <>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={c.shortlisted ? 'Shortlisted' : 'Shortlist'}
+            accessibilityState={{ disabled: c.shortlisted || shortlisting, selected: c.shortlisted }}
+            disabled={c.shortlisted || shortlisting}
+            onPress={() => { shortlist() }}
+            style={({ pressed }) => [styles.save, pressed && styles.pressed]}
+          >
+            {shortlisting ? <ActivityIndicator color={color.textInverse} /> : (
+              <Icon name="bookmark" size={space.xl} tint={color.textInverse} weight={2} fill={c.shortlisted ? color.textInverse : 'none'} />
+            )}
+          </Pressable>
+          <Button
+            variant="primary"
+            size="lg"
+            label={c.interest === 'ACCEPTED' ? 'Connected' : c.interest === 'SENT' ? 'Interest sent' : 'Send Interest'}
+            disabled={interestLocked}
+            style={styles.grow}
+            onPress={() => setInterestOpen(true)}
+          />
+        </>
+      }
     >
-      {/* Top Video Preview & Verification */}
-      <View style={styles.videoCard}>
-        {candidate.streamUrl ? (
-          <Video
-            source={{ uri: candidate.streamUrl }}
-            poster={candidate.posterUrl || candidate.photoUrl || undefined}
-            paused={false}
-            muted={false}
-            repeat
-            resizeMode="cover"
-            style={StyleSheet.absoluteFill}
-          />
-        ) : candidate.posterUrl || candidate.photoUrl ? (
-          <Image
-            source={{ uri: candidate.posterUrl || candidate.photoUrl || '' }}
-            style={StyleSheet.absoluteFill}
-            resizeMode="cover"
-          />
-        ) : (
-          <View style={styles.videoPlaceholder}>
-            <Display level="sm" style={styles.onInk}>
-              {candidate.name}
-            </Display>
-            <Body size="xs" style={styles.onInkMuted}>
-              Verified Video Resume
-            </Body>
+      <View style={styles.film}>
+        {!!poster && <Image source={{ uri: poster }} style={StyleSheet.absoluteFill} resizeMode="cover" />}
+        {!poster && !c.streamUrl && (
+          <View style={styles.initialsWrap}><Text style={[text.displayPoster, styles.initials]}>{nameInitials(c.name)}</Text></View>
+        )}
+        {!!c.streamUrl && (
+          <Pressable accessibilityRole="button" accessibilityLabel={muted ? 'Turn the sound on' : 'Mute'} onPress={() => setMuted((m) => !m)} style={StyleSheet.absoluteFill}>
+            <Video source={{ uri: c.streamUrl }} style={StyleSheet.absoluteFill} resizeMode="cover" muted={muted} repeat paused={!focused || interestOpen || !!clip} />
+          </Pressable>
+        )}
+        {c.verifiedInterview?.verified && (
+          <View style={styles.filmPill} pointerEvents="none">
+            <Icon name="check" size={space.md + 1} tint={color.successOnInk} weight={2.4} />
+            <Text style={[text.uiXsMedium, styles.onInk]}>Verified video resume · 9:16</Text>
           </View>
         )}
-        <VerifiedSeal date={interviewDateStr ?? undefined} label="Verified Interview" style={styles.heroBadge} />
+        {!!c.streamUrl && (
+          <Pressable accessibilityRole="button" accessibilityLabel={muted ? 'Turn the sound on' : 'Mute'} onPress={() => setMuted((m) => !m)} style={styles.sound}>
+            <Icon name={muted ? 'mute' : 'sound'} size={spaceHalf['4.5']} tint={color.textOnInk} />
+          </Pressable>
+        )}
       </View>
 
-      {/* Heading */}
-      <View style={styles.headingBlock}>
-        <Display level="lg">{candidate.name}</Display>
-        <Body tone="muted">
-          {candidate.tier ? `Tier ${candidate.tier}` : 'Verified candidate'}
-          {candidate.qualification ? ` · ${candidate.qualification}` : ''}
-          {candidate.city ? ` · ${candidate.city}` : ''}
-        </Body>
-        {!!candidate.headline && <Body size="sm">{candidate.headline}</Body>}
+      <VerifiedInterviewBadge candidate={c} />
+      <View style={styles.who}>
+        <FeedFace name={c.name} photo={c.photoUrl} size={height.control} />
+        <View style={styles.grow}>
+          <Text style={text.displayHeading}>{c.name}</Text>
+          <Text style={[text.uiSm, styles.muted]}>{[tierLine(c.tier, c.qualification), c.city].filter(Boolean).join(' · ')}</Text>
+        </View>
       </View>
+      <ProfileFacts candidate={c} well={false} />
 
-      {/* Full 16:9 Video Link */}
-      <Card>
-        <ObjectRow
-          title="Complete 16:9 Interview Recording"
-          meta="Watch the full unedited interview"
-          status={
-            <Body size="sm" weight="semibold">
-              Play ▶
-            </Body>
-          }
-          onPress={() => navigation.navigate('CandidateVideo', { id: candidate.id })}
-          last
-        />
-      </Card>
+      {c.hasVideo !== false && <Button variant="outline" size="pair" icon="video" label="Watch full interview" onPress={openFull} />}
+      {!!notice && <Text style={[text.uiSm, styles.danger]}>{notice}</Text>}
+      <ProfileSections candidate={c} onPlayClip={playClip} onOpenDocument={openDocument} openingDoc={openingDoc} />
 
-      <Divider />
-
-      {/* Key Metrics */}
-      <Card style={styles.metricsCard}>
-        <Metric label="Expected salary" value={salaryLakh} sub="Annual CTC" />
-        <Metric label="Joining" value={candidate.availability || 'Immediate'} sub="Availability" />
-      </Card>
-
-      {/* Skills Section */}
-      {candidate.skills && candidate.skills.length > 0 && (
-        <View style={styles.section}>
-          <Eyebrow>Key skills</Eyebrow>
-          <View style={styles.tagsWrap}>
-            {candidate.skills.map((s) => (
-              <Tag key={s} label={s} />
-            ))}
-          </View>
-        </View>
-      )}
-
-      {/* Experience Section */}
-      {candidate.experience && candidate.experience.length > 0 && (
-        <View style={styles.section}>
-          <Eyebrow>Experience</Eyebrow>
-          {candidate.experience.map((exp, idx) => (
-            <View key={idx} style={styles.timelineItem}>
-              <View style={styles.timelineHeader}>
-                <Body weight="semibold" style={styles.grow}>
-                  {exp.title}
-                </Body>
-                <Meta>
-                  {exp.from} – {exp.to || 'Present'}
-                </Meta>
-              </View>
-              <Body size="sm" tone="muted">
-                {exp.company}
-              </Body>
-              {!!exp.description && (
-                <Body size="sm" tone="muted" style={styles.timelineDesc}>
-                  {exp.description}
-                </Body>
-              )}
-            </View>
-          ))}
-        </View>
-      )}
-
-      {/* Education Section */}
-      {candidate.education && (
-        <View style={styles.section}>
-          <Eyebrow>Education</Eyebrow>
-          <Card style={styles.eduCard}>
-            <Body weight="semibold">
-              {candidate.education.qualification || 'Degree'}
-              {candidate.education.fieldOfStudy ? ` in ${candidate.education.fieldOfStudy}` : ''}
-            </Body>
-            {!!candidate.education.institution && (
-              <Body size="sm" tone="muted">
-                {candidate.education.institution}
-              </Body>
-            )}
-            {!!candidate.education.score && (
-              <Meta style={styles.eduScore}>
-                Academic Claim: {candidate.education.score} {candidate.education.scoreType || '%'}
-              </Meta>
-            )}
-          </Card>
-        </View>
-      )}
+      <SendInterestSheet
+        open={interestOpen}
+        candidate={{ id: c.id, name: c.name, photoUrl: c.photoUrl, tier: c.tier, qualification: c.qualification, city: c.city, verified: c.verifiedInterview?.verified }}
+        onClose={() => setInterestOpen(false)}
+        onSent={() => setCandidate((prev) => (prev ? { ...prev, interest: 'SENT' } : prev))}
+      />
+      <ClipPlayer url={clip?.url ?? null} title={clip?.title} onClose={() => setClip(null)} />
     </EmployerShell>
   )
 }
 
-/** One metric cell — the same Display-over-Eyebrow shape the sibling job detail
- *  screen gives its counters, with the extra caption line this grid's values need. */
-function Metric({ label, value, sub }: { label: string; value: string; sub: string }) {
-  return (
-    <View style={styles.metricCell}>
-      <Eyebrow>{label}</Eyebrow>
-      <Display level="xs">{value}</Display>
-      <Body size="xs" tone="subtle">
-        {sub}
-      </Body>
-    </View>
-  )
-}
-
 const styles = StyleSheet.create({
-  grow: { flex: 1 },
-  videoCard: {
-    width: '100%',
-    aspectRatio: aspect.videoResume,
-    borderRadius: radius.xl,
-    overflow: 'hidden',
-    backgroundColor: color.ink,
-  },
-  videoPlaceholder: {
-    ...StyleSheet.absoluteFill,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: space.xl,
-    gap: space.xs,
-  },
-  onInk: { color: color.textOnInk, textAlign: 'center' },
-  onInkMuted: { color: color.textOnInkMuted, textAlign: 'center' },
-  heroBadge: { position: 'absolute', top: space.md, left: space.md },
-  headingBlock: { gap: space['2xs'] },
-  metricsCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    paddingVertical: space.md,
-  },
-  metricCell: { alignItems: 'center', gap: space['2xs'] },
-  section: { gap: space.sm },
-  tagsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
-  timelineItem: {
-    gap: space['2xs'],
-    borderLeftWidth: borderWidth.thin,
-    borderLeftColor: color.border,
-    paddingLeft: space.sm,
-  },
-  timelineHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', gap: space.sm },
-  timelineDesc: { marginTop: space['2xs'] },
-  eduCard: { padding: space.lg, gap: space['2xs'], backgroundColor: color.surfaceMuted },
-  eduScore: { marginTop: space['2xs'] },
-  footRow: { flexDirection: 'row', gap: space.sm },
+  grow: { flex: 1, minWidth: 0, gap: space['2xs'] + 1 },
+  pressed: { opacity: opacity.pressed },
+  muted: { color: color.textMuted },
+  danger: { color: color.danger },
+  onInk: { color: color.textOnInk },
+  loading: { paddingVertical: space['3xl'] },
+  film: { height: FILM_H, borderRadius: radius.xl, backgroundColor: color.inkRaised, overflow: 'hidden' },
+  initialsWrap: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
+  initials: { color: color.onInkWash },
+  filmPill: { position: 'absolute', top: spaceHalf['3.5'], left: spaceHalf['3.5'], height: height['chip-sm'] - 2, paddingHorizontal: spaceHalf['2.5'], borderRadius: radius.ctl, backgroundColor: color.onInkGlass, flexDirection: 'row', alignItems: 'center', gap: spaceHalf['1.5'] },
+  sound: { position: 'absolute', right: space.md, bottom: space.md, width: height.avatar, height: height.avatar, borderRadius: radius.pill, backgroundColor: color.onInkPlay, alignItems: 'center', justifyContent: 'center' },
+  who: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  save: { width: height['control-lg'], height: height['control-lg'], borderRadius: radius.pill, backgroundColor: color.ink, alignItems: 'center', justifyContent: 'center' },
 })

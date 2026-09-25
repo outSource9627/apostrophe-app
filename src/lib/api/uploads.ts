@@ -16,7 +16,7 @@ export interface UploadRule { contentTypes: string[]; maxBytes: number; label: s
 interface Presigned { key: string; url: string; method: 'PUT'; headers: Record<string, string>; expiresAt: string }
 
 /** A file the person chose: a file:// or content:// uri plus what the picker said about it. */
-export interface PickedMedia { uri: string; name: string; type: string; size: number; durationSec: number }
+export interface PickedMedia { uri: string; name: string; type: string; size: number; durationSec: number; width?: number; height?: number }
 
 export const UPLOAD_CANCELLED = 'Cancelled.'
 
@@ -50,6 +50,8 @@ export async function pickVideo(): Promise<PickedMedia | null> {
     type: a.type || 'video/mp4',
     size,
     durationSec: a.duration ?? 0,
+    width: a.width,
+    height: a.height,
   }
 }
 

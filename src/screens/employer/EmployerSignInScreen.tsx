@@ -1,12 +1,12 @@
 import React, { useRef, useState } from 'react'
 import {
-  Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View, type TextInput,
+  Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View, type TextInput,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { borderWidth, color, height, opacity, space } from '../../theme'
-import { Banner, Body, Button, Display, Eyebrow, Field, Input, type BannerTone } from '../../components/ui'
+import { color, space, spaceHalf } from '../../theme'
+import { Banner, Body, Button, Field, Input, type BannerTone } from '../../components/ui'
+import { EmBar, EmFoot, EmTitle } from '../../components/employer/em'
 import { TextAction } from '../../components/employer'
-import { Logo } from '../../components/Logo'
 import { ApiClientError, ErrorCode, tokenStore } from '../../lib/api'
 import { logout, type Me } from '../../lib/api/account'
 import { signInWithPassword } from '../../lib/api/employer'
@@ -15,6 +15,8 @@ import { CONNECTION_DROPPED, PasswordInput } from './EmployerRegisterScreen'
 export interface EmployerSignInScreenProps {
   onBack: () => void
   onRegister: () => void
+  /** "Forgot password?" — the reset flow. */
+  onForgot?: () => void
   /** Signed in. App routes on the role: EMPLOYER to EmployerHome, anyone else to their own home. */
   onSignedIn: (role: Me['role']) => void
 }
@@ -37,7 +39,7 @@ type TextInputRef = React.ComponentRef<typeof TextInput>
  * The same fields, refusals and copy as the web's /employers/signin. The one
  * action sits in a footer above the keyboard, where a thumb reaches it.
  */
-export function EmployerSignInScreen({ onBack, onRegister, onSignedIn }: EmployerSignInScreenProps) {
+export function EmployerSignInScreen({ onBack, onRegister, onForgot, onSignedIn }: EmployerSignInScreenProps) {
   const insets = useSafeAreaInsets()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -95,27 +97,10 @@ export function EmployerSignInScreen({ onBack, onRegister, onSignedIn }: Employe
       style={[styles.page, { paddingTop: insets.top }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <View style={styles.bar}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Apostrophe, back"
-          onPress={onBack}
-          style={({ pressed }) => [styles.brand, pressed && styles.pressed]}
-        >
-          <Logo size={18} />
-        </Pressable>
-        <View style={styles.grow} />
-        <TextAction label="Create account" onPress={onRegister} style={styles.barAction} />
-      </View>
+      <EmBar onBack={onBack} />
 
       <ScrollView style={styles.grow} contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-        <View style={styles.title}>
-          <Eyebrow>Employer account</Eyebrow>
-          <Display level="lg" accessibilityRole="header">
-            Sign in
-          </Display>
-          <Body tone="muted">The work email and password you created your account with.</Body>
-        </View>
+        <EmTitle eyebrow="Employer account" title="Sign in" sub="The work email and password you registered with." />
 
         {!!refusal && (
           <View accessibilityLiveRegion="polite">
@@ -173,12 +158,21 @@ export function EmployerSignInScreen({ onBack, onRegister, onSignedIn }: Employe
               editable={!busy}
             />
           </Field>
+          <View style={styles.forgotRow}>
+            {!!onForgot && <TextAction label="Forgot password?" underline={false} onPress={onForgot} />}
+          </View>
+          <View style={styles.newRow}>
+            <Body size="sm" tone="muted">New to Apostrophe?</Body>
+            <TextAction label="Create an employer account" underline={false} onPress={onRegister} />
+          </View>
         </View>
       </ScrollView>
 
-      <View style={[styles.footer, { paddingBottom: space.lg + insets.bottom }]}>
-        <Button variant="primary" size="lg" full busy={busy} label={busy ? 'Signing in…' : 'Sign in'} onPress={submit} />
-      </View>
+      <EmFoot>
+        <View style={styles.grow}>
+          <Button variant="primary" size="lg" full busy={busy} label={busy ? 'Signing in…' : 'Sign in'} onPress={submit} />
+        </View>
+      </EmFoot>
     </KeyboardAvoidingView>
   )
 }
@@ -186,29 +180,8 @@ export function EmployerSignInScreen({ onBack, onRegister, onSignedIn }: Employe
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.background },
   grow: { flex: 1 },
-  pressed: { opacity: opacity.pressed },
-
-  bar: {
-    height: height.header,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: space.xl,
-    backgroundColor: color.surface,
-    borderBottomWidth: borderWidth.thin,
-    borderBottomColor: color.border,
-  },
-  brand: { minHeight: height.tap, justifyContent: 'center' },
-  barAction: { marginRight: -space.sm },
-
-  body: { paddingHorizontal: space.xl, paddingTop: space.xl, paddingBottom: space['2xl'], gap: space['2xl'] },
-  title: { gap: space.sm },
-  fields: { gap: space.xl },
-
-  footer: {
-    borderTopWidth: borderWidth.thin,
-    borderTopColor: color.border,
-    backgroundColor: color.surface,
-    paddingTop: space.md,
-    paddingHorizontal: space.xl,
-  },
+  body: { paddingHorizontal: space.lg, paddingTop: space.xs, paddingBottom: space.xl, gap: spaceHalf['4.5'] },
+  fields: { gap: spaceHalf['4.5'] },
+  forgotRow: { alignItems: 'flex-end' },
+  newRow: { flexDirection: 'row', alignItems: 'center', gap: space.xs, flexWrap: 'wrap' },
 })

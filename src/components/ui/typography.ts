@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native'
-import { color, fontFamilyNative, fontSize, leadingNative, trackingNative } from '../../theme'
+import { color, fontFamilyNative, fontSize, fontSizeLeading, leadingNative, trackingNative } from '../../theme'
 
 /**
  * Foundations §03 on React Native — three families, one job each.
@@ -80,6 +80,14 @@ export const text = StyleSheet.create({
     fontSize: fontSize['display-heading'],
     lineHeight: leadingNative['display-heading'],
     letterSpacing: trackingNative['tight-md'],
+    color: color.text,
+  },
+  /** The employer auth/section title (Employer Android h1): 32 at 600. */
+  displayPage: {
+    fontFamily: fontFamilyNative.display,
+    fontSize: fontSize['display-page'],
+    lineHeight: leadingNative['display-page'],
+    letterSpacing: trackingNative.tight,
     color: color.text,
   },
   /** The sign-up headline and the dashboard greeting scale: 34 at 600. */
@@ -176,6 +184,20 @@ export const text = StyleSheet.create({
     lineHeight: leadingNative['ui-base'],
     color: color.text,
   },
+  /** The initials standing in for a film with no poster (Employer Android A.card): 140, a watermark. */
+  displayPoster: {
+    fontFamily: fontFamilyNative.display,
+    fontSize: fontSize['display-poster'],
+    lineHeight: fontSize['display-poster'],
+    color: color.text,
+  },
+  /** A file name in a drop zone (Employer Android H.drop): 15 at 550. */
+  uiBaseMedium: {
+    fontFamily: fontFamilyNative.bodyMedium,
+    fontSize: fontSize['ui-base'],
+    lineHeight: leadingNative['ui-base'],
+    color: color.text,
+  },
   uiBaseSemi: {
     fontFamily: fontFamilyNative.bodySemiBold,
     fontSize: fontSize['ui-base'],
@@ -209,6 +231,35 @@ export const text = StyleSheet.create({
     lineHeight: leadingNative['meta-sm'],
     letterSpacing: trackingNative.eyebrow,
     textTransform: 'uppercase',
+    color: color.textSubtle,
+  },
+  /** A balance read as a mono figure (the interviewer wallet's headline): 30. */
+  metaFigure: {
+    fontFamily: fontFamilyNative.mono,
+    fontSize: fontSize['meta-figure'],
+    lineHeight: Math.round(fontSize['meta-figure'] * fontSizeLeading['meta-figure']),
+    color: color.text,
+  },
+  /** A figure or countdown on an interviewer card (Interviewer Android M1): 22 mono. */
+  metaTile: {
+    fontFamily: fontFamilyNative.mono,
+    fontSize: fontSize['meta-tile'],
+    lineHeight: leadingNative['meta-tile'],
+    color: color.text,
+  },
+  /** The scorecard deadline band's clock (Interviewer Android M4): 16 mono. */
+  metaBand: {
+    fontFamily: fontFamilyNative.mono,
+    fontSize: fontSize['meta-band'],
+    lineHeight: leadingNative['meta-band'],
+    color: color.text,
+  },
+  /** A figure in mono beside a file (Employer Android H.drop's percentage): 12. */
+  metaBase: {
+    fontFamily: fontFamilyNative.monoMedium,
+    fontSize: fontSize['meta-base'],
+    lineHeight: leadingNative['meta-md'],
+    letterSpacing: trackingNative.eyebrow,
     color: color.textSubtle,
   },
   /** The same step inside a pill, where the tracking tightens slightly. */

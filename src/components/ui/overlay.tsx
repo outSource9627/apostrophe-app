@@ -6,6 +6,7 @@ import { borderWidth, color, height, opacity, radius, space } from '../../theme'
 import { Body, Display, Eyebrow } from './Type'
 import { Button } from './Button'
 import { text } from './typography'
+import { Icon } from './Icon'
 
 /** Foundations §09 — navigation, sheets, modals. */
 
@@ -123,7 +124,13 @@ export function AppBar({
   )
 }
 
-export type TabItem = { key: string; label: string; glyph?: React.ReactNode; badge?: number }
+export type TabItem = {
+  key: string; label: string; glyph?: React.ReactNode; badge?: number
+  /** Not usable yet (an unverified employer): dimmed, a padlock on the icon, and the press does nothing. */
+  locked?: boolean
+  /** A small accent dot for unread, without a number. */
+  dot?: boolean
+}
 
 /**
  * The five destinations after onboarding.
@@ -150,12 +157,18 @@ export function TabBar({
           <Pressable
             key={it.key}
             accessibilityRole="tab"
-            accessibilityState={{ selected: active }}
+            accessibilityState={{ selected: active, disabled: it.locked }}
+            accessibilityHint={it.locked ? 'Opens once your company is verified' : undefined}
+            disabled={it.locked}
             onPress={() => onSelect?.(it.key)}
             style={({ pressed }) => [styles.tab, pressed && { opacity: opacity.pressed }]}
           >
             <View style={android && active ? styles.tabIndicator : styles.tabIndicatorOff}>
               {it.glyph ? it.glyph : <View style={[styles.glyph, active ? styles.glyphOn : styles.glyphOff]} />}
+              {it.locked && (
+                <View style={styles.lock}><Icon name="lock" size={space.md - 1} tint={color.textDisabled} weight={borderWidth.accent + 0.2} /></View>
+              )}
+              {it.dot && !it.locked && <View style={styles.dot} />}
               {!!it.badge && (
                 <View style={styles.badge}>
                   {android ? (
@@ -167,7 +180,7 @@ export function TabBar({
             <Text
               style={[
                 active ? text.uiXsSemi : text.uiXsMedium,
-                { color: active ? color.accentText : android ? color.textMuted : color.textSubtle },
+                { color: active ? color.accentText : it.locked ? color.textDisabled : android ? color.textMuted : color.textSubtle },
               ]}
             >
               {it.label}
@@ -293,6 +306,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: space['2xs'],
   },
   badgeText: { color: color.textInverse },
+  lock: { position: 'absolute', top: 0, right: space.xs },
+  dot: { position: 'absolute', top: space['2xs'], right: space.md, width: space.sm, height: space.sm, borderRadius: radius.pill, backgroundColor: color.accent, borderWidth: borderWidth.accent, borderColor: color.surface },
 
   section: { marginBottom: space.xl },
   sectionHead: {

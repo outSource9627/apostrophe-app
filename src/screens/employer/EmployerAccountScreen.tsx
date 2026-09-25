@@ -1,266 +1,143 @@
-import React, { useState, useEffect, useCallback } from 'react'
-import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native'
-import Svg, { Path } from 'react-native-svg'
+import React, { useEffect, useState } from 'react'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { color, space } from '../../theme'
-import {
-  Banner,
-  Body,
-  Button,
-  Card,
-  Display,
-  Divider,
-  ErrorState,
-  Eyebrow,
-  Meta,
-  ObjectRow,
-  Skeleton,
-  StatusPill,
-} from '../../components/ui'
-import { CompanyMonogram, EmployerShell, VerifiedEmployerBadge } from '../../components/employer'
-import { getEmployerMe, type EmployerMe } from '../../lib/api/employer'
-import { logout } from '../../lib/api/account'
+import { useQueryClient } from '@tanstack/react-query'
+import { borderWidth, color, height, opacity, radius, space, spaceHalf, trackingNative } from '../../theme'
+import { Button, text } from '../../components/ui'
+import { Icon } from '../../components/ui/Icon'
+import { EmployerShell } from '../../components/employer'
+import { EmBadge, EmCard, initialsOf } from '../../components/employer/em'
+import { tokenStore } from '../../lib/api'
+import { getMe, logout, type Me } from '../../lib/api/account'
+import { openEmployerSupport } from '../../lib/api/employerChat'
+import { companySizeLabel, formatIst } from '../../lib/employer/state'
+import { useEmployer } from '../../lib/employer/useEmployer'
 import type { RootStackParamList } from '../../../App'
 
-function formatApprovedDate(isoStr?: string | null): string {
-  if (!isoStr) return ''
-  const d = new Date(isoStr)
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-  const day = String(d.getDate()).padStart(2, '0')
-  const mon = months[d.getMonth()]
-  const yr = d.getFullYear()
-  return `${day} ${mon} ${yr}`
+/** '+91 98000 00001'. Anything that is not ten digits is shown as stored. */
+function mobileLabel(mobile: string): string {
+  const digits = mobile.replace(/\D/g, '').slice(-10)
+  return digits.length === 10 ? `+91 ${digits.slice(0, 5)} ${digits.slice(5)}` : mobile
 }
 
-/** The chevron on a drill-in row. Danger-toned on Sign out so the row reads as the destructive one without reaching for accent. */
-function RowChevron({ danger = false }: { danger?: boolean }) {
-  return (
-    <Svg
-      width={16}
-      height={16}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke={danger ? color.danger : color.textSubtle}
-      strokeWidth={1.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <Path d="m9 5 7 7-7 7" />
-    </Svg>
-  )
-}
-
+/**
+ * EM-27 · Account (Employer Android): the company card (monogram, name, the
+ * Verified Employer badge and "since" only once verified), the work email and
+ * mobile (VERIFIED only when /auth/me says so), the account holder, five links,
+ * and Sign out. Message Apostrophe Support opens the one support conversation.
+ */
 export function EmployerAccountScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
-
-  const [data, setData] = useState<EmployerMe | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<Error | null>(null)
+  const queryClient = useQueryClient()
+  const { state } = useEmployer()
+  const [me, setMe] = useState<Me | null>(null)
   const [signingOut, setSigningOut] = useState(false)
-
-  const load = useCallback(async () => {
-    try {
-      setLoading(true)
-      const res = await getEmployerMe()
-      setData(res)
-      setError(null)
-    } catch (err) {
-      console.error('Failed to load employer account', err)
-      setError(err instanceof Error ? err : new Error('Failed to load employer account'))
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+  const [supportBusy, setSupportBusy] = useState(false)
+  const [notice, setNotice] = useState<string | null>(null)
 
   useEffect(() => {
-    load()
-  }, [load])
+    getMe().then(setMe).catch(() => {})
+  }, [])
 
-  const handleSignOut = async () => {
+  async function signOut() {
+    setSigningOut(true)
     try {
-      setSigningOut(true)
       await logout()
-      navigation.reset({ index: 0, routes: [{ name: 'Welcome' }] })
-    } catch (err) {
-      console.error('Failed to sign out', err)
-      navigation.reset({ index: 0, routes: [{ name: 'Welcome' }] })
+    } catch {
+      /* best-effort; the session is cleared here regardless */
+    }
+    await tokenStore.clear()
+    queryClient.removeQueries({ queryKey: ['employer'] })
+    navigation.reset({ index: 0, routes: [{ name: 'Welcome' }] })
+  }
+
+  async function support() {
+    setSupportBusy(true)
+    setNotice(null)
+    try {
+      const { threadId } = await openEmployerSupport()
+      navigation.navigate('EmployerThread', { id: threadId })
+    } catch (e) {
+      setNotice(e instanceof Error ? e.message : 'Support did not open. Try again.')
     } finally {
-      setSigningOut(false)
+      setSupportBusy(false)
     }
   }
 
-  const isSuspended = data?.status === 'SUSPENDED'
-  const isVerified = data?.verified === true
-  const isPending = !isVerified && !isSuspended
+  const company = state?.company
+  const approvedAt = state?.verification.approvedAt
+  const facts = company
+    ? [company.industry, companySizeLabel(company.size), company.officeLocation, state?.verified && approvedAt ? `since ${formatIst(approvedAt).split(' · ')[0]}` : null]
+        .filter(Boolean)
+        .join(' · ')
+    : ''
+  const links: { label: string; onPress: () => void; busy?: boolean }[] = [
+    { label: 'Company profile', onPress: () => navigation.navigate('EmployerCompany') },
+    { label: 'Verification documents', onPress: () => navigation.navigate('EmployerStatus') },
+    { label: 'Notification settings', onPress: () => navigation.navigate('EmployerNotificationSettings') },
+    { label: 'Notifications history', onPress: () => navigation.navigate('EmployerNotifications') },
+    { label: 'Message Apostrophe Support', onPress: () => { support() }, busy: supportBusy },
+  ]
 
   return (
-    <EmployerShell
-      back={{ label: 'HOME', onPress: () => navigation.goBack() }}
-      scroll={false}
-    >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Display level="lg" accessibilityRole="header">
-          Account
-        </Display>
-
-        {loading ? (
-          <Skeleton lines={4} />
-        ) : data ? (
-          <View style={styles.content}>
-            {/* Suspended Alert */}
-            {isSuspended && (
-              <Banner tone="danger" title={data.company.name} reference="ACCOUNT SUSPENDED">
-                While the suspension lasts, candidate browsing, job applications, messaging, and new Interests are
-                frozen.
-              </Banner>
-            )}
-
-            {/* Pending Review Alert */}
-            {isPending && (
-              <Card>
-                <ObjectRow
-                  title="In review"
-                  meta="Your verification documents are under review. Candidates and chat open once approved."
-                  status={<StatusPill tone="warning" label="Pending review" />}
-                  onPress={() => navigation.navigate('EmployerStatus')}
-                  last
-                />
-              </Card>
-            )}
-
-            {/* Verification Card */}
-            <Card style={styles.verificationCard}>
-              <View style={styles.identity}>
-                <CompanyMonogram name={data.company.name} size={space['4xl']} />
-                <View style={styles.naming}>
-                  <Display level="md">{data.company.name}</Display>
-                  {isVerified ? <VerifiedEmployerBadge /> : <StatusPill tone="warning" label="Pending" />}
-                </View>
-              </View>
-
-              <Meta>
-                {data.verification.approvedAt
-                  ? `Since ${formatApprovedDate(data.verification.approvedAt)}`
-                  : 'Verification pending'}
-              </Meta>
-
-              <Body size="sm" tone="muted">
-                {[data.company.industry, data.company.size, data.company.officeLocation]
-                  .filter(Boolean)
-                  .join(' · ')}
-              </Body>
-
-              <Divider />
-
-              <Body size="xs" tone="muted">
-                Verified employers have submitted company PAN, registration documents, and an authorized signatory's
-                government photo ID. Students see this seal next to every communication from your team.
-              </Body>
-            </Card>
-
-            {/* Sign-in & Security */}
-            <View style={styles.section}>
-              <Eyebrow>Sign-in & security</Eyebrow>
-              <Card>
-                <ObjectRow title={data.contact.email} meta="Work email" status={<StatusPill tone="success" label="Verified" />} />
-                <ObjectRow
-                  title={data.contact.mobile}
-                  meta="Mobile number"
-                  status={<StatusPill tone="success" label="Verified" />}
-                  last
-                />
-              </Card>
+    <EmployerShell back={() => navigation.goBack()} title="Account" big right={null}>
+      {company && (
+        <EmCard>
+          <View style={styles.head}>
+            <View style={styles.mono}><Text style={[text.uiLeadSemi, styles.monoText]}>{initialsOf(company.name)}</Text></View>
+            <View style={styles.grow}>
+              <Text style={text.uiLgSemi}>{company.name}</Text>
+              {state?.verified && <EmBadge label="Verified employer" tone="green" icon="shield" small />}
             </View>
-
-            {/* Account Holder */}
-            <View style={styles.section}>
-              <Eyebrow>Account holder</Eyebrow>
-              <Card>
-                <View style={styles.holderHeader}>
-                  <Display level="xs">{data.company.authorisedPerson.name}</Display>
-                  <Body size="sm" tone="muted">
-                    {data.company.authorisedPerson.designation} · Authorized Signatory
-                  </Body>
-                </View>
-                <Divider />
-                <ObjectRow title="Government Photo ID" meta="Photo ID submitted" last />
-              </Card>
-            </View>
-
-            {/* Quick Links */}
-            <View style={styles.section}>
-              <Eyebrow>Preferences & activity</Eyebrow>
-              <Card>
-                <ObjectRow
-                  title="Notifications inbox"
-                  status={<RowChevron />}
-                  onPress={() => navigation.navigate('EmployerNotifications')}
-                />
-                <ObjectRow
-                  title="Notification preferences"
-                  status={<RowChevron />}
-                  onPress={() => navigation.navigate('EmployerNotificationSettings')}
-                />
-                <ObjectRow
-                  title="Connections"
-                  status={<RowChevron />}
-                  onPress={() => navigation.navigate('EmployerConnections')}
-                  last
-                />
-              </Card>
-            </View>
-
-            {/* Sign Out */}
-            <Card>
-              <ObjectRow
-                title={signingOut ? 'Signing out…' : 'Sign out'}
-                status={signingOut ? <ActivityIndicator size="small" color={color.textMuted} /> : <RowChevron danger />}
-                onPress={signingOut ? undefined : handleSignOut}
-                last
-              />
-            </Card>
           </View>
-        ) : error ? (
-          <ErrorState
-            title="We could not load your account."
-            body={error.message}
-            action={<Button variant="outline" size="sm" label="Try again" onPress={() => load()} />}
-          />
-        ) : null}
-      </ScrollView>
+          {!!facts && <Text style={[text.uiXs, styles.muted]}>{facts}</Text>}
+        </EmCard>
+      )}
+
+      <View>
+        <Fact k="WORK EMAIL" v={state?.contact.email ?? me?.email ?? '—'} verified={me?.emailVerified} />
+        <Fact k="MOBILE" v={state?.contact.mobile ? mobileLabel(state.contact.mobile) : me?.mobile ? mobileLabel(me.mobile) : '—'} verified={me?.mobileVerified} />
+        {!!company && <Fact k="HOLDER" v={[company.authorisedPerson.name, company.authorisedPerson.designation].filter(Boolean).join(' · ')} />}
+      </View>
+
+      <View>
+        {links.map((l) => (
+          <Pressable key={l.label} accessibilityRole="button" onPress={l.onPress} disabled={l.busy} style={({ pressed }) => [styles.link, pressed && styles.pressed]}>
+            <Text style={[text.uiBaseSemi, styles.grow]}>{l.label}</Text>
+            <Icon name="chevR" size={space.lg} tint={color.textSubtle} />
+          </Pressable>
+        ))}
+      </View>
+      {!!notice && <Text style={[text.uiSm, styles.danger]}>{notice}</Text>}
+
+      <Button variant="outline" size="cta" icon="out" label="Sign out" busy={signingOut} onPress={() => { signOut() }} />
     </EmployerShell>
   )
 }
 
+function Fact({ k, v, verified }: { k: string; v: string; verified?: boolean }) {
+  return (
+    <View style={styles.fact}>
+      <View style={styles.factHead}>
+        <Text style={[text.metaSm, styles.muted, styles.mono2]}>{k}</Text>
+        {verified && <EmBadge label="Verified" tone="green" icon="check" small />}
+      </View>
+      <Text style={text.uiBase}>{v}</Text>
+    </View>
+  )
+}
+
 const styles = StyleSheet.create({
-  scrollContent: {
-    paddingHorizontal: space.lg,
-    paddingTop: space.md,
-    paddingBottom: space['4xl'],
-    gap: space['2xl'],
-  },
-  content: {
-    gap: space.lg,
-  },
-  identity: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: space.sm,
-  },
-  naming: {
-    flex: 1,
-    gap: space.sm,
-  },
-  section: {
-    gap: space.md,
-  },
-  holderHeader: {
-    padding: space.lg,
-    gap: space['2xs'],
-  },
-  verificationCard: {
-    padding: space.md,
-    gap: space.sm,
-  },
+  grow: { flex: 1, minWidth: 0, gap: spaceHalf['1.5'] },
+  pressed: { opacity: opacity.pressed },
+  muted: { color: color.textMuted },
+  danger: { color: color.danger },
+  mono2: { letterSpacing: trackingNative.eyebrow },
+  head: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  mono: { width: height['control-lg'], height: height['control-lg'], borderRadius: radius.tile, backgroundColor: color.surfaceMuted, alignItems: 'center', justifyContent: 'center' },
+  monoText: { color: color.textSecondary },
+  fact: { gap: space['2xs'] + 1, paddingVertical: spaceHalf['2.5'], borderBottomWidth: borderWidth.thin, borderBottomColor: color.border },
+  factHead: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  link: { flexDirection: 'row', alignItems: 'center', minHeight: height.control, paddingVertical: space.md, borderBottomWidth: borderWidth.thin, borderBottomColor: color.border },
 })

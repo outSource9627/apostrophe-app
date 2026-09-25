@@ -54,6 +54,8 @@ export const color = {
   textSubtle: '#8A91A2',
   /** A struck-through, unavailable value — a taken time slot. */
   textDisabled: '#B4BAC7',
+  /** A locked destination's ink — the employer nav item a pending account cannot open yet. */
+  textLocked: '#A6ACBA',
   textInverse: '#FFFFFF',
 
   // structure — cool slate hairlines
@@ -80,6 +82,8 @@ export const color = {
   accentBright: '#7258FF',
   /** The deep end of a violet gradient — an avatar or tile on ink. */
   accentDeep: '#3B2A8F',
+  /** The hairline round a violet well — the reviewer's request on the employer status screen. */
+  accentEdge: '#DCD3FF',
 
   /**
    * The ink ground and the darkest text. Ink appears as the mark, dark-fill
@@ -90,6 +94,8 @@ export const color = {
   inkRaised: '#151B2B',
   /** An ink control on hover, and the light end of a footage gradient. */
   inkHover: '#2A3142',
+  /** The silhouette drawn on ink where a candidate's face goes — the employer landing's sample film. */
+  inkSilhouette: '#1E2433',
   /** The live room's ground — darker than ink so footage owns the frame. */
   inkDeep: '#07090F',
   /** The dark end of a footage gradient inside the room. */
@@ -101,9 +107,13 @@ export const color = {
   textOnInkSoft: '#E3E6ED',
   textOnInkMuted: '#C9CED9',
   textOnInkSubtle: '#8A91A2',
+  /** A step's description on the employer sign-up card — between `textOnInkMuted` and `textOnInkSubtle`. */
+  textOnInkBody: '#A6ACBA',
   /** The wash behind a sheet, and the gradient foot under a video caption. */
   scrim: 'rgba(11, 15, 26, 0.4)',
   scrimStrong: 'rgba(11, 15, 26, 0.82)',
+  /** The wash behind the job-details drawer — a step lighter than a sheet's, as the design draws it. */
+  scrimDrawer: 'rgba(11, 15, 26, 0.32)',
   /** The backdrop behind a modal over the live room. */
   scrimModal: 'rgba(7, 9, 15, 0.7)',
 
@@ -133,10 +143,17 @@ export const color = {
   onInkGlass: 'rgba(11, 15, 26, 0.6)',
   /** The hairline round a poster card on the ink ground — fainter than `onInkGround`. */
   onInkHairline: 'rgba(255, 255, 255, 0.1)',
+  /** A fact tile lifted a shade off an ink card — white at 6%. */
+  onInkWash: 'rgba(255, 255, 255, 0.06)',
   /** An accent pill on the ink ground ("UPCOMING") — `accentBright` at 25%; its text is `accentMuted`. */
   accentOnInkSoft: 'rgba(114, 88, 255, 0.25)',
   /** The unfilled track of a progress bar on the ink ground. */
   onInkBar: 'rgba(255, 255, 255, 0.12)',
+  /** The job deck's play disc on a card (white at 16%), and the larger one in the details panel (18%). */
+  onInkPlay: 'rgba(255, 255, 255, 0.16)',
+  onInkPlayLg: 'rgba(255, 255, 255, 0.18)',
+  /** The hairline round a skill tag over footage. */
+  onInkOutline: 'rgba(255, 255, 255, 0.3)',
 
   /**
    * ── semantic state ────────────────────────────────────────────────────
@@ -146,6 +163,10 @@ export const color = {
    */
   success: '#0B7A55',
   successSoft: '#E6F7F0',
+  /** A confirmed code cell's ground — a step lighter than `successSoft`. */
+  successWash: '#F3FBF7',
+  /** The hairline round an open cell in the interviewer's weekly availability matrix. */
+  successEdge: '#9FDDC4',
   successFill: '#0E9F6E',
   /** The ring round a live status dot — `successFill` at 18%. */
   successHalo: 'rgba(14, 159, 110, 0.18)',
@@ -160,6 +181,11 @@ export const color = {
   warningStrong: '#B87700',
   /** The darkest amber — body text set on `warningSoft`. */
   warningInk: '#5C4200',
+  /** The hairline under an amber band, and the stronger edge on the outline button inside it. */
+  warningEdge: '#F5E2B8',
+  warningEdgeStrong: '#E8C77A',
+  /** The ground of a self-uploaded, unverified clip on a candidate profile (EM-09) — lighter than `warningSoft`. */
+  warningWash: '#FFFCF3',
   warningOnInk: '#FCC96B',
   danger: '#C22A30',
   dangerSoft: '#FDECEC',
@@ -169,6 +195,10 @@ export const color = {
   dangerBorder: '#F2B8BA',
   dangerOnInk: '#FF8A8E',
   dangerOnInkSoft: 'rgba(229, 72, 77, 0.16)',
+  /** The wash under a hovered Not-interested circle on the job deck. */
+  dangerWash: '#FFF7F7',
+  /** A wrong code cell's ground. */
+  dangerGround: '#FFFBFA',
   info: '#4A2FE0',
   infoSoft: '#EFEBFF',
 } as const
@@ -238,8 +268,12 @@ export const radius = {
   lg: 16,
   /** The profile view's cards (G7): two pixels past `lg`, the one place the design draws 18. */
   'card-lg': 18,
+  /** The centred employer modal (EM-13, EM-15) — a step past `xl`, which the deck (22) shares in value only. */
+  modal: 22,
   /** Modals and floating tiles. */
   xl: 20,
+  /** The job deck's swipe card (G2): 22. */
+  deck: 22,
   /** The lobby's camera frame. */
   frame: 24,
   /** Every button, badge, pill and toggle. */
@@ -274,6 +308,8 @@ export const fontSize = {
   'display-card': 20,
   /** The day number in a date tile — "26" over its month, in the interviews list. */
   'display-tile': 19,
+  /** A saved job's title in its row (G3) — the tile's 19 set as a heading, so it has a line box. */
+  'display-row': 19,
   /** A section heading, one step under the page title. */
   'display-heading': 24,
   /** A feature card's headline date. */
@@ -290,8 +326,12 @@ export const fontSize = {
   'display-auth': 40,
   /** The sign-up headline — "Five things, and we're off." Between the greeting and the marketing step. */
   'display-signup': 52,
+  /** The employer landing's headline. */
+  'display-landing': 84,
   /** A single figure set large — the reply multiple. */
   'display-figure': 72,
+  /** The candidate's initial on a film that has no footage yet (EM-08, EM-09): 140, set at a tenth of white. */
+  'display-poster': 140,
   /** The Android scorecard's overall figure (M9): 56 at 600. */
   'display-score-sm': 56,
   /** The score. The largest number in the product. */
@@ -324,6 +364,10 @@ export const fontSize = {
   'ui-lg': 17,
   /** Large interface type, where a heading is chrome rather than content. */
   'ui-xl': 20,
+  /** The employer landing's section lead. */
+  'ui-intro': 19,
+  /** The employer landing's primary action. */
+  'ui-cta': 18,
 
   // ── meta · IBM Plex Mono · always uppercase ─────────────────────────────
   /** Dense badges sitting on footage. */
@@ -378,8 +422,16 @@ export const fontSize = {
    * place the design sets a number in Geist Mono rather than the display face.
    */
   'meta-figure': 30,
+  /** 48 — the interviewer dashboard's countdown to the next session. */
+  'meta-countdown': 48,
   /** One digit of a one-time code in its cell (Android M1): 24 mono at 600. */
   'meta-otp': 24,
+  /** The job deck's SAVE stamp (G2): 18 mono at 600. Its NOT INTERESTED sibling is `meta-xl`. */
+  'meta-stamp': 18,
+  /** A figure or a countdown on an interviewer phone card (Interviewer Android M1): 22 mono. */
+  'meta-tile': 22,
+  /** The scorecard deadline band's clock (Interviewer Android M4): 16 mono. */
+  'meta-band': 16,
 } as const
 
 /**
@@ -400,6 +452,7 @@ export const fontSizeLeading = {
   'display-card': 1.25,
   /** The design sets the day number at line-height 1, so the tile's two lines centre as one block. */
   'display-tile': 1,
+  'display-row': 1.25,
   'display-heading': 1.2,
   'display-lead': 1.15,
   'display-form': 1.15,
@@ -408,6 +461,7 @@ export const fontSizeLeading = {
   'display-stat': 1.05,
   'display-auth': 1.05,
   'display-signup': 1.02,
+  'display-landing': 0.98,
   'display-figure': 1,
   'display-score': 0.9,
   prose: 1.55,
@@ -420,6 +474,8 @@ export const fontSizeLeading = {
   'ui-lead': 1.4,
   'ui-lg': 1.35,
   'ui-xl': 1.3,
+  'ui-intro': 1.55,
+  'ui-cta': 1.35,
 
   'meta-xs': 1.5,
   'meta-sm': 1.5,
@@ -434,6 +490,9 @@ export const fontSizeLeading = {
   'meta-hero': 1,
   /** The design sets no line height on it: the font's own line box, `leading.natural`. */
   'meta-figure': 1.3,
+  'meta-countdown': 1,
+  'meta-tile': 1.2,
+  'meta-band': 1.3,
 } as const
 
 /**
@@ -474,6 +533,8 @@ export const fontWeight = {
 export const tracking = {
   /** A figure set very large — the reply multiple, the score. */
   'tight-2xl': '-0.05em',
+  'tight-hero': '-0.045em',
+  'tight-display': '-0.04em',
   /** The display step. */
   'tight-xl': '-0.035em',
   /** Large display type. */
@@ -509,6 +570,8 @@ export const tracking = {
   'meta-snug': '0.06em',
   /** Status pills and inline mono. */
   meta: '0.06em',
+  /** The job deck's mono meta line (G2): 0.05em, between `meta-label` and `meta`. */
+  'meta-deck': '0.05em',
   /**
    * The two clock tracks, and they tighten as the clock grows for the same
    * reason the display steps do: tracking is air between letters, and a
@@ -541,6 +604,8 @@ export const tracking = {
 export const leading = {
   none: 1,
   display: 1.08,
+  /** A sign-up page's headline (1.04). */
+  head: 1.04,
   tight: 1.25,
   /**
    * What the design gets by leaving line-height unset: the font's own line box,
@@ -558,6 +623,12 @@ export const leading = {
    */
   intrinsic: 'normal',
   snug: 1.4,
+  /** A big title set tight — the job deck's card title (30 / 28) and the details drawer's (26). */
+  title: 1.1,
+  /** The employer page header's 44px title (H.ph): a step tighter than `title`. */
+  'page-title': 1.05,
+  /** The mono meta line under a job deck title (11px at 1.6). */
+  meta: 1.6,
   /** The 15px lines the design sets on an ink card — a step looser than `snug`, a step tighter than `normal`. */
   copy: 1.45,
   normal: 1.5,
@@ -684,6 +755,7 @@ export const leadingNative = {
   'ui-xl': 27,
   'ui-lead': 24,
   'display-lead': 32,
+  'display-page': 35,
   'display-score-sm': 50,
   'display-card': 25,
   'display-heading': 29,
@@ -697,6 +769,8 @@ export const leadingNative = {
   'meta-lg': 16,
   /** The native ring's centre value — see `fontSizeLeading['meta-2xl']`. */
   'meta-2xl': 20,
+  'meta-tile': 27,
+  'meta-band': 21,
 } as const
 
 /**
@@ -720,7 +794,7 @@ export const opacity = { pressed: 0.85, disabled: 0.5, hidden: 0 } as const
  * emitted nowhere for a while, which is its own defect: a component that needs
  * 1.5px and cannot reach a token writes 1.5px.
  */
-export const borderWidth = { thin: 1, medium: 1.5, accent: 2 } as const
+export const borderWidth = { thin: 1, medium: 1.5, accent: 2, /** The job deck's stamps (G2). */ stamp: 3 } as const
 
 /**
  * How far a text action's rule sits below its baseline.
@@ -735,7 +809,7 @@ export const borderWidth = { thin: 1, medium: 1.5, accent: 2 } as const
  * Web only. React Native has no text-underline-offset; a pressable label there
  * takes `textDecorationLine` and the platform picks the offset.
  */
-export const underlineOffset = { text: 3 } as const
+export const underlineOffset = { text: 3, /** The public bar's current-page link ("Sign in"). */ link: 6 } as const
 
 /**
  * Elevation, and the rule is flat by default: a hairline does the work almost
@@ -770,6 +844,15 @@ export const shadow = {
   lift: '0 12px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1)',
   /** The lobby's camera frame, floating on the muted ground beside the setup panel. */
   frame: '0 24px 60px rgba(11, 15, 26, 0.25)',
+  /** The job deck (G2): the top card, the card waiting behind it, the two round actions, the undo toast and the details drawer. */
+  deck: '0 24px 60px rgba(11, 15, 26, 0.12)',
+  'deck-back': '0 8px 24px rgba(11, 15, 26, 0.05)',
+  'deck-skip': '0 6px 18px rgba(11, 15, 26, 0.07)',
+  'deck-save': '0 8px 20px rgba(11, 15, 26, 0.2)',
+  toast: '0 12px 30px rgba(11, 15, 26, 0.25)',
+  /** The centred employer modal (EM-13, EM-15): a 22px sheet floating over a dimmed page. */
+  modal: '0 30px 80px rgba(11, 15, 26, 0.3)',
+  drawer: '-20px 0 50px rgba(11, 15, 26, 0.12)',
 } as const
 
 /**
@@ -783,6 +866,9 @@ export const shadow = {
 export const rotation = {
   stamp: '-11deg',
   'stamp-alt': '11deg',
+  /** The job deck's SAVE / NOT INTERESTED stamps (G2), a degree steeper than the two above. */
+  'deck-save': '-12deg',
+  'deck-skip': '12deg',
 } as const
 
 /**
@@ -871,18 +957,33 @@ export const container = {
    * The toggle track's width, paired with `height.toggle` at 30.
    */
   'toggle-track': 52,
+  /** The employer notification matrix's switch (EM-29): 44 across, against `height['toggle-em']` at 26. */
+  'toggle-track-em': 44,
+  /** One channel column of the employer notification matrix (EM-29), and the narrower one on a phone. */
+  'matrix-cell': 90,
+  'matrix-cell-compact': 56,
+  /** The interviewer's weekly availability matrix: its time-label column, and the narrower one on a phone. */
+  'week-matrix-time': 72,
+  'week-matrix-time-compact': 52,
+  /** The employer account, notifications and settings pages (EM-27…EM-29): the design's 880 column. */
+  'employer-narrow': 880,
   /** One cell of the OTP field, against `height['otp-cell']`. */
   'otp-cell': 56,
+  'otp-cell-sm': 52,
+  'landing-film': 360,
   /** The form column on a split auth screen — six OTP cells and their gaps fit it exactly. */
   'auth-form': 400,
   /** The paragraph beside the poster on the auth panel. */
   'auth-copy': 300,
+  /** The interviewer sign-in panel's headline and steps. */
+  'auth-panel': 500,
   /** The decorative 9:16 poster card on the auth panel, against `height['film-card']`. */
   'film-card': 216,
   /** The sign-up stage at its widest — the two-column body with its 120px gutters. A wider window centres it. */
   'signup-frame': 1280,
   /** The dark "what you get" card beside the sign-up form. */
   'signup-aside': 400,
+  'employer-aside': 420,
   /** The order-summary card's column beside the tier grid — pricing and pay. */
   summary: 380,
   /** The big-figure column inside the dark feature banner, beside its paragraph. */
@@ -893,6 +994,32 @@ export const container = {
   'film-player': 360,
   /** The film frame beside the name on the employer preview. */
   'film-hero': 280,
+  /** The job feed's header row (G2): the title and the two pills, over the 420 deck. */
+  'deck-header': 880,
+  /** The employer list pages (Shortlist EM-14, Interests EM-16): a 1040 column. */
+  'employer-list': 1040,
+  /** Employer home (EM-04): the page's content measure, inside its 40px gutters. */
+  'employer-home': 1040,
+  /** Employer working pages (EM-05…EM-07): the page's content measure. */
+  'employer-page': 1080,
+  /** The reviewer-checks card (EM-05) and the live-jobs card (EM-07), beside their main column. */
+  'employer-rail': 320,
+  /** The job editor's page measure (EM-18) — a step wider than the working pages, for the form and its preview rail. */
+  'employer-editor': 1120,
+  /** The job editor's "how students see it" rail (EM-18). */
+  'job-preview': 360,
+  /** The job detail's video and moderation rail (EM-19). */
+  'job-rail': 300,
+  /** The applicant's 9:16 video column (EM-21). */
+  'applicant-video': 320,
+  /** The "what you submitted" card beside the verification status (EM-06). */
+  'employer-status-rail': 340,
+  /** The receipt card on the documents-submitted confirmation (EM-05b). */
+  'employer-receipt': 460,
+  /** The locked phone drawn in the "how the feed works" card (EM-04): 130 × 231, a 9:16 frame. */
+  'feed-lock-w': 130,
+  /** The candidate profile's sticky 9:16 film (EM-09): 400 across, beside the details. */
+  'profile-film': 400,
 } as const
 
 /**
@@ -923,6 +1050,11 @@ export const height = {
   'control-block': 48,
   /** The full-width call to action that closes a phone screen. */
   'control-cta': 50,
+  /** The employer auth forms' action (EM-02, EM-03, sign-in). */
+  'control-auth': 56,
+  'control-hero': 58,
+  /** The outline action inside the amber verification band. */
+  'control-banner': 34,
   /** Filter and skill chips. */
   chip: 32,
   /** The filter row on a list page — My interviews' All / Upcoming / Completed chips. */
@@ -956,6 +1088,8 @@ export const height = {
   /** A status dot and the halo ring round it (M4: 10 inside 20). */
   'status-dot': 10,
   'status-halo': 20,
+  /** Employer header (EM-04..28): the company-initials button 40, a round header icon button 44. */
+  'header-avatar': 40,
   /** Chat (M15): a bubble's widest 300, an image bubble 196 × 108, the composer's tallest 120, a label column 92, the note field 72. */
   'bubble-max': 300,
   'bubble-image-w': 196,
@@ -972,6 +1106,8 @@ export const height = {
   'deck-action': 64,
   'deck-action-sm': 48,
   'deck-play': 68,
+  /** The job deck on a desktop (G2): the card is 420 × 620, the round actions beside it 76. */
+  'deck-card': 620,
   /** The live room (M8): the self/interviewer tile is 116 wide, a round control 60, the Leave pill 76 × 60. */
   'room-tile-w': 116,
   'room-ctl': 60,
@@ -979,6 +1115,12 @@ export const height = {
   /** The date tile on an interview row (M13: 48 × 52). */
   'date-tile-w': 48,
   'date-tile-h': 52,
+  /** The bar chart on the interviewer's availability rail ("Next 14 days"). */
+  'chart-bars': 72,
+  /** One half-hour row of the interviewer's weekly availability grid. */
+  'week-cell': 30,
+  /** A button inside the availability screen's floating publish bar. */
+  'dock-action': 36,
   /** A day card in the slot strip (M5: 72 wide). */
   'day-card': 72,
   /** A pricing tier row (M3: 64) and its radio (22). */
@@ -988,6 +1130,16 @@ export const height = {
   'score-cell': 8,
   /** One bar of the wizard's step indicator (M2). */
   'step-bar': 4,
+  /** The play-progress line under an employer feed card's caption (Employer Android A.card). */
+  'film-progress': 3,
+  /** The shoulders of the locked-feed silhouette (Employer Android EM-08b): 200 × 120. */
+  'lock-shoulders-w': 200,
+  'lock-shoulders-h': 120,
+  /** The 9:16 film beside a candidate's name in the employer profile sheet (Employer Android): 96 × 170. */
+  'profile-thumb-w': 96,
+  'profile-thumb-h': 170,
+  /** The 9:16 film at the top of the employer's candidate profile page (Employer Android EM-09). */
+  'profile-film': 420,
   /** The Android drill-in header (56) and the title row of a bottom-bar screen (52). */
   'screen-header': 56,
   'tab-title': 52,
@@ -1004,10 +1156,18 @@ export const height = {
   'tab-bar': 64,
   /** The conversation's header: the counterparty's face and name, and the recording mark (G6). */
   'chat-head': 68,
+  /** The employer conversation's header (EM-26): a taller one than the student's, with the profile actions in it. */
+  'chat-head-lg': 76,
+  /** The interviewer's messages: the two panes sit in a card this tall, and scroll inside it. */
+  'chat-pane': 640,
+  /** The employer notification matrix's switch (EM-29), against `container['toggle-track-em']`. */
+  'toggle-em': 26,
 
   header: 64,
   'header-lg': 64,
   'otp-cell': 64,
+  'otp-cell-sm': 60,
+  'landing-film': 640,
   /** One cell of the Android one-time code (M1: 58). */
   'otp-cell-mobile': 58,
   'otp-cell-lg': 64,
@@ -1083,6 +1243,14 @@ export const gradient = {
   'avatar-deep': `linear-gradient(160deg, ${color.accentDeep}, ${color.inkRaised})`,
   /** The expert's avatar disc. */
   'avatar-accent': `linear-gradient(135deg, ${color.accentMuted}, ${color.accent})`,
+  /** The candidate's initials disc on the interviewer's next-session card. */
+  'avatar-mint': `linear-gradient(135deg, ${color.successOnInk}, ${color.successFill})`,
+  /** The job deck's video card before there is footage (G2): violet-deep into ink. */
+  /** The caption's foot on the employer landing's sample film — solid ink to 60%, then clear. */
+  'landing-caption': `linear-gradient(0deg, ${color.ink} 60%, transparent)`,
+  'deck-video': `linear-gradient(180deg, ${color.accentDeep} 0%, ${color.inkRaised} 70%)`,
+  /** The foot under a video card's caption — ink at 92% rising out of nothing. */
+  'deck-caption': `linear-gradient(0deg, color-mix(in srgb, ${color.inkDeep} 92%, transparent) 20%, transparent)`,
   /** The fill of a bar that compares the student to a median. */
   meter: `linear-gradient(90deg, ${color.accentBright}, ${color.accentMuted})`,
 } as const
@@ -1102,10 +1270,23 @@ export const gridTemplate = {
   visibility: 'auto 1fr auto auto',
   /** The dashboard's two cards: the dark upcoming card is a fifth wider than the film card beside it. */
   dashboard: '1.2fr 1fr',
+  /** Interviewer home: the next-session card, then the scorecards and later-today column. */
+  'interviewer-home': 'minmax(0, 1.35fr) minmax(0, 1fr)',
+  /** One later-today row: the time, who and what, the fee. */
+  'session-row': '80px minmax(0, 1fr) auto',
+  /** Enhanced interviewer home, top row: the next-session / nothing-booked card, then the wallet card. */
+  'interviewer-home-top': 'minmax(0, 1.45fr) minmax(0, 1fr)',
+  /** One recent-interview row: avatar, who and what, when, fee, status. */
+  'recent-row': '36px minmax(0, 1fr) 200px 90px 80px',
+  /** The interviewer sign-in panel's step: its number, then the words. */
+  'auth-step': '44px minmax(0, 1fr)',
   /** The scorecard: the overall figure's card, then the competencies. */
   scorecard: `${container['rail-wide']}px 1fr`,
   /** One competency row: its name, the ten-cell bar, the score. */
   competency: '260px 1fr 48px',
+  /** The employer notification matrix (EM-29): the event, then push, email and in-app. */
+  'notify-matrix': `minmax(0, 1fr) repeat(3, ${container['matrix-cell']}px)`,
+  'notify-matrix-compact': `minmax(0, 1fr) repeat(3, ${container['matrix-cell-compact']}px)`,
   /** The device-check lobby: the camera stage, then the setup panel. */
   lobby: `minmax(0, 1fr) ${container['lobby-panel']}px`,
   /** Slot booking: the day and time picker, then a rail for the match and the selection. */
@@ -1114,12 +1295,37 @@ export const gridTemplate = {
   'auth-rail': `${container.rail}px 1fr`,
   /** Sign-up: the form column, then the dark "what you get" card. */
   signup: `minmax(0, 1fr) ${container['signup-aside']}px`,
+  'employer-auth': `minmax(0, 1fr) ${container['employer-aside']}px`,
+  'landing-hero': `minmax(0, 1fr) ${container['landing-film']}px`,
   /** Pricing and pay: the tier grid, then the sticky order-summary card. */
   checkout: `minmax(0, 1fr) ${container.summary}px`,
   /** The dark feature banner: a fixed figure column, then its paragraph. */
   'checkout-banner': `${container['figure-col']}px minmax(0, 1fr)`,
+  /** A job's action row (G3 page): the round Not-interested, Save, then the wider Apply. */
+  'job-actions': 'auto 1fr 1.4fr',
+  /** The same row on a phone: Not interested and Save share one line, Apply takes the next. */
+  'job-actions-compact': 'auto 1fr',
   /** Chat: the thread list, then the conversation. */
   chat: `${container['chat-list']}px minmax(0, 1fr)`,
+  /** Employer home: the verification card, then the "unlocks" card (EM-04). */
+  'employer-home-top': 'minmax(0, 1.4fr) minmax(0, 1fr)',
+  /** Employer home, verified: recent activity, then live jobs (EM-04b). */
+  'employer-activity': 'minmax(0, 1.3fr) minmax(0, 1fr)',
+  /** Job editor: the form, then the live preview and its actions (EM-18). */
+  'job-editor': `minmax(0, 1fr) ${container['job-preview']}px`,
+  /** Job detail: the facts, then the video and moderation timeline (EM-19). */
+  'job-detail': `minmax(0, 1fr) ${container['job-rail']}px`,
+  /** Applicant detail: the 9:16 video, then the person and the pipeline (EM-21). */
+  applicant: `${container['applicant-video']}px minmax(0, 1fr)`,
+  /** A working page: the main column, then a 320 rail (EM-05, EM-07). */
+  'employer-rail': `minmax(0, 1fr) ${container['employer-rail']}px`,
+  /** The interviewer's weekly availability matrix: the time labels, then seven day columns. */
+  'week-matrix': `${container['week-matrix-time']}px repeat(7, minmax(0, 1fr))`,
+  'week-matrix-compact': `${container['week-matrix-time-compact']}px repeat(7, minmax(0, 1fr))`,
+  /** The verification status: the main column, then the 340 "what you submitted" card (EM-06). */
+  'employer-status': `minmax(0, 1fr) ${container['employer-status-rail']}px`,
+  /** The candidate profile: the sticky film, then the details (EM-09). */
+  'employer-profile': `${container['profile-film']}px minmax(0, 1fr)`,
 } as const
 
 /**
@@ -1168,7 +1374,7 @@ export const brand = {
 } as const
 
 /** Interview capture is locked to 9:16 (IR-02); every card that shows one mirrors it. */
-export const aspect = { videoResume: 9 / 16, fullVideo: 16 / 9 } as const
+export const aspect = { videoResume: 9 / 16, fullVideo: 16 / 9, deck: 420 / 620 } as const
 
 export type ColorToken = keyof typeof color
 export type FontSizeToken = keyof typeof fontSize

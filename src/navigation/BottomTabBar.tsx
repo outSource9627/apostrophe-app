@@ -2,7 +2,10 @@ import React from 'react'
 import Svg, { Circle, Path, Rect } from 'react-native-svg'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
-import { color } from '../theme'
+import { color, height } from '../theme'
+import { Icon } from '../components/ui/Icon'
+import { useEmployerVerified } from '../lib/employer/useEmployer'
+import { useChatUnread } from '../lib/employer/useNavCounts'
 import { TabBar, type TabItem } from '../components/ui'
 import { tabBarInfoFor, type TabDef } from './tabConfig'
 
@@ -46,6 +49,8 @@ import { tabBarInfoFor, type TabDef } from './tabConfig'
  */
 export function BottomTabBar({ routeName, onNavigate }: { routeName?: string; onNavigate: (root: string) => void }) {
   const info = tabBarInfoFor(routeName)
+  const employerVerified = useEmployerVerified(info?.persona === 'employer')
+  const chatUnread = useChatUnread(info?.persona === 'employer' && employerVerified === true)
   // ST-12: an unpaid student sees pricing and pays — no destinations to wander to.
   // Same `me` the screens read, so this costs no extra request once one has run.
   const me = useQuery({
@@ -57,11 +62,21 @@ export function BottomTabBar({ routeName, onNavigate }: { routeName?: string; on
   if (!info) return null
   if (info.persona === 'student' && me.data && !me.data.paid) return null
 
-  const items: TabItem[] = info.tabs.map((tab) => ({
-    key: tab.key,
-    label: tab.label,
-    glyph: <TabIcon icon={tab.icon} color={tab.key === info.active ? color.accent : color.textSubtle} />,
-  }))
+  const items: TabItem[] = info.tabs.map((tab) => {
+    const on = tab.key === info.active
+    // Gated tabs stay locked until the employer is known to be verified.
+    const locked = !!tab.gated && employerVerified !== true
+    const tint = on ? color.accentText : locked ? color.textDisabled : color.textMuted
+    return {
+      key: tab.key,
+      label: tab.label,
+      locked,
+      dot: info.persona === 'employer' && tab.key === 'chat' && chatUnread > 0,
+      glyph: tab.glyph
+        ? <Icon name={tab.glyph} size={height.glyph - 4} tint={tint} weight={on ? 2.1 : 1.8} />
+        : <TabIcon icon={tab.icon} color={on ? color.accent : color.textSubtle} />,
+    }
+  })
 
   return (
     <TabBar

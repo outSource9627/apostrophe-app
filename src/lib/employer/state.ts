@@ -87,6 +87,12 @@ export function formatIstShort(input: IstInput): string {
   return p ? `${p.d} ${MON[p.mo]} · ${clock(p)}` : ''
 }
 
+/** '24 Sep, 10:12 AM' — a timeline step's stamp (Employer Android EM-04, EM-06). */
+export function formatIstStep(input: IstInput): string {
+  const p = ist(input)
+  return p ? `${p.d} ${MON[p.mo]}, ${clock(p)}` : ''
+}
+
 /** '00:19' — a resend countdown, in mono at the call site. Never negative. */
 export function formatCountdown(seconds: number): string {
   const s = Math.max(0, Math.ceil(seconds))

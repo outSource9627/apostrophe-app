@@ -1,312 +1,158 @@
 import React from 'react'
-import {
-  Pressable,
-  StyleSheet,
-  View,
-} from 'react-native'
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { borderWidth, color, radius, space } from '../../theme'
-import {
-  Banner,
-  Body,
-  Button,
-  Card,
-  Display,
-  EmptyState,
-  ErrorState,
-  Eyebrow,
-  Figure,
-  Meta,
-  ObjectRow,
-  Skeleton,
-  StatusPill,
-} from '../../components/ui'
+import { borderWidth, color, opacity, radius, space, spaceHalf } from '../../theme'
+import { Button, text } from '../../components/ui'
 import { InterviewerShell } from '../../components/interviewer/InterviewerShell'
-import { useInterviewer } from '../../lib/interviewer/useInterviewer'
+import { IvAction, IvGlow, IvLabel, IvOwedRow, IvStat } from '../../components/interviewer/iv'
+import { EmError } from '../../components/employer/em'
 import { formatPaise } from '../../lib/format/money'
-import { formatScorecardCountdown, isScorecardOverdue, canJoinInterviewRoom } from '../../lib/interviewer/state'
+import { useNow } from '../../lib/employer/useNow'
+import { useAppConfig, useInterviewerMe } from '../../lib/interviewer/useInterviewer'
+import { clock, hms, istDateKey, istTime, istWeekday, joinState, monthNameOf, owedClock, sessionLine } from '../../lib/interviewer/state'
+import type { RootStackParamList } from '../../../App'
 
+/**
+ * M1 · Home (Interviewer App Android). Everything reads the Home fields of
+ * GET /interviewers/me and `/config`; no interview list is fetched.
+ *
+ *   The four tiles    DONE (conducted over `stats.windowDays`), COMPLETION and
+ *                     ON-TIME (the server's percentages — a dash while it has
+ *                     none), and the month's earnings (`earnedThisMonth`).
+ *   Next session      a live countdown to the start; the join button counts
+ *                     down to the server's `joinOpensAt`, opens then (or when
+ *                     the server says `roomReady`), and closes after the
+ *                     no-show window. With nothing booked, the card says so and
+ *                     points at Availability.
+ *   Scorecards owed   each row's own deadline (`dueAt`) as a live hh:mm:ss, red
+ *                     under `scorecardReminderHoursBefore`; closed rows below.
+ */
 export function InterviewerDashboardScreen() {
-  const navigation = useNavigation<NativeStackNavigationProp<any>>()
-  const { profile, upcomingInterviews, owedScorecards, wallet, loading, error, refresh } = useInterviewer()
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
+  const { me, error, loading, refresh, suspended } = useInterviewerMe()
+  const config = useAppConfig()
+  const now = useNow() || Date.now()
 
-  const nextInterview = upcomingInterviews[0]
-  const canJoinNext = nextInterview ? canJoinInterviewRoom(nextInterview.slotStart) : false
-
-  const formatSlotTime = (iso: string) => {
-    try {
-      const d = new Date(iso)
-      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    } catch {
-      return iso
-    }
-  }
-
-  const formatSlotDate = (iso: string) => {
-    try {
-      const d = new Date(iso)
-      return d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })
-    } catch {
-      return iso
-    }
-  }
-
-  if (loading && !profile) {
+  if (!me) {
     return (
-      <InterviewerShell navTab="home">
-        <Skeleton lines={4} />
+      <InterviewerShell bar="brand">
+        {loading ? (
+          <ActivityIndicator color={color.textSubtle} style={styles.loading} />
+        ) : (
+          <EmError title="Couldn’t load your home." body={error?.message} action={<Button variant="secondary" size="pair" icon="refresh" label="Try again" onPress={() => { refresh() }} />} />
+        )}
       </InterviewerShell>
     )
   }
 
-  if (error && !profile) {
-    return (
-      <InterviewerShell navTab="home">
-        <ErrorState
-          title="We could not load your dashboard."
-          body={error.message}
-          action={<Button variant="outline" size="sm" label="Try again" onPress={refresh} />}
+  const pct = (v: number | null | undefined) => (v == null ? '—' : `${Math.round(v)}%`)
+  const s = me.stats
+  const month = me.earnedThisMonth
+  const next = me.nextSession ?? null
+  const owed = me.scorecardsOwed?.rows ?? []
+  const open = owed.filter((r) => !r.overdue)
+  const closed = owed.filter((r) => r.overdue)
+
+  let nextCard: React.ReactNode
+  if (next) {
+    const j = joinState(next, config, now)
+    const toStart = Math.max(0, Math.floor((Date.parse(next.slotStart) - now) / 1000))
+    const today = istDateKey(next.slotStart) === istDateKey(now)
+    const when = today ? istTime(next.slotStart) : `${istWeekday(next.slotStart)} · ${istTime(next.slotStart)}`
+    const label =
+      j.kind === 'open' ? (j.rejoin ? 'Rejoin room' : 'Join room')
+        : j.kind === 'closed' ? 'Join window closed'
+          : j.opensInSec != null ? `Join opens in ${clock(j.opensInSec)}` : 'Join opens before the start'
+    nextCard = (
+      <Pressable accessibilityRole="button" onPress={() => navigation.navigate('InterviewerDetail', { id: next.interviewId })} style={({ pressed }) => [styles.next, pressed && styles.pressed]}>
+        <IvGlow />
+        <View style={styles.nextTop}>
+          <IvLabel tone="accent">{`NEXT · ${when.toUpperCase()}`}</IvLabel>
+          <Text style={[text.metaTile, styles.fig]}>{clock(toStart)}</Text>
+        </View>
+        <View style={styles.who}>
+          <Text style={text.displayCard} numberOfLines={1}>{next.student.name}</Text>
+          <Text style={[text.uiSm, styles.muted]} numberOfLines={1}>{sessionLine({ tier: next.tier, domain: next.domain, languages: next.student.languages, language: next.language })}</Text>
+        </View>
+        <IvAction
+          label={label}
+          tone={j.kind === 'open' && !suspended ? 'accent' : 'off'}
+          onPress={j.kind === 'open' && !suspended ? () => navigation.navigate('InterviewerRoom', { id: next.interviewId }) : undefined}
         />
-      </InterviewerShell>
+      </Pressable>
+    )
+  } else {
+    const openSlots = me.availability?.openSlots ?? 0
+    nextCard = (
+      <View style={styles.next}>
+        <IvGlow />
+        <IvLabel tone="accent">NEXT</IvLabel>
+        <View style={styles.who}>
+          <Text style={text.displayCard}>No interviews booked.</Text>
+          <Text style={[text.uiSm, styles.muted]}>
+            {openSlots > 0 ? `${openSlots} open ${openSlots === 1 ? 'slot is' : 'slots are'} published for students to book.` : 'Publish hours so students can book you.'}
+          </Text>
+        </View>
+        <IvAction label={openSlots > 0 ? 'Open more hours' : 'Publish hours'} onPress={() => navigation.navigate('InterviewerAvailability')} />
+      </View>
     )
   }
 
   return (
-    <InterviewerShell navTab="home">
-      {/* Welcome header */}
-      <View style={styles.header}>
-        <View>
-          <Eyebrow>INTERVIEWER DASHBOARD</Eyebrow>
-          <Display level="sm" style={styles.greeting}>
-            Welcome, {profile?.name || 'Interviewer'}
-          </Display>
+    <InterviewerShell bar="brand">
+      <View style={styles.grid}>
+        <View style={styles.row}>
+          <IvStat k="DONE" v={s ? String(s.conducted) : '—'} />
+          <IvStat k="COMPLETION" v={pct(s?.completionPct)} tone={s?.completionPct != null ? 'success' : 'ink'} />
         </View>
-        {profile?.status === 'ACTIVE' ? (
-          <StatusPill tone="success" label="ACTIVE" />
-        ) : profile?.status === 'SUSPENDED' ? (
-          <StatusPill tone="danger" label="SUSPENDED" />
-        ) : (
-          <StatusPill tone="neutral" label={profile?.status || 'PENDING'} />
-        )}
+        <View style={styles.row}>
+          <IvStat k="ON-TIME" v={pct(s?.onTimeScorecardPct)} tone={s?.onTimeScorecardPct != null ? 'success' : 'ink'} />
+          <IvStat k={month ? monthNameOf(month.month).toUpperCase() : 'THIS MONTH'} v={month ? formatPaise(month.earnedPaise) : '—'} />
+        </View>
       </View>
 
-      {/* Owed Scorecard Banner (Settled Decision D3: 24h deadline) */}
-      {owedScorecards.length > 0 && (
-        <Banner
-          tone="warning"
-          title={`${owedScorecards.length} Scorecard${owedScorecards.length > 1 ? 's' : ''} Awaiting Submission`}
-          actionLabel={owedScorecards.length > 2 ? `View all ${owedScorecards.length} pending scorecards` : undefined}
-          onAction={owedScorecards.length > 2 ? () => navigation.navigate('PendingScorecards') : undefined}
-        >
-          <Body size="xs" tone="muted">
-            Scorecards must be submitted within 24 hours of session end. Failure to submit leads to fee forfeiture.
-          </Body>
+      {nextCard}
 
-          <View style={styles.owedList}>
-            {owedScorecards.slice(0, 2).map((sc) => {
-              const overdue = isScorecardOverdue(sc.slotEnd)
-              return (
-                <View key={sc.id} style={styles.owedRow}>
-                  <View style={styles.grow}>
-                    <Body size="sm" weight="semibold">
-                      {sc.student?.name || 'Candidate'}
-                    </Body>
-                    <Meta style={overdue ? styles.owedClockOverdue : styles.owedClock}>
-                      {formatScorecardCountdown(sc.slotEnd)}
-                    </Meta>
-                  </View>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    label="Draft Scorecard"
-                    onPress={() => navigation.navigate('ScorecardDraft', { id: sc.id })}
-                  />
-                </View>
-              )
-            })}
-          </View>
-        </Banner>
-      )}
-
-      {/* Next Interview Card */}
-      {nextInterview ? (
-        <Card style={styles.nextCard}>
-          <View style={styles.nextHeader}>
-            <View>
-              <Eyebrow>NEXT INTERVIEW</Eyebrow>
-              <Display level="xs" style={styles.nextTime}>
-                {formatSlotDate(nextInterview.slotStart)} at {formatSlotTime(nextInterview.slotStart)}
-              </Display>
-            </View>
-            <StatusPill tone="info" label={nextInterview.tier.replace('_', ' ')} />
-          </View>
-
-          <ObjectRow
-            last
-            thumb={
-              <View style={styles.candidateAvatar}>
-                <Body weight="semibold">
-                  {(nextInterview.student?.name || 'C').slice(0, 1).toUpperCase()}
-                </Body>
-              </View>
-            }
-            title={nextInterview.student?.name || 'Candidate'}
-            meta={nextInterview.student?.education || 'Computer Science / Engineering'}
-          />
-
-          <View style={styles.nextActions}>
-            <Button
-              label="Candidate Prep & Script"
-              variant="secondary"
-              onPress={() => navigation.navigate('InterviewerDetail', { id: nextInterview.id })}
-            />
-            <Button
-              label={canJoinNext ? 'Enter Interview Room' : 'Opens 10 min prior'}
-              variant="primary"
-              disabled={!canJoinNext}
-              onPress={() => navigation.navigate('InterviewerDetail', { id: nextInterview.id, autoJoin: true })}
-            />
-          </View>
-        </Card>
+      <IvLabel style={styles.section}>SCORECARDS OWED</IvLabel>
+      {open.length === 0 && closed.length === 0 ? (
+        <View style={styles.none}><Text style={[text.uiSm, styles.success]}>None to write. Every scorecard is in.</Text></View>
       ) : (
-        <Card>
-          <EmptyState
-            title="No upcoming interviews today"
-            body="Make sure your recurring availability is updated to receive student bookings."
-            action={
-              <Button
-                label="Edit Availability"
-                variant="secondary"
-                onPress={() => navigation.navigate('InterviewerAvailability')}
+        <>
+          {open.map((r) => {
+            const c = owedClock(r, config, now)
+            const secs = c.status === 'OPEN' || c.status === 'URGENT' ? c.secondsLeft : 0
+            return (
+              <IvOwedRow
+                key={r.interviewId}
+                name={r.student.name}
+                line={r.payable ? `${formatPaise(r.feePaise)} releases on submit` : 'Submit to close the interview'}
+                clock={hms(secs)}
+                urgent={c.status === 'URGENT'}
+                onPress={() => navigation.navigate('ScorecardDraft', { id: r.interviewId })}
               />
-            }
-          />
-        </Card>
+            )
+          })}
+          {closed.map((r) => (
+            <IvOwedRow key={r.interviewId} name={r.student.name} line="Closed · fee withheld" clock="00:00:00" onPress={() => navigation.navigate('InterviewerDetail', { id: r.interviewId })} />
+          ))}
+        </>
       )}
-
-      {/* Quick Metrics & Actions */}
-      <View style={styles.metricsGrid}>
-        <Pressable style={styles.metricWrap} onPress={() => navigation.navigate('InterviewerWallet')}>
-          <Card style={styles.metricCard}>
-            <Body size="xs" tone="muted">
-              Available Balance
-            </Body>
-            <Figure value={formatPaise(wallet?.balancePaise ?? 0)} />
-            <Body size="xs" tone="muted">
-              Tap to withdraw →
-            </Body>
-          </Card>
-        </Pressable>
-
-        <Pressable style={styles.metricWrap} onPress={() => navigation.navigate('InterviewerInterviews')}>
-          <Card style={styles.metricCard}>
-            <Body size="xs" tone="muted">
-              Upcoming Sessions
-            </Body>
-            <Figure value={upcomingInterviews.length} />
-            <Body size="xs" tone="muted">
-              View schedule →
-            </Body>
-          </Card>
-        </Pressable>
-      </View>
-
-      {/* Quality & Permitted Tiers Summary */}
-      <Card style={styles.qualityCard}>
-        <View style={styles.qualityHeader}>
-          <Body size="sm" weight="semibold">
-            Interviewer Standing
-          </Body>
-          <Meta>{`Score: ${profile?.qualityScore ? profile.qualityScore.toFixed(1) : '5.0'} / 5.0`}</Meta>
-        </View>
-        <Body size="xs" tone="muted">
-          {`Permitted Tiers: ${profile?.permittedTiers?.map((t) => t.replace('_', ' ')).join(', ') || 'TIER 1'}`}
-        </Body>
-        <Body size="xs" tone="muted">
-          {`Total Completed: ${profile?.totalInterviews ?? 0} sessions conducted`}
-        </Body>
-      </Card>
     </InterviewerShell>
   )
 }
 
 const styles = StyleSheet.create({
-  grow: { flex: 1 },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    paddingVertical: space.xs,
-  },
-  greeting: {
-    marginTop: space['2xs'],
-  },
-  owedList: {
-    gap: space.sm,
-    marginTop: space['2xs'],
-  },
-  owedRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: space.md,
-    backgroundColor: color.surface,
-    borderRadius: radius.md,
-    padding: space.md,
-  },
-  owedClock: {
-    color: color.textMuted,
-    marginTop: space['2xs'],
-  },
-  owedClockOverdue: {
-    color: color.danger,
-    marginTop: space['2xs'],
-  },
-  nextCard: {
-    padding: space.md,
-    gap: space.md,
-  },
-  nextHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  nextTime: {
-    marginTop: space['2xs'],
-  },
-  candidateAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.pill,
-    backgroundColor: color.surfaceSubtle,
-    borderWidth: borderWidth.thin,
-    borderColor: color.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  nextActions: {
-    gap: space.xs,
-  },
-  metricsGrid: {
-    flexDirection: 'row',
-    gap: space.md,
-  },
-  metricWrap: {
-    flex: 1,
-  },
-  metricCard: {
-    padding: space.md,
-    gap: 2,
-  },
-  qualityCard: {
-    padding: space.md,
-    gap: space['2xs'],
-    backgroundColor: color.surfaceSubtle,
-  },
-  qualityHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
+  pressed: { opacity: opacity.pressed },
+  muted: { color: color.textMuted },
+  success: { color: color.success },
+  loading: { paddingVertical: space['3xl'] },
+  grid: { gap: space.sm },
+  row: { flexDirection: 'row', gap: space.sm },
+  next: { borderRadius: radius['card-lg'], backgroundColor: color.surface, borderWidth: borderWidth.thin, borderColor: color.border, padding: spaceHalf['4.5'], gap: space.md, overflow: 'hidden' },
+  nextTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  fig: { letterSpacing: 0 },
+  who: { gap: space['2xs'] + 1 },
+  section: { marginTop: space.xs },
+  none: { borderRadius: radius.panel, backgroundColor: color.successWash, borderWidth: borderWidth.thin, borderColor: color.successEdge, paddingVertical: space.md, paddingHorizontal: spaceHalf['3.5'] },
 })

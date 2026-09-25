@@ -1,25 +1,28 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { StyleSheet, View } from 'react-native'
+import { StyleSheet, Text, View } from 'react-native'
 import { useIsFocused, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { color, radius, space } from '../../theme'
-import { Banner, Body, Button, Card, DisabledAction, Meta } from '../../components/ui'
+import { color, height, radius, space, spaceHalf, trackingNative } from '../../theme'
+import { Button, DisabledAction, text } from '../../components/ui'
+import { Icon, type IconName } from '../../components/ui/Icon'
 import {
-  DocumentSlot, EmployerShell, Glyph, RequirementHead, TextAction,
+  DocumentSlot, EmployerShell,
   type DocumentSlotHandle, type SlotFile, type SlotStatus,
 } from '../../components/employer'
+import { EmBadge, EmCard, EmWell, type EmTone } from '../../components/employer/em'
 import { useEmployer } from '../../lib/employer/useEmployer'
+import { useEmployerConfig } from '../../lib/employer/useEmployerConfig'
 import { ApiClientError, ErrorCode } from '../../lib/api'
 import {
-  attachEmployerDocuments, submitEmployerVerification,
+  EMPLOYER_UPLOAD, attachEmployerDocuments, submitEmployerVerification,
   type EmployerState, type EmployerUploadError, type Requirement, type UploadFault,
 } from '../../lib/api/employer'
 import {
-  EMPLOYER_ROUTES, needsAction, requirementFor, requirementKindLine, requirementPill, requirementReason,
-  requirementTimes, requirementTitle, type EmployerTone,
+  EMPLOYER_ROUTES, needsAction, requirementFor, requirementKindLine, requirementReason,
+  requirementTimes, requirementTitle,
 } from '../../lib/employer/state'
 import {
-  EmployerLoadState, TitleBlock, requirementNoun, unnamedRequest, useBack, type DocumentKey,
+  EmployerLoadState, requirementNoun, unnamedRequest, useBack, type DocumentKey,
 } from './EmployerStatusScreen'
 import type { RootStackParamList } from '../../../App'
 
@@ -27,7 +30,7 @@ export interface EmployerDocumentsScreenProps {
   /** Scroll to, and for a resubmission open, this requirement's slot. */
   focus?: DocumentKey
   onBack: () => void
-  /** Documents attached and the round started: on to EM-06. */
+  /** EM-05b's "Go to home", once the documents are attached and the round started. */
   onSubmitted: () => void
 }
 
@@ -122,6 +125,7 @@ export function EmployerDocumentsScreen(props: EmployerDocumentsScreenProps) {
 function Documents({ focus, onBack, onSubmitted, arrived }: EmployerDocumentsScreenProps & { arrived: boolean }) {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
   const { state: live, error, refresh, apply, justVerified } = useEmployer()
+  const config = useEmployerConfig()
   const [files, setFiles] = useState<Partial<Record<DocumentKey, SlotFile | null>>>({})
   const [reports, setReports] = useState<Partial<Record<DocumentKey, SlotReport>>>({})
   /** The waiting documents turned back into slots, while answering a request that named none. */
@@ -135,6 +139,8 @@ function Documents({ focus, onBack, onSubmitted, arrived }: EmployerDocumentsScr
     flashing its slots into waiting cards.
   */
   const [frozen, setFrozen] = useState<EmployerState | null>(null)
+  /** Sent: EM-05b replaces the form until the employer moves on. */
+  const [sent, setSent] = useState(false)
   const state = frozen ?? live
 
   // Stable per slot, so an upload in flight never reports to a stale handler.
@@ -171,9 +177,16 @@ function Documents({ focus, onBack, onSubmitted, arrived }: EmployerDocumentsScr
 
   const back = useBack(onBack)
 
+  const hours = config.verificationTargetHours ?? state?.verification.slaHours
+  const maxMb = config.documentMaxMb ?? EMPLOYER_UPLOAD.maxBytes / 1_048_576
+
+  if (sent && state) {
+    return <Submitted hours={hours} onHome={onSubmitted} />
+  }
+
   if (!state) {
     return (
-      <EmployerShell back={back}>
+      <EmployerShell back={back} title="Verify your company">
         <EmployerLoadState error={error} onRetry={refresh} />
       </EmployerShell>
     )
@@ -227,7 +240,8 @@ function Documents({ focus, onBack, onSubmitted, arrived }: EmployerDocumentsScr
         next = await submitEmployerVerification()
       }
       apply(next)
-      onSubmitted()
+      setSending(false)
+      setSent(true)
     } catch (e) {
       if (e instanceof ApiClientError && e.code === ErrorCode.CONFLICT) {
         // 'This account is already verified.' The status screen says it better.
@@ -253,19 +267,17 @@ function Documents({ focus, onBack, onSubmitted, arrived }: EmployerDocumentsScr
         ? `${errand!.some((r) => r.status === 'REJECTED') ? 'Send' : 'Add'} ${errandNouns}`
         : mode === 'answer'
           ? 'Send back for review'
-          : 'Submit for review'
+          : 'Submit for verification'
 
-  const emailReq = requirementFor(state, 'WORK_EMAIL')
+  // The first submission says only the design's line; every errand adds what it changes.
   const sub =
     mode === 'resubmit'
-      ? `${errand!.length > 1 ? 'Only these documents go' : 'Only this document goes'} back for review. We aim to decide within ${state.verification.slaHours} hours.`
+      ? `${errand!.length > 1 ? 'Only these documents go' : 'Only this document goes'} back for review.${hours ? ` We aim to decide within ${hours} hours.` : ''}`
       : mode === 'add'
         ? 'It joins your submission. Nothing goes back to the start.'
         : mode === 'answer'
           ? 'Replace a document or send it back as it is. Nothing you sent was refused.'
-          : emailReq?.status === 'APPROVED'
-            ? 'Three things verify a company. The third is already done.'
-            : 'Three things verify a company. A reviewer checks the third.'
+          : null
 
   const action =
     mode === 'none' ? null : ready ? (
@@ -280,7 +292,12 @@ function Documents({ focus, onBack, onSubmitted, arrived }: EmployerDocumentsScr
 
   const footer = action ? (
     <View style={styles.footer}>
-      {!!refusal && <Banner tone="danger">{refusal}</Banner>}
+      {!!refusal && (
+        <View style={styles.refusal} accessibilityRole="alert">
+          <Icon name="alert" size={space.lg - 1} tint={color.danger} weight={2} />
+          <Text style={[text.uiSm, styles.danger, styles.grow]}>{refusal}</Text>
+        </View>
+      )}
       {action}
     </View>
   ) : state.verified ? (
@@ -289,8 +306,7 @@ function Documents({ focus, onBack, onSubmitted, arrived }: EmployerDocumentsScr
       size="lg"
       full
       label="Open the candidate feed"
-      // The feed (EM-08) is the next flow; until it exists its door is home, as App's onFeed.
-      onPress={() => navigation.reset({ index: 0, routes: [{ name: EMPLOYER_ROUTES.home }] })}
+      onPress={() => navigation.reset({ index: 0, routes: [{ name: 'EmployerFeed' }] })}
     />
   ) : (
     <Button
@@ -323,54 +339,57 @@ function Documents({ focus, onBack, onSubmitted, arrived }: EmployerDocumentsScr
   const asked = mode === 'answer' ? state.verification.reason : null
 
   return (
-    <EmployerShell back={back} footer={footer}>
-      <TitleBlock title="Submit documents" sub={sub} />
+    <EmployerShell back={back} title="Verify your company" sub={mode === 'submit' ? 'STEP 3 OF 3' : undefined} footer={footer}>
+      <Text style={[text.uiMd, styles.muted]}>{`PDF, JPG or PNG, up to ${maxMb} MB each. Seen only by the Apostrophe review team.`}</Text>
+      {!!sub && <Text style={[text.uiMd, styles.muted]}>{sub}</Text>}
 
-      {!!asked && <Banner tone="warning" title="What the reviewer asked">{asked}</Banner>}
+      {!!asked && <EmWell label="From the reviewer" tone="violet">{asked}</EmWell>}
 
       {shown.map((req, i) => {
         const why = requirementReason(req)
+        const refused = reports[req.key as DocumentKey]?.status === 'refused'
+        const badge = headBadge(req, isOpen(req))
         return (
-          <View key={req.key} style={styles.section}>
-            <RequirementHead n={i + 1} title={requirementTitle(req)} pill={headPill(req)} />
+          <EmCard key={req.key} tone={refused ? 'danger' : undefined}>
+            <View style={styles.head}>
+              <Text style={[text.uiBaseSemi, styles.grow]}>{`${i + 1} · ${cardTitle(req, state)}`}</Text>
+              {!!badge && <EmBadge label={badge.label} tone={badge.tone} icon={badge.icon} small />}
+            </View>
             {req.key === 'WORK_EMAIL' ? (
-              <WorkEmailCard req={req} state={state} />
+              <WorkEmail req={req} state={state} />
             ) : isOpen(req) ? (
               <>
-                {!!why && (
-                  <Banner tone={why.tone} title={why.label}>
-                    {why.text}
-                  </Banner>
-                )}
+                {!!why && <EmWell label={why.tone === 'danger' ? 'Reason' : 'From the reviewer'} tone={why.tone === 'danger' ? 'red' : 'violet'}>{why.text}</EmWell>}
                 {slotFor(req)}
               </>
             ) : mode === 'answer' && isReplaceable(req) && replacing.includes(req.key) ? (
               <>
                 {slotFor(req)}
-                <View style={styles.keep}>
-                  <TextAction
-                    label="Keep the one you sent"
-                    tone="muted"
-                    underline={false}
-                    disabled={sending}
-                    onPress={() => {
-                      forget(req.key)
-                      setReplacing((prev) => prev.filter((k) => k !== req.key))
-                    }}
-                  />
-                </View>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  label="Keep the one you sent"
+                  disabled={sending}
+                  style={styles.keep}
+                  onPress={() => {
+                    forget(req.key)
+                    setReplacing((prev) => prev.filter((k) => k !== req.key))
+                  }}
+                />
               </>
             ) : (
-              <DocumentDoneCard
+              <SentDocument
                 req={req}
                 state={state}
                 action={
                   mode === 'answer' && isReplaceable(req) ? (
-                    <TextAction
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       label="Replace"
-                      underline={false}
                       accessibilityLabel={`Replace ${requirementNoun(req)}`}
                       disabled={sending}
+                      style={styles.slim}
                       onPress={() => {
                         forget(req.key)
                         setReplacing((prev) => [...prev, req.key])
@@ -380,7 +399,7 @@ function Documents({ focus, onBack, onSubmitted, arrived }: EmployerDocumentsScr
                 }
               />
             )}
-          </View>
+          </EmCard>
         )
       })}
     </EmployerShell>
@@ -389,44 +408,24 @@ function Documents({ focus, onBack, onSubmitted, arrived }: EmployerDocumentsScr
 
 // ── Sections ─────────────────────────────────────────────────────────────────
 
-/**
- * The heading pill, in the slot's reading: Required, Done, Submitted, Rejected.
- * A reviewer's request reads Required here — on the screen where it is being
- * answered it is something to send, and the well under the heading already
- * says who asked.
- */
-function headPill(req: Requirement): { label: string; tone: EmployerTone } {
-  return req.status === 'MORE_INFO' ? requirementPill({ status: 'MISSING' }, 'slot') : requirementPill(req, 'slot')
+/** The card's heading, in the design's words: "1 · Company document", "2 · Photo ID of Anita Rao", "3 · Work email". */
+function cardTitle(req: Requirement, state: EmployerState): string {
+  if (req.key === 'COMPANY_PROOF') return 'Company document'
+  if (req.key === 'PHOTO_ID') return `Photo ID of ${state.company.authorisedPerson.name}`
+  if (req.key === 'WORK_EMAIL') return 'Work email'
+  return requirementTitle(req)
 }
 
-/** A disc and two lines: what is already done, or already with a reviewer, where a slot would otherwise be. */
-function SettledCard({
-  done, primary, secondary, action,
-}: {
-  done: boolean
-  primary: string
-  secondary: React.ReactNode
-  /** Replace, while answering a request that named no document. */
-  action?: React.ReactNode
-}) {
-  return (
-    <Card style={styles.settled}>
-      <View style={styles.settledLine}>
-        <View
-          style={[styles.disc, done ? styles.discDone : styles.discWaiting]}
-          accessibilityElementsHidden
-          importantForAccessibility="no-hide-descendants"
-        >
-          <Glyph name={done ? 'shieldCheck' : 'clock'} size={space.lg} tint={done ? color.success : color.info} />
-        </View>
-        <View style={styles.grow}>
-          <Body size="sm" weight="medium">{primary}</Body>
-          {secondary}
-        </View>
-        {action}
-      </View>
-    </Card>
-  )
+/**
+ * The badge on a card's heading. An open slot carries none unless it was
+ * refused — the slot itself says what to do; the rest say where they stand.
+ */
+function headBadge(req: Requirement, open: boolean): { label: string; tone: EmTone; icon: IconName } | null {
+  if (req.status === 'APPROVED') return { label: req.key === 'WORK_EMAIL' ? 'Verified' : 'Approved', tone: 'green', icon: 'check' }
+  if (req.status === 'REJECTED') return { label: 'Not accepted', tone: 'red', icon: 'x' }
+  if (req.status === 'MORE_INFO') return { label: 'Requested', tone: 'violet', icon: 'file' }
+  if (!open && req.status === 'SUBMITTED') return { label: 'In review', tone: 'amber', icon: 'clock' }
+  return null
 }
 
 /** 'copperleaf.test' from 'https://www.copperleaf.test/about'. */
@@ -437,44 +436,56 @@ function websiteHost(url: string | null): string | null {
 }
 
 /**
- * The third requirement, satisfied at sign-up. Done when the address is on the
- * website's domain; otherwise a person compares the two, and the card says so
- * rather than drawing a tick it has not earned.
+ * The third requirement, satisfied at sign-up: the address, and — only when a
+ * person still has to compare it with the website — why it is not ticked yet.
  */
-function WorkEmailCard({ req, state }: { req: Requirement; state: EmployerState }) {
+function WorkEmail({ req, state }: { req: Requirement; state: EmployerState }) {
   const site = websiteHost(state.company.website)
   const done = req.status === 'APPROVED'
-  const sentence =
-    req.matchesWebsite && site
-      ? `Matches ${site}, your website. Confirmed when you signed up.`
-      : done
-        ? 'Confirmed when you signed up.'
-        : site
-          ? `Does not match ${site}, your website, so a reviewer checks it. Confirmed when you signed up.`
-          : 'A reviewer checks it against your company. Confirmed when you signed up.'
+  const note = done || req.matchesWebsite
+    ? null
+    : site
+      ? `Does not match ${site}, your website, so a reviewer checks it.`
+      : 'A reviewer checks it against your company.'
   return (
-    <SettledCard
-      done={done}
-      primary={req.email ?? state.contact.email}
-      secondary={
-        <Body size="xs" tone="muted">
-          {sentence}
-        </Body>
-      }
-    />
+    <View style={styles.email}>
+      <Text style={[text.uiSm, styles.muted]}>{req.email ?? state.contact.email}</Text>
+      {!!note && <Text style={[text.uiXs, styles.subtle]}>{note}</Text>}
+    </View>
   )
 }
 
-/** A document that is approved, or submitted and waiting: the kind and its latest stamp, not a slot. */
-function DocumentDoneCard({ req, state, action }: { req: Requirement; state: EmployerState; action?: React.ReactNode }) {
+/** A document already sent (approved, or with a reviewer): the file tile, its kind and its latest stamp. */
+function SentDocument({ req, state, action }: { req: Requirement; state: EmployerState; action?: React.ReactNode }) {
   const stamp = requirementTimes(req, state).slice(-1)[0]
   return (
-    <SettledCard
-      done={req.status === 'APPROVED'}
-      primary={requirementKindLine(req) ?? requirementTitle(req)}
-      secondary={stamp ? <Meta>{stamp}</Meta> : null}
-      action={action}
-    />
+    <View style={styles.sent}>
+      <View style={styles.tile}><Icon name="file" size={space.lg + 2} tint={color.textMuted} /></View>
+      <View style={styles.grow}>
+        <Text style={text.uiBaseMedium} numberOfLines={1}>{requirementKindLine(req) ?? requirementTitle(req)}</Text>
+        {!!stamp && <Text style={[text.metaMd, styles.stamp, req.status === 'APPROVED' ? styles.ok : styles.muted]}>{stamp.toUpperCase()}</Text>}
+      </View>
+      {action}
+    </View>
+  )
+}
+
+/** EM-05b · the moment after sending: a green tick, the promise with the server's own hours, and home. */
+function Submitted({ hours, onHome }: { hours?: number; onHome: () => void }) {
+  return (
+    <EmployerShell
+      bar={false}
+      scroll={false}
+      footer={<Button variant="secondary" size="lg" full label="Go to home" onPress={onHome} />}
+    >
+      <View style={styles.doneWrap}>
+        <View style={styles.doneMark}><Icon name="check" size={space['2xl'] + 4} tint={color.success} weight={2.6} /></View>
+        <Text style={[text.displayLead, styles.center]}>Documents submitted.</Text>
+        <Text style={[text.uiBase, styles.muted, styles.center]}>
+          {`${hours ? `A reviewer will look within ${hours} hours.` : 'A reviewer will look at them next.'} We’ll email you and notify you here.`}
+        </Text>
+      </View>
+    </EmployerShell>
   )
 }
 
@@ -541,20 +552,23 @@ function disabledReason(
 }
 
 const styles = StyleSheet.create({
-  grow: { flex: 1 },
-  section: { gap: space.sm },
-  footer: { gap: space.md },
+  grow: { flex: 1, minWidth: 0, gap: space['2xs'] + 1 },
+  center: { textAlign: 'center' },
+  muted: { color: color.textMuted },
+  subtle: { color: color.textSubtle },
+  danger: { color: color.danger },
+  ok: { color: color.success },
+  footer: { flex: 1, gap: space.md },
+  refusal: { flexDirection: 'row', gap: spaceHalf['1.5'], alignItems: 'flex-start' },
+  head: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   keep: { alignSelf: 'flex-start' },
+  slim: { paddingHorizontal: spaceHalf['3.5'] },
+  email: { gap: space.xs },
 
-  settled: { paddingVertical: space.md, paddingHorizontal: space.lg },
-  settledLine: { flexDirection: 'row', alignItems: 'center', gap: space.md },
-  disc: {
-    width: space['2xl'],
-    height: space['2xl'],
-    borderRadius: radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  discDone: { backgroundColor: color.successSoft },
-  discWaiting: { backgroundColor: color.infoSoft },
+  sent: { flexDirection: 'row', alignItems: 'center', gap: spaceHalf['3.5'] },
+  tile: { width: height.avatar, height: height.control, borderRadius: radius.ctl, backgroundColor: color.surfaceMuted, alignItems: 'center', justifyContent: 'center' },
+  stamp: { letterSpacing: trackingNative.eyebrow },
+
+  doneWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spaceHalf['3.5'], padding: space['2xl'] },
+  doneMark: { width: height.fab + space.xs, height: height.fab + space.xs, borderRadius: radius.pill, backgroundColor: color.successSoft, alignItems: 'center', justifyContent: 'center' },
 })

@@ -1,210 +1,95 @@
-import { useEffect, useSyncExternalStore } from 'react'
-import { AppState, type AppStateStatus } from 'react-native'
+import { useEffect, useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { ApiClientError } from '../api'
+import { getMe, getNotifications, type Me } from '../api/account'
+import { getConfig, type AppConfig } from '../api/config'
 import {
-  getInterviewerMe,
-  listInterviewerInterviews,
-  getInterviewerAvailability,
-  getInterviewerWallet,
-  listInterviewerLedger,
-  getInterviewerBankAccount,
-  listInterviewerNotifications,
-  type InterviewerMeDto,
-  type InterviewerInterviewDto,
-  type AvailabilityPayload,
-  type InterviewerWalletSummaryDto,
-  type LedgerEntryDto,
-  type BankAccountDto,
-  type InterviewerNotificationDto,
+  getInterviewerMe, listInterviewerInterviews, type InterviewerInterviewDto, type InterviewerMeDto,
 } from '../api/interviewer'
-import { isSuspended, isDeactivated } from './state'
 
-const POLL_MS = 30_000
+/**
+ * The interviewer's shared reads, one cache for every screen (react-query):
+ *   me          GET /interviewers/me — status, profile, wallet balances and the Home fields
+ *   interviews  GET /interviewers/me/interviews — the full list (refused while suspended)
+ *   identity    GET /auth/me — name, email and mobile (/interviewers/me carries none)
+ *   unread      GET /me/notifications — the bell's count
+ *
+ * Nothing is requested until the screen says it is signed in (`enabled`), so the
+ * sign-in pages never fire these without a token. A refusal is surfaced as it is:
+ * `mustChangePassword` (403 PASSWORD_CHANGE_REQUIRED) and `suspended` are read off
+ * the error or the status, never guessed.
+ */
+export const INTERVIEWER_KEY = ['interviewer'] as const
 const FRESH_MS = 5_000
+const POLL_MS = 30_000
 
-export interface InterviewerWalletFull extends InterviewerWalletSummaryDto {
-  balancePaise: number
-  lockedPaise: number
-  lifetimePaise: number
-  ledger: LedgerEntryDto[]
-  bankAccount: BankAccountDto | null
-}
+export const reasonOf = (e: unknown) => (e instanceof ApiClientError ? (e.meta?.reason as string | undefined) : undefined)
 
-interface Snapshot {
-  interviewer: InterviewerMeDto | null
-  interviews: InterviewerInterviewDto[]
-  availability: AvailabilityPayload | null
-  wallet: InterviewerWalletFull | null
-  notifications: InterviewerNotificationDto[]
-  unreadNotifications: number
-  error: Error | null
-  loading: boolean
-}
-
-const EMPTY: Snapshot = {
-  interviewer: null,
-  interviews: [],
-  availability: null,
-  wallet: null,
-  notifications: [],
-  unreadNotifications: 0,
-  error: null,
-  loading: true,
-}
-
-let snap: Snapshot = EMPTY
-let fetchedAt = 0
-let inflight: Promise<any> | null = null
-let timer: ReturnType<typeof setInterval> | null = null
-const listeners = new Set<() => void>()
-
-function set(patch: Partial<Snapshot>) {
-  snap = { ...snap, ...patch }
-  listeners.forEach((l) => l())
-}
-
-async function load(): Promise<Snapshot> {
-  if (inflight) return inflight
-
-  const read = (async () => {
-    try {
-      const [
-        meRes,
-        interviewsRes,
-        availRes,
-        walletRes,
-        ledgerRes,
-        bankRes,
-        notificationsRes,
-      ] = await Promise.allSettled([
-        getInterviewerMe(),
-        listInterviewerInterviews(),
-        getInterviewerAvailability(),
-        getInterviewerWallet(),
-        listInterviewerLedger(),
-        getInterviewerBankAccount(),
-        listInterviewerNotifications(),
-      ])
-
-      const interviewer = meRes.status === 'fulfilled' ? meRes.value : null
-      const interviews = interviewsRes.status === 'fulfilled' ? interviewsRes.value.interviews || [] : []
-      const availability = availRes.status === 'fulfilled' ? availRes.value : null
-      const walletSummary = walletRes.status === 'fulfilled' ? walletRes.value : null
-      const ledger = ledgerRes.status === 'fulfilled' ? ledgerRes.value.items || [] : []
-      const bankAccount =
-        bankRes.status === 'fulfilled'
-          ? bankRes.value.bank || bankRes.value.account || null
-          : null
-      const notifications = notificationsRes.status === 'fulfilled' ? notificationsRes.value.notifications || [] : []
-      const unreadNotifications = notifications.filter((n) => !n.read).length
-
-      let wallet: InterviewerWalletFull | null = null
-      if (walletSummary) {
-        wallet = {
-          ...walletSummary,
-          balancePaise: walletSummary.availablePaise,
-          lockedPaise: walletSummary.pendingPaise,
-          lifetimePaise: (walletSummary.availablePaise || 0) + (walletSummary.withdrawnPaise || 0),
-          ledger,
-          bankAccount,
-        }
-      }
-
-      fetchedAt = Date.now()
-      set({
-        interviewer,
-        interviews,
-        availability,
-        wallet,
-        notifications,
-        unreadNotifications,
-        error: null,
-        loading: false,
-      })
-      return snap
-    } catch (err: unknown) {
-      const error = err instanceof Error ? err : new Error('Could not load interviewer state.')
-      set({ error, loading: false })
-      return snap
-    } finally {
-      inflight = null
-    }
-  })()
-
-  inflight = read
-  return read
-}
-
-function onAppStateChange(status: AppStateStatus) {
-  if (status === 'active') {
-    if (Date.now() - fetchedAt >= FRESH_MS) {
-      void load()
-    }
-  }
-}
-
-export function useInterviewer() {
-  const state = useSyncExternalStore(
-    (onStoreChange) => {
-      listeners.add(onStoreChange)
-      if (listeners.size === 1) {
-        timer = setInterval(() => {
-          if (AppState.currentState === 'active') void load()
-        }, POLL_MS)
-        const sub = AppState.addEventListener('change', onAppStateChange)
-        void load()
-        return () => {
-          if (timer) clearInterval(timer)
-          sub.remove()
-          listeners.delete(onStoreChange)
-        }
-      }
-      return () => {
-        listeners.delete(onStoreChange)
-      }
-    },
-    () => snap,
-  )
-
-  const suspended = isSuspended(state.interviewer)
-  const deactivated = isDeactivated(state.interviewer)
-
-  const now = new Date()
-  const upcomingInterviews = state.interviews.filter((i) => {
-    return (
-      (i.status === 'BOOKED' || (i.status as string) === 'SCHEDULED') &&
-      new Date(i.slotEnd).getTime() > now.getTime()
-    )
+export function useInterviewerMe(enabled = true) {
+  const q = useQuery<InterviewerMeDto>({
+    queryKey: [...INTERVIEWER_KEY, 'me'],
+    queryFn: getInterviewerMe,
+    staleTime: FRESH_MS,
+    refetchInterval: POLL_MS,
+    retry: false,
+    enabled,
   })
-
-  const owedScorecards = state.interviews.filter((i) => {
-    const isCompleted = i.status === 'COMPLETED' || !!i.sessionEndedAt
-    const notSubmitted = !i.scorecard?.submittedAt && !i.scorecardSubmittedAt
-    return isCompleted && notSubmitted
-  })
-
-  const pastInterviews = state.interviews.filter((i) => {
-    return (
-      i.status === 'COMPLETED' ||
-      i.status === 'CANCELLED' ||
-      i.status === 'STUDENT_NO_SHOW' ||
-      i.status === 'INTERVIEWER_NO_SHOW'
-    )
-  })
-
+  const reason = reasonOf(q.error)
   return {
-    profile: state.interviewer,
-    interviewer: state.interviewer,
-    upcomingInterviews,
-    owedScorecards,
-    pastInterviews,
-    availability: state.availability,
-    wallet: state.wallet,
-    notifications: state.notifications,
-    unreadNotifications: state.unreadNotifications,
-    loading: state.loading,
-    error: state.error,
-    isSuspended: suspended,
-    isDeactivated: deactivated,
-    refresh: () => load(),
+    me: q.data ?? null,
+    error: q.error as Error | null,
+    loading: q.isPending && enabled,
+    refresh: q.refetch,
+    suspended: q.data?.status === 'SUSPENDED' || reason === 'ACCOUNT_SUSPENDED',
+    mustChangePassword: reason === 'PASSWORD_CHANGE_REQUIRED',
+    deactivated: reason === 'ACCOUNT_DEACTIVATED',
   }
+}
+
+export function useInterviewerInterviews(enabled = true) {
+  const q = useQuery<InterviewerInterviewDto[]>({
+    queryKey: [...INTERVIEWER_KEY, 'interviews'],
+    queryFn: listInterviewerInterviews,
+    staleTime: FRESH_MS,
+    refetchInterval: POLL_MS,
+    retry: false,
+    enabled,
+  })
+  return { interviews: q.data ?? null, error: q.error as Error | null, refresh: q.refetch }
+}
+
+export function useInterviewerIdentity(enabled = true): Me | null {
+  const q = useQuery<Me>({ queryKey: [...INTERVIEWER_KEY, 'identity'], queryFn: getMe, staleTime: 5 * 60_000, retry: false, enabled })
+  return q.data ?? null
+}
+
+export function useInterviewerUnread(enabled = true): number {
+  const q = useQuery({
+    queryKey: [...INTERVIEWER_KEY, 'unread'],
+    queryFn: () => getNotifications({ perPage: 1 }),
+    staleTime: FRESH_MS,
+    refetchInterval: POLL_MS,
+    retry: false,
+    enabled,
+  })
+  return q.data?.unread ?? 0
+}
+
+/** Drops every cached interviewer read — on sign-out, so the next person never sees the last one's data. */
+export function useForgetInterviewer() {
+  const qc = useQueryClient()
+  return () => qc.removeQueries({ queryKey: INTERVIEWER_KEY })
+}
+
+/** GET /config, once. Null until it lands; every sentence that needs a number drops it until then. */
+export function useAppConfig(): AppConfig | null {
+  const [config, setConfig] = useState<AppConfig | null>(null)
+  useEffect(() => {
+    let alive = true
+    getConfig().then((c) => alive && setConfig(c)).catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [])
+  return config
 }

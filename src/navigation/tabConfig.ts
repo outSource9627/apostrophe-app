@@ -1,4 +1,5 @@
 import type { RootStackParamList } from '../../App'
+import type { IconName } from '../components/ui/Icon'
 
 /**
  * The bottom tab bar is a persistent overlay on top of the existing flat
@@ -10,7 +11,7 @@ import type { RootStackParamList } from '../../App'
  * deliberately full-screen regardless of which tab they were entered from.
  */
 
-export type TabKey = 'home' | 'interviews' | 'jobs' | 'interests' | 'chat' | 'account' | 'availability' | 'wallet' | 'feed' | 'shortlist'
+export type TabKey = 'home' | 'interviews' | 'jobs' | 'interests' | 'chat' | 'account' | 'availability' | 'wallet' | 'feed' | 'shortlist' | 'none'
 
 export type TabDef = {
   key: TabKey
@@ -18,6 +19,10 @@ export type TabDef = {
   /** The existing top-level route this tab's icon navigates to. Unchanged, already-working `navigate()` — see BottomTabBar.tsx. */
   root: keyof RootStackParamList
   icon: 'home' | 'calendar' | 'briefcase' | 'heart' | 'chat' | 'person' | 'clock' | 'wallet' | 'feed' | 'star'
+  /** Draw from the shared design icon set instead of the bar's own glyphs (the employer bar). */
+  glyph?: IconName
+  /** Locked until the employer is verified (the design's padlock on every tab but Feed). */
+  gated?: boolean
 }
 
 export const STUDENT_TABS: TabDef[] = [
@@ -36,12 +41,13 @@ export const INTERVIEWER_TABS: TabDef[] = [
   { key: 'account', label: 'Account', root: 'InterviewerAccount', icon: 'person' },
 ]
 
+/** The Employer Android design's five (EM-04..29): Home lands under Feed; Account and Notifications sit behind the header. */
 export const EMPLOYER_TABS: TabDef[] = [
-  { key: 'home', label: 'Home', root: 'EmployerHome', icon: 'home' },
-  { key: 'feed', label: 'Feed', root: 'EmployerFeed', icon: 'feed' },
-  { key: 'jobs', label: 'Jobs', root: 'EmployerJobs', icon: 'briefcase' },
-  { key: 'shortlist', label: 'Shortlist', root: 'EmployerShortlist', icon: 'star' },
-  { key: 'account', label: 'Account', root: 'EmployerAccount', icon: 'person' },
+  { key: 'feed', label: 'Feed', root: 'EmployerFeed', icon: 'feed', glyph: 'play' },
+  { key: 'shortlist', label: 'Shortlist', root: 'EmployerShortlist', icon: 'star', glyph: 'bookmark', gated: true },
+  { key: 'interests', label: 'Interests', root: 'EmployerInterests', icon: 'heart', glyph: 'heart', gated: true },
+  { key: 'jobs', label: 'Jobs', root: 'EmployerJobs', icon: 'briefcase', glyph: 'brief', gated: true },
+  { key: 'chat', label: 'Chats', root: 'EmployerChats', icon: 'chat', glyph: 'chat', gated: true },
 ]
 
 type Persona = 'student' | 'interviewer' | 'employer'
@@ -93,31 +99,21 @@ const INTERVIEWER_ROUTES: Partial<Record<keyof RootStackParamList, TabKey>> = {
   InterviewerChats: 'account',
 }
 
+// Routes the design draws without a tab bar (Account, Notifications, the job
+// editor, the applicant, a chat thread, documents and status) are left out, so
+// the bar hides there. Company profile draws the bar with nothing lit.
 const EMPLOYER_ROUTES: Partial<Record<keyof RootStackParamList, TabKey>> = {
-  EmployerHome: 'home',
-  EmployerDocuments: 'home',
-  EmployerStatus: 'home',
-  EmployerCompany: 'home',
+  EmployerHome: 'feed',
   EmployerFeed: 'feed',
   CandidateProfile: 'feed',
-  CandidateVideo: 'feed',
-  FeedFilters: 'feed',
-  SavedSearches: 'feed',
-  SendInterest: 'feed',
+  EmployerCompany: 'none',
+  EmployerShortlist: 'shortlist',
+  EmployerInterests: 'interests',
   EmployerJobs: 'jobs',
-  JobEditor: 'jobs',
   EmployerJobDetail: 'jobs',
   JobApplications: 'jobs',
-  ApplicantDetail: 'jobs',
-  EmployerShortlist: 'shortlist',
-  ShortlistEntry: 'shortlist',
-  EmployerInterests: 'shortlist',
-  EmployerAccount: 'account',
-  EmployerConnections: 'account',
-  EmployerChats: 'account',
-  EmployerThread: 'account',
-  EmployerNotifications: 'account',
-  EmployerNotificationSettings: 'account',
+  EmployerChats: 'chat',
+  EmployerConnections: 'chat',
 }
 
 /** Which persona's bar, and which tab, a given route name activates — or `null` to hide the bar entirely. */

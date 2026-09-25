@@ -1,354 +1,347 @@
-import React, { useState, useEffect, useCallback } from 'react'
-import { Alert, Pressable, StyleSheet, View } from 'react-native'
-import { useNavigation } from '@react-navigation/native'
+import React, { useCallback, useEffect, useState } from 'react'
+import { ActivityIndicator, FlatList, Linking, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native'
+import { useIsFocused, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { borderWidth, color, height, opacity, radius, space } from '../../theme'
+import { borderWidth, color, height, opacity, radius, space, spaceHalf } from '../../theme'
+import { Button, Input, text } from '../../components/ui'
+import { Icon, type IconName } from '../../components/ui/Icon'
+import { EmployerShell } from '../../components/employer'
+import { EmBadge, EmCard, EmChip, EmDialog, EmEmpty, EmError, EmIconButton, EmPerson, EmSheet, initialsOf } from '../../components/employer/em'
+import { ApiClientError } from '../../lib/api'
 import {
-  Body,
-  Button,
-  Card,
-  Display,
-  EmptyState,
-  ErrorState,
-  Eyebrow,
-  Meta,
-  Skeleton,
-  StatusPill,
-  VerifiedSeal,
-} from '../../components/ui'
-import { EmployerShell } from '../../components/employer/EmployerShell'
-import { EmployerNav, type EmployerNavKey } from '../../components/employer/EmployerNav'
-import {
-  getEmployerConnections,
-  actOnEmployerConnection,
-  threadIdForEmployerConnection,
-  type EmployerConnectionRow,
+  actOnEmployerConnection, getEmployerConnections, reportEmployerThread, threadIdForEmployerConnection,
+  type EmployerConnectionRow, type ReportReason,
 } from '../../lib/api/employerChat'
+import { fmtDayMon } from '../../lib/chat/format'
 import type { RootStackParamList } from '../../../App'
 
-function formatIstDate(isoStr?: string | null): string {
-  if (!isoStr) return ''
-  const d = new Date(isoStr)
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-  const day = String(d.getDate()).padStart(2, '0')
-  const mon = months[d.getMonth()]
-  return `${day} ${mon}`
+export const REPORT_REASONS: { value: ReportReason; label: string }[] = [
+  { value: 'HARASSMENT', label: 'Harassment' },
+  { value: 'SPAM', label: 'Spam' },
+  { value: 'SCAM_OR_FRAUD', label: 'Scam or fraud' },
+  { value: 'OFF_PLATFORM_PAYMENT', label: 'Off-platform payment' },
+  { value: 'INAPPROPRIATE_CONTENT', label: 'Inappropriate content' },
+  { value: 'IMPERSONATION', label: 'Impersonation' },
+  { value: 'OTHER', label: 'Something else' },
+]
+
+const first = (name?: string | null) => (name ?? '').trim().split(/\s+/)[0] || 'They'
+
+/** "Via your Interest · 22 Sep" / "Applied to your job · 23 Sep" / "Withdrawn by you · 15 Sep". */
+function viaLine(c: EmployerConnectionRow): string {
+  if (c.status === 'CLOSED') return `Withdrawn by ${c.closedByMe ? 'you' : first(c.counterparty.name)}${c.closedAt ? ` · ${fmtDayMon(c.closedAt)}` : ''}`
+  if (c.status === 'BLOCKED') return `Blocked${c.closedAt ? ` · ${fmtDayMon(c.closedAt)}` : ''}`
+  return `${c.origin === 'INTEREST' ? 'Via your Interest' : 'Applied to your job'} · ${fmtDayMon(c.openedAt)}`
 }
 
-function initialsFor(name?: string | null): string {
-  return (name || 'C')
-    .split(' ')
-    .map((n) => n[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase()
+/**
+ * EM-24b · Block (and report). Blocking archives the chat and keeps them out of
+ * the feed. "Also report" files a report first (the report API needs a reason,
+ * so the reasons show while it is on); a repeat report is not an error.
+ */
+export function BlockDialog({
+  open, connection, onClose, onDone,
+}: { open: boolean; connection: EmployerConnectionRow; onClose: () => void; onDone: () => void }) {
+  const [report, setReport] = useState(true)
+  const [reason, setReason] = useState<ReportReason | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const name = connection.counterparty.name || 'this candidate'
+
+  useEffect(() => {
+    if (open) {
+      setReport(true)
+      setReason(null)
+      setError(null)
+    }
+  }, [open])
+
+  async function confirm() {
+    setBusy(true)
+    setError(null)
+    try {
+      if (report && reason) {
+        const threadId = connection.threadId ?? (await threadIdForEmployerConnection(connection.id))
+        if (threadId) {
+          await reportEmployerThread(threadId, reason).catch((e) => {
+            if (!(e instanceof ApiClientError && e.meta?.reason === 'ALREADY_REPORTED')) throw e
+          })
+        }
+      }
+      await actOnEmployerConnection(connection.id, 'BLOCK')
+      onDone()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Not blocked. Try again.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <EmDialog
+      open={open}
+      onClose={onClose}
+      title={`Block ${name}?`}
+      body={`The chat is archived and ${first(connection.counterparty.name)} won’t appear in your feed again.`}
+      actions={
+        <>
+          <Button variant="ghost" size="md" label="Cancel" disabled={busy} onPress={onClose} />
+          <Button variant="dangerFill" size="md" label={report ? 'Block and report' : 'Block'} busy={busy} disabled={busy || (report && !reason)} onPress={() => { confirm() }} />
+        </>
+      }
+    >
+      <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: report }} onPress={() => setReport((r) => !r)} style={styles.check}>
+        <View style={[styles.box, report && styles.boxOn]}>{report && <Icon name="check" size={space.md + 1} tint={color.textInverse} weight={3} />}</View>
+        <Text style={text.uiMdMedium}>Also report to Apostrophe</Text>
+      </Pressable>
+      {report && (
+        <View style={styles.reasons}>
+          {REPORT_REASONS.map((r) => <EmChip key={r.value} compact label={r.label} on={reason === r.value} onPress={() => setReason(r.value)} />)}
+        </View>
+      )}
+      {!!error && <Text style={[text.uiSm, styles.danger]}>{error}</Text>}
+    </EmDialog>
+  )
 }
 
+/** Withdraw has no board of its own: the block dialog's frame, with its optional reason. */
+function WithdrawDialog({
+  open, connection, onClose, onDone,
+}: { open: boolean; connection: EmployerConnectionRow | null; onClose: () => void; onDone: () => void }) {
+  const [reason, setReason] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  useEffect(() => {
+    if (open) {
+      setReason('')
+      setError(null)
+    }
+  }, [open])
+  if (!connection) return null
+  async function confirm() {
+    if (!connection) return
+    setBusy(true)
+    setError(null)
+    try {
+      await actOnEmployerConnection(connection.id, 'WITHDRAW', reason.trim() || undefined)
+      onDone()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Not withdrawn. Try again.')
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <EmDialog
+      open={open}
+      onClose={onClose}
+      title={`Withdraw from ${connection.counterparty.name || 'this connection'}?`}
+      body="The chat becomes read-only for both of you. Nothing is deleted."
+      actions={
+        <>
+          <Button variant="ghost" size="md" label="Cancel" disabled={busy} onPress={onClose} />
+          <Button variant="secondary" size="md" label="Withdraw" busy={busy} disabled={busy} onPress={() => { confirm() }} />
+        </>
+      }
+    >
+      <Input value={reason} onChangeText={setReason} placeholder="Reason (optional)" />
+      {!!error && <Text style={[text.uiSm, styles.danger]}>{error}</Text>}
+    </EmDialog>
+  )
+}
+
+/**
+ * EM-24 · Connections (Employer Android). Everyone you are connected to: live
+ * ones first, with their contact details (the server shares them once
+ * connected) and Open chat; then the withdrawn and blocked ones, dimmed and
+ * read-only. Each row's ⋯ holds View profile, Withdraw and Block and report.
+ */
 export function EmployerConnectionsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
-
-  const [rows, setRows] = useState<EmployerConnectionRow[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<Error | null>(null)
-  const [actionBusyId, setActionBusyId] = useState<string | null>(null)
+  const focused = useIsFocused()
+  const [rows, setRows] = useState<EmployerConnectionRow[] | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [refreshing, setRefreshing] = useState(false)
+  const [menuFor, setMenuFor] = useState<EmployerConnectionRow | null>(null)
+  const [blocking, setBlocking] = useState<EmployerConnectionRow | null>(null)
+  const [withdrawing, setWithdrawing] = useState<EmployerConnectionRow | null>(null)
+  const [opening, setOpening] = useState<string | null>(null)
 
   const load = useCallback(async () => {
+    setError(null)
     try {
-      setLoading(true)
-      setError(null)
-      const res = await getEmployerConnections({ statuses: ['ACTIVE', 'CLOSED', 'BLOCKED'] })
-      setRows(res.rows)
-    } catch (err) {
-      console.error('Failed to load connections', err)
-      setError(err instanceof Error ? err : new Error('We could not load your connections.'))
-    } finally {
-      setLoading(false)
+      const res = await getEmployerConnections({ statuses: ['ACTIVE', 'CLOSED', 'BLOCKED'], perPage: 100 })
+      const order = { ACTIVE: 0, CLOSED: 1, BLOCKED: 2 } as const
+      setRows([...res.rows].sort((a, b) => order[a.status] - order[b.status]))
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not load your connections.')
     }
   }, [])
 
   useEffect(() => {
-    load()
-  }, [load])
+    if (focused) load()
+  }, [focused, load])
 
-  const handleNavSelect = (key: EmployerNavKey) => {
-    if (key === 'feed') navigation.navigate('EmployerFeed')
-    else if (key === 'shortlist') navigation.navigate('EmployerShortlist')
-    else if (key === 'interests') navigation.navigate('EmployerInterests')
-    else if (key === 'jobs') navigation.navigate('EmployerJobs')
-    else if (key === 'chat') navigation.navigate('EmployerChats')
-  }
-
-  const handleOpenChat = async (row: EmployerConnectionRow) => {
-    if (row.threadId) {
-      navigation.navigate('EmployerThread', { id: row.threadId })
-      return
-    }
-    const resolved = await threadIdForEmployerConnection(row.id)
-    if (resolved) {
-      navigation.navigate('EmployerThread', { id: resolved })
-    } else {
-      navigation.navigate('EmployerChats')
+  async function openChat(c: EmployerConnectionRow) {
+    setOpening(c.id)
+    try {
+      const threadId = c.threadId ?? (await threadIdForEmployerConnection(c.id))
+      if (threadId) navigation.navigate('EmployerThread', { id: threadId })
+    } finally {
+      setOpening(null)
     }
   }
 
-  const handleWithdraw = (row: EmployerConnectionRow) => {
-    Alert.alert(
-      'Withdraw connection',
-      `Withdraw from ${row.counterparty.name || 'candidate'}? You can’t send messages here any more. The conversation stays readable for both of you, and nothing was deleted.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Withdraw',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              setActionBusyId(row.id)
-              await actOnEmployerConnection(row.id, 'WITHDRAW')
-              load()
-            } catch (err) {
-              console.error('Failed to withdraw', err)
-            } finally {
-              setActionBusyId(null)
-            }
-          },
-        },
-      ],
-    )
-  }
+  const active = rows?.filter((r) => r.status === 'ACTIVE').length ?? 0
+  const archived = (rows?.length ?? 0) - active
 
-  const handleBlock = (row: EmployerConnectionRow) => {
-    Alert.alert(
-      'Block candidate',
-      `Block ${row.counterparty.name || 'candidate'}? They will be permanently removed from your candidate feed and cannot appear in searches again. The chat is archived read-only. This cannot be undone from here.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Block candidate',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              setActionBusyId(row.id)
-              await actOnEmployerConnection(row.id, 'BLOCK')
-              load()
-            } catch (err) {
-              console.error('Failed to block', err)
-            } finally {
-              setActionBusyId(null)
-            }
-          },
-        },
-      ],
-    )
-  }
-
-  const activeRows = rows.filter((r) => r.status === 'ACTIVE')
-  const archivedRows = rows.filter((r) => r.status !== 'ACTIVE')
-
-  return (
-    <EmployerShell nav={<EmployerNav current="chat" onSelect={handleNavSelect} />}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <Eyebrow>
-            {`${activeRows.length} accepted · ${archivedRows.length} in archive · times in IST`}
-          </Eyebrow>
-          <Pressable
-            accessibilityRole="button"
-            hitSlop={8}
-            onPress={() => navigation.navigate('EmployerChats')}
-          >
-            <Body size="sm" weight="medium">
-              Chats →
-            </Body>
-          </Pressable>
-        </View>
-        <Display level="lg" accessibilityRole="header">
-          Connections
-        </Display>
+  let body: React.ReactNode
+  if (rows === null && !error) {
+    body = <ActivityIndicator color={color.textSubtle} style={styles.loading} />
+  } else if (error && !rows) {
+    body = (
+      <View style={styles.pad}>
+        <EmError title="Couldn’t load your connections." body={error} action={<Button variant="secondary" size="pair" icon="refresh" label="Try again" onPress={() => { load() }} />} />
       </View>
-
-      {/* Content */}
-      {loading ? (
-        <Skeleton lines={4} />
-      ) : error ? (
-        <ErrorState
-          title="We could not load your connections."
-          body={error.message}
-          action={<Button variant="outline" size="sm" label="Try again" onPress={() => load()} />}
+    )
+  } else if ((rows?.length ?? 0) === 0) {
+    body = (
+      <View style={[styles.pad, styles.center]}>
+        <EmEmpty
+          icon="users"
+          title="No connections yet."
+          body="A connection opens when a candidate accepts your Interest, or applies after you shortlisted them."
+          action={<Button variant="primary" size="pair" label="Browse candidates" onPress={() => navigation.navigate('EmployerFeed')} />}
         />
-      ) : rows.length === 0 ? (
-        <EmptyState
-          title="No one has accepted yet."
-          body="A candidate appears here when they accept your Interest, or when they apply to one of your jobs after you shortlisted them. Interests stay open for 14 days."
-          action={
-            <Button
-              variant="outline"
-              size="sm"
-              label="Browse candidates"
-              onPress={() => navigation.navigate('EmployerFeed')}
-            />
-          }
-        />
-      ) : (
-        <View style={styles.content}>
-          {/* Active, accepted connections */}
-          <View style={styles.list}>
-            {activeRows.map((row) => (
-              <Card key={row.id} style={styles.card}>
-                <View style={styles.cardTop}>
-                  <View style={styles.avatar}>
-                    <Body weight="semibold">{initialsFor(row.counterparty.name)}</Body>
-                  </View>
-                  <View style={styles.cardInfo}>
-                    <View style={styles.nameRow}>
-                      <Display level="xs" style={styles.grow} numberOfLines={1}>
-                        {row.counterparty.name || 'Candidate'}
-                      </Display>
-                      <StatusPill tone="success" label="Accepted" />
-                    </View>
-                    <View style={styles.subRow}>
-                      {row.interviewedAt && <VerifiedSeal date={formatIstDate(row.interviewedAt)} />}
-                      <Meta>
-                        {row.origin === 'INTEREST' ? 'Interest accepted' : 'Applied · shortlisted'}
-                        {row.openedAt ? ` · ${formatIstDate(row.openedAt)}` : ''}
-                      </Meta>
-                    </View>
-                  </View>
+      </View>
+    )
+  } else {
+    body = (
+      <FlatList
+        data={rows ?? []}
+        keyExtractor={(r) => r.id}
+        contentContainerStyle={styles.list}
+        ItemSeparatorComponent={Gap}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            tintColor={color.textSubtle}
+            onRefresh={async () => {
+              setRefreshing(true)
+              await load()
+              setRefreshing(false)
+            }}
+          />
+        }
+        renderItem={({ item }) => {
+          const live = item.status === 'ACTIVE'
+          const email = item.contact?.email
+          const mobile = item.contact?.mobile
+          return (
+            <EmCard style={!live && styles.dim}>
+              <View style={styles.head}>
+                <EmPerson initials={initialsOf(item.counterparty.name)} size={height.tap} muted={!live} />
+                <View style={styles.grow}>
+                  <Text style={text.uiBaseSemi} numberOfLines={1}>{item.counterparty.name || 'Candidate'}</Text>
+                  <Text style={[text.uiXs, styles.muted]} numberOfLines={2}>{viaLine(item)}</Text>
                 </View>
-
-                <View style={styles.actionRow}>
-                  <Button variant="secondary" size="sm" label="Open chat" onPress={() => handleOpenChat(row)} />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    label="Withdraw"
-                    busy={actionBusyId === row.id}
-                    onPress={() => handleWithdraw(row)}
-                  />
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    label="Block"
-                    busy={actionBusyId === row.id}
-                    onPress={() => handleBlock(row)}
-                  />
-                </View>
-              </Card>
-            ))}
-          </View>
-
-          {/* Archive: withdrawn and blocked connections */}
-          {archivedRows.length > 0 && (
-            <View style={styles.archiveSection}>
-              <View style={styles.sectionHeader}>
-                <Eyebrow>{`Archive (${archivedRows.length})`}</Eyebrow>
+                <EmIconButton name="more" label="More" size={height.chip + 4} onPress={() => setMenuFor(item)} />
               </View>
-              <Body size="xs" tone="muted">
-                Withdrawn and blocked connections stay on this list.
-              </Body>
-
-              {archivedRows.map((row) => {
-                const isBlocked = row.status === 'BLOCKED'
-                return (
-                  <Card key={row.id} style={[styles.card, styles.cardArchived]}>
-                    <View style={styles.cardTop}>
-                      <View style={styles.avatar}>
-                        <Body weight="semibold">{initialsFor(row.counterparty.name)}</Body>
-                      </View>
-                      <View style={styles.cardInfo}>
-                        <View style={styles.nameRow}>
-                          <Display level="xs" style={styles.grow} numberOfLines={1}>
-                            {row.counterparty.name || 'Candidate'}
-                          </Display>
-                          <StatusPill tone={isBlocked ? 'danger' : 'neutral'} label={isBlocked ? 'Blocked' : 'Withdrawn'} />
-                        </View>
-                        <Meta>
-                          {row.closedByMe ? 'By you' : 'By the candidate'}
-                          {row.closedAt ? ` · ${formatIstDate(row.closedAt)}` : ''}
-                        </Meta>
-                      </View>
+              {live ? (
+                <>
+                  {(!!email || !!mobile) && (
+                    <View style={styles.contact}>
+                      {!!email && (
+                        <Text style={[text.uiSm, styles.secondary]} onPress={() => Linking.openURL(`mailto:${email}`).catch(() => {})}>{email}</Text>
+                      )}
+                      {!!mobile && (
+                        <Text style={[text.uiSm, styles.secondary]} onPress={() => Linking.openURL(`tel:${mobile}`).catch(() => {})}>{mobile}</Text>
+                      )}
                     </View>
+                  )}
+                  <Button variant="primary" size="md" icon="chat" label="Open chat" busy={opening === item.id} onPress={() => { openChat(item) }} />
+                </>
+              ) : (
+                <EmBadge label={item.status === 'BLOCKED' ? 'Blocked · read-only' : 'Withdrawn · read-only'} tone="gray" small />
+              )}
+            </EmCard>
+          )
+        }}
+      />
+    )
+  }
 
-                    <Body size="xs" tone="muted">
-                      {isBlocked
-                        ? 'Permanently removed from your candidate feed. This can’t be undone from here.'
-                        : 'The chat is kept, read-only. Nothing was deleted.'}
-                    </Body>
+  const m = menuFor
+  return (
+    <EmployerShell back={() => navigation.goBack()} title="Connections" sub={rows ? `${active} ACTIVE · ${archived} ARCHIVED` : undefined} scroll={false}>
+      {body}
 
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      label="View chat (read-only)"
-                      onPress={() => handleOpenChat(row)}
-                    />
-                  </Card>
-                )
-              })}
-            </View>
-          )}
-        </View>
+      <EmSheet open={!!m} onClose={() => setMenuFor(null)} scroll={false}>
+        {m && (
+          <View style={styles.menu}>
+            <MenuRow icon="eye" label="View profile" onPress={() => { setMenuFor(null); navigation.navigate('CandidateProfile', { id: m.counterparty.id }) }} />
+            {m.status !== 'ACTIVE' && !!m.threadId && (
+              <MenuRow icon="chat" label="Read the chat" onPress={() => { setMenuFor(null); navigation.navigate('EmployerThread', { id: m.threadId! }) }} />
+            )}
+            {m.status === 'ACTIVE' && <MenuRow icon="out" label="Withdraw" onPress={() => { setMenuFor(null); setWithdrawing(m) }} />}
+            {m.status !== 'BLOCKED' && <MenuRow icon="ban" label="Block and report" danger onPress={() => { setMenuFor(null); setBlocking(m) }} />}
+          </View>
+        )}
+      </EmSheet>
+
+      {blocking && (
+        <BlockDialog
+          open
+          connection={blocking}
+          onClose={() => setBlocking(null)}
+          onDone={() => {
+            setBlocking(null)
+            load()
+          }}
+        />
       )}
+      <WithdrawDialog
+        open={!!withdrawing}
+        connection={withdrawing}
+        onClose={() => setWithdrawing(null)}
+        onDone={() => {
+          setWithdrawing(null)
+          load()
+        }}
+      />
     </EmployerShell>
   )
 }
 
+const Gap = () => <View style={styles.gap} />
+
+function MenuRow({ icon, label, danger, onPress }: { icon: IconName; label: string; danger?: boolean; onPress: () => void }) {
+  return (
+    <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}>
+      <Icon name={icon} size={space.lg} tint={danger ? color.danger : color.text} />
+      <Text style={[text.uiBaseMedium, danger && styles.danger]}>{label}</Text>
+    </Pressable>
+  )
+}
+
 const styles = StyleSheet.create({
-  grow: { flex: 1 },
-  header: {
-    gap: space.xs,
-    paddingBottom: space.md,
-    borderBottomWidth: borderWidth.thin,
-    borderBottomColor: color.border,
-  },
-  headerTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  content: { gap: space.lg },
-  list: { gap: space.md },
-  card: { padding: space.lg, gap: space.sm },
-  cardArchived: { opacity: opacity.disabled },
-  cardTop: {
-    flexDirection: 'row',
-    gap: space.sm,
-    alignItems: 'flex-start',
-  },
-  avatar: {
-    width: height.tap,
-    height: height.tap,
-    borderRadius: radius.pill,
-    backgroundColor: color.surfaceMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cardInfo: {
-    flex: 1,
-    gap: space['2xs'],
-  },
-  nameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: space.sm,
-  },
-  subRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.sm,
-    flexWrap: 'wrap',
-  },
-  actionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.sm,
-  },
-  archiveSection: {
-    gap: space.sm,
-  },
-  sectionHeader: {
-    paddingBottom: space.xs,
-    borderBottomWidth: borderWidth.thin,
-    borderBottomColor: color.border,
-  },
+  grow: { flex: 1, minWidth: 0, gap: space['2xs'] + 1 },
+  pressed: { opacity: opacity.pressed },
+  muted: { color: color.textMuted },
+  secondary: { color: color.textSecondary },
+  danger: { color: color.danger },
+  dim: { opacity: opacity.disabled + 0.2 },
+  pad: { flex: 1, paddingHorizontal: space.lg },
+  center: { justifyContent: 'center' },
+  loading: { paddingVertical: space['3xl'] },
+  list: { paddingHorizontal: space.lg, paddingBottom: space.lg },
+  gap: { height: spaceHalf['2.5'] },
+  head: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  contact: { gap: space.xs },
+  menu: { paddingHorizontal: space.lg, paddingBottom: space['2xl'] },
+  menuRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, minHeight: height['control-lg'], paddingHorizontal: space.sm },
+  check: { flexDirection: 'row', alignItems: 'center', gap: spaceHalf['2.5'], minHeight: height.tap },
+  box: { width: space.xl, height: space.xl, borderRadius: radius.sm, borderWidth: borderWidth.medium, borderColor: color.borderStrong, alignItems: 'center', justifyContent: 'center' },
+  boxOn: { backgroundColor: color.accent, borderColor: color.accent },
+  reasons: { flexDirection: 'row', flexWrap: 'wrap', gap: spaceHalf['1.5'] },
 })

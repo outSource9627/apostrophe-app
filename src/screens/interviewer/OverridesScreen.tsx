@@ -1,236 +1,191 @@
-import React, { useState } from 'react'
-import { Alert, StyleSheet, View } from 'react-native'
+import React, { useCallback, useEffect, useState } from 'react'
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { borderWidth, color, space } from '../../theme'
-import {
-  Body,
-  Button,
-  Card,
-  Display,
-  EmptyState,
-  ErrorState,
-  Eyebrow,
-  Field,
-  Input,
-  ObjectRow,
-  Segmented,
-  Skeleton,
-  StatusPill,
-} from '../../components/ui'
+import { useQueryClient } from '@tanstack/react-query'
+import { borderWidth, color, height, radius, space, spaceHalf, trackingNative } from '../../theme'
+import { Button, text } from '../../components/ui'
 import { InterviewerShell } from '../../components/interviewer/InterviewerShell'
-import { useInterviewer } from '../../lib/interviewer/useInterviewer'
-import { interviewerApi, type AvailabilityOverrideDto } from '../../lib/api/interviewer'
+import { IvCard } from '../../components/interviewer/iv'
+import { EmEmpty, EmError, EmIconButton, EmSheet } from '../../components/employer/em'
+import { EmDateField, EmField, EmSeg, EmSelect, todayIst, type Ymd } from '../../components/employer/form'
+import { ApiClientError } from '../../lib/api'
+import { getAvailability, saveAvailability, type AvailabilityOverrideDto, type AvailabilityPayload } from '../../lib/api/interviewer'
+import { timeOfDay } from '../../lib/interviewer/availability'
+import { dayOfKey, monthOfKey, monthShort, weekdayOfKey, weekdayShort } from '../../lib/interviewer/state'
+import { INTERVIEWER_KEY, useInterviewerMe } from '../../lib/interviewer/useInterviewer'
+import type { RootStackParamList } from '../../../App'
 
-const AVAILABILITY_OPTIONS = ['Unavailable', 'Available'] as const
+const pad = (n: number) => String(n).padStart(2, '0')
+const keyOf = (v: Ymd) => `${v.y}-${pad(v.m + 1)}-${pad(v.d)}`
+const addDaysYmd = (v: Ymd, n: number): Ymd => {
+  const t = new Date(Date.UTC(v.y, v.m, v.d + n))
+  return { y: t.getUTCFullYear(), m: t.getUTCMonth(), d: t.getUTCDate() }
+}
 
+/**
+ * Date overrides (no artboard — the drawn screens' language). The dated
+ * exceptions to the weekly pattern: a whole day off, or that day's own hours.
+ * Nothing is saved until the availability has loaded, so a save can never wipe
+ * the overrides it did not read; each save sends the weekly pattern unchanged
+ * with the edited list. Dates run to the server's `horizonDays`; hours step by
+ * its `slotMinutes`. The server's refusal (a booked slot, a past date) is shown
+ * as it arrives.
+ */
 export function OverridesScreen() {
-  const navigation = useNavigation<NativeStackNavigationProp<any>>()
-  const { availability, loading, error, refresh } = useInterviewer()
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
+  const insets = useSafeAreaInsets()
+  const qc = useQueryClient()
+  const { suspended } = useInterviewerMe()
+  const [payload, setPayload] = useState<AvailabilityPayload | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [adding, setAdding] = useState(false)
+  const [date, setDate] = useState<Ymd | null>(null)
+  const [kind, setKind] = useState<'off' | 'hours'>('off')
+  const [from, setFrom] = useState('')
+  const [to, setTo] = useState('')
 
-  const [overrides, setOverrides] = useState<AvailabilityOverrideDto[]>(
-    availability?.overrides || [],
-  )
-  const [newDate, setNewDate] = useState('')
-  const [isAvailable, setIsAvailable] = useState(false) // default unavailable all day
-  const [saving, setSaving] = useState(false)
-
-  const handleAddOverride = () => {
-    // Validate YYYY-MM-DD format
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(newDate)) {
-      Alert.alert('Invalid Date', 'Please enter a valid date in YYYY-MM-DD format (e.g. 2026-10-15).')
-      return
-    }
-
-    if (overrides.some((o) => o.date === newDate)) {
-      Alert.alert('Duplicate Date', 'An override for this date already exists.')
-      return
-    }
-
-    const nextOverrides = [
-      ...overrides,
-      {
-        date: newDate,
-        available: isAvailable,
-        blocks: isAvailable ? [{ startMin: 540, endMin: 1080 }] : [],
-      },
-    ].sort((a, b) => a.date.localeCompare(b.date))
-
-    setOverrides(nextOverrides)
-    setNewDate('')
-  }
-
-  const handleRemoveOverride = (date: string) => {
-    setOverrides(overrides.filter((o) => o.date !== date))
-  }
-
-  const handleSave = async () => {
-    setSaving(true)
+  const load = useCallback(async () => {
+    setError(null)
     try {
-      await interviewerApi.saveAvailability({
-        rules: availability?.rules || [],
-        overrides,
-      })
-      await refresh()
-      Alert.alert('Saved', 'Date overrides have been saved.')
-      navigation.goBack()
-    } catch (err: any) {
-      Alert.alert('Save Failed', err?.message || 'Unable to update overrides.')
+      setPayload(await getAvailability())
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not load your overrides.')
+    }
+  }, [])
+  useEffect(() => {
+    load()
+  }, [load])
+
+  async function save(next: AvailabilityOverrideDto[], done: string) {
+    if (!payload) return
+    setBusy(true)
+    setNotice(null)
+    try {
+      await saveAvailability({ rules: payload.rules, overrides: next })
+      setPayload({ ...payload, overrides: next })
+      setNotice(done)
+      qc.invalidateQueries({ queryKey: INTERVIEWER_KEY })
+      return true
+    } catch (e) {
+      setNotice(e instanceof ApiClientError ? e.message : 'Not saved. Check your connection and try again.')
+      return false
     } finally {
-      setSaving(false)
+      setBusy(false)
     }
   }
 
-  if (loading && !availability) {
+  if (!payload) {
     return (
-      <InterviewerShell back={{ label: 'Availability', onPress: () => navigation.goBack() }}>
-        <Skeleton lines={4} />
+      <InterviewerShell back={() => navigation.goBack()} title="Date overrides">
+        {error ? <EmError title="Couldn’t load your overrides." body={error} action={<Button variant="secondary" size="pair" icon="refresh" label="Try again" onPress={() => { load() }} />} /> : <ActivityIndicator color={color.textSubtle} style={styles.loading} />}
       </InterviewerShell>
     )
   }
 
-  if (error && !availability) {
-    return (
-      <InterviewerShell back={{ label: 'Availability', onPress: () => navigation.goBack() }}>
-        <ErrorState
-          title="We could not load your overrides."
-          body={error.message}
-          action={<Button variant="outline" size="sm" label="Try again" onPress={refresh} />}
-        />
-      </InterviewerShell>
-    )
+  const today = todayIst()
+  const todayKey = keyOf(today)
+  const upcoming = payload.overrides.filter((o) => o.date >= todayKey).sort((a, b) => a.date.localeCompare(b.date))
+  const step = payload.slotMinutes
+  const times = Array.from({ length: Math.floor((24 * 60) / step) + 1 }, (_, i) => i * step).map((m) => ({ value: String(m), label: m === 24 * 60 ? '12 AM (midnight)' : timeOfDay(m) }))
+  const fromN = Number(from)
+  const toN = Number(to)
+  const hoursOk = kind === 'off' || (from !== '' && to !== '' && toN > fromN)
+  const describe = (o: AvailabilityOverrideDto) =>
+    !o.available || o.blocks.length === 0 ? 'Whole day off' : o.blocks.map((b) => `${timeOfDay(b.startMin)}–${timeOfDay(b.endMin)}`).join(', ')
+
+  async function add() {
+    if (!date || !hoursOk) return
+    const entry: AvailabilityOverrideDto = kind === 'off'
+      ? { date: keyOf(date), available: false, blocks: [] }
+      : { date: keyOf(date), available: true, blocks: [{ startMin: fromN, endMin: toN }] }
+    const next = [...(payload?.overrides ?? []).filter((o) => o.date !== entry.date), entry]
+    if (await save(next, 'Override saved.')) {
+      setAdding(false)
+      setDate(null)
+      setFrom('')
+      setTo('')
+    }
   }
 
   return (
     <InterviewerShell
-      back={{ label: 'Availability', onPress: () => navigation.goBack() }}
-      rightAction={
-        <Button
-          label={saving ? 'Saving...' : 'Save'}
-          variant="primary"
-          size="sm"
-          disabled={saving}
-          onPress={handleSave}
-        />
-      }
+      back={() => navigation.goBack()}
+      title="Date overrides"
+      sub={`Exceptions to your weekly hours · next ${payload.horizonDays} days`}
+      footer={<Button variant="primary" size="lg" full icon="plus" label="Add an override" disabled={suspended} onPress={() => setAdding(true)} />}
     >
-      <View style={styles.header}>
-        <Eyebrow>SCHEDULE EXCEPTIONS</Eyebrow>
-        <Display level="lg">Date Overrides</Display>
-        <Body size="sm" tone="muted">
-          Block off holidays, travel days, or add special availability outside your recurring weekly routine.
-        </Body>
-      </View>
+      {!!notice && <Text style={[text.uiSm, styles.secondary]}>{notice}</Text>}
+      {upcoming.length === 0 ? (
+        <EmEmpty icon="cal" title="No overrides." body="Take a whole day off, or set different hours for one date. Your weekly hours stay as they are." />
+      ) : (
+        upcoming.map((o) => {
+          const off = !o.available || o.blocks.length === 0
+          return (
+            <IvCard key={o.date} style={styles.row}>
+              <View style={[styles.tile, off ? styles.tileOff : styles.tileOn]}>
+                <Text style={[text.metaSm, styles.mono, { color: off ? color.danger : color.success }]}>{monthShort(monthOfKey(o.date)).toUpperCase()}</Text>
+                <Text style={[text.uiLgSemi, { color: off ? color.danger : color.success }]}>{dayOfKey(o.date)}</Text>
+              </View>
+              <View style={styles.grow}>
+                <Text style={text.uiMdSemi}>{`${weekdayShort(weekdayOfKey(o.date))} · ${off ? 'Day off' : 'Own hours'}`}</Text>
+                <Text style={[text.uiXs, styles.muted]}>{describe(o)}</Text>
+              </View>
+              <EmIconButton name="trash" label={`Remove the override on ${o.date}`} tint={color.danger} disabled={busy || suspended} onPress={() => { save(payload.overrides.filter((x) => x.date !== o.date), 'Override removed.') }} />
+            </IvCard>
+          )
+        })
+      )}
 
-      {/* Add Override Form */}
-      <Card style={styles.addCard}>
-        <Body size="sm" weight="semibold">
-          Add Specific Date Exception
-        </Body>
-        <Field label="Date (YYYY-MM-DD)">
-          <Input
-            value={newDate}
-            onChangeText={setNewDate}
-            placeholder="2026-10-15"
-            keyboardType="numbers-and-punctuation"
-            maxLength={10}
-          />
-        </Field>
-
-        <Field
-          label="Availability Type"
-          helper={
-            isAvailable
-              ? 'Special hours apply: 9 AM – 6 PM.'
-              : 'Blocked off all day — no bookings allowed.'
-          }
-        >
-          <Segmented
-            options={AVAILABILITY_OPTIONS}
-            value={isAvailable ? 'Available' : 'Unavailable'}
-            onChange={(next) => setIsAvailable(next === 'Available')}
-          />
-        </Field>
-
-        <Button
-          label="Add Override"
-          variant="secondary"
-          onPress={handleAddOverride}
-        />
-      </Card>
-
-      {/* Overrides List */}
-      <View style={styles.listSection}>
-        <Body size="sm" weight="semibold">
-          {`Active Exceptions (${overrides.length})`}
-        </Body>
-
-        {overrides.length === 0 ? (
-          <Card>
-            <EmptyState
-              title="No date overrides"
-              body="Your regular weekly recurring schedule will apply on all days."
-            />
-          </Card>
-        ) : (
-          <View style={styles.list}>
-            {overrides.map((o) => (
-              <Card key={o.date} style={styles.overrideCard}>
-                <ObjectRow
-                  last
-                  title={o.date}
-                  meta={
-                    o.available
-                      ? 'Special availability · 9 AM – 6 PM'
-                      : 'Blocked off — regular hours do not apply'
-                  }
-                  status={
-                    <StatusPill
-                      tone={o.available ? 'success' : 'neutral'}
-                      label={o.available ? 'Available' : 'Unavailable'}
-                    />
-                  }
-                />
-                <View style={styles.actionsRow}>
-                  <Button
-                    label="Remove"
-                    variant="destructive"
-                    size="sm"
-                    onPress={() => handleRemoveOverride(o.date)}
-                  />
-                </View>
-              </Card>
-            ))}
+      <EmSheet
+        open={adding}
+        onClose={() => setAdding(false)}
+        tall
+        title="Add an override"
+        sub="For one date only."
+        foot={
+          <View style={[styles.sheetFoot, { paddingBottom: space.md + insets.bottom }]}>
+            <Button variant="primary" size="lg" full label="Save override" busy={busy} disabled={busy || !date || !hoursOk} onPress={() => { add() }} />
+          </View>
+        }
+      >
+        <EmField label="Date">
+          <EmDateField title="Date" value={date} onChange={setDate} min={today} max={addDaysYmd(today, payload.horizonDays)} placeholder="Choose a date" clearable={false} />
+        </EmField>
+        <EmField label="On that date">
+          <EmSeg label="On that date" options={[{ value: 'off', label: 'Whole day off' }, { value: 'hours', label: 'Own hours' }]} value={kind} onChange={setKind} />
+        </EmField>
+        {kind === 'hours' && (
+          <View style={styles.two}>
+            <View style={styles.half}>
+              <EmField label="From"><EmSelect title="From" value={from} options={times.slice(0, -1)} onChange={setFrom} /></EmField>
+            </View>
+            <View style={styles.half}>
+              <EmField label="To" error={from !== '' && to !== '' && toN <= fromN ? 'Ends before it starts.' : undefined}>
+                <EmSelect title="To" value={to} options={times.slice(1)} onChange={setTo} />
+              </EmField>
+            </View>
           </View>
         )}
-      </View>
+      </EmSheet>
     </InterviewerShell>
   )
 }
 
 const styles = StyleSheet.create({
-  header: {
-    gap: space['2xs'],
-  },
-  addCard: {
-    padding: space.md,
-    gap: space.sm,
-  },
-  listSection: {
-    gap: space.xs,
-  },
-  list: {
-    gap: space.sm,
-  },
-  overrideCard: {
-    padding: space.md,
-    gap: space.sm,
-  },
-  actionsRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    borderTopWidth: borderWidth.thin,
-    borderTopColor: color.border,
-    paddingTop: space.sm,
-  },
+  grow: { flex: 1, minWidth: 0, gap: space['2xs'] },
+  muted: { color: color.textMuted },
+  secondary: { color: color.textSecondary },
+  mono: { letterSpacing: trackingNative.eyebrow },
+  loading: { paddingVertical: space['3xl'] },
+  row: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  tile: { width: height.control, height: height.control + space.xs, borderRadius: radius.tile, borderWidth: borderWidth.thin, alignItems: 'center', justifyContent: 'center' },
+  tileOff: { backgroundColor: color.dangerWash, borderColor: color.dangerBorder },
+  tileOn: { backgroundColor: color.successWash, borderColor: color.successEdge },
+  two: { flexDirection: 'row', gap: spaceHalf['2.5'] },
+  half: { flex: 1, minWidth: 0 },
+  sheetFoot: { paddingHorizontal: space.lg, paddingTop: space.md, borderTopWidth: borderWidth.thin, borderTopColor: color.border, backgroundColor: color.surface },
 })

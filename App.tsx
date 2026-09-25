@@ -7,6 +7,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReceiptsScreen } from './src/screens/account/ReceiptsScreen'
 import { openSupport } from './src/lib/support'
+import { EmployerWelcomeScreen } from './src/screens/employer/EmployerWelcomeScreen'
+import { EmployerForgotPasswordScreen } from './src/screens/employer/EmployerForgotPasswordScreen'
 import { BottomTabBar } from './src/navigation/BottomTabBar'
 import { WelcomeScreen } from './src/screens/WelcomeScreen'
 import { CreateAccountScreen, type RegistrationData } from './src/screens/CreateAccountScreen'
@@ -57,12 +59,8 @@ import { EmployerCompanyScreen } from './src/screens/employer/EmployerCompanyScr
 import { EmployerFeedScreen } from './src/screens/employer/EmployerFeedScreen'
 import { CandidateProfileScreen } from './src/screens/employer/CandidateProfileScreen'
 import { CandidateVideoScreen } from './src/screens/employer/CandidateVideoScreen'
-import { FeedFiltersModal } from './src/screens/employer/FeedFiltersModal'
-import { SavedSearchesModal } from './src/screens/employer/SavedSearchesModal'
 import { EmployerShortlistScreen } from './src/screens/employer/EmployerShortlistScreen'
 import { EmployerInterestsScreen } from './src/screens/employer/EmployerInterestsScreen'
-import { ShortlistEntryModal } from './src/screens/employer/ShortlistEntryModal'
-import { SendInterestModal } from './src/screens/employer/SendInterestModal'
 import { EmployerJobsScreen } from './src/screens/employer/EmployerJobsScreen'
 import { JobEditorScreen } from './src/screens/employer/JobEditorScreen'
 import { JobDetailScreen as EmployerJobDetailScreen } from './src/screens/employer/JobDetailScreen'
@@ -84,6 +82,8 @@ import {
   OverridesScreen,
   InterviewerInterviewsScreen,
   InterviewerDetailScreen,
+  InterviewerRoomScreen,
+  InterviewerThreadScreen,
   ScorecardDraftScreen,
   PendingScorecardsScreen,
   InterviewerWalletScreen,
@@ -95,7 +95,6 @@ import {
   InterviewerNotificationsScreen,
   InterviewerChatsScreen,
 } from './src/screens/interviewer'
-import type { ShortlistRow, EmployerJobRef } from './src/lib/api/employerShortlist'
 import { threadIdForConnection } from './src/lib/api/chat'
 import { getMe } from './src/lib/api/account'
 import type { EmployerRegistrationDraft, RegisterOtpResult } from './src/lib/api/employer'
@@ -148,7 +147,9 @@ export type RootStackParamList = {
   Receipts: undefined
 
   // ── Employer onboarding and verification (EM-02..EM-07) ────────────────────
+  EmployerWelcome: undefined
   EmployerRegister: undefined
+  EmployerForgotPassword: undefined
   /**
    * The EM-02 form travels here IN MEMORY — it carries the password. Nothing
    * persists navigation state in this app, and the verify screen resets the
@@ -163,21 +164,11 @@ export type RootStackParamList = {
   EmployerCompany: undefined
   EmployerFeed: undefined
   CandidateProfile: { id: string }
-  CandidateVideo: { id: string }
-  FeedFilters: undefined
-  SavedSearches: undefined
+  CandidateVideo: { id: string; name?: string; photoUrl?: string | null; interviewAt?: string | null }
   EmployerShortlist: undefined
   EmployerInterests: undefined
-  ShortlistEntry: { row: ShortlistRow; jobs: EmployerJobRef[] }
-  SendInterest: {
-    candidateId: string
-    candidateName: string
-    candidateHeadline?: string | null
-    candidateCity?: string | null
-    jobs?: EmployerJobRef[]
-  }
   EmployerJobs: undefined
-  JobEditor: undefined
+  JobEditor: { id?: string } | undefined
   EmployerJobDetail: { id: string }
   JobApplications: { id: string }
   ApplicantDetail: { id: string }
@@ -197,7 +188,8 @@ export type RootStackParamList = {
   InterviewerAvailability: undefined
   InterviewerOverrides: undefined
   InterviewerInterviews: undefined
-  InterviewerDetail: { id: string; autoJoin?: boolean }
+  InterviewerDetail: { id: string }
+  InterviewerRoom: { id: string }
   ScorecardDraft: { id: string }
   PendingScorecards: undefined
   InterviewerWallet: undefined
@@ -208,6 +200,7 @@ export type RootStackParamList = {
   InterviewerAccount: undefined
   InterviewerNotifications: undefined
   InterviewerChats: undefined
+  InterviewerThread: { id: string }
 }
 
 const Stack = createNativeStackNavigator<RootStackParamList>()
@@ -266,7 +259,7 @@ export default function App() {
               {({ navigation }) => (
                 <WelcomeScreen
                   onGetHired={() => navigation.navigate('CreateAccount')}
-                  onWantToHire={() => navigation.navigate('EmployerRegister')}
+                  onWantToHire={() => navigation.navigate('EmployerWelcome')}
                   onCreateEmployer={() => navigation.navigate('EmployerRegister')}
                   onSignIn={() => navigation.navigate('SignIn')}
                   onJoinUs={() => navigation.navigate('JoinUs')}
@@ -691,11 +684,27 @@ export default function App() {
               )}
             </Stack.Screen>
 
+            <Stack.Screen name="EmployerWelcome">
+              {({ navigation }) => (
+                <EmployerWelcomeScreen
+                  onCreate={() => navigation.navigate('EmployerRegister')}
+                  onSignIn={() => navigation.navigate('EmployerSignIn')}
+                />
+              )}
+            </Stack.Screen>
+
+            <Stack.Screen name="EmployerForgotPassword">
+              {({ navigation }) => (
+                <EmployerForgotPasswordScreen onBack={() => navigation.goBack()} onSignIn={() => navigation.navigate('EmployerSignIn')} />
+              )}
+            </Stack.Screen>
+
             <Stack.Screen name="EmployerSignIn">
               {({ navigation }) => (
                 <EmployerSignInScreen
                   onBack={() => navigation.goBack()}
                   onRegister={() => navigation.navigate('EmployerRegister')}
+                  onForgot={() => navigation.navigate('EmployerForgotPassword')}
                   onSignedIn={(role) =>
                     navigation.reset({ index: 0, routes: [{ name: role === 'EMPLOYER' ? 'EmployerHome' : 'Home' }] })
                   }
@@ -708,7 +717,7 @@ export default function App() {
                 <EmployerHomeScreen
                   onDocuments={(focus) => navigation.navigate('EmployerDocuments', { focus })}
                   onStatus={() => navigation.navigate('EmployerStatus')}
-                  onCompany={() => navigation.navigate('EmployerCompany')}
+                  onFeed={() => navigation.navigate('EmployerFeed')}
                 />
               )}
             </Stack.Screen>
@@ -718,8 +727,8 @@ export default function App() {
                 <EmployerDocumentsScreen
                   focus={route.params?.focus}
                   onBack={() => navigation.goBack()}
-                  // Back to the EM-06 a Resubmit opened this from, else in this screen's place.
-                  onSubmitted={() => navigation.popTo('EmployerStatus')}
+                  // EM-05b's "Go to home".
+                  onSubmitted={() => navigation.popTo('EmployerHome')}
                 />
               )}
             </Stack.Screen>
@@ -750,28 +759,12 @@ export default function App() {
               {() => <CandidateVideoScreen />}
             </Stack.Screen>
 
-            <Stack.Screen name="FeedFilters">
-              {() => <FeedFiltersModal />}
-            </Stack.Screen>
-
-            <Stack.Screen name="SavedSearches">
-              {() => <SavedSearchesModal />}
-            </Stack.Screen>
-
             <Stack.Screen name="EmployerShortlist">
               {() => <EmployerShortlistScreen />}
             </Stack.Screen>
 
             <Stack.Screen name="EmployerInterests">
               {() => <EmployerInterestsScreen />}
-            </Stack.Screen>
-
-            <Stack.Screen name="ShortlistEntry">
-              {() => <ShortlistEntryModal />}
-            </Stack.Screen>
-
-            <Stack.Screen name="SendInterest">
-              {() => <SendInterestModal />}
             </Stack.Screen>
 
             <Stack.Screen name="EmployerJobs">
@@ -855,6 +848,10 @@ export default function App() {
               {() => <InterviewerDetailScreen />}
             </Stack.Screen>
 
+            <Stack.Screen name="InterviewerRoom" options={{ gestureEnabled: false }}>
+              {() => <InterviewerRoomScreen />}
+            </Stack.Screen>
+
             <Stack.Screen name="ScorecardDraft">
               {() => <ScorecardDraftScreen />}
             </Stack.Screen>
@@ -885,6 +882,10 @@ export default function App() {
 
             <Stack.Screen name="InterviewerAccount">
               {() => <InterviewerAccountScreen />}
+            </Stack.Screen>
+
+            <Stack.Screen name="InterviewerThread">
+              {() => <InterviewerThreadScreen />}
             </Stack.Screen>
 
             <Stack.Screen name="InterviewerNotifications">

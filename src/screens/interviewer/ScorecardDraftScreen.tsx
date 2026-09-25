@@ -1,323 +1,327 @@
-import React, { useEffect, useState } from 'react'
-import { Alert, Pressable, StyleSheet, View } from 'react-native'
-import { useNavigation, useRoute } from '@react-navigation/native'
+import React, { useCallback, useEffect, useState } from 'react'
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { borderWidth, color, height, radius, space } from '../../theme'
-import {
-  Banner,
-  Body,
-  Button,
-  Card,
-  Display,
-  ErrorState,
-  Eyebrow,
-  Field,
-  Input,
-  Meta,
-  Skeleton,
-  StatusPill,
-} from '../../components/ui'
+import { useQueryClient } from '@tanstack/react-query'
+import { borderWidth, color, height, opacity, radius, space, spaceHalf, trackingNative } from '../../theme'
+import { Button, Input, text } from '../../components/ui'
+import { Icon } from '../../components/ui/Icon'
 import { InterviewerShell } from '../../components/interviewer/InterviewerShell'
-import { interviewerApi, type InterviewSessionDto } from '../../lib/api/interviewer'
-import { useInterviewer } from '../../lib/interviewer/useInterviewer'
-import { formatScorecardCountdown, isScorecardOverdue, TIER_FEES_PAISE } from '../../lib/interviewer/state'
+import { IvAction } from '../../components/interviewer/iv'
+import { EmError, EmLabel, EmRadioRow, EmSheet } from '../../components/employer/em'
+import { ApiClientError } from '../../lib/api'
+import {
+  getInterviewerInterview, getPrivateNotes, submitScorecard,
+  type InterviewerInterviewDto, type Qualification, type Recommendation, type ScorecardInput, type ScorecardSubmitResult,
+} from '../../lib/api/interviewer'
 import { formatPaise } from '../../lib/format/money'
+import { label } from '../../lib/profile/labels'
+import { useNow } from '../../lib/employer/useNow'
+import { hms, interviewClock, NON_PAYABLE_TEXT } from '../../lib/interviewer/state'
+import { INTERVIEWER_KEY, useAppConfig } from '../../lib/interviewer/useInterviewer'
+import type { RootStackParamList } from '../../../App'
 
-const CRITERIA = [
-  { key: 'technicalDepth', label: 'Technical Depth & Architecture' },
-  { key: 'problemSolving', label: 'Problem Solving & Edge Cases' },
-  { key: 'communication', label: 'Communication & Articulation' },
-  { key: 'cultureFit', label: 'Professionalism & Mindset' },
-  { key: 'overall', label: 'Overall Hire Recommendation' },
-]
+type Key = 'communication' | 'domainKnowledge' | 'confidence' | 'problemSolving' | 'overall'
+const KEYS: Key[] = ['communication', 'domainKnowledge', 'confidence', 'problemSolving', 'overall']
+const START = 7
+type Sheet = null | 'text' | 'rec' | 'qual'
 
+/**
+ * M4 · the scorecard (Interviewer App Android).
+ *
+ * The band counts down to the server's `scorecardDueAt` and says what submitting
+ * releases (the interview's own fee, only while it is payable). Five steppers
+ * over the server's score range (`config.interviewer.scorecard`, starting at 7
+ * as the web does), then three rows styled like the design's "Strengths &
+ * coaching", each opening a sheet: the two texts (plus the optional internal
+ * note, and the private notes to write from), the recommendation, and the
+ * qualification check. Submit waits for all five checks.
+ *
+ * The body is the server's flat, strict shape. After submitting the band shows
+ * what the server decided — credited, or not payable and why — never assumed.
+ */
 export function ScorecardDraftScreen() {
-  const navigation = useNavigation<NativeStackNavigationProp<any>>()
-  const route = useRoute<any>()
-  const id = route.params?.id
-  const { refresh } = useInterviewer()
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
+  const route = useRoute<RouteProp<RootStackParamList, 'ScorecardDraft'>>()
+  const { id } = route.params
+  const insets = useSafeAreaInsets()
+  const qc = useQueryClient()
+  const config = useAppConfig()
+  const now = useNow() || Date.now()
+  const sc = config?.interviewer?.scorecard
 
-  const [session, setSession] = useState<InterviewSessionDto | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [loadError, setLoadError] = useState<Error | null>(null)
-  const [submitting, setSubmitting] = useState(false)
-
-  // Scores 1 to 5
-  const [scores, setScores] = useState<Record<string, number>>({
-    technicalDepth: 4,
-    problemSolving: 4,
-    communication: 4,
-    cultureFit: 4,
-    overall: 4,
-  })
-
-  // Qualitative feedback
+  const [iv, setIv] = useState<InterviewerInterviewDto | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [scores, setScores] = useState<Record<Key, number>>({ communication: START, domainKnowledge: START, confidence: START, problemSolving: START, overall: START })
   const [strengths, setStrengths] = useState('')
-  const [areasForImprovement, setAreasForImprovement] = useState('')
-  const [internalNotes, setInternalNotes] = useState('')
+  const [improvements, setImprovements] = useState('')
+  const [internalNote, setInternalNote] = useState('')
+  const [rec, setRec] = useState<Recommendation | null>(null)
+  const [qual, setQual] = useState<'yes' | 'no' | null>(null)
+  const [actual, setActual] = useState<Qualification | null>(null)
+  const [notes, setNotes] = useState('')
+  const [sheet, setSheet] = useState<Sheet>(null)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [result, setResult] = useState<ScorecardSubmitResult | null>(null)
 
-  useEffect(() => {
-    if (!id) return
-    interviewerApi
-      .getInterview(id)
-      .then((data) => {
-        setSession(data)
-      })
-      .catch((err) => {
-        Alert.alert('Error', err?.message || 'Unable to load scorecard session.')
-        setLoadError(err instanceof Error ? err : new Error(err?.message || 'Unable to load scorecard session.'))
-      })
-      .finally(() => setLoading(false))
+  const load = useCallback(async () => {
+    setLoadError(null)
+    try {
+      const i = await getInterviewerInterview(id)
+      setIv(i)
+      if (i.scorecard) {
+        setScores({ ...i.scorecard.scores })
+        setStrengths(i.scorecard.strengths)
+        setImprovements(i.scorecard.improvements)
+        setInternalNote(i.scorecard.internalNote ?? '')
+        setRec(i.scorecard.recommendation ?? null)
+        setQual(i.scorecard.qualificationConfirmed === false ? 'no' : i.scorecard.qualificationConfirmed ? 'yes' : null)
+        setActual((i.scorecard.actualQualification as Qualification) ?? null)
+      }
+    } catch (e) {
+      setLoadError(e instanceof Error ? e.message : 'Could not load this interview.')
+    }
   }, [id])
 
-  if (loading) {
+  useEffect(() => {
+    load()
+    getPrivateNotes(id).then((r) => setNotes(r.notes ?? '')).catch(() => {})
+  }, [load, id])
+
+  if (!iv) {
     return (
-      <InterviewerShell back={{ label: 'Interviews', onPress: () => navigation.goBack() }}>
-        <Skeleton lines={4} />
+      <InterviewerShell back={() => navigation.goBack()} title="Scorecard">
+        {loadError ? (
+          <EmError title="Couldn’t load this interview." body={loadError} action={<Button variant="secondary" size="pair" icon="refresh" label="Try again" onPress={() => { load() }} />} />
+        ) : (
+          <ActivityIndicator color={color.textSubtle} style={styles.loading} />
+        )}
       </InterviewerShell>
     )
   }
 
-  if (!session) {
-    return (
-      <InterviewerShell back={{ label: 'Interviews', onPress: () => navigation.goBack() }}>
-        <ErrorState
-          title="We could not load this scorecard."
-          body={loadError?.message}
-          action={
-            <Button
-              variant="outline"
-              size="sm"
-              label="Go back"
-              // The error state's small button is 40 tall; the slop brings its tap box to the 44 floor.
-              hitSlop={(height.tap - height['control-xs']) / 2}
-              onPress={() => navigation.goBack()}
-            />
-          }
-        />
-      </InterviewerShell>
-    )
+  const min = sc?.scoreMin ?? 1
+  const max = sc?.scoreMax ?? 10
+  const sMin = sc?.strengthsMinChars ?? 1
+  const iMin = sc?.improvementsMinChars ?? 1
+  const submitted = !!(result || iv.scorecard?.submittedAt)
+  const clk = interviewClock(iv, config, now)
+  const expired = clk.status === 'EXPIRED' && !submitted
+  const locked = submitted || expired || !iv.sessionEndedAt
+  const fee = formatPaise(iv.feePaise)
+  const okS = strengths.trim().length >= sMin
+  const okI = improvements.trim().length >= iMin
+  const okR = !!rec
+  const okQ = qual === 'yes' || (qual === 'no' && !!actual)
+  const done = [true, okS, okI, okR, okQ].filter(Boolean).length
+  const valid = okS && okI && okR && okQ
+  const labelOf = (k: Key) => sc?.competencies.find((c) => c.key === k)?.label ?? label(k)
+  const recLabel = (v: Recommendation) => sc?.recommendations.find((r) => r.value === v)?.label ?? label(v)
+  const quals = (config?.qualifications ?? []) as { value: Qualification; tier: string }[]
+  const profileQual = iv.student.education?.qualification
+
+  const toneOf = (v: number) => {
+    const f = (v - min) / Math.max(1, max - min)
+    return f >= 0.78 ? color.successFill : f >= 0.45 ? color.accent : color.warningStrong
   }
+  const set = (k: Key, v: number) => setScores((s) => ({ ...s, [k]: Math.max(min, Math.min(max, v)) }))
 
-  const overdue = isScorecardOverdue(session.slotEnd)
-  const fee = TIER_FEES_PAISE[session.tier as keyof typeof TIER_FEES_PAISE] ?? 4000
-
-  const handleScoreSelect = (key: string, val: number) => {
-    setScores((prev) => ({ ...prev, [key]: val }))
-  }
-
-  const handleSubmit = async () => {
-    if (!strengths.trim() || !areasForImprovement.trim()) {
-      Alert.alert(
-        'Incomplete Feedback',
-        'Please provide written notes for candidate strengths and growth areas before submitting.',
-      )
-      return
+  async function submit() {
+    if (!valid || !rec) return
+    setBusy(true)
+    setError(null)
+    const body: ScorecardInput = {
+      ...scores,
+      strengths: strengths.trim(),
+      improvements: improvements.trim(),
+      internalNote: internalNote.trim() || undefined,
+      qualificationConfirmed: qual === 'yes',
+      actualQualification: qual === 'no' && actual ? actual : undefined,
+      recommendation: rec,
     }
-
-    setSubmitting(true)
     try {
-      await interviewerApi.submitScorecard(id, {
-        scores: {
-          technicalDepth: scores.technicalDepth,
-          problemSolving: scores.problemSolving,
-          communication: scores.communication,
-          cultureFit: scores.cultureFit,
-          overall: scores.overall,
-        },
-        strengths: strengths.trim(),
-        areasForImprovement: areasForImprovement.trim(),
-        internalNotes: internalNotes.trim() || undefined,
-      })
-
-      await refresh()
-      Alert.alert(
-        'Scorecard Submitted!',
-        `Fee of ${formatPaise(fee)} has been credited to your interviewer wallet balance.`,
-        [{ text: 'Great', onPress: () => navigation.replace('InterviewerInterviews') }],
-      )
-    } catch (err: any) {
-      Alert.alert('Submission Error', err?.message || 'Unable to submit scorecard.')
+      const r = await submitScorecard(id, body)
+      setResult(r)
+      qc.invalidateQueries({ queryKey: INTERVIEWER_KEY })
+    } catch (e) {
+      setError(e instanceof ApiClientError ? e.message : 'Not submitted. Check your connection and try again.')
     } finally {
-      setSubmitting(false)
+      setBusy(false)
     }
   }
+
+  // The band: time left, or what happened.
+  const payable = result ? result.payable : iv.payable
+  const reason = result?.nonPayableReason ?? iv.nonPayableReason
+  let band: { bg: string; big: string; small: string }
+  if (submitted) {
+    band = payable !== false
+      ? { bg: color.successFill, big: '✓', small: `${formatPaise(result?.feePaise ?? iv.feePaise)} credited` }
+      : { bg: color.inkRaised, big: '✓', small: `Submitted · not paid${reason ? ` · ${NON_PAYABLE_TEXT[reason] ?? ''}` : ''}` }
+  } else if (!iv.sessionEndedAt) {
+    band = { bg: color.inkRaised, big: '—', small: 'The session has not ended yet' }
+  } else if (clk.status === 'EXPIRED') {
+    band = { bg: color.dangerFill, big: '00:00:00', small: 'Window closed · fee withheld' }
+  } else if (clk.status === 'OPEN' || clk.status === 'URGENT') {
+    band = { bg: clk.status === 'URGENT' ? color.dangerFill : color.ink, big: hms(clk.secondsLeft), small: iv.payable === false && iv.nonPayableReason === 'SESSION_TOO_SHORT' ? 'left · the session was below the mark' : `left · ${fee} on submit` }
+  } else {
+    band = { bg: color.ink, big: '—', small: `${fee} on submit` }
+  }
+
+  const submitLabel = submitted
+    ? payable !== false ? `✓ Submitted · ${formatPaise(result?.feePaise ?? iv.feePaise)} credited` : '✓ Submitted'
+    : busy ? 'Submitting…' : valid ? `Submit scorecard · release ${fee}` : `${done} of 5 done`
 
   return (
     <InterviewerShell
-      back={{ label: 'Interviews', onPress: () => navigation.goBack() }}
+      back={() => navigation.goBack()}
+      title={iv.student.name}
+      sub={['Scorecard', iv.tier, iv.domain].filter(Boolean).join(' · ')}
+      contentGap="sm"
       footer={
-        !overdue ? (
-          <Button
-            label={submitting ? 'Submitting Scorecard...' : `Submit Scorecard & Claim ${formatPaise(fee)}`}
-            variant="primary"
-            disabled={submitting}
-            onPress={handleSubmit}
+        <View style={styles.footInner}>
+          {!!error && <Text style={[text.uiXs, styles.danger]}>{error}</Text>}
+          <IvAction
+            label={expired ? 'The window has closed' : submitLabel}
+            tone={submitted ? 'success' : valid && !locked && !busy ? 'accent' : 'off'}
+            onPress={valid && !locked && !busy ? () => { submit() } : undefined}
           />
-        ) : null
+        </View>
       }
     >
-      <View style={styles.header}>
-        <View style={styles.grow}>
-          <Eyebrow>OFFICIAL EVALUATION</Eyebrow>
-          <Display level="sm" style={styles.title}>
-            Candidate Scorecard
-          </Display>
-          <Meta style={styles.subtitle}>
-            {`${session.student?.name || 'Student'} · ${session.tier.replace('_', ' ')}`}
-          </Meta>
-        </View>
-        <StatusPill tone={overdue ? 'danger' : 'warning'} label={overdue ? 'FORFEITED' : 'SCORECARD OWED'} />
+      <View style={[styles.band, { backgroundColor: band.bg }]}>
+        <Text style={[text.metaBand, styles.onInk]}>{band.big}</Text>
+        <Text style={[text.uiXsSemi, styles.onInk, styles.grow]} numberOfLines={2}>{band.small}</Text>
       </View>
 
-      {/* Countdown / forfeiture notice */}
-      <Banner
-        tone={overdue ? 'danger' : 'warning'}
-        title={overdue ? 'Scorecard Window Forfeited (IV-13b)' : '24-Hour Submission Window'}
+      {KEYS.map((k) => {
+        const v = scores[k]
+        const tone = toneOf(v)
+        return (
+          <View key={k} style={styles.comp}>
+            <View style={styles.compTop}>
+              <Text style={[text.uiMdSemi, styles.grow]}>{labelOf(k)}</Text>
+              <Stepper sign="−" label={`Lower ${labelOf(k)}`} disabled={locked || v <= min} onPress={() => set(k, v - 1)} />
+              <Text style={[text.meta2xl, styles.score, { color: tone }]}>{v}</Text>
+              <Stepper sign="+" label={`Raise ${labelOf(k)}`} disabled={locked || v >= max} onPress={() => set(k, v + 1)} />
+            </View>
+            <View style={styles.track}><View style={[styles.fill, { backgroundColor: tone, width: `${((v - min) / Math.max(1, max - min)) * 100}%` }]} /></View>
+          </View>
+        )
+      })}
+
+      <Row
+        title="Strengths & coaching"
+        status={okS && okI ? 'Both written' : !okS && !okI ? 'Strengths and improvements missing' : !okS ? 'Strengths missing' : 'Improvement areas missing'}
+        good={okS && okI}
+        onPress={() => setSheet('text')}
+      />
+      <Row title="Recommendation" status={rec ? recLabel(rec) : 'Not chosen'} good={okR} onPress={() => setSheet('rec')} />
+      <Row
+        title="Qualification check"
+        status={qual === 'yes' ? 'Matches the profile' : qual === 'no' ? (actual ? `Mismatch · ${label(actual)}` : 'Choose the actual qualification') : 'Not checked'}
+        good={okQ}
+        onPress={() => setSheet('qual')}
+      />
+
+      <EmSheet
+        open={sheet === 'text'}
+        onClose={() => setSheet(null)}
+        tall
+        title="Strengths & coaching"
+        sub="The student reads both."
+        foot={<View style={[styles.sheetFoot, { paddingBottom: space.md + insets.bottom }]}><Button variant="secondary" size="lg" full label="Done" onPress={() => setSheet(null)} /></View>}
       >
-        {overdue
-          ? `The 24-hour evaluation deadline has passed. Session fee of ${formatPaise(fee)} is permanently forfeited per platform governance terms.`
-          : `Submit within ${formatScorecardCountdown(session.slotEnd)} to unlock immediate fee credit to your balance.`}
-      </Banner>
+        <TextField label="Observed strengths" help="Specific moments the student should keep doing." value={strengths} onChange={setStrengths} min={sMin} max={sc?.textMaxChars} locked={locked} />
+        <TextField label="Areas for improvement" help="One or two actionable changes, with how to practise." value={improvements} onChange={setImprovements} min={iMin} max={sc?.textMaxChars} locked={locked} />
+        <TextField label="Internal note" help="Never shown to the student." value={internalNote} onChange={setInternalNote} max={sc?.internalNoteMaxChars} locked={locked} optional />
+        {!!notes.trim() && (
+          <View style={styles.scratch}>
+            <Text style={[text.metaSm, styles.muted, styles.mono]}>FROM YOUR NOTES</Text>
+            <Text style={[text.uiSm, styles.secondary]}>{notes}</Text>
+          </View>
+        )}
+      </EmSheet>
 
-      {overdue ? (
-        <Card style={styles.overdueNoticeCard}>
-          <Display level="xs">Submission Closed</Display>
-          <Body size="sm" tone="muted">
-            To maintain high trust with candidates and partner employers, scorecards cannot be submitted after the
-            24-hour window expires. If you encountered an extenuating technical glitch, contact support.
-          </Body>
-          <Button label="Return to Interviews" variant="secondary" onPress={() => navigation.goBack()} />
-        </Card>
-      ) : (
-        <>
-          {/* Rating Scales */}
-          <Card style={styles.ratingsCard}>
-            <Eyebrow>Quantitative Evaluation (1 to 5)</Eyebrow>
+      <EmSheet open={sheet === 'rec'} onClose={() => setSheet(null)} title="Recommendation" sub="Your read on where the student stands.">
+        {(sc?.recommendations ?? []).map((r) => (
+          <EmRadioRow key={r.value} label={r.label} on={rec === r.value} disabled={locked} onPress={() => { setRec(r.value); setSheet(null) }} />
+        ))}
+      </EmSheet>
 
-            {CRITERIA.map((crit) => {
-              const currentVal = scores[crit.key] ?? 3
-
-              return (
-                <View key={crit.key} style={styles.criteriaRow}>
-                  <Body size="sm" weight="medium">
-                    {crit.label}
-                  </Body>
-                  <View style={styles.starsRow}>
-                    {[1, 2, 3, 4, 5].map((star) => {
-                      const active = currentVal >= star
-                      return (
-                        <Pressable
-                          key={star}
-                          onPress={() => handleScoreSelect(crit.key, star)}
-                          style={[styles.starBtn, active && styles.starBtnActive]}
-                        >
-                          <Meta style={active ? styles.starTextActive : styles.starText}>{star}</Meta>
-                        </Pressable>
-                      )
-                    })}
-                  </View>
-                </View>
-              )
-            })}
-          </Card>
-
-          {/* Qualitative Written Feedback */}
-          <Card style={styles.feedbackCard}>
-            <Eyebrow>Qualitative Candidate Feedback</Eyebrow>
-
-            <Field label="Key Strengths (Shared with candidate & employers) *">
-              <Input
-                value={strengths}
-                onChangeText={setStrengths}
-                placeholder="Specific technical depth, clear communication, robust problem decomposition..."
-                multiline
-                numberOfLines={3}
-                textAlignVertical="top"
-              />
-            </Field>
-
-            <Field label="Areas for Growth & Improvement *">
-              <Input
-                value={areasForImprovement}
-                onChangeText={setAreasForImprovement}
-                placeholder="Topics to study deeper, edge cases overlooked, architectural trade-offs..."
-                multiline
-                numberOfLines={3}
-                textAlignVertical="top"
-              />
-            </Field>
-
-            <Field label="Internal Confidential Notes (Platform staff only)">
-              <Input
-                value={internalNotes}
-                onChangeText={setInternalNotes}
-                placeholder="Any cheating suspicion, identity discrepancy, or video audio quality flags..."
-                multiline
-                numberOfLines={2}
-                textAlignVertical="top"
-              />
-            </Field>
-          </Card>
-        </>
-      )}
+      <EmSheet open={sheet === 'qual'} onClose={() => setSheet(null)} title="Qualification check" sub={profileQual ? `The profile says ${label(profileQual)}. Does that match what you heard?` : 'Does the student’s stated qualification match what you heard?'}>
+        <EmRadioRow label="Yes, it matches" on={qual === 'yes'} disabled={locked} onPress={() => { setQual('yes'); setActual(null); setSheet(null) }} />
+        <EmRadioRow label="No, it’s a mismatch" on={qual === 'no'} disabled={locked} onPress={() => setQual('no')} />
+        {qual === 'no' && (
+          <View style={styles.field}>
+            <EmLabel>Actual qualification</EmLabel>
+            {quals.map((q) => (
+              <EmRadioRow key={q.value} label={`${label(q.value)} · ${q.tier}`} on={actual === q.value} disabled={locked} onPress={() => { setActual(q.value); setSheet(null) }} />
+            ))}
+          </View>
+        )}
+      </EmSheet>
     </InterviewerShell>
   )
 }
 
+function Stepper({ sign, label: a11y, disabled, onPress }: { sign: string; label: string; disabled?: boolean; onPress: () => void }) {
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel={a11y} disabled={disabled} onPress={onPress} hitSlop={space.sm / 2} style={({ pressed }) => [styles.step, disabled && styles.dim, pressed && styles.pressed]}>
+      <Text style={text.uiLgSemi}>{sign}</Text>
+    </Pressable>
+  )
+}
+
+function Row({ title, status, good, onPress }: { title: string; status: string; good: boolean; onPress: () => void }) {
+  return (
+    <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
+      <View style={styles.grow}>
+        <Text style={text.uiMdSemi}>{title}</Text>
+        <Text style={[text.uiXs, { color: good ? color.success : color.danger }]}>{status}</Text>
+      </View>
+      <Icon name="chevR" size={space.xl} tint={color.textSubtle} />
+    </Pressable>
+  )
+}
+
+function TextField({
+  label: title, help, value, onChange, min, max, locked, optional,
+}: { label: string; help: string; value: string; onChange: (v: string) => void; min?: number; max?: number; locked?: boolean; optional?: boolean }) {
+  const n = value.trim().length
+  const short = !!min && n > 0 && n < min
+  return (
+    <View style={styles.field}>
+      <EmLabel hint={optional ? 'optional' : min ? `${n} / ${min} MIN` : undefined}>{title}</EmLabel>
+      <Input value={value} onChangeText={onChange} editable={!locked} maxLength={max} multiline textAlignVertical="top" invalid={short} style={styles.area} />
+      <Text style={[text.uiXs, { color: short ? color.danger : color.textMuted }]}>{short ? `At least ${min} characters.` : help}</Text>
+    </View>
+  )
+}
+
 const styles = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: space.xs,
-  },
-  grow: {
-    flex: 1,
-  },
-  title: {
-    marginTop: space['2xs'],
-  },
-  subtitle: {
-    marginTop: space['2xs'],
-  },
-  overdueNoticeCard: {
-    padding: space.lg,
-    gap: space.sm,
-  },
-  ratingsCard: {
-    padding: space.md,
-    gap: space.md,
-  },
-  criteriaRow: {
-    gap: space['2xs'],
-  },
-  starsRow: {
-    flexDirection: 'row',
-    gap: space.xs,
-  },
-  starBtn: {
-    flex: 1,
-    height: height.chip,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: color.surfaceSubtle,
-    borderRadius: radius.sm,
-    borderWidth: borderWidth.thin,
-    borderColor: color.border,
-  },
-  starBtnActive: {
-    backgroundColor: color.ink,
-    borderColor: color.ink,
-  },
-  starText: {
-    color: color.textMuted,
-  },
-  starTextActive: {
-    color: color.textInverse,
-  },
-  feedbackCard: {
-    padding: space.md,
-    gap: space.md,
-  },
+  grow: { flex: 1, minWidth: 0, gap: space['2xs'] },
+  pressed: { opacity: opacity.pressed },
+  dim: { opacity: opacity.disabled },
+  muted: { color: color.textMuted },
+  secondary: { color: color.textSecondary },
+  danger: { color: color.danger },
+  onInk: { color: color.textOnInk },
+  mono: { letterSpacing: trackingNative.eyebrow },
+  loading: { paddingVertical: space['3xl'] },
+  band: { flexDirection: 'row', alignItems: 'center', gap: spaceHalf['2.5'], borderRadius: radius.tile, paddingVertical: spaceHalf['2.5'], paddingHorizontal: spaceHalf['3.5'] },
+  comp: { borderRadius: radius.panel, backgroundColor: color.surface, borderWidth: borderWidth.thin, borderColor: color.border, paddingVertical: space.md, paddingHorizontal: spaceHalf['3.5'], gap: spaceHalf['2.5'] },
+  compTop: { flexDirection: 'row', alignItems: 'center', gap: spaceHalf['1.5'] },
+  step: { width: height.chip, height: height.chip, borderRadius: radius.pill, borderWidth: borderWidth.thin, borderColor: color.borderStrong, alignItems: 'center', justifyContent: 'center' },
+  score: { width: space['2xl'] + spaceHalf['1.5'], textAlign: 'center', letterSpacing: 0 },
+  track: { height: spaceHalf['1.5'], borderRadius: radius.bar, backgroundColor: color.surfaceMuted, overflow: 'hidden' },
+  fill: { height: spaceHalf['1.5'], borderRadius: radius.bar },
+  row: { flexDirection: 'row', alignItems: 'center', gap: space.md, borderRadius: radius.panel, backgroundColor: color.surface, borderWidth: borderWidth.thin, borderColor: color.border, paddingVertical: space.md, paddingHorizontal: spaceHalf['3.5'], minHeight: height.control + space.md },
+  field: { gap: spaceHalf['1.5'] },
+  area: { height: height['note-field'] + space.xl, paddingTop: space.md },
+  scratch: { borderRadius: radius.tile, backgroundColor: color.surfaceMuted, padding: space.md, gap: space.xs },
+  sheetFoot: { paddingHorizontal: space.lg, paddingTop: space.md, borderTopWidth: borderWidth.thin, borderTopColor: color.border, backgroundColor: color.surface },
+  footInner: { flex: 1, gap: space.sm },
 })

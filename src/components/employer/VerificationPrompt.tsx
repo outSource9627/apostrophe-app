@@ -1,9 +1,9 @@
 import React from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { borderWidth, color, opacity, space } from '../../theme'
+import { borderWidth, color, opacity, space, spaceHalf } from '../../theme'
 import { text } from '../ui'
+import { Icon, type IconName } from '../ui/Icon'
 import type { EmployerTone, PromptCopy } from '../../lib/employer/state'
-import { Glyph } from './parts'
 
 /**
  * EM-04 · the verification prompt. Shell furniture: the Banner in its pinned
@@ -29,58 +29,53 @@ import { Glyph } from './parts'
  * its own per-tone icons, where this carries the board's glyphs and a chevron.
  * The tones are the Banner's pairs exactly.
  */
+/**
+ * The design's strip (Employer Android, every pending frame): a full-width band
+ * under the status bar, a 16 icon, the state in bold then its line, and a
+ * "Status" link on the right. Review reads amber on the boards, so `info`
+ * joins `warning` here.
+ */
 const TONES: Record<EmployerTone, { bg: string; fg: string; edge: string }> = {
-  neutral: { bg: color.surfaceMuted, fg: color.textMuted, edge: 'transparent' },
-  info: { bg: color.infoSoft, fg: color.info, edge: 'transparent' },
-  warning: { bg: color.warningSoft, fg: color.warning, edge: 'transparent' },
-  // A refusal also carries the drained danger hairline, so it reads as a
-  // condition on the page rather than as a coloured stripe.
+  neutral: { bg: color.surfaceMuted, fg: color.textSecondary, edge: color.border },
+  info: { bg: color.warningSoft, fg: color.warningInk, edge: color.warningEdge },
+  warning: { bg: color.warningSoft, fg: color.warningInk, edge: color.warningEdge },
   danger: { bg: color.dangerSoft, fg: color.danger, edge: color.dangerBorder },
-  success: { bg: color.successSoft, fg: color.success, edge: 'transparent' },
+  success: { bg: color.successSoft, fg: color.success, edge: color.successSoft },
+}
+
+const ICON: Record<EmployerTone, IconName> = {
+  neutral: 'file', info: 'clock', warning: 'clock', danger: 'alert', success: 'shield',
 }
 
 export function VerificationPrompt({
   prompt, here = false, onPress,
 }: {
   prompt: PromptCopy
-  /** This screen is where the prompt's state is resolved: no chevron, no press. */
+  /** This screen is where the prompt's state is resolved: no link, no press. */
   here?: boolean
   onPress?: () => void
 }) {
-  // Verified is drawn once, and not on its own destination: EM-06 draws the
-  // moment in the serif there, and the band's absence is the flip (EM-06 ·
-  // Approved, frame 01) — as the web prompt does.
+  // Verified is drawn once, and not on its own destination.
   if (here && prompt.state === 'verified') return null
 
   const t = TONES[prompt.tone]
-  const shell = [styles.shell, { backgroundColor: t.bg, borderColor: t.edge }]
+  const shell = [styles.shell, { backgroundColor: t.bg, borderBottomColor: t.edge }]
   const alert = prompt.tone === 'danger'
 
   const inner = (
     <>
-      <View style={styles.glyph}>
-        <Glyph name={prompt.glyph} tint={t.fg} />
-      </View>
-      <View style={styles.copy}>
-        <Text style={[text.uiBaseSemi, { color: t.fg }]}>{prompt.title}</Text>
-        <Text style={[text.uiSm, { color: t.fg }]}>{prompt.body}</Text>
-      </View>
-      {!here && (
-        <View style={styles.chevron}>
-          <Glyph name="chevronRight" tint={t.fg} />
-        </View>
-      )}
+      <Icon name={ICON[prompt.tone]} size={space.lg} tint={t.fg} weight={2} />
+      <Text style={[text.uiXs, styles.copy, { color: t.fg }]}>
+        <Text style={styles.strong}>{prompt.title}</Text>
+        {` ${prompt.body}`}
+      </Text>
+      {!here && <Text style={[text.uiXsSemi, { color: t.fg }]}>Status</Text>}
     </>
   )
 
   if (here || !onPress) {
     return (
-      <View
-        style={shell}
-        accessible
-        accessibilityRole={alert ? 'alert' : 'summary'}
-        accessibilityLiveRegion={alert ? 'assertive' : 'polite'}
-      >
+      <View style={shell} accessible accessibilityRole={alert ? 'alert' : 'summary'} accessibilityLiveRegion={alert ? 'assertive' : 'polite'}>
         {inner}
       </View>
     )
@@ -103,16 +98,13 @@ const styles = StyleSheet.create({
   shell: {
     width: '100%',
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: space.sm,
-    paddingVertical: space.md,
-    paddingHorizontal: space.xl,
-    borderTopWidth: borderWidth.thin,
+    alignItems: 'center',
+    gap: spaceHalf['2.5'],
+    paddingVertical: spaceHalf['2.5'],
+    paddingHorizontal: space.lg,
     borderBottomWidth: borderWidth.thin,
   },
   pressed: { opacity: opacity.pressed },
-  // Optically centred on the title's first line.
-  glyph: { marginTop: space.xs },
-  copy: { flex: 1, gap: space['2xs'] },
-  chevron: { alignSelf: 'center' },
+  copy: { flex: 1 },
+  strong: { fontFamily: text.uiXsSemi.fontFamily },
 })

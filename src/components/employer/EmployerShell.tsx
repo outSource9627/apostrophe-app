@@ -1,54 +1,63 @@
 import React, { useCallback, useState } from 'react'
 import {
-  KeyboardAvoidingView, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, View,
+  KeyboardAvoidingView, Platform, RefreshControl, ScrollView, StyleSheet, View,
   type ScrollViewProps,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNavigation, useRoute } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { borderWidth, color, height, opacity, space } from '../../theme'
-import { Eyebrow } from '../ui'
-import { Logo } from '../Logo'
+import { color, space } from '../../theme'
 import { useEmployer } from '../../lib/employer/useEmployer'
 import type { RootStackParamList } from '../../../App'
-import { CompanyMonogram, Glyph } from './parts'
+import { EmAvatarButton, EmBar, EmBell, EmFoot, initialsOf } from './em'
+import { tabBarInfoFor } from '../../navigation/tabConfig'
 import { VerificationPrompt } from './VerificationPrompt'
 
 /**
- * The frame every signed-in employer screen sits in: the app bar, the
- * verification prompt's slot, a scrolling body, an optional sticky footer for
- * the screen's one action — and, only once verified, the bottom navigation.
+ * The frame every signed-in employer screen sits in (Employer Android A.*):
+ * the bar, the verification strip, a scrolling body and an optional sticky
+ * foot. The bottom tabs are the app's global bar (navigation/BottomTabBar),
+ * never drawn here — two bars stacked was a bug.
  *
- * THE PROMPT LIVES HERE. It is read from `useEmployer` and drawn by this shell,
- * so no screen can forget it, restyle it or hide it to look cleaner. Its press
- * goes to where its state is resolved; on that screen it drops its chevron.
+ * THE STRIP LIVES HERE. It is read from `useEmployer` and drawn by this shell,
+ * so no screen can forget it, restyle it or hide it.
  *
- * A PENDING SHELL HAS NO BOTTOM NAV. `nav` is not rendered until the account is
- * verified: a destination the employer cannot use yet is absent, not greyed.
- *
- * The app bar is the board's (EM-04..07), not the library AppBar: its back is a
- * 44 tap box with the route it returns to as an eyebrow, where the library's is
- * a 34 box that misses the tap floor, and its leading slot holds the brand.
+ * A top-level screen (no `back`) carries the bell and the company initials on
+ * the right unless it passes its own `right`.
  */
 export function EmployerShell({
-  back, onAccount, footer, nav, children, scroll = true, scrollRef, contentGap = 'lg',
-  keyboardShouldPersistTaps = 'handled',
+  back, title, sub, big, right, footer, footerStack, children, scroll = true, scrollRef, contentGap = 'sm',
+  keyboardShouldPersistTaps = 'handled', barBorder, bodyStyle, bar = true, onScroll,
 }: {
-  /** A drill-down screen: the chevron, and the name of where it returns to. */
-  back?: { label: string; onPress: () => void }
-  /** The company monogram on the right. Omitted on drill-down screens. */
-  onAccount?: () => void
-  /** The screen's one action, pinned above the home indicator. */
+  /** The body's scroll, for a bar that changes as the page moves (EM-09b). */
+  onScroll?: ScrollViewProps['onScroll']
+  /** false for a screen the design draws with no bar (EM-05b). */
+  bar?: boolean
+  /** A drill-down screen's back. `label` is kept for older callers and not drawn. */
+  back?: { label?: string; onPress: () => void } | (() => void)
+  title?: string
+  /** The mono line under the title. */
+  sub?: string
+  /** 26 (a top-level screen) rather than 18. Defaults to true without `back`. */
+  big?: boolean
+  /** The bar's right slot; a top-level screen without it gets the bell and the initials. */
+  right?: React.ReactNode
+  /** The screen's action band, pinned above the home indicator. */
   footer?: React.ReactNode
-  /** Bottom navigation. Drawn only when the employer is verified. */
-  nav?: React.ReactNode
+  footerStack?: boolean
   children: React.ReactNode
   /** false when the screen brings its own list. */
   scroll?: boolean
   scrollRef?: React.Ref<React.ComponentRef<typeof ScrollView>>
-  /** The rhythm between blocks: `lg` is the board's 28 (space['2xl']); `sm` is 16 for dense rows. */
+  /** `sm` is the design's 12 between cards; `lg` 16 for a form. */
   contentGap?: 'lg' | 'sm'
   keyboardShouldPersistTaps?: ScrollViewProps['keyboardShouldPersistTaps']
+  barBorder?: boolean
+  bodyStyle?: object
+  /** @deprecated The global tab bar draws the navigation. */
+  nav?: React.ReactNode
+  /** @deprecated The initials open Account by default. */
+  onAccount?: () => void
 }) {
   const insets = useSafeAreaInsets()
   const route = useRoute()
@@ -66,52 +75,22 @@ export function EmployerShell({
     }
   }, [refresh])
 
-  const bottomPad = footer || (nav && state?.verified) ? 0 : insets.bottom
-  const gap = contentGap === 'lg' ? space['2xl'] : space.lg
+  const onBack = typeof back === 'function' ? back : back?.onPress
+  const tabbed = !!tabBarInfoFor(route.name)
+  const bottomPad = footer || tabbed ? 0 : insets.bottom
+  const gap = contentGap === 'lg' ? space.lg : space.md
+  const headerRight = right !== undefined ? right : onBack ? null : (
+    <>
+      <EmBell unread={(state?.unreadNotifications ?? 0) > 0} onPress={() => navigation.navigate('EmployerNotifications')} />
+      <EmAvatarButton initials={initialsOf(state?.company.name)} onPress={() => navigation.navigate('EmployerAccount')} />
+    </>
+  )
 
   return (
     <KeyboardAvoidingView
       style={[styles.page, { paddingTop: insets.top }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <View style={styles.bar}>
-        {back ? (
-          <>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`Back to ${back.label.toLowerCase()}`}
-              onPress={back.onPress}
-              style={({ pressed }) => [styles.back, pressed && styles.pressed]}
-            >
-              <Glyph name="chevronLeft" size={height.glyph} weight={borderWidth.accent} />
-            </Pressable>
-            <Eyebrow>{back.label}</Eyebrow>
-          </>
-        ) : (
-          <Logo size={18} />
-        )}
-        <View style={styles.grow} />
-        {onAccount ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Account"
-            onPress={onAccount}
-            style={({ pressed }) => [styles.account, pressed && styles.pressed]}
-          >
-            <CompanyMonogram name={state?.company.name ?? ''} />
-          </Pressable>
-        ) : !back && state?.verified ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Account"
-            onPress={() => navigation.navigate('EmployerAccount')}
-            style={({ pressed }) => [styles.account, pressed && styles.pressed]}
-          >
-            <CompanyMonogram name={state?.company.name ?? ''} />
-          </Pressable>
-        ) : null}
-      </View>
-
       {!!prompt && (
         <VerificationPrompt
           prompt={prompt}
@@ -119,13 +98,17 @@ export function EmployerShell({
           onPress={() => navigation.navigate(prompt.href as never)}
         />
       )}
+      {bar && <EmBar title={title} sub={sub} big={big ?? !onBack} onBack={onBack} right={headerRight} border={barBorder} />}
 
       {scroll ? (
         <ScrollView
           ref={scrollRef}
           style={styles.grow}
-          contentContainerStyle={[styles.body, { gap, paddingBottom: space['2xl'] + bottomPad }]}
+          contentContainerStyle={[styles.body, { gap, paddingBottom: space.lg + bottomPad }, bodyStyle]}
           keyboardShouldPersistTaps={keyboardShouldPersistTaps}
+          showsVerticalScrollIndicator={false}
+          onScroll={onScroll}
+          scrollEventThrottle={onScroll ? 32 : undefined}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={color.textSubtle} />
           }
@@ -136,9 +119,7 @@ export function EmployerShell({
         <View style={styles.grow}>{children}</View>
       )}
 
-      {!!footer && <View style={[styles.footer, { paddingBottom: space.lg + insets.bottom }]}>{footer}</View>}
-
-      {state?.verified ? nav : null}
+      {!!footer && <EmFoot inset={!tabbed} stack={footerStack}>{footer}</EmFoot>}
     </KeyboardAvoidingView>
   )
 }
@@ -146,38 +127,5 @@ export function EmployerShell({
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.background },
   grow: { flex: 1 },
-  pressed: { opacity: opacity.pressed },
-  bar: {
-    height: height.header,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space['2xs'],
-    paddingHorizontal: space.xl,
-    backgroundColor: color.surface,
-    borderBottomWidth: borderWidth.thin,
-    borderBottomColor: color.border,
-  },
-  // Hung over the gutter so the chevron lines up with the content edge.
-  back: {
-    width: height.tap,
-    height: height.tap,
-    marginLeft: -space.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  account: {
-    width: height.tap,
-    height: height.tap,
-    marginRight: -space.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  body: { paddingHorizontal: space.xl, paddingTop: space.xl },
-  footer: {
-    borderTopWidth: borderWidth.thin,
-    borderTopColor: color.border,
-    backgroundColor: color.surface,
-    paddingTop: space.md,
-    paddingHorizontal: space.xl,
-  },
+  body: { paddingHorizontal: space.lg, paddingTop: space.xs },
 })

@@ -111,6 +111,25 @@ async function fetchEmployer(qc: QueryClient, session: number): Promise<Employer
   }
 }
 
+/**
+ * Whether the signed-in employer is verified, for chrome that lives outside the
+ * navigator (the tab bar). Reads the same cache entry every employer screen
+ * fills, so it costs no extra request once any employer screen has loaded.
+ * Null until known.
+ */
+export function useEmployerVerified(enabled: boolean): boolean | null {
+  const qc = useQueryClient()
+  const session = useSyncExternalStore(onEmployerSessionChange, employerSession)
+  const q = useQuery({
+    queryKey: employerQueryKey(session),
+    queryFn: () => fetchEmployer(qc, session),
+    staleTime: FRESH_MS,
+    enabled,
+    retry: false,
+  })
+  return q.data ? Boolean(q.data.verified) : null
+}
+
 /** An answer more polling cannot change: signed out, not an employer, suspended. */
 const settledError = (e: unknown) =>
   e instanceof NotEmployerError ||

@@ -1,265 +1,176 @@
-import React, { useState } from 'react'
-import { ScrollView, StyleSheet, View } from 'react-native'
+import React, { useMemo, useState } from 'react'
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { borderWidth, color, radius, space } from '../../theme'
-import {
-  Body,
-  Button,
-  Card,
-  Chip,
-  Display,
-  EmptyState,
-  ErrorState,
-  Eyebrow,
-  Meta,
-  ObjectRow,
-  Skeleton,
-  StatusPill,
-} from '../../components/ui'
+import { borderWidth, color, height, opacity, radius, space, spaceHalf, trackingNative } from '../../theme'
+import { Button, text } from '../../components/ui'
 import { InterviewerShell } from '../../components/interviewer/InterviewerShell'
-import { useInterviewer } from '../../lib/interviewer/useInterviewer'
+import { IvLabel } from '../../components/interviewer/iv'
+import { EmBadge, EmEmpty, EmError, EmPills, type EmTone } from '../../components/employer/em'
+import type { InterviewerInterviewDto } from '../../lib/api/interviewer'
 import { formatPaise } from '../../lib/format/money'
-import { formatScorecardCountdown, isScorecardOverdue, canJoinInterviewRoom, TIER_FEES_PAISE } from '../../lib/interviewer/state'
-import type { InterviewSessionDto } from '../../lib/api/interviewer'
+import { useNow } from '../../lib/employer/useNow'
+import {
+  clock, groupOf, hms, interviewClock, istTime, istWeekday, joinState, pastLabel, sessionLine, type InterviewGroup,
+} from '../../lib/interviewer/state'
+import { reasonOf, useAppConfig, useInterviewerInterviews, useInterviewerMe } from '../../lib/interviewer/useInterviewer'
+import type { RootStackParamList } from '../../../App'
 
-type FilterKey = 'all' | 'upcoming' | 'owed' | 'past'
+type Tab = 'all' | InterviewGroup
+const ORDER: Record<InterviewGroup, number> = { live: 0, owed: 1, upcoming: 2, past: 3 }
 
+/**
+ * Interviews (no artboard — the drawn screens' language). Pills with counts
+ * over the server's list, grouped by what the interviewer can do: live (the
+ * join window is open), scorecard owed, upcoming, past. Each row: the date and
+ * time, the candidate, the session line, the status, the fee, and the one
+ * action — Join, Scorecard, or Details.
+ *
+ * Statuses and fees are the server's own (each interview's `feePaise`; "Paid"
+ * only when the scorecard is in and the interview is payable). While suspended
+ * the list is refused by the server, so the page shows the owed scorecards
+ * from /interviewers/me instead.
+ */
 export function InterviewerInterviewsScreen() {
-  const navigation = useNavigation<NativeStackNavigationProp<any>>()
-  const { upcomingInterviews, owedScorecards, pastInterviews, loading, error, refresh } = useInterviewer()
-  const [filter, setFilter] = useState<FilterKey>('all')
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
+  const { me } = useInterviewerMe()
+  const { interviews, error, refresh } = useInterviewerInterviews()
+  const config = useAppConfig()
+  const now = useNow() || Date.now()
+  const [tab, setTab] = useState<Tab>('all')
+  const [refreshing, setRefreshing] = useState(false)
 
-  const formatSlotTime = (iso: string) => {
-    try {
-      const d = new Date(iso)
-      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    } catch {
-      return iso
-    }
-  }
+  const rows = useMemo(() => {
+    const list = (interviews ?? []).map((i) => ({ i, g: groupOf(i, config, now) }))
+    list.sort((a, b) => ORDER[a.g] - ORDER[b.g] || (a.g === 'past' ? b.i.slotStart.localeCompare(a.i.slotStart) : a.i.slotStart.localeCompare(b.i.slotStart)))
+    return list
+    // `now` ticks every second; the grouping only needs the minute.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [interviews, config, Math.floor(now / 60_000)])
+  const count = (g: InterviewGroup) => rows.filter((r) => r.g === g).length
+  const shown = tab === 'all' ? rows : rows.filter((r) => r.g === tab)
+  const suspendedList = reasonOf(error) === 'ACCOUNT_SUSPENDED'
 
-  const formatSlotDate = (iso: string) => {
-    try {
-      const d = new Date(iso)
-      return d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })
-    } catch {
-      return iso
-    }
-  }
+  const open = (i: InterviewerInterviewDto) => navigation.navigate('InterviewerDetail', { id: i.id })
 
-  const getFilteredList = (): InterviewSessionDto[] => {
-    switch (filter) {
-      case 'upcoming':
-        return upcomingInterviews
-      case 'owed':
-        return owedScorecards
-      case 'past':
-        return pastInterviews
-      case 'all':
-      default:
-        // Combine deduplicated
-        const combined = [...upcomingInterviews, ...owedScorecards, ...pastInterviews]
-        const seen = new Set<string>()
-        return combined.filter((i) => {
-          if (seen.has(i.id)) return false
-          seen.add(i.id)
-          return true
-        })
-    }
-  }
-
-  const list = getFilteredList()
-
-  if (loading) {
-    return (
-      <InterviewerShell navTab="interviews">
-        <Skeleton lines={4} />
-      </InterviewerShell>
+  let body: React.ReactNode
+  if (suspendedList) {
+    const owed = me?.scorecardsOwed?.rows ?? []
+    body = (
+      <View style={styles.pad}>
+        <IvLabel>SCORECARDS OWED</IvLabel>
+        {owed.length === 0 ? <Text style={[text.uiSm, styles.muted]}>None to write.</Text> : owed.map((r) => (
+          <Pressable key={r.interviewId} accessibilityRole="button" onPress={() => navigation.navigate('ScorecardDraft', { id: r.interviewId })} style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
+            <View style={styles.grow}>
+              <Text style={text.uiBaseSemi}>{r.student.name}</Text>
+              <Text style={[text.uiXs, styles.muted]}>{[r.tier, r.domain].filter(Boolean).join(' · ')}</Text>
+            </View>
+            <EmBadge label={r.overdue ? 'Closed' : 'Scorecard due'} tone={r.overdue ? 'red' : 'violet'} small />
+          </Pressable>
+        ))}
+      </View>
     )
-  }
-
-  if (error && list.length === 0) {
-    return (
-      <InterviewerShell navTab="interviews">
-        <ErrorState
-          title="We could not load your interviews."
-          body={error.message}
-          action={<Button variant="outline" size="sm" label="Try again" onPress={refresh} />}
-        />
-      </InterviewerShell>
+  } else if (interviews === null && !error) {
+    body = <ActivityIndicator color={color.textSubtle} style={styles.loading} />
+  } else if (error && !interviews) {
+    body = <View style={styles.pad}><EmError title="Couldn’t load your interviews." body={error.message} action={<Button variant="secondary" size="pair" icon="refresh" label="Try again" onPress={() => { refresh() }} />} /></View>
+  } else if (rows.length === 0) {
+    body = (
+      <View style={[styles.pad, styles.center]}>
+        <EmEmpty icon="cal" title="No interviews yet." body="Students book the hours you publish. Open more hours to be booked sooner." action={<Button variant="primary" size="pair" label="Open more hours" onPress={() => navigation.navigate('InterviewerAvailability')} />} />
+      </View>
+    )
+  } else {
+    body = (
+      <FlatList
+        data={shown}
+        keyExtractor={(r) => r.i.id}
+        contentContainerStyle={styles.list}
+        ItemSeparatorComponent={Gap}
+        ListHeaderComponent={
+          <EmPills<Tab>
+            items={[
+              { key: 'all', label: 'All', count: rows.length },
+              ...(count('live') ? [{ key: 'live' as Tab, label: 'Live', count: count('live') }] : []),
+              { key: 'upcoming', label: 'Upcoming', count: count('upcoming') },
+              { key: 'owed', label: 'Owed', count: count('owed') },
+              { key: 'past', label: 'Past', count: count('past') },
+            ]}
+            value={tab}
+            onChange={setTab}
+          />
+        }
+        ListHeaderComponentStyle={styles.pillsWrap}
+        ListEmptyComponent={<Text style={[text.uiMd, styles.muted, styles.none]}>Nothing here.</Text>}
+        refreshControl={<RefreshControl refreshing={refreshing} tintColor={color.textSubtle} onRefresh={async () => { setRefreshing(true); await refresh(); setRefreshing(false) }} />}
+        renderItem={({ item: { i, g } }) => {
+          let badge: { label: string; tone: EmTone }
+          let line: string | null = null
+          let action: React.ReactNode = null
+          if (g === 'live') {
+            const j = joinState(i, config, now)
+            badge = { label: i.status === 'IN_PROGRESS' ? 'In progress' : 'Join open', tone: 'green' }
+            action = <Button variant="primary" size="sm" label={j.kind === 'open' && j.rejoin ? 'Rejoin' : 'Join'} disabled={!!me && me.status === 'SUSPENDED'} onPress={() => navigation.navigate('InterviewerRoom', { id: i.id })} />
+          } else if (g === 'upcoming') {
+            const j = joinState(i, config, now)
+            badge = { label: 'Booked', tone: 'violet' }
+            if (j.kind === 'locked' && j.opensInSec != null && j.opensInSec < 6 * 3600) line = `Join opens in ${clock(j.opensInSec)}`
+          } else if (g === 'owed') {
+            const c = interviewClock(i, config, now)
+            badge = { label: 'Scorecard due', tone: c.status === 'URGENT' ? 'red' : 'violet' }
+            if (c.status === 'OPEN' || c.status === 'URGENT') line = `${hms(c.secondsLeft)} left to submit`
+            action = <Button variant="secondary" size="sm" label="Scorecard" onPress={() => navigation.navigate('ScorecardDraft', { id: i.id })} />
+          } else {
+            const p = pastLabel(i, config, now)
+            badge = { label: p.text, tone: p.tone }
+          }
+          const feeShown = g !== 'past' || pastLabel(i, config, now).text === 'Paid'
+          return (
+            <Pressable accessibilityRole="button" onPress={() => open(i)} style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
+              <View style={styles.when}>
+                <Text style={[text.metaSm, styles.muted, styles.mono]}>{istWeekday(i.slotStart).toUpperCase()}</Text>
+                <Text style={text.uiMdSemi}>{istTime(i.slotStart)}</Text>
+              </View>
+              <View style={styles.grow}>
+                <Text style={text.uiBaseSemi} numberOfLines={1}>{i.student.name}</Text>
+                <Text style={[text.uiXs, styles.muted]} numberOfLines={1}>{sessionLine({ tier: i.tier, domain: i.domain, languages: i.student.languages, language: i.language })}</Text>
+                {!!line && <Text style={[text.metaSm, styles.accentText, styles.mono]}>{line.toUpperCase()}</Text>}
+                <View style={styles.meta}>
+                  <EmBadge label={badge.label} tone={badge.tone} small />
+                  <Text style={[text.metaBase, styles.muted]}>{feeShown ? formatPaise(i.feePaise) : '—'}</Text>
+                </View>
+              </View>
+              {action}
+            </Pressable>
+          )
+        }}
+      />
     )
   }
 
   return (
-    <InterviewerShell navTab="interviews">
-      <View style={styles.header}>
-        <Eyebrow>SESSIONS</Eyebrow>
-        <Display level="lg" accessibilityRole="header">
-          Interviews
-        </Display>
-      </View>
-
-      {/* Filter Tabs — a scrolling chip row, same as the status filter on Job openings. */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabRow}>
-        <Chip label="All" selected={filter === 'all'} onPress={() => setFilter('all')} />
-        <Chip
-          label={`Upcoming (${upcomingInterviews.length})`}
-          selected={filter === 'upcoming'}
-          onPress={() => setFilter('upcoming')}
-        />
-        <Chip
-          label={`Owed (${owedScorecards.length})`}
-          selected={filter === 'owed'}
-          onPress={() => setFilter('owed')}
-        />
-        <Chip label="Past" selected={filter === 'past'} onPress={() => setFilter('past')} />
-      </ScrollView>
-
-      {/* List of interviews */}
-      {list.length === 0 ? (
-        <Card>
-          <EmptyState
-            title="No interviews found"
-            body={
-              filter === 'owed'
-                ? 'All scorecards are up to date. Excellent work!'
-                : filter === 'upcoming'
-                ? 'No upcoming sessions scheduled right now.'
-                : 'No sessions recorded under this filter.'
-            }
-          />
-        </Card>
-      ) : (
-        <View style={styles.list}>
-          {list.map((item) => {
-            const isOwed = item.status === 'COMPLETED' && !item.scorecardSubmittedAt
-            const canJoin = canJoinInterviewRoom(item.slotStart)
-            const fee = TIER_FEES_PAISE[item.tier as keyof typeof TIER_FEES_PAISE] ?? 4000
-            const overdue = isOwed ? isScorecardOverdue(item.slotEnd) : false
-
-            return (
-              <Card key={item.id} style={styles.card}>
-                {/* Header info */}
-                <View style={styles.cardHeader}>
-                  <View>
-                    <Display level="xs">
-                      {formatSlotDate(item.slotStart)} · {formatSlotTime(item.slotStart)}
-                    </Display>
-                    <Meta style={styles.feeText}>{`Fee: ${formatPaise(fee)}`}</Meta>
-                  </View>
-                  <StatusPill
-                    tone={
-                      item.status === 'BOOKED' || (item.status as string) === 'SCHEDULED'
-                        ? 'info'
-                        : isOwed
-                        ? 'warning'
-                        : item.status === 'COMPLETED'
-                        ? 'success'
-                        : 'neutral'
-                    }
-                    label={isOwed ? 'SCORECARD OWED' : item.status}
-                  />
-                </View>
-
-                {/* Candidate Info */}
-                <ObjectRow
-                  last
-                  thumb={
-                    <View style={styles.avatar}>
-                      <Body weight="semibold">
-                        {(item.student?.name || 'C').slice(0, 1).toUpperCase()}
-                      </Body>
-                    </View>
-                  }
-                  title={item.student?.name || 'Candidate'}
-                  meta={`${item.student?.city ? `${item.student.city} · ` : ''}${item.tier.replace('_', ' ')}`}
-                />
-
-                {/* Scorecard countdown alert if owed — never the accent, a countdown is a passive readout. */}
-                {isOwed && (
-                  <StatusPill
-                    tone={overdue ? 'danger' : 'warning'}
-                    dot
-                    label={formatScorecardCountdown(item.slotEnd)}
-                  />
-                )}
-
-                {/* Action buttons — secondary only: a list of rows never carries the screen's one accent action. */}
-                <View style={styles.actionsRow}>
-                  <Button
-                    label="Prep & Script"
-                    variant="secondary"
-                    size="sm"
-                    onPress={() => navigation.navigate('InterviewerDetail', { id: item.id })}
-                  />
-
-                  {canJoin && (
-                    <Button
-                      label="Join Room"
-                      variant="secondary"
-                      size="sm"
-                      onPress={() => navigation.navigate('InterviewerDetail', { id: item.id, autoJoin: true })}
-                    />
-                  )}
-
-                  {isOwed && (
-                    <Button
-                      label="Draft Scorecard"
-                      variant="secondary"
-                      size="sm"
-                      onPress={() => navigation.navigate('ScorecardDraft', { id: item.id })}
-                    />
-                  )}
-                </View>
-              </Card>
-            )
-          })}
-        </View>
-      )}
+    <InterviewerShell title="Interviews" sub={interviews ? `${count('upcoming') + count('live')} UPCOMING · ${count('owed')} SCORECARDS OWED` : undefined} scroll={false}>
+      {body}
     </InterviewerShell>
   )
 }
 
+const Gap = () => <View style={styles.gap} />
+
 const styles = StyleSheet.create({
-  header: {
-    paddingVertical: space['2xs'],
-  },
-  tabRow: {
-    gap: space.sm,
-    paddingVertical: space['2xs'],
-  },
-  list: {
-    gap: space.md,
-  },
-  card: {
-    padding: space.md,
-    gap: space.md,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  feeText: {
-    marginTop: space['2xs'],
-  },
-  avatar: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.pill,
-    backgroundColor: color.surfaceSubtle,
-    borderWidth: borderWidth.thin,
-    borderColor: color.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  actionsRow: {
-    flexDirection: 'row',
-    gap: space.sm,
-    justifyContent: 'flex-end',
-    borderTopWidth: borderWidth.thin,
-    borderTopColor: color.border,
-    paddingTop: space.sm,
-  },
+  grow: { flex: 1, minWidth: 0, gap: space['2xs'] + 1 },
+  pressed: { opacity: opacity.pressed },
+  muted: { color: color.textMuted },
+  accentText: { color: color.accentText },
+  mono: { letterSpacing: trackingNative.eyebrow },
+  pad: { flex: 1, paddingHorizontal: space.lg, gap: space.sm },
+  center: { justifyContent: 'center' },
+  loading: { paddingVertical: space['3xl'] },
+  none: { paddingVertical: space.xl, textAlign: 'center' },
+  pillsWrap: { marginHorizontal: -space.lg },
+  list: { paddingHorizontal: space.lg, paddingBottom: space.lg },
+  gap: { height: space.sm },
+  row: { flexDirection: 'row', alignItems: 'center', gap: space.md, borderRadius: radius.panel, backgroundColor: color.surface, borderWidth: borderWidth.thin, borderColor: color.border, paddingVertical: space.md, paddingHorizontal: spaceHalf['3.5'] },
+  when: { width: height.fab + space.md, gap: space['2xs'] },
+  meta: { flexDirection: 'row', alignItems: 'center', gap: space.sm, marginTop: space['2xs'] },
 })

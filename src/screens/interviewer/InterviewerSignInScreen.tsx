@@ -1,170 +1,172 @@
-import React, { useState } from 'react'
+import React, { useRef, useState } from 'react'
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  View,
+  Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View, type TextInput,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { borderWidth, color, height, space } from '../../theme'
-import { Logo } from '../../components/Logo'
-import { Body, Button, Card, Display, Eyebrow, Field, Input, Tag } from '../../components/ui'
-import { interviewerApi } from '../../lib/api/interviewer'
-import { useInterviewer } from '../../lib/interviewer/useInterviewer'
+import { color, space, spaceHalf } from '../../theme'
+import { Banner, Body, Button, Field, Input, type BannerTone } from '../../components/ui'
+import { EmBar, EmFoot, EmTitle } from '../../components/employer/em'
+import { TextAction } from '../../components/employer'
+import { CONNECTION_DROPPED, PasswordInput } from '../employer/EmployerRegisterScreen'
+import { ApiClientError, ErrorCode, tokenStore } from '../../lib/api'
+import { logout } from '../../lib/api/account'
+import { loginInterviewerPassword } from '../../lib/api/interviewer'
+import { useForgetInterviewer } from '../../lib/interviewer/useInterviewer'
+import type { RootStackParamList } from '../../../App'
 
+type Errors = { email?: string; password?: string }
+type TextInputRef = React.ComponentRef<typeof TextInput>
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+/**
+ * Interviewer sign-in (no artboard — the drawn screens' language). The email
+ * and the password an admin sent. Nothing is fetched before the server has
+ * answered: a temporary password goes straight to the forced change (the
+ * server refuses every other interviewer call until it is made), anything
+ * else opens the dashboard. The route is shared by every role, so a student or
+ * employer who lands here is signed back out and pointed at the main sign-in.
+ */
 export function InterviewerSignInScreen() {
   const insets = useSafeAreaInsets()
-  const navigation = useNavigation<NativeStackNavigationProp<any>>()
-  const { refresh } = useInterviewer()
-
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
+  const forget = useForgetInterviewer()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [shown, setShown] = useState(false)
+  const [errors, setErrors] = useState<Errors>({})
+  const [refusal, setRefusal] = useState<{ tone: BannerTone; body: string; main?: boolean } | null>(null)
+  const [busy, setBusy] = useState(false)
+  const emailRef = useRef<TextInputRef>(null)
+  const passwordRef = useRef<TextInputRef>(null)
 
-  const handleSignIn = async () => {
-    if (!email.trim() || !password) {
-      Alert.alert('Missing Fields', 'Please enter both your email address and password.')
+  async function submit() {
+    if (busy) return
+    const found: Errors = {}
+    if (!email.trim()) found.email = 'Enter your email'
+    else if (!EMAIL_RE.test(email.trim())) found.email = 'Enter a valid email address'
+    if (!password) found.password = 'Enter your password'
+    setErrors(found)
+    setRefusal(null)
+    if (found.email || found.password) {
+      ;(found.email ? emailRef : passwordRef).current?.focus()
       return
     }
 
-    setLoading(true)
+    setBusy(true)
+    Keyboard.dismiss()
     try {
-      const res = await interviewerApi.signIn({
-        email: email.trim(),
-        password,
-      })
-
-      if (res.mustChangePassword) {
-        navigation.navigate('InterviewerPassword', { email: email.trim(), forced: true })
+      const r = await loginInterviewerPassword({ email: email.trim().toLowerCase(), password })
+      if (r.user.role !== 'INTERVIEWER') {
+        await logout().catch(() => undefined)
+        await tokenStore.clear()
+        setRefusal({ tone: 'info', body: 'This sign-in is for interviewers.', main: true })
+        setBusy(false)
         return
       }
-
-      await refresh()
-      navigation.replace('InterviewerDashboard')
-    } catch (err: any) {
-      Alert.alert('Sign In Failed', err?.message || 'Invalid email or password. Please try again.')
-    } finally {
-      setLoading(false)
+      forget()
+      navigation.reset({
+        index: 0,
+        routes: [r.mustChangePassword ? { name: 'InterviewerPassword', params: { forced: true } } : { name: 'InterviewerDashboard' }],
+      })
+    } catch (err) {
+      if (err instanceof ApiClientError && err.code === ErrorCode.VALIDATION && err.fields) {
+        setErrors({ email: err.fields.email, password: err.fields.password })
+      } else if (err instanceof ApiClientError) {
+        setRefusal({ tone: err.code === ErrorCode.RATE_LIMITED ? 'warning' : 'danger', body: err.message })
+      } else {
+        setRefusal({ tone: 'danger', body: CONNECTION_DROPPED })
+      }
+      setBusy(false)
     }
   }
 
   return (
-    <KeyboardAvoidingView
-      style={[styles.page, { paddingTop: insets.top }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <View style={styles.bar}>
-        <Logo size={18} />
-        <Tag label="INTERVIEWER" />
-      </View>
+    <KeyboardAvoidingView style={[styles.page, { paddingTop: insets.top }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <EmBar onBack={() => navigation.goBack()} />
+      <ScrollView style={styles.grow} contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+        <EmTitle eyebrow="Interviewer" title="Sign in" sub="The email and password Apostrophe sent you." />
 
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + space['2xl'] }]}
-        keyboardShouldPersistTaps="handled"
-      >
-        <View style={styles.header}>
-          <Eyebrow>INTERVIEWER PORTAL</Eyebrow>
-          <Display level="md">Sign in to your account</Display>
-          <Body size="md" tone="muted">
-            Manage your schedule, conduct video interviews, and view wallet earnings.
-          </Body>
-        </View>
+        {!!refusal && (
+          <View accessibilityLiveRegion="polite">
+            <Banner
+              tone={refusal.tone}
+              actionLabel={refusal.main ? 'Go to the main sign-in' : undefined}
+              onAction={refusal.main ? () => navigation.navigate('SignIn') : undefined}
+            >
+              {refusal.body}
+            </Banner>
+          </View>
+        )}
 
-        <Card style={styles.card}>
-          <Field label="Interviewer Email">
+        <View style={styles.fields}>
+          <Field label="Email" error={errors.email}>
             <Input
+              inputRef={emailRef}
               value={email}
-              onChangeText={setEmail}
-              placeholder="interviewer@example.com"
+              onChangeText={(v) => {
+                setEmail(v)
+                if (errors.email) setErrors((x) => ({ ...x, email: undefined }))
+              }}
+              placeholder="you@example.com"
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
+              autoComplete="username"
+              textContentType="username"
+              returnKeyType="next"
+              onSubmitEditing={() => passwordRef.current?.focus()}
+              submitBehavior="submit"
+              accessibilityLabel="Email"
+              invalid={!!errors.email}
+              editable={!busy}
             />
           </Field>
-
-          <Field label="Password">
-            <Input
+          <Field label="Password" error={errors.password}>
+            <PasswordInput
+              inputRef={passwordRef}
+              shown={shown}
+              onToggle={() => setShown((s) => !s)}
               value={password}
-              onChangeText={setPassword}
-              placeholder="••••••••••••"
-              secureTextEntry
-              autoCapitalize="none"
+              onChangeText={(v) => {
+                setPassword(v)
+                if (errors.password) setErrors((x) => ({ ...x, password: undefined }))
+              }}
+              placeholder="Your password"
+              autoComplete="current-password"
+              textContentType="password"
+              returnKeyType="go"
+              onSubmitEditing={submit}
+              accessibilityLabel="Password"
+              invalid={!!errors.password}
+              editable={!busy}
             />
           </Field>
-
           <View style={styles.forgotRow}>
-            <Button
-              variant="text"
-              size="sm"
-              label="Forgot password?"
-              onPress={() => navigation.navigate('InterviewerPassword', { email: email.trim(), reset: true })}
-            />
+            <TextAction label="Forgot password?" underline={false} onPress={() => navigation.navigate('InterviewerPassword', { email: email.trim() || undefined, reset: true })} />
           </View>
-
-          <Button
-            label={loading ? 'Signing in...' : 'Sign In'}
-            variant="primary"
-            disabled={loading}
-            onPress={handleSignIn}
-          />
-        </Card>
-
-        <View style={styles.footer}>
-          <Body size="md" tone="muted">Want to evaluate candidates on Apostrophe?</Body>
-          <Button
-            variant="text"
-            size="md"
-            label="Learn more & apply to interview →"
-            onPress={() => navigation.navigate('JoinUs')}
-          />
+          <View style={styles.newRow}>
+            <Body size="sm" tone="muted">Not an interviewer yet?</Body>
+            <TextAction label="Apply to interview" underline={false} onPress={() => navigation.navigate('JoinUs')} />
+          </View>
         </View>
       </ScrollView>
+      <EmFoot>
+        <View style={styles.grow}>
+          <Button variant="primary" size="lg" full busy={busy} label={busy ? 'Signing in…' : 'Sign in'} onPress={submit} />
+        </View>
+      </EmFoot>
     </KeyboardAvoidingView>
   )
 }
 
 const styles = StyleSheet.create({
-  page: {
-    flex: 1,
-    backgroundColor: color.background,
-  },
-  bar: {
-    height: height.header,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.xs,
-    paddingHorizontal: space.lg,
-    backgroundColor: color.surface,
-    borderBottomWidth: borderWidth.thin,
-    borderBottomColor: color.border,
-  },
-  scroll: {
-    flex: 1,
-  },
-  content: {
-    padding: space.lg,
-    gap: space.xl,
-    paddingTop: space['2xl'],
-  },
-  header: {
-    gap: space['2xs'],
-  },
-  card: {
-    padding: space.lg,
-    gap: space.md,
-  },
-  forgotRow: {
-    alignItems: 'flex-end',
-    marginTop: -space['2xs'],
-  },
-  footer: {
-    alignItems: 'center',
-    gap: space.xs,
-    paddingVertical: space.md,
-  },
+  page: { flex: 1, backgroundColor: color.background },
+  grow: { flex: 1 },
+  body: { paddingHorizontal: space.lg, paddingTop: space.xs, paddingBottom: space.xl, gap: spaceHalf['4.5'] },
+  fields: { gap: spaceHalf['4.5'] },
+  forgotRow: { alignItems: 'flex-end' },
+  newRow: { flexDirection: 'row', alignItems: 'center', gap: space.xs, flexWrap: 'wrap' },
 })

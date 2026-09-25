@@ -1,191 +1,146 @@
-import React, { useState } from 'react'
-import { Alert, StyleSheet, View } from 'react-native'
+import React, { useCallback, useEffect, useState } from 'react'
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { color, space } from '../../theme'
-import { Body, Button, Card, Chip, Display, ErrorState, Eyebrow, Field, Figure, Input, ObjectRow, Skeleton } from '../../components/ui'
+import { useQueryClient } from '@tanstack/react-query'
+import { color, space, spaceHalf, trackingNative } from '../../theme'
+import { Button, Input, text } from '../../components/ui'
 import { InterviewerShell } from '../../components/interviewer/InterviewerShell'
-import { useInterviewer } from '../../lib/interviewer/useInterviewer'
-import { interviewerApi } from '../../lib/api/interviewer'
+import { IvAction, IvCard, IvLabel } from '../../components/interviewer/iv'
+import { EmBadge, EmChip, EmError } from '../../components/employer/em'
+import { EmField } from '../../components/employer/form'
+import { ApiClientError } from '../../lib/api'
+import { getBank, getWallet, listWithdrawals, requestWithdrawal, type BankDto, type WalletDto, type WithdrawalDto } from '../../lib/api/interviewer'
 import { formatPaise } from '../../lib/format/money'
-import { MIN_WITHDRAWAL_PAISE } from '../../lib/interviewer/state'
+import { istStamp } from '../../lib/interviewer/state'
+import { minWithdrawal, WITHDRAWAL_STATUS, withdrawBlockedText } from '../../lib/interviewer/wallet'
+import { INTERVIEWER_KEY, useAppConfig, useInterviewerMe } from '../../lib/interviewer/useInterviewer'
+import type { RootStackParamList } from '../../../App'
 
+/**
+ * Withdraw (no artboard — the drawn screens' language). The amount in rupees
+ * (Minimum and All fill it), the payout account it goes to, and the request.
+ * The minimum is the server's; whether a withdrawal is allowed at all is the
+ * server's decision, shown with its reason. Beneath, every request with the
+ * server's status (Requested, Approved, Paid, Rejected with its reason).
+ */
 export function WithdrawScreen() {
-  const navigation = useNavigation<NativeStackNavigationProp<any>>()
-  const { wallet, loading, error, refresh, profile } = useInterviewer()
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
+  const qc = useQueryClient()
+  const config = useAppConfig()
+  const { suspended } = useInterviewerMe()
+  const [wallet, setWallet] = useState<WalletDto | null>(null)
+  const [bank, setBank] = useState<BankDto | null>(null)
+  const [history, setHistory] = useState<WithdrawalDto[] | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [amount, setAmount] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [notice, setNotice] = useState<string | null>(null)
 
-  const balancePaise = wallet?.balancePaise ?? 0
-  const maxRupees = Math.floor(balancePaise / 100)
-  const isSuspended = profile?.status === 'SUSPENDED'
-
-  const [rupees, setRupees] = useState('')
-  const [submitting, setSubmitting] = useState(false)
-
-  const handleQuickSelect = (amt: number) => {
-    setRupees(amt.toString())
-  }
-
-  const handleWithdraw = async () => {
-    if (isSuspended) {
-      Alert.alert('Account Suspended', 'Withdrawals are locked while account is under suspension.')
-      return
-    }
-
-    const amtNum = parseInt(rupees, 10)
-    if (isNaN(amtNum) || amtNum < 500) {
-      Alert.alert('Minimum Amount', `Minimum withdrawal is ${formatPaise(MIN_WITHDRAWAL_PAISE)} (₹500).`)
-      return
-    }
-
-    const requestedPaise = amtNum * 100
-    if (requestedPaise > balancePaise) {
-      Alert.alert('Insufficient Balance', 'Requested withdrawal amount exceeds your available balance.')
-      return
-    }
-
-    if (!wallet?.bankAccount?.accountNumber && !wallet?.bankAccount?.accountNumberLast4) {
-      Alert.alert('Bank Account Missing', 'Please link your payout bank account before requesting a withdrawal.', [
-        { text: 'Link Bank Account', onPress: () => navigation.navigate('InterviewerBankAccount') },
-      ])
-      return
-    }
-
-    setSubmitting(true)
+  const load = useCallback(async () => {
+    setError(null)
     try {
-      await interviewerApi.requestWithdrawal(requestedPaise)
-      await refresh()
-      Alert.alert(
-        'Withdrawal Requested',
-        `A payout request for ${formatPaise(requestedPaise)} has been placed. Funds will be transferred to your registered bank account within 1–2 business days.`,
-        [{ text: 'OK', onPress: () => navigation.replace('InterviewerWallet') }],
-      )
-    } catch (err: any) {
-      Alert.alert('Request Failed', err?.message || 'Unable to process withdrawal request.')
-    } finally {
-      setSubmitting(false)
+      const [w, b, h] = await Promise.all([getWallet(), getBank().catch(() => null), listWithdrawals().catch(() => null)])
+      setWallet(w)
+      setBank(b)
+      setHistory(h?.rows ?? null)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not load your wallet.')
     }
-  }
+  }, [])
+  useEffect(() => {
+    load()
+  }, [load])
 
-  if (loading && !wallet) {
+  if (!wallet) {
     return (
-      <InterviewerShell back={{ label: 'Wallet', onPress: () => navigation.goBack() }}>
-        <Skeleton lines={4} />
+      <InterviewerShell back={() => navigation.goBack()} title="Withdraw">
+        {error ? <EmError title="Couldn’t load your wallet." body={error} action={<Button variant="secondary" size="pair" icon="refresh" label="Try again" onPress={() => { load() }} />} /> : <ActivityIndicator color={color.textSubtle} style={styles.loading} />}
       </InterviewerShell>
     )
   }
 
-  if (error && !wallet) {
-    return (
-      <InterviewerShell back={{ label: 'Wallet', onPress: () => navigation.goBack() }}>
-        <ErrorState
-          title="We could not load your wallet."
-          body={error.message}
-          action={<Button variant="outline" size="sm" label="Try again" onPress={() => refresh()} />}
-        />
-      </InterviewerShell>
-    )
+  const min = minWithdrawal(wallet, config)
+  const blocked = withdrawBlockedText(wallet, config, suspended)
+  const paise = Math.round(Number(amount || '0') * 100)
+  const tooLow = min != null && paise > 0 && paise < min
+  const tooHigh = paise > wallet.availablePaise
+  const ok = !blocked && paise > 0 && !tooLow && !tooHigh
+
+  async function submit() {
+    setBusy(true)
+    setNotice(null)
+    try {
+      const r = await requestWithdrawal(paise)
+      setNotice(`${formatPaise(r.amountPaise)} requested. You’ll see its status below.`)
+      setAmount('')
+      qc.invalidateQueries({ queryKey: INTERVIEWER_KEY })
+      load()
+    } catch (e) {
+      setNotice(e instanceof ApiClientError ? e.message : 'Not requested. Check your connection and try again.')
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (
-    <InterviewerShell back={{ label: 'Wallet', onPress: () => navigation.goBack() }}>
-      <View style={styles.header}>
-        <Eyebrow>PAYOUT DISBURSEMENT</Eyebrow>
-        <Display level="lg">Withdraw Funds</Display>
-        <Body size="sm" tone="muted">
-          Transfer your earned interviewer fees directly to your verified bank account via IMPS / NEFT.
-        </Body>
+    <InterviewerShell
+      back={() => navigation.goBack()}
+      title="Withdraw"
+      sub={`${formatPaise(wallet.availablePaise)} available`}
+      footer={<IvAction label={busy ? 'Requesting…' : ok ? `Withdraw ${formatPaise(paise)}` : 'Withdraw'} tone={ok && !busy ? 'accent' : 'off'} onPress={ok && !busy ? () => { submit() } : undefined} />}
+    >
+      {!!blocked && <IvCard tone="danger"><Text style={[text.uiSm, styles.danger]}>{blocked}</Text></IvCard>}
+      <EmField
+        label="Amount"
+        note="₹"
+        error={tooLow && min != null ? `The minimum is ${formatPaise(min)}.` : tooHigh ? 'That is more than is available.' : undefined}
+        hint={min != null ? `Minimum ${formatPaise(min)}` : undefined}
+      >
+        <Input value={amount} onChangeText={(v) => setAmount(v.replace(/[^\d.]/g, ''))} keyboardType="decimal-pad" placeholder="0" editable={!blocked} />
+      </EmField>
+      <View style={styles.chips}>
+        {min != null && min <= wallet.availablePaise && <EmChip compact label="Minimum" on={paise === min} onPress={() => setAmount(String(min / 100))} />}
+        {wallet.availablePaise > 0 && <EmChip compact label="All" on={paise === wallet.availablePaise} onPress={() => setAmount(String(wallet.availablePaise / 100))} />}
       </View>
+      <IvCard>
+        <IvLabel>PAID TO</IvLabel>
+        <Text style={text.uiMdSemi}>{bank ? `${bank.accountHolder} · •••• ${bank.accountNumberLast4}` : 'No payout account yet'}</Text>
+        {!!bank && <Text style={[text.uiXs, styles.muted]}>{`IFSC ${bank.ifsc}`}</Text>}
+        <Button variant="outline" size="sm" label={bank ? 'Change account' : 'Add an account'} onPress={() => navigation.navigate('InterviewerBankAccount')} style={styles.start} />
+      </IvCard>
+      {!!notice && <Text style={[text.uiSm, styles.secondary]}>{notice}</Text>}
 
-      {/* Available Balance */}
-      <Card style={styles.balanceCard}>
-        <Body size="xs" tone="muted">
-          Available Balance
-        </Body>
-        <Figure value={formatPaise(balancePaise)} />
-        <Body size="2xs" tone="subtle">
-          Minimum withdrawal: {formatPaise(MIN_WITHDRAWAL_PAISE)} · No processing fees
-        </Body>
-      </Card>
-
-      {/* Amount Input */}
-      <Card style={styles.formCard}>
-        <Field label="Withdrawal Amount (in INR ₹)">
-          <Input
-            value={rupees}
-            onChangeText={setRupees}
-            placeholder="e.g. 1500"
-            keyboardType="number-pad"
-          />
-        </Field>
-
-        {/* Quick Amount Chips */}
-        <View style={styles.chipsRow}>
-          {[500, 1000, 2500].map((amt) => (
-            <Chip
-              key={amt}
-              label={`₹${amt}`}
-              selected={rupees === String(amt)}
-              onPress={() => handleQuickSelect(amt)}
-            />
-          ))}
-          {maxRupees >= 500 && (
-            <Chip
-              label="Full Balance"
-              selected={rupees === String(maxRupees)}
-              onPress={() => handleQuickSelect(maxRupees)}
-            />
-          )}
-        </View>
-
-        {/* Bank Account Destination */}
-        <ObjectRow
-          last
-          title="Destination Account"
-          meta={
-            wallet?.bankAccount
-              ? `${wallet.bankAccount.bankName || 'Verified Bank'} · Ending in ${wallet.bankAccount.accountNumberLast4 || wallet.bankAccount.accountNumber?.slice(-4) || '****'} · ${wallet.bankAccount.ifsc}`
-              : 'No bank account linked.'
-          }
-          status={
-            !wallet?.bankAccount ? (
-              <Button
-                label="+ Link"
-                variant="secondary"
-                size="sm"
-                onPress={() => navigation.navigate('InterviewerBankAccount')}
-              />
-            ) : undefined
-          }
-        />
-
-        <Button
-          label={submitting ? 'Processing Request...' : 'Confirm Withdrawal'}
-          variant="primary"
-          busy={submitting}
-          disabled={submitting || balancePaise < MIN_WITHDRAWAL_PAISE || isSuspended}
-          onPress={handleWithdraw}
-        />
-      </Card>
+      {!!history?.length && (
+        <>
+          <IvLabel style={styles.section}>REQUESTS</IvLabel>
+          {history.map((w) => {
+            const st = WITHDRAWAL_STATUS[w.status] ?? { label: w.status, tone: 'violet' as const }
+            return (
+              <IvCard key={w.id}>
+                <View style={styles.top}>
+                  <Text style={[text.metaXl, styles.fig]}>{formatPaise(w.amountPaise)}</Text>
+                  <EmBadge label={st.label} tone={st.tone} small />
+                </View>
+                <Text style={[text.uiXs, styles.muted]}>{`Requested ${istStamp(w.requestedAt)}${w.payment?.reference ? ` · Ref ${w.payment.reference}` : ''}`}</Text>
+                {w.status === 'REJECTED' && !!w.rejectionReason && <Text style={[text.uiXs, styles.danger]}>{w.rejectionReason}</Text>}
+              </IvCard>
+            )
+          })}
+        </>
+      )}
     </InterviewerShell>
   )
 }
 
 const styles = StyleSheet.create({
-  header: {
-    gap: space['2xs'],
-  },
-  balanceCard: {
-    padding: space.md,
-    gap: space['2xs'],
-    backgroundColor: color.surfaceSubtle,
-  },
-  formCard: {
-    padding: space.md,
-    gap: space.md,
-  },
-  chipsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: space.xs,
-  },
+  muted: { color: color.textMuted },
+  secondary: { color: color.textSecondary },
+  danger: { color: color.danger },
+  fig: { letterSpacing: trackingNative.meta },
+  loading: { paddingVertical: space['3xl'] },
+  chips: { flexDirection: 'row', gap: spaceHalf['1.5'] },
+  start: { alignSelf: 'flex-start', paddingHorizontal: space.md, marginTop: space.xs },
+  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  section: { marginTop: space.sm },
 })

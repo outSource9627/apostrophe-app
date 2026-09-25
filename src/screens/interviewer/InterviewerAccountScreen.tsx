@@ -1,250 +1,161 @@
-import React from 'react'
-import { Alert, StyleSheet, View } from 'react-native'
-import Svg, { Path } from 'react-native-svg'
+import React, { useState } from 'react'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { borderWidth, color, radius, space } from '../../theme'
-import {
-  Banner,
-  Body,
-  Button,
-  Card,
-  Display,
-  Divider,
-  ErrorState,
-  Eyebrow,
-  Meta,
-  ObjectRow,
-  Skeleton,
-  StatusPill,
-  Tag,
-} from '../../components/ui'
+import { borderWidth, color, height, opacity, radius, space, spaceHalf, trackingNative } from '../../theme'
+import { Button, text } from '../../components/ui'
+import { Icon, type IconName } from '../../components/ui/Icon'
 import { InterviewerShell } from '../../components/interviewer/InterviewerShell'
-import { useInterviewer } from '../../lib/interviewer/useInterviewer'
+import { IvCard, IvLabel, IvStat } from '../../components/interviewer/iv'
+import { EmBadge, initialsOf } from '../../components/employer/em'
 import { tokenStore } from '../../lib/api'
+import { logout } from '../../lib/api/account'
+import { formatPaise } from '../../lib/format/money'
+import { useForgetInterviewer, useInterviewerIdentity, useInterviewerMe, useInterviewerUnread } from '../../lib/interviewer/useInterviewer'
+import type { RootStackParamList } from '../../../App'
 
-/** The chevron on a drill-in row. Danger-toned on Sign Out so the row reads as the destructive one without reaching for accent. */
-function RowChevron({ danger = false }: { danger?: boolean }) {
-  return (
-    <Svg
-      width={16}
-      height={16}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke={danger ? color.danger : color.textSubtle}
-      strokeWidth={1.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <Path d="m9 5 7 7-7 7" />
-    </Svg>
-  )
+/** '+91 98000 00001'. Anything that is not ten digits is shown as stored. */
+const mobileLabel = (m: string) => {
+  const d = m.replace(/\D/g, '').slice(-10)
+  return d.length === 10 ? `+91 ${d.slice(0, 5)} ${d.slice(5)}` : m
 }
 
+/**
+ * Account (no artboard — the drawn screens' language). Name, email and mobile
+ * from /auth/me (/interviewers/me carries none); the status and its reason,
+ * the domains, languages, tiers with the interviewer's own fee per tier, the
+ * load caps, and the figures over the server's window — each drawn only when
+ * the server sent it. Links, change password, and a sign-out that ends the
+ * session on the server and clears this phone.
+ */
 export function InterviewerAccountScreen() {
-  const navigation = useNavigation<NativeStackNavigationProp<any>>()
-  const { profile, error, refresh } = useInterviewer()
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
+  const { me, suspended } = useInterviewerMe()
+  const identity = useInterviewerIdentity()
+  const unread = useInterviewerUnread()
+  const forget = useForgetInterviewer()
+  const [signingOut, setSigningOut] = useState(false)
 
-  const isSuspended = profile?.status === 'SUSPENDED'
-
-  const handleSignOut = async () => {
-    Alert.alert('Sign Out', 'Are you sure you want to sign out of your interviewer account?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Sign Out',
-        style: 'destructive',
-        onPress: async () => {
-          await tokenStore.clear()
-          navigation.reset({
-            index: 0,
-            routes: [{ name: 'Welcome' }],
-          })
-        },
-      },
-    ])
+  async function signOut() {
+    setSigningOut(true)
+    try {
+      await logout()
+    } catch {
+      /* best-effort; the phone is cleared regardless */
+    }
+    await tokenStore.clear()
+    forget()
+    navigation.reset({ index: 0, routes: [{ name: 'Welcome' }] })
   }
 
+  const p = me?.profile
+  const s = me?.stats
+  const q = me?.quality
+  const fees = p ? (p.tiers ?? []).filter((t) => typeof p.feePaise?.[t] === 'number') : []
+  const pct = (v: number | null | undefined) => (v == null ? '—' : `${Math.round(v)}%`)
+  const links: { icon: IconName; label: string; sub?: string; onPress: () => void }[] = [
+    { icon: 'note', label: 'Scorecards owed', sub: me?.scorecardsOwed ? `${me.scorecardsOwed.count} open` : undefined, onPress: () => navigation.navigate('PendingScorecards') },
+    { icon: 'cal', label: 'Date overrides', sub: 'Days off and one-off hours', onPress: () => navigation.navigate('InterviewerOverrides') },
+    { icon: 'bell', label: 'Notifications', sub: unread ? `${unread} unread` : undefined, onPress: () => navigation.navigate('InterviewerNotifications') },
+    { icon: 'chat', label: 'Messages', sub: 'Chats with your candidates', onPress: () => navigation.navigate('InterviewerChats') },
+    { icon: 'lock', label: 'Change password', onPress: () => navigation.navigate('InterviewerPassword', {}) },
+  ]
+
   return (
-    <InterviewerShell navTab="account">
-      <View style={styles.header}>
-        <Eyebrow>GOVERNANCE & SETTINGS</Eyebrow>
-        <Display level="lg">Interviewer Account</Display>
+    <InterviewerShell title="Account">
+      <IvCard>
+        <View style={styles.head}>
+          <View style={styles.disc}><Text style={[text.uiLeadSemi, styles.onInk]}>{initialsOf(identity?.name)}</Text></View>
+          <View style={styles.grow}>
+            <Text style={text.uiLgSemi}>{identity?.name ?? 'Interviewer'}</Text>
+            {me && <EmBadge label={suspended ? 'Suspended' : 'Active'} tone={suspended ? 'red' : 'green'} small />}
+          </View>
+        </View>
+        {suspended && !!me?.statusReason && <Text style={[text.uiXs, styles.danger]}>{me.statusReason}</Text>}
+      </IvCard>
+
+      <View>
+        {!!identity?.email && <Fact k="EMAIL" v={identity.email} />}
+        {!!identity?.mobile && <Fact k="MOBILE" v={mobileLabel(identity.mobile)} />}
+        {!!p?.domains?.length && <Fact k="DOMAINS" v={p.domains.join(', ')} />}
+        {!!p?.languages?.length && <Fact k="LANGUAGES" v={p.languages.join(', ')} />}
+        {(p?.loadCaps?.perDay != null || p?.loadCaps?.perWeek != null) && (
+          <Fact k="LOAD CAP" v={[p?.loadCaps?.perDay != null ? `${p.loadCaps.perDay} a day` : null, p?.loadCaps?.perWeek != null ? `${p.loadCaps.perWeek} a week` : null].filter(Boolean).join(' · ')} />
+        )}
       </View>
 
-      {profile ? (
-        <>
-          {/* Suspension Alert Box (Settled Decision D4/D5) */}
-          {isSuspended && (
-            <Banner tone="danger" title="Account under active suspension" reference="SUSPENDED · ACTION RESTRICTED">
-              <View style={styles.suspensionBody}>
-                <Body size="sm" tone="danger">
-                  Your interviewer account has been temporarily restricted due to consecutive overdue scorecards or
-                  candidate complaints. While suspended:
-                </Body>
-                <View style={styles.bulletList}>
-                  <Body size="xs" tone="danger">• You cannot accept or conduct new interviews.</Body>
-                  <Body size="xs" tone="danger">• Payout withdrawals are temporarily frozen.</Body>
-                  <Body size="xs" tone="danger">• You can still complete owed scorecards and view your ledger.</Body>
-                </View>
-                <Body size="xs" tone="danger" style={styles.appealText}>
-                  To appeal your suspension, contact platform governance at compliance@apostrophe.jobs.
-                </Body>
+      {fees.length > 0 && (
+        <IvCard>
+          <IvLabel>YOUR FEE PER INTERVIEW</IvLabel>
+          <View style={styles.fees}>
+            {fees.map((t) => (
+              <View key={t} style={styles.fee}>
+                <Text style={[text.metaSm, styles.muted, styles.mono]}>{t}</Text>
+                <Text style={[text.metaXl, styles.fig]}>{formatPaise(p!.feePaise![t]!)}</Text>
               </View>
-            </Banner>
-          )}
-
-          {/* Profile Overview */}
-          <Card style={styles.profileCard}>
-            <View style={styles.profileHeader}>
-              <View style={styles.avatar}>
-                <Display level="xs">{(profile?.name || 'I').slice(0, 1).toUpperCase()}</Display>
-              </View>
-              <View style={styles.grow}>
-                <Display level="xs">{profile?.name || 'Interviewer'}</Display>
-                <Body size="xs" tone="muted">{profile?.email || ''}</Body>
-                <Meta style={styles.phone}>{profile?.phone || ''}</Meta>
-              </View>
-              <StatusPill tone={isSuspended ? 'danger' : 'success'} label={profile?.status || 'ACTIVE'} />
-            </View>
-
-            {!!profile?.bio && (
-              <>
-                <Divider />
-                <Body size="sm">{profile.bio}</Body>
-              </>
-            )}
-          </Card>
-
-          {/* Quality Metrics & Tier Access */}
-          <Card style={styles.metricsCard}>
-            <Eyebrow>Performance & Evaluation Tier</Eyebrow>
-            <View style={styles.metricRow}>
-              <View style={styles.metricBox}>
-                <Eyebrow>Quality Score</Eyebrow>
-                <Display level="xs">
-                  {profile?.qualityScore ? profile.qualityScore.toFixed(1) : '5.0'} / 5.0
-                </Display>
-              </View>
-              <View style={styles.metricBox}>
-                <Eyebrow>Total Sessions</Eyebrow>
-                <Display level="xs">{profile?.totalInterviews ?? 0}</Display>
-              </View>
-              <View style={styles.metricBox}>
-                <Eyebrow>Reliability</Eyebrow>
-                <Display level="xs" style={styles.reliabilityValue}>99.2%</Display>
-              </View>
-            </View>
-
-            <View style={styles.tierAccessBox}>
-              <Body size="xs" weight="medium" tone="muted">Permitted Evaluation Tiers:</Body>
-              <View style={styles.tierPillsRow}>
-                {profile?.permittedTiers?.map((tier) => (
-                  <Tag key={tier} label={tier.replace('_', ' ')} />
-                )) || <Tag label="TIER 1" />}
-              </View>
-            </View>
-          </Card>
-
-          {/* Account Actions & Shortcuts */}
-          <Card>
-            <ObjectRow
-              title="Notifications & System Alerts"
-              status={<RowChevron />}
-              onPress={() => navigation.navigate('InterviewerNotifications')}
-            />
-            <ObjectRow
-              title="Candidate Support Conversations"
-              status={<RowChevron />}
-              onPress={() => navigation.navigate('InterviewerChats')}
-            />
-            <ObjectRow
-              title="Change Password"
-              status={<RowChevron />}
-              onPress={() => navigation.navigate('InterviewerPassword', { email: profile?.email })}
-            />
-            <ObjectRow
-              title="Sign Out"
-              status={<RowChevron danger />}
-              onPress={handleSignOut}
-              last
-            />
-          </Card>
-        </>
-      ) : error ? (
-        <ErrorState
-          title="We could not load your account."
-          body={error.message}
-          action={<Button variant="outline" size="sm" label="Try again" onPress={() => refresh()} />}
-        />
-      ) : (
-        <Skeleton lines={4} />
+            ))}
+          </View>
+        </IvCard>
       )}
+
+      {!!s && (
+        <>
+          <IvLabel style={styles.section}>{`LAST ${s.windowDays} DAYS`}</IvLabel>
+          <View style={styles.row}>
+            <IvStat k="CONDUCTED" v={String(s.conducted)} />
+            <IvStat k="COMPLETION" v={pct(s.completionPct)} tone={s.completionPct != null ? 'success' : 'ink'} />
+          </View>
+          <View style={styles.row}>
+            <IvStat k="ON-TIME" v={pct(s.onTimeScorecardPct)} tone={s.onTimeScorecardPct != null ? 'success' : 'ink'} />
+            {s.assigned > 0 && q ? <IvStat k="NO-SHOWS" v={String(q.noShows)} /> : <View style={styles.flex} />}
+          </View>
+        </>
+      )}
+
+      <View style={styles.links}>
+        {links.map((l) => (
+          <Pressable key={l.label} accessibilityRole="button" onPress={l.onPress} style={({ pressed }) => [styles.link, pressed && styles.pressed]}>
+            <View style={styles.linkIcon}><Icon name={l.icon} size={space.lg + 2} tint={color.textSecondary} /></View>
+            <View style={styles.grow}>
+              <Text style={text.uiMdSemi}>{l.label}</Text>
+              {!!l.sub && <Text style={[text.uiXs, styles.muted]}>{l.sub}</Text>}
+            </View>
+            <Icon name="chevR" size={space.lg} tint={color.textSubtle} />
+          </Pressable>
+        ))}
+      </View>
+
+      <Button variant="outline" size="cta" icon="out" label="Sign out" busy={signingOut} onPress={() => { signOut() }} />
     </InterviewerShell>
   )
 }
 
+function Fact({ k, v }: { k: string; v: string }) {
+  return (
+    <View style={styles.fact}>
+      <Text style={[text.metaSm, styles.muted, styles.mono]}>{k}</Text>
+      <Text style={text.uiBase}>{v}</Text>
+    </View>
+  )
+}
+
 const styles = StyleSheet.create({
-  header: {
-    gap: space['2xs'],
-  },
-  grow: {
-    flex: 1,
-  },
-  suspensionBody: {
-    gap: space.xs,
-  },
-  bulletList: {
-    gap: space['2xs'],
-  },
-  appealText: {
-    fontStyle: 'italic',
-  },
-  profileCard: {
-    padding: space.md,
-    gap: space.sm,
-  },
-  profileHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.sm,
-  },
-  avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: radius.pill,
-    backgroundColor: color.surfaceSubtle,
-    borderWidth: borderWidth.thin,
-    borderColor: color.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  phone: {
-    color: color.textSubtle,
-  },
-  metricsCard: {
-    padding: space.md,
-    gap: space.md,
-  },
-  metricRow: {
-    flexDirection: 'row',
-    backgroundColor: color.surfaceSubtle,
-    borderRadius: radius.sm,
-    padding: space.sm,
-  },
-  metricBox: {
-    flex: 1,
-    alignItems: 'center',
-    gap: space['2xs'],
-  },
-  reliabilityValue: {
-    color: color.success,
-  },
-  tierAccessBox: {
-    gap: space.xs,
-  },
-  tierPillsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: space.xs,
-  },
+  grow: { flex: 1, minWidth: 0, gap: spaceHalf['1.5'] },
+  flex: { flex: 1 },
+  pressed: { opacity: opacity.pressed },
+  muted: { color: color.textMuted },
+  danger: { color: color.danger },
+  onInk: { color: color.textInverse },
+  mono: { letterSpacing: trackingNative.eyebrow },
+  fig: { letterSpacing: 0 },
+  head: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  disc: { width: height['control-lg'], height: height['control-lg'], borderRadius: radius.pill, backgroundColor: color.inkRaised, alignItems: 'center', justifyContent: 'center' },
+  fact: { gap: space['2xs'] + 1, paddingVertical: spaceHalf['2.5'], borderBottomWidth: borderWidth.thin, borderBottomColor: color.border },
+  fees: { flexDirection: 'row', flexWrap: 'wrap', gap: space.lg },
+  fee: { gap: space['2xs'] },
+  section: { marginTop: space.xs },
+  row: { flexDirection: 'row', gap: space.sm },
+  links: { gap: space.sm },
+  link: { flexDirection: 'row', alignItems: 'center', gap: space.md, borderRadius: radius.panel, backgroundColor: color.surface, borderWidth: borderWidth.thin, borderColor: color.border, paddingVertical: space.md, paddingHorizontal: spaceHalf['3.5'] },
+  linkIcon: { width: height.avatar, height: height.avatar, borderRadius: radius.tile, backgroundColor: color.surfaceMuted, alignItems: 'center', justifyContent: 'center' },
 })
