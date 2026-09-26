@@ -49,6 +49,11 @@ export interface EmployerConnectionRow {
   threadId: string | null
   interviewedAt: string | null
   counterparty: { id: string; name: string | null; industry: string | null }
+  /**
+   * The candidate's contact details, shared once connected (EM-24). The API does not send them today;
+   * a row shows them only when it does, and never asks for them separately.
+   */
+  contact?: { email?: string | null; mobile?: string | null } | null
 }
 
 export const getEmployerConnections = (
@@ -147,3 +152,9 @@ export const reportEmployerMessage = (
   note?: string,
 ) =>
   api.post<{ id: string }>('/me/reports', { target: 'MESSAGE', threadId, messageId, reason, note })
+
+// ── Support (EM-27, EM-25) ────────────────────────────────────────────────────
+
+/** Opens (creating on first use) the caller's one support conversation and returns its thread id. */
+export const openEmployerSupport = () =>
+  api.get<{ threadId: string }>('/me/support', { query: { limit: 1 } })

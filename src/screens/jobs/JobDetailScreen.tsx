@@ -1,12 +1,13 @@
 import React from 'react'
-import { ScrollView, StyleSheet, View } from 'react-native'
+import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, ApiClientError } from '../../lib/api'
 import { swipeJob, type JobDetail } from '../../lib/api/jobs'
-import { applicationMark, dateLine, deadlineLine, employmentLabel, experienceLine, locationLine, salaryRange } from '../../lib/jobs/format'
-import { color, space, radius, borderWidth } from '../../theme'
-import { AppBar, Banner, Body, Button, Display, Eyebrow, Figure, Meta, StatusPill } from '../../components/ui'
+import { applicationMark, dateLine, deadlineLine, salaryRange } from '../../lib/jobs/format'
+import { color, space, spaceHalf, radius } from '../../theme'
+import { Banner, Button, Card, Skeleton, ScreenHeader, StatusPill, StickyFooter, text } from '../../components/ui'
+import { JobBullets, JobCompany, JobFacts, JobProse, JobSkills, JobVideo } from './jobParts'
 
 /**
  * ST-36 — the full post. One crimson Apply is the only primary; Save is
@@ -21,8 +22,8 @@ export function JobDetailScreen({ id, onBack, onApply, onApplications }: {
   const q = useQuery({ queryKey: ['job', id], queryFn: () => api.get<JobDetail>(`/students/me/jobs/${id}`) })
   const save = useMutation({ mutationFn: () => swipeJob(id, 'RIGHT'), onSuccess: () => qc.invalidateQueries({ queryKey: ['job', id] }) })
 
-  const frame = (c: React.ReactNode) => <View style={[styles.page, { paddingTop: insets.top }]}><AppBar title="Jobs" onBack={onBack} />{c}</View>
-  if (q.isPending) return frame(<View style={styles.centre}><Meta style={{ color: color.textMuted }}>LOADING…</Meta></View>)
+  const frame = (c: React.ReactNode) => <View style={[styles.page, { paddingTop: insets.top }]}><ScreenHeader title="Job" onBack={onBack} />{c}</View>
+  if (q.isPending) return frame(<View style={styles.body}><Skeleton lines={4} /></View>)
   if (q.isError) {
     const closed = q.error instanceof ApiClientError && q.error.code === 'CONFLICT'
     return frame(<View style={{ padding: space.xl }}><Banner tone={closed ? 'warning' : 'danger'}>{closed ? 'Applications for this job have closed.' : 'This job is no longer available.'}</Banner></View>)
@@ -36,90 +37,65 @@ export function JobDetailScreen({ id, onBack, onApply, onApplications }: {
 
   return (
     <View style={[styles.page, { paddingTop: insets.top }]}>
-      <AppBar title="Jobs" onBack={onBack} />
-      <ScrollView contentContainerStyle={styles.body}>
-        {job.video?.url ? <View style={styles.video} /> : null}
-        <View style={{ gap: space.xs }}>
-          <Display level="lg">{job.title}</Display>
-          <Display level="sm" style={{ color: color.textMuted }}>{job.company.name}</Display>
+      <ScreenHeader title="Job" onBack={onBack} />
+      <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
+        <View style={styles.head}>
+          <Text style={text.displayHeading}>{job.title}</Text>
+          <Text style={[text.uiBase, styles.muted]}>{job.company.name}</Text>
+          {salary ? <Text style={text.displaySm}>{salary}</Text> : null}
         </View>
-        {salary ? <Figure value={salary} /> : null}
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.lg }}>
-          <KV k="Location" v={locationLine(job.location, job.remote)} />
-          <KV k="Type" v={employmentLabel(job.employmentType)} />
-          <KV k="Experience" v={experienceLine(job.experience)} />
-          {deadline ? <KV k="Deadline" v={deadline} /> : null}
-        </View>
+        {job.video?.url ? <JobVideo url={job.video.url} /> : null}
+        <JobFacts job={job} />
 
         {applied ? (
-          <View style={styles.appliedCard}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
+          <Card style={styles.appliedCard}>
+            <View style={styles.appliedRow}>
               <StatusPill tone={applicationMark(applied.status).tone} label={applicationMark(applied.status).label} />
-              <Meta style={{ color: color.textSubtle }}>Applied {dateLine(applied.appliedAt)}</Meta>
+              <Text style={[text.uiXs, styles.muted]}>Applied {dateLine(applied.appliedAt)}</Text>
             </View>
             <Button variant="text" size="md" label="Track it" onPress={onApplications} />
-          </View>
+          </Card>
         ) : null}
 
-        <Prose title="About the role" body={job.description} />
-        <Bullets title="What you will do" items={job.responsibilities} />
-        <Bullets title="What we are looking for" items={job.requirements} />
-        <Bullets title="What you get" items={job.benefits} />
-        {job.skills.length > 0 && (
-          <View style={{ gap: space.sm }}>
-            <Eyebrow>Skills</Eyebrow>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>{job.skills.map((s) => <View key={s} style={styles.skill}><Body size="xs" tone="muted">{s}</Body></View>)}</View>
-          </View>
-        )}
+        <JobProse title="The role" body={job.description} />
+        <JobBullets title="What you’ll do" items={job.responsibilities} />
+        <JobBullets title="What they’re looking for" items={job.requirements} />
+        <JobBullets title="What you get" items={job.benefits} />
+        <JobSkills skills={job.skills} />
+        <JobCompany company={job.company} />
       </ScrollView>
 
       {!applied && (
-        <View style={[styles.foot, { paddingBottom: insets.bottom + space.lg }]}>
+        <StickyFooter>
           {open ? (
-            <View style={{ flexDirection: 'row', gap: space.md }}>
-              <Button variant="outline" size="block" full label={job.saved ? 'Saved' : 'Save'} disabled={save.isPending || job.saved} onPress={() => save.mutate()} />
-              <Button variant="primary" size="block" full label="Apply" onPress={() => onApply(job.id)} />
+            <View style={styles.footRow}>
+              <View style={styles.saveBtn}>
+                <Button variant="outline" size="lg" full label={job.saved ? 'Saved' : 'Save'} disabled={save.isPending || job.saved} onPress={() => save.mutate()} />
+              </View>
+              <View style={styles.grow}>
+                <Button variant="primary" size="lg" full label="Apply with video resume" onPress={() => onApply(job.id)} />
+              </View>
             </View>
           ) : (
             <>
-              <Button variant="primary" size="block" full disabled label="Apply" />
-              <Meta style={{ color: color.textSubtle, marginTop: space.sm }}>Applications for this job have closed.</Meta>
+              <Button variant="primary" size="lg" full disabled label="Apply" />
+              <Text style={[text.uiXs, styles.muted]}>Applications for this job have closed.</Text>
             </>
           )}
-        </View>
+        </StickyFooter>
       )}
     </View>
   )
 }
 
-function KV({ k, v }: { k: string; v: string }) {
-  return <View style={{ gap: 2 }}><Eyebrow>{k}</Eyebrow><Body size="sm">{v}</Body></View>
-}
-function Prose({ title, body }: { title: string; body?: string }) {
-  if (!body) return null
-  return <View style={{ gap: space.sm }}><Eyebrow>{title}</Eyebrow><Body size="sm" tone="muted">{body}</Body></View>
-}
-function Bullets({ title, items }: { title: string; items: string[] }) {
-  if (!items || items.length === 0) return null
-  return (
-    <View style={{ gap: space.sm }}>
-      <Eyebrow>{title}</Eyebrow>
-      {items.map((it) => (
-        <View key={it} style={{ flexDirection: 'row', gap: space.sm }}>
-          <View style={styles.dot} /><Body size="sm" style={{ flex: 1 }}>{it}</Body>
-        </View>
-      ))}
-    </View>
-  )
-}
-
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: color.surface },
-  centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  body: { padding: space.xl, gap: space.lg, paddingBottom: space['4xl'] },
-  video: { aspectRatio: 9 / 16, maxHeight: 340, borderRadius: radius.md, backgroundColor: color.ink },
-  appliedCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderRadius: radius.md, backgroundColor: color.surfaceMuted, padding: space.md },
-  skill: { borderRadius: radius.sm, backgroundColor: color.surfaceMuted, paddingHorizontal: space.sm, paddingVertical: space.xs },
-  dot: { width: 4, height: 4, borderRadius: 999, backgroundColor: color.borderStrong, marginTop: 8 },
-  foot: { borderTopWidth: borderWidth.thin, borderTopColor: color.border, paddingHorizontal: space.xl, paddingTop: space.md },
+  page: { flex: 1, backgroundColor: color.background },
+  body: { paddingHorizontal: space.lg, paddingTop: space.xs, gap: space.lg, paddingBottom: space.xl },
+  head: { gap: space.xs },
+  muted: { color: color.textMuted },
+  grow: { flex: 1 },
+  appliedCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 0, borderRadius: radius.tile, backgroundColor: color.surfaceMuted, padding: space.md },
+  appliedRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  footRow: { flexDirection: 'row', gap: spaceHalf['2.5'] },
+  saveBtn: { width: '30%' },
 })

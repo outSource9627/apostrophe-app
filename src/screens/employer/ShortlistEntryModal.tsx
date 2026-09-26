@@ -1,425 +1,187 @@
-import React, { useState } from 'react'
-import {
-  ActivityIndicator,
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native'
-import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native'
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { color, radius, space, fontFamilyNative } from '../../theme'
-import { EmployerShell } from '../../components/employer/EmployerShell'
-import {
-  updateShortlistEntry,
-  removeFromShortlist,
-  type ShortlistRow,
-  type EmployerJobRef,
-} from '../../lib/api/employerShortlist'
-import type { RootStackParamList } from '../../../App'
+import React, { useEffect, useState } from 'react'
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { borderWidth, color, height, opacity, radius, space, spaceHalf } from '../../theme'
+import { Button, Input, text } from '../../components/ui'
+import { Icon } from '../../components/ui/Icon'
+import { EmLabel, EmRadioRow, EmSheet } from '../../components/employer/em'
+import { FeedFace } from '../../components/employer/feed'
+import { ApiClientError } from '../../lib/api'
+import { updateShortlistEntry, type EmployerJobRef, type ShortlistRow } from '../../lib/api/employerShortlist'
+import { tierLine } from '../../lib/employer/candidateFormat'
+import { useShortlistConfig } from '../../lib/employer/useShortlistConfig'
 
-export function ShortlistEntryModal() {
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
-  const route = useRoute<RouteProp<RootStackParamList, 'ShortlistEntry'>>()
-  const { row, jobs } = route.params
+export interface ShortlistEntryUpdate {
+  id: string
+  notes: string | null
+  tags: string[]
+  jobId: string | null
+}
 
-  const [notes, setNotes] = useState(row.notes || '')
-  const [tags, setTags] = useState<string[]>(row.tags || [])
-  const [newTag, setNewTag] = useState('')
-  const [selectedJobId, setSelectedJobId] = useState<string>(row.job?.id || '')
+/**
+ * EM-15 · Notes, tags and job — a sheet over the shortlist. The private note,
+ * the company's tags (tap to toggle, or add a new one), and the one job post the
+ * candidate is linked to. Private to the company; the candidate never sees it.
+ * Limits are the server's (note length, tag count, tag length).
+ */
+export function ShortlistEntrySheet({
+  open, row, knownTags, jobs, onClose, onSaved,
+}: {
+  open: boolean
+  row: ShortlistRow | null
+  /** Every tag the company already uses, offered as chips. */
+  knownTags: string[]
+  /** The linkable jobs (live or paused). */
+  jobs: EmployerJobRef[]
+  onClose: () => void
+  onSaved: (u: ShortlistEntryUpdate) => void
+}) {
+  const insets = useSafeAreaInsets()
+  const cfg = useShortlistConfig()
+  const [notes, setNotes] = useState('')
+  const [tags, setTags] = useState<string[]>([])
+  const [jobId, setJobId] = useState<string | null>(null)
+  const [adding, setAdding] = useState(false)
+  const [draftTag, setDraftTag] = useState('')
   const [saving, setSaving] = useState(false)
-  const [removing, setRemoving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const handleAddTag = () => {
-    const trimmed = newTag.trim().toLowerCase()
-    if (!trimmed) return
-    if (tags.length >= 20) {
-      setError('Maximum 20 tags permitted.')
-      return
-    }
-    if (trimmed.length > 40) {
-      setError('Tag cannot exceed 40 characters.')
-      return
-    }
-    if (!tags.some((t) => t.toLowerCase() === trimmed)) {
-      setTags([...tags, newTag.trim()])
-    }
-    setNewTag('')
-    setError(null)
-  }
-
-  const handleRemoveTag = (tag: string) => {
-    setTags(tags.filter((t) => t !== tag))
-  }
-
-  const handleSave = async () => {
-    try {
-      setSaving(true)
+  useEffect(() => {
+    if (open && row) {
+      setNotes(row.notes ?? '')
+      setTags(row.tags ?? [])
+      setJobId(row.jobId)
+      setAdding(false)
+      setDraftTag('')
       setError(null)
-      await updateShortlistEntry(row.id, {
-        notes: notes.trim() || undefined,
-        tags,
-        jobId: selectedJobId ? selectedJobId : null,
-      })
-      navigation.goBack()
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to update shortlist entry.')
+    }
+  }, [open, row])
+
+  if (!row) return null
+
+  const offered = [...new Map([...knownTags, ...tags].map((t) => [t.toLowerCase(), t])).values()].sort((a, b) => a.localeCompare(b))
+  const has = (t: string) => tags.some((x) => x.toLowerCase() === t.toLowerCase())
+  const toggle = (t: string) => {
+    if (has(t)) setTags(tags.filter((x) => x.toLowerCase() !== t.toLowerCase()))
+    else if (tags.length >= cfg.tagsMax) setError(`Up to ${cfg.tagsMax} tags.`)
+    else setTags([...tags, t])
+  }
+  const addTag = () => {
+    const t = draftTag.trim().slice(0, cfg.tagMax)
+    setAdding(false)
+    setDraftTag('')
+    if (t && !has(t)) toggle(t)
+  }
+
+  async function save() {
+    if (!row) return
+    setSaving(true)
+    setError(null)
+    try {
+      const res = await updateShortlistEntry(row.id, { notes: notes.trim(), tags, jobId })
+      onSaved({ id: row.id, notes: res.notes, tags: res.tags, jobId: res.jobId })
+      onClose()
+    } catch (e) {
+      setError(e instanceof ApiClientError ? e.message : 'Not saved. Check your connection and try again.')
     } finally {
       setSaving(false)
     }
   }
 
-  const handleRemove = () => {
-    Alert.alert(
-      'Remove from shortlist',
-      `Are you sure you want to remove ${row.name} from your shortlist?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              setRemoving(true)
-              await removeFromShortlist(row.id)
-              navigation.goBack()
-            } catch (err: unknown) {
-              setError(err instanceof Error ? err.message : 'Failed to remove from shortlist.')
-            } finally {
-              setRemoving(false)
-            }
-          },
-        },
-      ],
-    )
-  }
+  // A job linked earlier and since closed is still shown, so saving does not silently unlink it.
+  const linked = row.jobId && !jobs.some((j) => j.id === row.jobId) ? [{ id: row.jobId, title: 'The job linked earlier (closed)' }] : []
 
   return (
-    <EmployerShell
-      back={{ label: 'SHORTLIST', onPress: () => navigation.goBack() }}
-      footer={
-        <View style={styles.footRow}>
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={handleSave}
-            disabled={saving || removing}
-            style={[styles.saveBtn, (saving || removing) && styles.btnDisabled]}
-          >
-            {saving ? (
-              <ActivityIndicator color={color.textInverse} size="small" />
-            ) : (
-              <Text style={styles.saveBtnText}>Save changes</Text>
-            )}
-          </TouchableOpacity>
+    <EmSheet
+      open={open}
+      onClose={onClose}
+      tall
+      title="Notes, tags and job"
+      sub="Private to your company."
+      foot={
+        <View style={[styles.foot, { paddingBottom: space.md + insets.bottom }]}>
+          {!!error && <Text style={[text.uiSm, styles.danger]}>{error}</Text>}
+          <Button variant="secondary" size="lg" full label="Save" busy={saving} onPress={() => { save() }} />
         </View>
       }
     >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Candidate Info Header */}
-        <View style={styles.header}>
-          <View style={styles.headerInfo}>
-            <Text style={styles.name}>{row.name}</Text>
-            <Text style={styles.subtitle}>
-              {row.available
-                ? [row.candidate?.qualification, row.candidate?.city].filter(Boolean).join(' · ')
-                : 'Profile unavailable'}
-            </Text>
-          </View>
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={handleRemove}
-            disabled={removing}
-            style={styles.removeBtn}
-          >
-            <Text style={styles.removeBtnText}>Remove</Text>
-          </TouchableOpacity>
+      <View style={styles.cand}>
+        <FeedFace name={row.name} photo={row.photoUrl} size={height.tap} />
+        <View style={styles.grow}>
+          <Text style={text.uiBaseSemi} numberOfLines={1}>{row.name}</Text>
+          <Text style={[text.uiXs, styles.muted]} numberOfLines={1}>{[tierLine(row.tier, row.qualification), row.city].filter(Boolean).join(' · ')}</Text>
         </View>
+        {row.verifiedInterview.verified && <Icon name="shield" size={spaceHalf['4.5']} tint={color.successFill} weight={2} />}
+      </View>
 
-        {error && (
-          <View style={styles.errorBox}>
-            <Text style={styles.errorText}>{error}</Text>
-          </View>
-        )}
+      <View style={styles.field}>
+        <EmLabel hint={`${notes.length} / ${cfg.noteMax}`}>Private note</EmLabel>
+        <Input value={notes} onChangeText={setNotes} maxLength={cfg.noteMax} multiline textAlignVertical="top" placeholder="What stood out…" style={styles.area} />
+      </View>
 
-        {/* Private Notes Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>PRIVATE NOTES</Text>
-            <Text style={styles.counter}>{notes.length}/2000</Text>
-          </View>
-          <TextInput
-            value={notes}
-            onChangeText={setNotes}
-            maxLength={2000}
-            multiline
-            numberOfLines={4}
-            placeholder="Add private evaluation notes or interview remarks…"
-            placeholderTextColor={color.textMuted}
-            style={styles.textArea}
-          />
-          {row.notesUpdatedAt && (
-            <Text style={styles.editedDate}>
-              Last edited {new Date(row.notesUpdatedAt).toLocaleDateString('en-IN', { dateStyle: 'medium' })}
-            </Text>
+      <View style={styles.field}>
+        <EmLabel>Tags</EmLabel>
+        <View style={styles.tags}>
+          {offered.map((t) => (
+            <Pressable
+              key={t}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: has(t) }}
+              onPress={() => toggle(t)}
+              style={({ pressed }) => [styles.tag, has(t) ? styles.tagOn : styles.tagOff, pressed && styles.pressed]}
+            >
+              <Icon name="tag" size={space.md + 1} tint={has(t) ? color.accentText : color.textSecondary} weight={2} />
+              <Text style={[text.uiSmMedium, { color: has(t) ? color.accentText : color.textSecondary }]}>{t}</Text>
+            </Pressable>
+          ))}
+          {adding ? (
+            <View style={[styles.tag, styles.tagNew]}>
+              <TextInput
+                autoFocus
+                value={draftTag}
+                onChangeText={setDraftTag}
+                onSubmitEditing={addTag}
+                onBlur={addTag}
+                maxLength={cfg.tagMax}
+                placeholder="Tag name"
+                placeholderTextColor={color.textSubtle}
+                returnKeyType="done"
+                style={[text.uiSmMedium, styles.tagInput]}
+              />
+            </View>
+          ) : (
+            <Pressable accessibilityRole="button" onPress={() => setAdding(true)} style={({ pressed }) => [styles.tag, styles.tagNew, pressed && styles.pressed]}>
+              <Icon name="plus" size={space.md + 1} tint={color.textMuted} weight={2} />
+              <Text style={[text.uiSmMedium, styles.muted]}>New tag</Text>
+            </Pressable>
           )}
         </View>
+      </View>
 
-        {/* Tags Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>TAGS ({tags.length}/20)</Text>
-          </View>
-          <View style={styles.tagWrap}>
-            {tags.map((t) => (
-              <View key={t} style={styles.tagPill}>
-                <Text style={styles.tagPillText}>#{t}</Text>
-                <TouchableOpacity onPress={() => handleRemoveTag(t)}>
-                  <Text style={styles.tagPillClose}>✕</Text>
-                </TouchableOpacity>
-              </View>
-            ))}
-            {tags.length === 0 && (
-              <Text style={styles.emptyNotice}>No tags assigned yet.</Text>
-            )}
-          </View>
-          <View style={styles.tagInputRow}>
-            <TextInput
-              value={newTag}
-              onChangeText={setNewTag}
-              onSubmitEditing={handleAddTag}
-              placeholder="Add tag (e.g. backend, priority)…"
-              placeholderTextColor={color.textMuted}
-              maxLength={40}
-              style={styles.tagInput}
-            />
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={handleAddTag}
-              style={styles.addTagBtn}
-            >
-              <Text style={styles.addTagBtnText}>Add</Text>
-            </TouchableOpacity>
-          </View>
+      {(jobs.length > 0 || linked.length > 0) && (
+        <View style={styles.field} accessibilityRole="radiogroup" accessibilityLabel="Link to a job post">
+          <EmLabel hint="optional">Link to a job post</EmLabel>
+          {[...jobs, ...linked].map((j) => <EmRadioRow key={j.id} label={j.title} on={jobId === j.id} onPress={() => setJobId(j.id)} />)}
+          <EmRadioRow label="Not linked" on={!jobId} onPress={() => setJobId(null)} />
         </View>
-
-        {/* Job Association Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>LINK TO JOB OPENING</Text>
-          <View style={styles.jobList}>
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => setSelectedJobId('')}
-              style={[styles.jobOption, !selectedJobId && styles.jobOptionActive]}
-            >
-              <Text style={[styles.jobOptionText, !selectedJobId && styles.jobOptionTextActive]}>
-                No job linked
-              </Text>
-            </TouchableOpacity>
-            {jobs.map((job) => {
-              const active = selectedJobId === job.id
-              return (
-                <TouchableOpacity
-                  key={job.id}
-                  activeOpacity={0.8}
-                  onPress={() => setSelectedJobId(job.id)}
-                  style={[styles.jobOption, active && styles.jobOptionActive]}
-                >
-                  <Text style={[styles.jobOptionText, active && styles.jobOptionTextActive]}>
-                    {job.title} ({job.location || 'Remote'})
-                  </Text>
-                </TouchableOpacity>
-              )
-            })}
-          </View>
-        </View>
-      </ScrollView>
-    </EmployerShell>
+      )}
+    </EmSheet>
   )
 }
 
 const styles = StyleSheet.create({
-  scrollContent: {
-    paddingHorizontal: space.sm,
-    paddingBottom: space.xl,
-    gap: space.md,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    borderBottomWidth: 1,
-    borderBottomColor: color.border,
-    paddingBottom: space.sm,
-  },
-  headerInfo: {
-    flex: 1,
-    gap: 2,
-  },
-  name: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: 20,
-    color: color.text,
-  },
-  subtitle: {
-    fontSize: 13,
-    color: color.textMuted,
-  },
-  removeBtn: {
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-  },
-  removeBtnText: {
-    fontSize: 13,
-    color: color.danger,
-    fontWeight: '500',
-  },
-  errorBox: {
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    borderRadius: radius.md,
-    padding: space.sm,
-  },
-  errorText: {
-    fontSize: 12,
-    color: color.danger,
-  },
-  section: {
-    gap: space.xs,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  sectionTitle: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 10,
-    letterSpacing: 1,
-    color: color.textSubtle,
-  },
-  counter: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 10,
-    color: color.textMuted,
-  },
-  textArea: {
-    backgroundColor: color.surface,
-    borderWidth: 1,
-    borderColor: color.border,
-    borderRadius: radius.md,
-    padding: space.sm,
-    fontSize: 14,
-    color: color.text,
-    minHeight: 100,
-    textAlignVertical: 'top',
-  },
-  editedDate: {
-    fontSize: 11,
-    color: color.textMuted,
-    marginTop: 2,
-  },
-  tagWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-    marginVertical: 4,
-  },
-  tagPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: color.surfaceMuted,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  tagPillText: {
-    fontSize: 12,
-    color: color.text,
-    fontWeight: '500',
-  },
-  tagPillClose: {
-    fontSize: 10,
-    color: color.textSubtle,
-    marginLeft: 2,
-  },
-  emptyNotice: {
-    fontSize: 12,
-    color: color.textMuted,
-    fontStyle: 'italic',
-  },
-  tagInputRow: {
-    flexDirection: 'row',
-    gap: 6,
-  },
-  tagInput: {
-    flex: 1,
-    backgroundColor: color.surface,
-    borderWidth: 1,
-    borderColor: color.border,
-    borderRadius: radius.md,
-    paddingHorizontal: space.sm,
-    paddingVertical: 6,
-    fontSize: 13,
-    color: color.text,
-  },
-  addTagBtn: {
-    backgroundColor: color.surfaceMuted,
-    borderWidth: 1,
-    borderColor: color.border,
-    borderRadius: radius.md,
-    paddingHorizontal: space.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  addTagBtnText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: color.text,
-  },
-  jobList: {
-    gap: 6,
-    marginTop: 4,
-  },
-  jobOption: {
-    backgroundColor: color.surface,
-    borderWidth: 1,
-    borderColor: color.border,
-    borderRadius: radius.md,
-    padding: space.sm,
-  },
-  jobOptionActive: {
-    borderColor: color.text,
-    backgroundColor: color.surfaceMuted,
-  },
-  jobOptionText: {
-    fontSize: 13,
-    color: color.textMuted,
-  },
-  jobOptionTextActive: {
-    color: color.text,
-    fontWeight: '600',
-  },
-  footRow: {
-    paddingHorizontal: space.sm,
-    paddingVertical: space.xs,
-  },
-  saveBtn: {
-    backgroundColor: color.text,
-    borderRadius: radius.lg,
-    paddingVertical: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  saveBtnText: {
-    color: color.textInverse,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  btnDisabled: {
-    opacity: 0.6,
-  },
+  grow: { flex: 1, minWidth: 0 },
+  pressed: { opacity: opacity.pressed },
+  muted: { color: color.textMuted },
+  danger: { color: color.danger },
+  cand: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.md, borderRadius: radius.panel, borderWidth: borderWidth.thin, borderColor: color.border },
+  field: { gap: space.sm },
+  area: { height: height['note-field'] + spaceHalf['4.5'], paddingTop: space.md },
+  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: spaceHalf['1.5'] },
+  tag: { height: height.chip + 2, paddingHorizontal: space.md, borderRadius: radius.pill, flexDirection: 'row', alignItems: 'center', gap: spaceHalf['1.5'] },
+  tagOn: { borderWidth: borderWidth.medium, borderColor: color.accent, backgroundColor: color.accentSoft },
+  tagOff: { borderWidth: borderWidth.thin, borderColor: color.borderStrong, backgroundColor: color.surface },
+  tagNew: { borderWidth: borderWidth.medium, borderStyle: 'dashed', borderColor: color.borderStrong },
+  tagInput: { minWidth: height['count-chip'] * 3, paddingVertical: 0, color: color.text },
+  foot: { paddingHorizontal: space.lg, paddingTop: space.md, gap: space.sm, borderTopWidth: borderWidth.thin, borderTopColor: color.border, backgroundColor: color.surface },
 })

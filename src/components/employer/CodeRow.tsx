@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react'
 import { StyleSheet, Text, View, type TextInput } from 'react-native'
-import { color, fontFamilyNative, height, radius, space } from '../../theme'
-import { Body, Card, Eyebrow, OtpInput, StatusPill, text } from '../ui'
+import { color, space, spaceHalf, trackingNative } from '../../theme'
+import { OtpInput, text } from '../ui'
+import { Icon } from '../ui/Icon'
+import { EmBadge, EmCard } from './em'
 import { formatCountdown } from '../../lib/employer/state'
-import { Glyph, TextAction } from './parts'
+import { TextAction } from './parts'
 
 /**
  * EM-03 · one channel's code. Two of these sit on the verify screen, one for
@@ -56,70 +58,62 @@ export function CodeRow({
 
   if (confirmed) {
     return (
-      <Card style={styles.done} accessible accessibilityLabel={`${label} confirmed: ${value}`}>
-        <View style={styles.tick}>
-          <Glyph name="check" size={space.lg} tint={color.success} />
+      <EmCard>
+        <View style={styles.head}>
+          <View style={styles.grow}>
+            <Text style={text.uiBaseSemi}>{label}</Text>
+            <Text style={[text.uiSm, styles.muted]}>{value}</Text>
+          </View>
+          <EmBadge label="Verified" tone="green" icon="check" small />
         </View>
-        <View style={styles.grow}>
-          <Body size="md" weight="semibold">
-            {label}
-          </Body>
-          <Body size="sm" tone="muted">
-            {value}
-          </Body>
-        </View>
-        <StatusPill tone="success" label="Confirmed" />
-      </Card>
+      </EmCard>
     )
   }
 
   const secondsLeft = resendAvailableAt == null ? 0 : Math.ceil((resendAvailableAt - now) / 1000)
 
   return (
-    <Card style={styles.card}>
-      <Eyebrow>{label}</Eyebrow>
-      <View style={styles.valueRow}>
-        <Text style={[text.uiBase, styles.value]}>{value}</Text>
-        {!!onEdit && <TextAction label="Edit" accessibilityLabel={`Edit ${label.toLowerCase()}`} onPress={onEdit} />}
+    <EmCard tone={error ? 'danger' : undefined}>
+      <View style={styles.head}>
+        <View style={styles.grow}>
+          <Text style={text.uiBaseSemi}>{label}</Text>
+          <Text style={[text.uiSm, styles.muted]}>{value}</Text>
+        </View>
+        {!inert && !!onResend && (secondsLeft > 0 ? (
+          <Text accessibilityRole="timer" style={[text.metaSm, styles.timer]}>{`RESEND ${formatCountdown(secondsLeft)}`}</Text>
+        ) : (
+          <TextAction
+            label={resending ? 'Sending…' : 'Resend'}
+            accessibilityLabel={`Resend the ${label.toLowerCase()} code`}
+            underline={false}
+            disabled={resending}
+            onPress={onResend}
+          />
+        ))}
       </View>
 
-      <View style={styles.cells}>
-        <OtpInput
-          value={code}
-          onChange={onChangeCode}
-          invalid={!!error}
-          inert={inert}
-          label={`${label} code`}
-          autoFocus={autoFocus}
-          inputRef={inputRef}
-        />
-      </View>
+      <OtpInput
+        value={code}
+        onChange={onChangeCode}
+        invalid={!!error}
+        inert={inert}
+        label={`${label} code`}
+        autoFocus={autoFocus}
+        inputRef={inputRef}
+      />
 
-      <View style={styles.foot}>
-        <Body
-          size={error || note ? 'sm' : 'xs'}
-          tone={error ? 'danger' : note ? 'muted' : 'subtle'}
-          style={styles.grow}
-          accessibilityLiveRegion={error ? 'assertive' : note ? 'polite' : 'none'}
-        >
-          {error || note || helper}
-        </Body>
-        {!inert &&
-          !!onResend &&
-          (secondsLeft > 0 ? (
-            <Text accessibilityRole="timer" style={[text.metaMd, styles.timer]}>
-              {`Resend in ${formatCountdown(secondsLeft)}`}
-            </Text>
-          ) : (
-            <TextAction
-              label={resending ? 'Sending…' : 'Resend code'}
-              accessibilityLabel={`Resend the ${label.toLowerCase()} code`}
-              disabled={resending}
-              onPress={onResend}
-            />
-          ))}
-      </View>
-    </Card>
+      {error ? (
+        <View style={styles.errorRow} accessibilityLiveRegion="assertive">
+          <Icon name="alert" size={space.lg - 1} tint={color.danger} weight={2} />
+          <Text style={[text.uiSm, styles.error]}>{error}</Text>
+        </View>
+      ) : (note || helper) ? (
+        <Text style={[text.uiXs, styles.muted]} accessibilityLiveRegion={note ? 'polite' : 'none'}>{note || helper}</Text>
+      ) : null}
+      {!!onEdit && (
+        <TextAction label="Wrong details? Edit them" underline={false} accessibilityLabel={`Edit ${label.toLowerCase()}`} onPress={onEdit} />
+      )}
+    </EmCard>
   )
 }
 
@@ -140,35 +134,10 @@ function useNow(until: number | null) {
 }
 
 const styles = StyleSheet.create({
-  grow: { flex: 1 },
-  card: { padding: space.lg },
-  valueRow: { marginTop: space['2xs'], flexDirection: 'row', alignItems: 'center', gap: space.md },
-  value: { flex: 1, fontFamily: fontFamilyNative.bodyMedium },
-  cells: { marginTop: space.xs },
-  foot: {
-    marginTop: space.sm,
-    minHeight: height.tap,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: space.md,
-  },
-  timer: { color: color.textSubtle },
-
-  done: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.md,
-    minHeight: height.tap,
-    paddingVertical: space.sm,
-    paddingHorizontal: space.lg,
-  },
-  tick: {
-    width: space['2xl'],
-    height: space['2xl'],
-    borderRadius: radius.pill,
-    backgroundColor: color.successSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  grow: { flex: 1, gap: space['2xs'] },
+  head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.md },
+  muted: { color: color.textMuted },
+  timer: { color: color.textMuted, letterSpacing: trackingNative.eyebrow },
+  errorRow: { flexDirection: 'row', alignItems: 'center', gap: spaceHalf['1.5'] },
+  error: { flex: 1, color: color.danger },
 })

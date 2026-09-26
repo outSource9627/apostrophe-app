@@ -2,17 +2,20 @@ import React, { useEffect } from 'react'
 import { AccessibilityInfo, StyleSheet, Text, View } from 'react-native'
 import { useNavigation, useNavigationState, useRoute } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { borderWidth, color, fontFamilyNative, height, leadingNative, radius, space } from '../../theme'
+import { borderWidth, color, fontFamilyNative, height, leadingNative, radius, space, spaceHalf, trackingNative } from '../../theme'
 import {
-  Body, Button, Card, Display, ErrorState, Eyebrow, Meta, Skeleton, StatusPill, text,
+  Body, Button, Card, Display, ErrorState, Eyebrow, Skeleton, StatusPill, text,
 } from '../../components/ui'
-import { DocumentStatusRow, EmployerShell, Glyph, VerifiedEmployerBadge } from '../../components/employer'
+import type { IconName } from '../../components/ui/Icon'
+import { DocumentStatusRow, DropZone, EmployerShell, Glyph } from '../../components/employer'
+import { EmBadge, EmCard, EmMono, EmSteps, EmWell, type EmTone } from '../../components/employer/em'
 import { useEmployer } from '../../lib/employer/useEmployer'
+import { useEmployerConfig } from '../../lib/employer/useEmployerConfig'
 import { ApiClientError, ErrorCode } from '../../lib/api'
 import type { DocKind, EmployerState, Requirement, RequirementKey } from '../../lib/api/employer'
 import {
-  DOC_KIND_LABEL, EMPLOYER_ROUTES, REQUIREMENT_TITLE, formatIst, formatIstShort, needsAction, requirementPill,
-  requirementTitle, statusRowOrder, type EmployerTone,
+  DOC_KIND_LABEL, EMPLOYER_ROUTES, REQUIREMENT_TITLE, formatIst, formatIstStep, needsAction, requirementKindLine, requirementPill,
+  requirementTimes, requirementTitle, statusRowOrder, type EmployerTone,
 } from '../../lib/employer/state'
 import type { RootStackParamList } from '../../../App'
 
@@ -27,28 +30,23 @@ export interface EmployerStatusScreenProps {
 }
 
 /**
- * EM-06 · Verification status, and EM-06 · Approved.
+ * EM-06 · Verification status: in review (06), more documents (06b), not
+ * approved (06c) and approved (06d), plus the one the design leaves out —
+ * nothing submitted yet.
  *
- * STATUS IS PER DOCUMENT, never one chip for the account. Each requirement is
- * its own DocumentStatusRow — pill, the document, its Asia/Kolkata stamps in
- * mono, the reviewer's words — and the rows that need the employer come first,
- * each with the one action that answers it. The first of those is the screen's
- * one crimson; any other is outline. The rows that passed stay passed.
+ * Each draws the design's badge, a 24 title and its body (the timeline, or the
+ * reviewer's words), with the one action in the foot. Under it, every document
+ * keeps its own row and badge: a refusal names the document, and what passed
+ * stays passed (the web's per-document rule).
  *
- * APPROVAL IS A MOMENT ON THIS SCREEN. The shell keeps reading the state while
- * the employer watches; when it turns verified the page redraws in place — the
- * serif headline, the Verified Employer badge, and Open the candidate feed —
- * with no sign-out and no sign-in wall. The shell's success band is not drawn
- * here: the moment is the news, and the band's absence is the flip.
- *
- * The web screen is apostrophe-user app/employers/verification/status; the
- * helpers exported at the foot of this file are its `_components/parts`, shared
- * by EM-04, EM-05 and EM-06 here as there.
+ * APPROVAL LANDS HERE. The shell keeps reading while the employer watches; when
+ * it turns verified the page redraws as 06d and says so aloud.
  */
 export function EmployerStatusScreen({ onBack, onResubmit, onFeed }: EmployerStatusScreenProps) {
   const { state, error, refresh, justVerified } = useEmployer()
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
   const back = useBack(onBack)
+  const targetHours = useEmployerConfig().verificationTargetHours
 
   // Said aloud when it lands while they watch: a redraw alone is silent to a screen reader.
   const company = state?.company.name
@@ -58,106 +56,172 @@ export function EmployerStatusScreen({ onBack, onResubmit, onFeed }: EmployerSta
 
   if (!state) {
     return (
-      <EmployerShell back={back}>
+      <EmployerShell back={back} title="Verification status">
         <EmployerLoadState error={error} onRetry={refresh} />
       </EmployerShell>
     )
   }
 
+  const v = state.verification
+  // The admin's target when the config carries it, else the state's own (the web's rule).
+  const hours = targetHours ?? v.slaHours
+  const target = v.submittedAt && targetHours ? new Date(Date.parse(v.submittedAt) + targetHours * 3_600_000).toISOString() : v.decisionTargetAt
   if (state.verified) {
+    const approvedAt = v.approvedAt ?? v.reviewedAt
     return (
-      <EmployerShell back={back}>
-        <ApprovedMoment state={state} onFeed={onFeed} />
+      <EmployerShell
+        back={back}
+        title="Verification status"
+        footer={<Button variant="primary" size="lg" full label="Open the candidate feed" onPress={onFeed} />}
+      >
+        <View accessibilityLiveRegion="polite" style={styles.lead}>
+          <EmBadge label="Verified employer" tone="green" icon="shield" />
+          <Text style={text.displayHeading}>{`${state.company.name} is verified.`}</Text>
+          <Text style={[text.uiMd, styles.muted]}>
+            {`${approvedAt ? `Approved ${formatIstDate(approvedAt)}. ` : ''}Candidates see the badge on every Interest and in chat.`}
+          </Text>
+        </View>
+        <DocumentList state={state} />
       </EmployerShell>
     )
   }
 
   const rows = statusRowOrder(state.requirements)
   const actions = requirementActions(rows)
+  const first = [...actions.values()][0]
+  const openDocuments = (focus: DocumentKey | null) => (focus ? onResubmit(focus) : navigation.navigate('EmployerDocuments'))
+  const unnamed = unnamedRequest(state)
+  const nothingSent = !v.submittedAt && rows.some((r) => r.status === 'MISSING')
+  const refused = v.status === 'REJECTED' || rows.some((r) => r.status === 'REJECTED')
+  const asked = !refused && (v.status === 'MORE_INFO' || rows.some((r) => r.status === 'MORE_INFO'))
+  const acting = rows.find((r) => r.key !== 'WORK_EMAIL' && needsAction(r) && r.reason)
+  const words = v.reason ?? acting?.reason ?? null
+
+  let body: React.ReactNode
+  let foot: React.ReactNode = null
+  if (nothingSent) {
+    body = (
+      <>
+        <Head badge={{ label: 'Pending verification', tone: 'amber', icon: 'clock' }} title="Submit your documents." />
+        <EmCard style={styles.steps}>
+          <EmSteps
+            steps={[
+              { title: 'Email and mobile verified', state: 'done' },
+              { title: 'Documents to submit', sub: 'Company document and a photo ID', state: 'now' },
+              { title: 'Reviewer decision', sub: hours ? `Usually within ${hours} hours` : undefined, state: 'todo' },
+            ]}
+          />
+        </EmCard>
+      </>
+    )
+    foot = <Button variant="primary" size="lg" full label="Submit documents" onPress={() => navigation.navigate('EmployerDocuments')} />
+  } else if (refused) {
+    body = (
+      <>
+        <Head badge={{ label: 'Not approved', tone: 'red', icon: 'x' }} title="We couldn’t verify the company." />
+        {!!words && <EmWell label="Reason" tone="red">{words}</EmWell>}
+        <Text style={[text.uiMd, styles.muted]}>Fix it and resubmit. There’s no limit.</Text>
+      </>
+    )
+    foot = first && <Button variant="primary" size="lg" full label="Update and resubmit" onPress={() => openDocuments(first.focus)} />
+  } else if (asked || unnamed) {
+    const errand = first ?? (unnamed ? { focus: null } : undefined)
+    body = (
+      <>
+        <Head badge={{ label: 'More documents', tone: 'violet', icon: 'file' }} title="One more document, please." />
+        {!!words && <EmWell label="From the reviewer" tone="violet">{words}</EmWell>}
+        {!!errand && <DropZone title="Upload document" compact onPress={() => openDocuments(errand.focus)} />}
+      </>
+    )
+    foot = errand && <Button variant="primary" size="lg" full label="Resubmit" onPress={() => openDocuments(errand.focus)} />
+  } else {
+    body = (
+      <>
+        <Head badge={{ label: 'In review', tone: 'amber', icon: 'clock' }} title="A reviewer is checking your documents." />
+        <EmCard style={styles.steps}>
+          <EmSteps
+            steps={[
+              { title: 'Submitted', sub: v.submittedAt ? formatIstStep(v.submittedAt) : undefined, state: 'done' },
+              { title: 'In review', sub: target ? `Target by ${formatIstStep(target)}` : undefined, state: 'now' },
+              { title: 'Decision', sub: 'Email and in-app', state: 'todo' },
+            ]}
+          />
+        </EmCard>
+      </>
+    )
+  }
 
   return (
-    <EmployerShell back={back} contentGap="sm">
-      <TitleBlock
-        title="Verification status"
-        sub="Each document is reviewed on its own, so one that fails does not undo the others."
-      />
-      {/* A request that names no document is the row that needs the employer, so it leads. */}
-      {unnamedRequest(state) && (
-        <UnnamedRequestRow state={state} onPress={() => navigation.navigate('EmployerDocuments')} />
-      )}
-      {rows.map((req) => {
-        const action = actions.get(req.key)
-        return (
-          <DocumentStatusRow
-            key={req.key}
-            requirement={req}
-            state={state}
-            action={
-              action && (
-                <RowActionButton
-                  action={action}
-                  // Nothing sent yet is one submission: the whole of EM-05, not one slot.
-                  onPress={() => (action.focus ? onResubmit(action.focus) : navigation.navigate('EmployerDocuments'))}
-                />
-              )
-            }
-            after={req.status === 'REJECTED' ? 'Only this document goes back for review.' : undefined}
-          />
-        )
-      })}
+    <EmployerShell back={back} title="Verification status" footer={foot || undefined}>
+      {body}
+      <DocumentList state={state} actions={actions} primary={first} onAction={openDocuments} />
     </EmployerShell>
   )
 }
 
-/**
- * EM-06 · Approved — the Verified Employer moment. Newsreader carries it: the
- * company's name and what just became true are content. The badge is success
- * on successSoft, a radius-4 tag with a shield, and cannot be read as the
- * crimson Verified Interview mark. The only crimson is the way into the feed.
- */
-function ApprovedMoment({ state, onFeed }: { state: EmployerState; onFeed: () => void }) {
-  const approvedAt = state.verification.approvedAt ?? state.verification.reviewedAt
+/** The badge and the 24 title that open every status. */
+function Head({ badge, title }: { badge: { label: string; tone: EmTone; icon: IconName }; title: string }) {
   return (
-    <>
-      <View style={styles.moment} accessibilityLiveRegion="polite">
-        <View style={styles.seal} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-          <Glyph name="shieldCheck" size={space['2xl']} tint={color.success} />
-        </View>
-        {!!approvedAt && <Meta>{`Approved ${formatIst(approvedAt)}`}</Meta>}
-        <Display level="lg">{`${state.company.name} is a Verified Employer.`}</Display>
-        <VerifiedEmployerBadge />
-        <Body tone="muted">
-          The candidate feed is open now, here and on any device you are signed in on. You don’t need to sign in again.
-        </Body>
-      </View>
-
-      <Button variant="primary" size="lg" full label="Open the candidate feed" onPress={onFeed} />
-
-      <View style={styles.approvedList}>
-        <Eyebrow>Every document approved</Eyebrow>
-        <Card style={styles.listCard}>
-          {state.requirements.map((req, i) => {
-            const at = decidedAt(req, state)
-            return (
-              <FactRow
-                key={req.key}
-                mark="check"
-                label={requirementLine(req, { short: true })}
-                trailing={at ? <Meta>{formatIstShort(at)}</Meta> : undefined}
-                last={i === state.requirements.length - 1}
-              />
-            )
-          })}
-        </Card>
-      </View>
-    </>
+    <View style={styles.lead}>
+      <EmBadge label={badge.label} tone={badge.tone} icon={badge.icon} />
+      <Text style={text.displayHeading} accessibilityRole="header">{title}</Text>
+    </View>
   )
 }
 
-/** When a requirement was decided: the document's review, the account's approval, or the email's confirmation. */
-function decidedAt(req: Requirement, state: EmployerState): string | null {
-  if (req.key === 'WORK_EMAIL') return req.confirmedAt ?? null
-  return req.document?.reviewedAt ?? state.verification.approvedAt
+/** '16 Sep 2026' — the approval date in a sentence. */
+const formatIstDate = (at: string) => formatIst(at).split(' · ')[0]
+
+const REQ_BADGE: Record<Requirement['status'], { label: string; tone: EmTone }> = {
+  MISSING: { label: 'To submit', tone: 'gray' },
+  SUBMITTED: { label: 'In review', tone: 'amber' },
+  MORE_INFO: { label: 'Requested', tone: 'violet' },
+  APPROVED: { label: 'Approved', tone: 'green' },
+  REJECTED: { label: 'Not accepted', tone: 'red' },
+}
+
+/**
+ * Every requirement on its own row: the name, the kind sent and its last stamp,
+ * its badge, and the reviewer's words on a refused or requested one. A second
+ * action (a second refusal) sits on its row; the first is the foot's.
+ */
+function DocumentList({
+  state, actions, primary, onAction,
+}: {
+  state: EmployerState
+  actions?: Map<RequirementKey, RowAction>
+  primary?: RowAction
+  onAction?: (focus: DocumentKey | null) => void
+}) {
+  const rows = statusRowOrder(state.requirements)
+  return (
+    <EmCard style={styles.list}>
+      <EmMono>DOCUMENTS</EmMono>
+      {rows.map((req, i) => {
+        const badge = REQ_BADGE[req.status]
+        const kind = req.key === 'WORK_EMAIL' ? req.email ?? state.contact.email : requirementKindLine(req)
+        const stamp = requirementTimes(req, state).slice(-1)[0]
+        const action = actions?.get(req.key)
+        const showReason = !!req.reason && (req.status === 'REJECTED' || req.status === 'MORE_INFO') && req.reason !== state.verification.reason
+        return (
+          <View key={req.key} style={[styles.row, i > 0 && styles.rowRule]}>
+            <View style={styles.rowHead}>
+              <View style={styles.grow}>
+                <Text style={text.uiBaseSemi}>{req.key === 'WORK_EMAIL' ? 'Work email' : requirementLine(req, { short: true })}</Text>
+                {!!kind && kind !== requirementLine(req, { short: true }) && <Text style={[text.uiSm, styles.muted]} numberOfLines={1}>{kind}</Text>}
+                {!!stamp && <Text style={[text.metaMd, styles.stamp]}>{stamp.toUpperCase()}</Text>}
+              </View>
+              <EmBadge label={req.key === 'WORK_EMAIL' && req.status === 'APPROVED' ? 'Verified' : badge.label} tone={badge.tone} small />
+            </View>
+            {showReason && <Text style={[text.uiSm, req.status === 'REJECTED' ? styles.danger : styles.secondary]}>{req.reason}</Text>}
+            {!!action && action !== primary && !!onAction && (
+              <Button variant="outline" size="sm" label={action.label} style={styles.rowAction} onPress={() => onAction(action.focus)} />
+            )}
+          </View>
+        )
+      })}
+    </EmCard>
+  )
 }
 
 // ── Shared by EM-04, EM-05 and EM-06 (the web's verification/_components/parts) ──
@@ -428,20 +492,21 @@ export function useBack(onPress: () => void): { label: string; onPress: () => vo
 }
 
 const styles = StyleSheet.create({
-  grow: { flex: 1 },
+  grow: { flex: 1, minWidth: 0, gap: space['2xs'] },
   titleBlock: { gap: space.sm },
   outlineAction: { alignSelf: 'flex-start' },
+  muted: { color: color.textMuted },
+  secondary: { color: color.textSecondary },
+  danger: { color: color.danger },
 
-  moment: { alignItems: 'flex-start', gap: space.lg, paddingTop: space.sm },
-  seal: {
-    width: space['4xl'],
-    height: space['4xl'],
-    borderRadius: radius.pill,
-    backgroundColor: color.successSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  approvedList: { gap: space.sm },
+  lead: { gap: space.md },
+  steps: { padding: spaceHalf['4.5'] },
+  list: { gap: 0 },
+  row: { paddingVertical: space.md, gap: space.sm },
+  rowRule: { borderTopWidth: borderWidth.thin, borderTopColor: color.border },
+  rowHead: { flexDirection: 'row', alignItems: 'flex-start', gap: space.sm },
+  rowAction: { alignSelf: 'flex-start', paddingHorizontal: spaceHalf['3.5'] },
+  stamp: { color: color.textSubtle, letterSpacing: trackingNative.eyebrow, marginTop: space['2xs'] },
   listCard: { paddingHorizontal: space.lg, paddingVertical: space.xs },
 
   fact: { flexDirection: 'row', alignItems: 'flex-start', gap: space.md, paddingVertical: space.md },

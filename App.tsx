@@ -1,9 +1,15 @@
-import React from 'react'
-import { StatusBar } from 'react-native'
+import React, { useState } from 'react'
+import { StatusBar, StyleSheet, View } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
-import { NavigationContainer } from '@react-navigation/native'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import { NavigationContainer, useNavigationContainerRef } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { ReceiptsScreen } from './src/screens/account/ReceiptsScreen'
+import { openSupport } from './src/lib/support'
+import { EmployerWelcomeScreen } from './src/screens/employer/EmployerWelcomeScreen'
+import { EmployerForgotPasswordScreen } from './src/screens/employer/EmployerForgotPasswordScreen'
+import { BottomTabBar } from './src/navigation/BottomTabBar'
 import { WelcomeScreen } from './src/screens/WelcomeScreen'
 import { CreateAccountScreen, type RegistrationData } from './src/screens/CreateAccountScreen'
 import { VerifyMobileScreen } from './src/screens/VerifyMobileScreen'
@@ -40,6 +46,7 @@ import { AccountScreen } from './src/screens/account/AccountScreen'
 import { DataRightsScreen } from './src/screens/account/DataRightsScreen'
 import { ReadinessScreen } from './src/screens/room/ReadinessScreen'
 import { RoomScreen } from './src/screens/room/RoomScreen'
+import { PreparationScreen } from './src/screens/room/PreparationScreen'
 import { EndedScreen } from './src/screens/room/EndedScreen'
 import { FeedbackScreen } from './src/screens/room/FeedbackScreen'
 import { TopUpScreen } from './src/screens/room/TopUpScreen'
@@ -53,12 +60,8 @@ import { EmployerCompanyScreen } from './src/screens/employer/EmployerCompanyScr
 import { EmployerFeedScreen } from './src/screens/employer/EmployerFeedScreen'
 import { CandidateProfileScreen } from './src/screens/employer/CandidateProfileScreen'
 import { CandidateVideoScreen } from './src/screens/employer/CandidateVideoScreen'
-import { FeedFiltersModal } from './src/screens/employer/FeedFiltersModal'
-import { SavedSearchesModal } from './src/screens/employer/SavedSearchesModal'
 import { EmployerShortlistScreen } from './src/screens/employer/EmployerShortlistScreen'
 import { EmployerInterestsScreen } from './src/screens/employer/EmployerInterestsScreen'
-import { ShortlistEntryModal } from './src/screens/employer/ShortlistEntryModal'
-import { SendInterestModal } from './src/screens/employer/SendInterestModal'
 import { EmployerJobsScreen } from './src/screens/employer/EmployerJobsScreen'
 import { JobEditorScreen } from './src/screens/employer/JobEditorScreen'
 import { JobDetailScreen as EmployerJobDetailScreen } from './src/screens/employer/JobDetailScreen'
@@ -80,6 +83,8 @@ import {
   OverridesScreen,
   InterviewerInterviewsScreen,
   InterviewerDetailScreen,
+  InterviewerRoomScreen,
+  InterviewerThreadScreen,
   ScorecardDraftScreen,
   PendingScorecardsScreen,
   InterviewerWalletScreen,
@@ -91,7 +96,6 @@ import {
   InterviewerNotificationsScreen,
   InterviewerChatsScreen,
 } from './src/screens/interviewer'
-import type { ShortlistRow, EmployerJobRef } from './src/lib/api/employerShortlist'
 import { threadIdForConnection } from './src/lib/api/chat'
 import { getMe } from './src/lib/api/account'
 import type { EmployerRegistrationDraft, RegisterOtpResult } from './src/lib/api/employer'
@@ -127,6 +131,7 @@ export type RootStackParamList = {
   Reschedule: { id: string }
   Cancel: { id: string }
   Readiness: { id: string }
+  Preparation: { id: string }
   Room: { id: string }
   Ended: { id: string }
   Feedback: { id: string }
@@ -141,9 +146,12 @@ export type RootStackParamList = {
   Account: undefined
   DataRights: undefined
   Health: undefined
+  Receipts: undefined
 
   // ── Employer onboarding and verification (EM-02..EM-07) ────────────────────
+  EmployerWelcome: undefined
   EmployerRegister: undefined
+  EmployerForgotPassword: undefined
   /**
    * The EM-02 form travels here IN MEMORY — it carries the password. Nothing
    * persists navigation state in this app, and the verify screen resets the
@@ -158,21 +166,11 @@ export type RootStackParamList = {
   EmployerCompany: undefined
   EmployerFeed: undefined
   CandidateProfile: { id: string }
-  CandidateVideo: { id: string }
-  FeedFilters: undefined
-  SavedSearches: undefined
+  CandidateVideo: { id: string; name?: string; photoUrl?: string | null; interviewAt?: string | null }
   EmployerShortlist: undefined
   EmployerInterests: undefined
-  ShortlistEntry: { row: ShortlistRow; jobs: EmployerJobRef[] }
-  SendInterest: {
-    candidateId: string
-    candidateName: string
-    candidateHeadline?: string | null
-    candidateCity?: string | null
-    jobs?: EmployerJobRef[]
-  }
   EmployerJobs: undefined
-  JobEditor: undefined
+  JobEditor: { id?: string } | undefined
   EmployerJobDetail: { id: string }
   JobApplications: { id: string }
   ApplicantDetail: { id: string }
@@ -192,7 +190,8 @@ export type RootStackParamList = {
   InterviewerAvailability: undefined
   InterviewerOverrides: undefined
   InterviewerInterviews: undefined
-  InterviewerDetail: { id: string; autoJoin?: boolean }
+  InterviewerDetail: { id: string }
+  InterviewerRoom: { id: string }
   ScorecardDraft: { id: string }
   PendingScorecards: undefined
   InterviewerWallet: undefined
@@ -203,6 +202,7 @@ export type RootStackParamList = {
   InterviewerAccount: undefined
   InterviewerNotifications: undefined
   InterviewerChats: undefined
+  InterviewerThread: { id: string }
 }
 
 const Stack = createNativeStackNavigator<RootStackParamList>()
@@ -239,20 +239,29 @@ const queryClient = new QueryClient({
 })
 
 export default function App() {
+  // The tab bar sits beside the stack, outside any navigator, so it cannot use
+  // navigation hooks — it reads the current route from the container instead.
+  const navRef = useNavigationContainerRef<RootStackParamList>()
+  const [routeName, setRouteName] = useState<string | undefined>()
+  const syncRoute = () => setRouteName(navRef.getCurrentRoute()?.name)
+
   return (
+    <GestureHandlerRootView style={styles.gestureRoot}>
     <QueryClientProvider client={queryClient}>
       <SafeAreaProvider>
         {/* Light-only for now; the brand ground is paper white. RN 0.87 removed
             StatusBar's backgroundColor prop, so the Android bar colour belongs
             in styles.xml rather than here. */}
         <StatusBar barStyle="dark-content" />
-        <NavigationContainer>
+        <NavigationContainer ref={navRef} onReady={syncRoute} onStateChange={syncRoute}>
+        <View style={styles.appShell}>
+        <View style={styles.stackArea}>
           <Stack.Navigator screenOptions={{ headerShown: false }}>
             <Stack.Screen name="Welcome">
               {({ navigation }) => (
                 <WelcomeScreen
                   onGetHired={() => navigation.navigate('CreateAccount')}
-                  onWantToHire={() => navigation.navigate('EmployerRegister')}
+                  onWantToHire={() => navigation.navigate('EmployerWelcome')}
                   onCreateEmployer={() => navigation.navigate('EmployerRegister')}
                   onSignIn={() => navigation.navigate('SignIn')}
                   onJoinUs={() => navigation.navigate('JoinUs')}
@@ -312,17 +321,11 @@ export default function App() {
               {({ navigation }) => (
                 <HomeScreen
                   onPay={() => navigation.navigate('Pricing')}
-                  onProfile={() => navigation.navigate('Profile')}
-                  onInterviews={() => navigation.navigate('Interviews')}
-                  onVisibility={() => navigation.navigate('Visibility')}
-                  onProfileView={() => navigation.navigate('ProfileView')}
-                  onJobs={() => navigation.navigate('JobFeed')}
-                  onApplications={() => navigation.navigate('Applications')}
-                  onInterests={() => navigation.navigate('Interests')}
-                  onConnections={() => navigation.navigate('Connections')}
-                  onChats={() => navigation.navigate('Chats')}
-                  onNotifications={() => navigation.navigate('Notifications')}
-                  onStats={() => navigation.navigate('Stats')}
+                  onBook={() => navigation.navigate('BookInterview')}
+                  onJoin={(id) => navigation.navigate('Readiness', { id })}
+                  onReschedule={(id) => navigation.navigate('Reschedule', { id })}
+                  onFeedback={(id) => navigation.navigate('Feedback', { id })}
+                  onSupport={() => { void openSupport() }}
                   onAccount={() => navigation.navigate('Account')}
                 />
               )}
@@ -338,7 +341,7 @@ export default function App() {
             </Stack.Screen>
 
             <Stack.Screen name="Videos">
-              {({ navigation }) => <VideosScreen onRecord={() => navigation.navigate('Health')} />}
+              {({ navigation }) => <VideosScreen onBack={() => navigation.goBack()} />}
             </Stack.Screen>
 
             <Stack.Screen name="JobFeed">
@@ -347,6 +350,8 @@ export default function App() {
                   onBack={() => navigation.goBack()}
                   onOpen={(id) => navigation.navigate('JobDetail', { id })}
                   onSaved={() => navigation.navigate('SavedJobs')}
+                  onApplied={() => navigation.navigate('Applications')}
+                  onApply={(id) => navigation.navigate('JobApply', { id })}
                 />
               )}
             </Stack.Screen>
@@ -381,6 +386,7 @@ export default function App() {
                   onOpen={(id) => navigation.navigate('JobDetail', { id })}
                   onApply={(id) => navigation.navigate('JobApply', { id })}
                   onFeed={() => navigation.navigate('JobFeed')}
+                  onApplied={() => navigation.navigate('Applications')}
                 />
               )}
             </Stack.Screen>
@@ -390,6 +396,7 @@ export default function App() {
                 <ApplicationsScreen
                   onBack={() => navigation.goBack()}
                   onFeed={() => navigation.navigate('JobFeed')}
+                  onSaved={() => navigation.navigate('SavedJobs')}
                   onChat={async (connectionId) => {
                     const t = await threadIdForConnection(connectionId)
                     if (t) navigation.navigate('Thread', { id: t })
@@ -404,6 +411,7 @@ export default function App() {
                 <PricingScreen
                   onBack={() => navigation.goBack()}
                   onPay={() => navigation.navigate('Checkout')}
+                  onBook={() => navigation.navigate('BookInterview')}
                 />
               )}
             </Stack.Screen>
@@ -453,7 +461,7 @@ export default function App() {
                   onBack={() => navigation.goBack()}
                   onBooked={(id) => navigation.replace('Confirmed', { id })}
                   onFinishProfile={() => navigation.navigate('Profile')}
-                  onBuy={() => navigation.navigate('Home')}
+                  onBuy={() => navigation.navigate('Pricing')}
                 />
               )}
             </Stack.Screen>
@@ -475,7 +483,7 @@ export default function App() {
                   onBack={() => navigation.navigate('Interviews')}
                   onReschedule={(id) => navigation.navigate('Reschedule', { id })}
                   onCancel={(id) => navigation.navigate('Cancel', { id })}
-                  onSupport={() => navigation.navigate('Health')}
+                  onSupport={() => { void openSupport() }}
                   onBook={() => navigation.navigate('BookInterview')}
                   onJoin={() => navigation.navigate('Readiness', { id: route.params.id })}
                   onFeedback={() => navigation.navigate('Feedback', { id: route.params.id })}
@@ -489,7 +497,7 @@ export default function App() {
                   id={route.params.id}
                   onBack={() => navigation.goBack()}
                   onMoved={(newId) => navigation.replace('Confirmed', { id: newId })}
-                  onSupport={() => navigation.navigate('Health')}
+                  onSupport={() => { void openSupport() }}
                 />
               )}
             </Stack.Screen>
@@ -570,19 +578,23 @@ export default function App() {
 
             <Stack.Screen name="Readiness">
               {({ navigation, route }) => (
-                <ReadinessScreen id={route.params.id} onBack={() => navigation.goBack()} onJoin={() => navigation.navigate('Room', { id: route.params.id })} />
+                <ReadinessScreen id={route.params.id} onBack={() => navigation.goBack()} onJoin={() => navigation.navigate('Room', { id: route.params.id })} onPrepare={() => navigation.navigate('Preparation', { id: route.params.id })} />
               )}
+            </Stack.Screen>
+
+            <Stack.Screen name="Preparation">
+              {({ navigation, route }) => <PreparationScreen id={route.params.id} onBack={() => navigation.goBack()} />}
             </Stack.Screen>
 
             <Stack.Screen name="Room" options={{ gestureEnabled: false }}>
               {({ navigation, route }) => (
-                <RoomScreen id={route.params.id} onBack={() => navigation.goBack()} onEnded={() => navigation.replace('Ended', { id: route.params.id })} />
+                <RoomScreen id={route.params.id} onBack={() => navigation.goBack()} onEnded={() => navigation.replace('Ended', { id: route.params.id })} onLeft={() => navigation.replace('Ended', { id: route.params.id })} onReadiness={() => navigation.replace('Readiness', { id: route.params.id })} />
               )}
             </Stack.Screen>
 
             <Stack.Screen name="Ended">
               {({ navigation, route }) => (
-                <EndedScreen id={route.params.id} onBack={() => navigation.navigate('Interviews')} onBook={() => navigation.navigate('BookInterview')} />
+                <EndedScreen id={route.params.id} onRejoin={() => navigation.replace('Room', { id: route.params.id })} onBack={() => navigation.navigate('Interviews')} onBook={() => navigation.navigate('BookInterview')} />
               )}
             </Stack.Screen>
 
@@ -626,16 +638,27 @@ export default function App() {
                 <AccountScreen
                   onBack={() => navigation.goBack()}
                   onSignedOut={() => navigation.reset({ index: 0, routes: [{ name: 'Welcome' }] })}
-                  onReceipts={() => navigation.navigate('Health')}
+                  onReceipts={() => navigation.navigate('Receipts')}
                   onVisibility={() => navigation.navigate('Visibility')}
                   onNotificationSettings={() => navigation.navigate('NotificationSettings')}
                   onData={() => navigation.navigate('DataRights')}
+                  onProfile={() => navigation.navigate('Profile')}
+                  onProfileView={() => navigation.navigate('ProfileView')}
+                  onVideos={() => navigation.navigate('Videos')}
+                  onApplications={() => navigation.navigate('Applications')}
+                  onConnections={() => navigation.navigate('Connections')}
+                  onNotifications={() => navigation.navigate('Notifications')}
+                  onStats={() => navigation.navigate('Stats')}
                 />
               )}
             </Stack.Screen>
 
             <Stack.Screen name="DataRights">
               {({ navigation }) => <DataRightsScreen onBack={() => navigation.goBack()} />}
+            </Stack.Screen>
+
+            <Stack.Screen name="Receipts">
+              {({ navigation }) => <ReceiptsScreen onBack={() => navigation.goBack()} />}
             </Stack.Screen>
 
             <Stack.Screen name="Health" component={HealthScreen} options={{ headerShown: true, title: '' }} />
@@ -667,11 +690,27 @@ export default function App() {
               )}
             </Stack.Screen>
 
+            <Stack.Screen name="EmployerWelcome">
+              {({ navigation }) => (
+                <EmployerWelcomeScreen
+                  onCreate={() => navigation.navigate('EmployerRegister')}
+                  onSignIn={() => navigation.navigate('EmployerSignIn')}
+                />
+              )}
+            </Stack.Screen>
+
+            <Stack.Screen name="EmployerForgotPassword">
+              {({ navigation }) => (
+                <EmployerForgotPasswordScreen onBack={() => navigation.goBack()} onSignIn={() => navigation.navigate('EmployerSignIn')} />
+              )}
+            </Stack.Screen>
+
             <Stack.Screen name="EmployerSignIn">
               {({ navigation }) => (
                 <EmployerSignInScreen
                   onBack={() => navigation.goBack()}
                   onRegister={() => navigation.navigate('EmployerRegister')}
+                  onForgot={() => navigation.navigate('EmployerForgotPassword')}
                   onSignedIn={(role) =>
                     navigation.reset({ index: 0, routes: [{ name: role === 'EMPLOYER' ? 'EmployerHome' : 'Home' }] })
                   }
@@ -684,7 +723,7 @@ export default function App() {
                 <EmployerHomeScreen
                   onDocuments={(focus) => navigation.navigate('EmployerDocuments', { focus })}
                   onStatus={() => navigation.navigate('EmployerStatus')}
-                  onCompany={() => navigation.navigate('EmployerCompany')}
+                  onFeed={() => navigation.navigate('EmployerFeed')}
                 />
               )}
             </Stack.Screen>
@@ -694,8 +733,8 @@ export default function App() {
                 <EmployerDocumentsScreen
                   focus={route.params?.focus}
                   onBack={() => navigation.goBack()}
-                  // Back to the EM-06 a Resubmit opened this from, else in this screen's place.
-                  onSubmitted={() => navigation.popTo('EmployerStatus')}
+                  // EM-05b's "Go to home".
+                  onSubmitted={() => navigation.popTo('EmployerHome')}
                 />
               )}
             </Stack.Screen>
@@ -726,28 +765,12 @@ export default function App() {
               {() => <CandidateVideoScreen />}
             </Stack.Screen>
 
-            <Stack.Screen name="FeedFilters">
-              {() => <FeedFiltersModal />}
-            </Stack.Screen>
-
-            <Stack.Screen name="SavedSearches">
-              {() => <SavedSearchesModal />}
-            </Stack.Screen>
-
             <Stack.Screen name="EmployerShortlist">
               {() => <EmployerShortlistScreen />}
             </Stack.Screen>
 
             <Stack.Screen name="EmployerInterests">
               {() => <EmployerInterestsScreen />}
-            </Stack.Screen>
-
-            <Stack.Screen name="ShortlistEntry">
-              {() => <ShortlistEntryModal />}
-            </Stack.Screen>
-
-            <Stack.Screen name="SendInterest">
-              {() => <SendInterestModal />}
             </Stack.Screen>
 
             <Stack.Screen name="EmployerJobs">
@@ -831,6 +854,10 @@ export default function App() {
               {() => <InterviewerDetailScreen />}
             </Stack.Screen>
 
+            <Stack.Screen name="InterviewerRoom" options={{ gestureEnabled: false }}>
+              {() => <InterviewerRoomScreen />}
+            </Stack.Screen>
+
             <Stack.Screen name="ScorecardDraft">
               {() => <ScorecardDraftScreen />}
             </Stack.Screen>
@@ -863,6 +890,10 @@ export default function App() {
               {() => <InterviewerAccountScreen />}
             </Stack.Screen>
 
+            <Stack.Screen name="InterviewerThread">
+              {() => <InterviewerThreadScreen />}
+            </Stack.Screen>
+
             <Stack.Screen name="InterviewerNotifications">
               {() => <InterviewerNotificationsScreen />}
             </Stack.Screen>
@@ -871,8 +902,21 @@ export default function App() {
               {() => <InterviewerChatsScreen />}
             </Stack.Screen>
           </Stack.Navigator>
+        </View>
+        <BottomTabBar
+          routeName={routeName}
+          onNavigate={(root) => { if (navRef.isReady()) navRef.navigate(root as never) }}
+        />
+        </View>
         </NavigationContainer>
       </SafeAreaProvider>
     </QueryClientProvider>
+    </GestureHandlerRootView>
   )
 }
+
+const styles = StyleSheet.create({
+  gestureRoot: { flex: 1 },
+  appShell: { flex: 1 },
+  stackArea: { flex: 1 },
+})

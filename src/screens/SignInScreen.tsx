@@ -7,26 +7,22 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Logo } from '../components/Logo'
+import { BrandMark, PhoneInput, text } from '../components/ui'
 import { Field, Input } from '../components/ui/fields'
 import { Segmented } from '../components/ui/controls'
 import { Banner } from '../components/ui/Banner'
 import { GoogleButton } from '../components/ui/GoogleButton'
 import { Button } from '../components/ui/Button'
+import { Body } from '../components/ui/Type'
 import { api, tokenStore } from '../lib/api'
 import { ApiClientError } from '../lib/api/types'
 import {
-  borderWidth,
   color,
-  fontFamilyNative,
-  fontSize,
   height,
   leadingNative,
-  radius,
   space,
   trackingNative,
 } from '../theme'
@@ -163,30 +159,26 @@ export function SignInScreen({ onSignedIn, onRegister, onOtpSent }: Props) {
 
   return (
     <KeyboardAvoidingView
-      style={styles.root}
+      style={[styles.root, { paddingTop: insets.top }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      {/* ── App bar (52px) ─────────────────────────────────────────────── */}
-      <View style={[styles.appBar, { paddingTop: insets.top }]}>
-        <Logo size={18} tint={color.text} />
-        <Pressable onPress={onRegister} hitSlop={12} style={styles.appBarAction}>
-          <Text style={styles.appBarActionText}>Create account</Text>
+      <View style={styles.appBar}>
+        <BrandMark />
+        <Pressable onPress={onRegister} hitSlop={space.md} style={styles.appBarAction}>
+          <Body size="md" weight="semibold" tone="accent">Create account</Body>
         </Pressable>
       </View>
 
       <ScrollView
-        contentContainerStyle={[
-          styles.scroll,
-          { paddingBottom: insets.bottom + space.xl },
-        ]}
+        contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + space.xl }]}
         keyboardShouldPersistTaps="handled"
       >
         {/* Title */}
         <View style={styles.header}>
-          <Text style={styles.eyebrow}>WELCOME BACK</Text>
-          <Text style={styles.headline}>
+          <Text style={[text.metaMd, styles.eyebrow]}>WELCOME BACK</Text>
+          <Text style={text.displayGreet}>
             Pick up where{'\n'}
-            <Text style={styles.headlineMuted}>you left off.</Text>
+            <Text style={styles.headlineAccent}>you left off.</Text>
           </Text>
         </View>
 
@@ -231,29 +223,17 @@ export function SignInScreen({ onSignedIn, onRegister, onOtpSent }: Props) {
         {/* 1 · Mobile Method */}
         {method === 'Mobile' && (
           <View style={styles.formSection}>
-            <View style={styles.fieldGroup}>
-              <Text style={styles.fieldLabel}>MOBILE</Text>
-              <View style={styles.mobileControl}>
-                <Text style={styles.mobilePrefix}>+91</Text>
-                <View style={styles.mobileDivider} />
-                <TextInput
-                  value={mobile}
-                  onChangeText={(v) => {
-                    setMobile(v.replace(/\D/g, '').slice(0, 10))
-                    setBanner(null)
-                  }}
-                  keyboardType="number-pad"
-                  textContentType="telephoneNumber"
-                  placeholder="98765 43210"
-                  placeholderTextColor={color.textSubtle}
-                  style={styles.mobileInput}
-                  editable={!pending}
-                />
-              </View>
-              <Text style={styles.hintText}>
-                We’ll text a six-digit code. It’s good for 10 minutes.
-              </Text>
-            </View>
+            <Field label="Mobile" helper="We’ll text a six-digit code. It’s good for 10 minutes.">
+              <PhoneInput
+                value={mobile}
+                onChangeText={(v) => {
+                  setMobile(v)
+                  setBanner(null)
+                }}
+                textContentType="telephoneNumber"
+                editable={!pending}
+              />
+            </Field>
 
             <View style={styles.ctaSection}>
               <Button
@@ -265,9 +245,9 @@ export function SignInScreen({ onSignedIn, onRegister, onOtpSent }: Props) {
                 busy={pending}
                 onPress={handleSendMobileCode}
               />
-              <Text style={styles.channelNote}>
+              <Body size="xs" tone="subtle" style={styles.channelNote}>
                 Mobile, email and Google all reach the same account.
-              </Text>
+              </Body>
             </View>
           </View>
         )}
@@ -314,9 +294,9 @@ export function SignInScreen({ onSignedIn, onRegister, onOtpSent }: Props) {
                 busy={pending}
                 onPress={handleEmailLogin}
               />
-              <Text style={styles.channelNote}>
+              <Body size="xs" tone="subtle" style={styles.channelNote}>
                 Mobile, email and Google all reach the same account.
-              </Text>
+              </Body>
             </View>
           </View>
         )}
@@ -324,15 +304,15 @@ export function SignInScreen({ onSignedIn, onRegister, onOtpSent }: Props) {
         {/* 3 · Google Method */}
         {method === 'Google' && (
           <View style={styles.googleSection}>
-            <Text style={styles.googleHelper}>
+            <Body size="sm" tone="muted" style={styles.googleHelper}>
               Sign in securely with your Google account to access your interviews and profile.
-            </Text>
+            </Body>
 
             <GoogleButton onPress={() => {}} />
 
-            <Text style={styles.channelNote}>
+            <Body size="xs" tone="subtle" style={styles.channelNote}>
               Mobile, email and Google all reach the same account.
-            </Text>
+            </Body>
           </View>
         )}
       </ScrollView>
@@ -341,115 +321,22 @@ export function SignInScreen({ onSignedIn, onRegister, onOtpSent }: Props) {
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: color.background,
-  },
+  root: { flex: 1, backgroundColor: color.background },
   appBar: {
-    height: height['app-bar'],
+    height: height['screen-header'],
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: space.xl,
-    backgroundColor: color.surface,
   },
-  appBarAction: {
-    height: height.tap,
-    justifyContent: 'center',
-    paddingHorizontal: space.md,
-    marginRight: -space.md,
-  },
-  appBarActionText: {
-    fontSize: fontSize['ui-sm'],
-    color: color.textMuted,
-  },
-  scroll: {
-    paddingHorizontal: space.xl,
-    paddingTop: space.md,
-    gap: space.xl,
-  },
-  header: {
-    gap: space.sm,
-  },
-  eyebrow: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: fontSize['meta-sm'],
-    letterSpacing: trackingNative['eyebrow-wide'],
-    color: color.textSubtle,
-    textTransform: 'uppercase',
-  },
-  headline: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: fontSize['display-lg'],
-    lineHeight: leadingNative['display-lg'],
-    color: color.text,
-    letterSpacing: trackingNative['tight-sm'],
-  },
-  headlineMuted: {
-    color: color.textMuted,
-    fontStyle: 'italic',
-  },
-  formSection: {
-    gap: space.lg,
-  },
-  fieldGroup: {
-    gap: space.sm,
-  },
-  fieldLabel: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: fontSize['meta-sm'],
-    letterSpacing: trackingNative['eyebrow-wide'],
-    color: color.textSubtle,
-    textTransform: 'uppercase',
-  },
-  mobileControl: {
-    height: height.control,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.md,
-    borderRadius: radius.md,
-    borderWidth: borderWidth.thin,
-    borderColor: color.borderStrong,
-    backgroundColor: color.surface,
-    paddingHorizontal: space.lg,
-  },
-  mobilePrefix: {
-    fontSize: fontSize['ui-base'],
-    color: color.textSubtle,
-  },
-  mobileDivider: {
-    width: borderWidth.thin,
-    height: space.xl,
-    backgroundColor: color.border,
-  },
-  mobileInput: {
-    flex: 1,
-    fontSize: fontSize['ui-base'],
-    color: color.text,
-    padding: 0,
-  },
-  hintText: {
-    fontSize: fontSize['ui-xs'],
-    color: color.textSubtle,
-    lineHeight: leadingNative['ui-xs'],
-  },
-  ctaSection: {
-    marginTop: space.lg,
-    gap: space.sm,
-  },
-  googleSection: {
-    gap: space.xl,
-    paddingTop: space.sm,
-  },
-  googleHelper: {
-    fontSize: fontSize['ui-sm'],
-    color: color.textMuted,
-    lineHeight: leadingNative['ui-md'],
-  },
-  channelNote: {
-    fontSize: fontSize['ui-xs'],
-    color: color.textSubtle,
-    textAlign: 'center',
-    lineHeight: leadingNative['ui-xs'],
-  },
+  appBarAction: { height: height.tap, justifyContent: 'center' },
+  scroll: { paddingHorizontal: space.xl, paddingTop: space.xs, gap: space.xl },
+  header: { gap: space.sm },
+  eyebrow: { color: color.textMuted, letterSpacing: trackingNative.eyebrow },
+  headlineAccent: { color: color.accent },
+  formSection: { gap: space.lg },
+  ctaSection: { marginTop: space.lg, gap: space.sm },
+  googleSection: { gap: space.xl, paddingTop: space.sm },
+  googleHelper: { lineHeight: leadingNative['ui-md'] },
+  channelNote: { textAlign: 'center' },
 })

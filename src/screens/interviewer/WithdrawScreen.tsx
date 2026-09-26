@@ -1,271 +1,146 @@
-import React, { useState } from 'react'
-import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native'
+import React, { useCallback, useEffect, useState } from 'react'
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { borderWidth, color, fontFamilyNative, radius, space } from '../../theme'
-import { Button, Card, Eyebrow, Field, Input } from '../../components/ui'
+import { useQueryClient } from '@tanstack/react-query'
+import { color, space, spaceHalf, trackingNative } from '../../theme'
+import { Button, Input, text } from '../../components/ui'
 import { InterviewerShell } from '../../components/interviewer/InterviewerShell'
-import { useInterviewer } from '../../lib/interviewer/useInterviewer'
-import { interviewerApi } from '../../lib/api/interviewer'
+import { IvAction, IvCard, IvLabel } from '../../components/interviewer/iv'
+import { EmBadge, EmChip, EmError } from '../../components/employer/em'
+import { EmField } from '../../components/employer/form'
+import { ApiClientError } from '../../lib/api'
+import { getBank, getWallet, listWithdrawals, requestWithdrawal, type BankDto, type WalletDto, type WithdrawalDto } from '../../lib/api/interviewer'
 import { formatPaise } from '../../lib/format/money'
-import { MIN_WITHDRAWAL_PAISE } from '../../lib/interviewer/state'
+import { istStamp } from '../../lib/interviewer/state'
+import { minWithdrawal, WITHDRAWAL_STATUS, withdrawBlockedText } from '../../lib/interviewer/wallet'
+import { INTERVIEWER_KEY, useAppConfig, useInterviewerMe } from '../../lib/interviewer/useInterviewer'
+import type { RootStackParamList } from '../../../App'
 
+/**
+ * Withdraw (no artboard — the drawn screens' language). The amount in rupees
+ * (Minimum and All fill it), the payout account it goes to, and the request.
+ * The minimum is the server's; whether a withdrawal is allowed at all is the
+ * server's decision, shown with its reason. Beneath, every request with the
+ * server's status (Requested, Approved, Paid, Rejected with its reason).
+ */
 export function WithdrawScreen() {
-  const navigation = useNavigation<NativeStackNavigationProp<any>>()
-  const { wallet, refresh, profile } = useInterviewer()
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
+  const qc = useQueryClient()
+  const config = useAppConfig()
+  const { suspended } = useInterviewerMe()
+  const [wallet, setWallet] = useState<WalletDto | null>(null)
+  const [bank, setBank] = useState<BankDto | null>(null)
+  const [history, setHistory] = useState<WithdrawalDto[] | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [amount, setAmount] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [notice, setNotice] = useState<string | null>(null)
 
-  const balancePaise = wallet?.balancePaise ?? 0
-  const maxRupees = Math.floor(balancePaise / 100)
-  const isSuspended = profile?.status === 'SUSPENDED'
+  const load = useCallback(async () => {
+    setError(null)
+    try {
+      const [w, b, h] = await Promise.all([getWallet(), getBank().catch(() => null), listWithdrawals().catch(() => null)])
+      setWallet(w)
+      setBank(b)
+      setHistory(h?.rows ?? null)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not load your wallet.')
+    }
+  }, [])
+  useEffect(() => {
+    load()
+  }, [load])
 
-  const [rupees, setRupees] = useState('')
-  const [submitting, setSubmitting] = useState(false)
-
-  const handleQuickSelect = (amt: number) => {
-    setRupees(amt.toString())
+  if (!wallet) {
+    return (
+      <InterviewerShell back={() => navigation.goBack()} title="Withdraw">
+        {error ? <EmError title="Couldn’t load your wallet." body={error} action={<Button variant="secondary" size="pair" icon="refresh" label="Try again" onPress={() => { load() }} />} /> : <ActivityIndicator color={color.textSubtle} style={styles.loading} />}
+      </InterviewerShell>
+    )
   }
 
-  const handleWithdraw = async () => {
-    if (isSuspended) {
-      Alert.alert('Account Suspended', 'Withdrawals are locked while account is under suspension.')
-      return
-    }
+  const min = minWithdrawal(wallet, config)
+  const blocked = withdrawBlockedText(wallet, config, suspended)
+  const paise = Math.round(Number(amount || '0') * 100)
+  const tooLow = min != null && paise > 0 && paise < min
+  const tooHigh = paise > wallet.availablePaise
+  const ok = !blocked && paise > 0 && !tooLow && !tooHigh
 
-    const amtNum = parseInt(rupees, 10)
-    if (isNaN(amtNum) || amtNum < 500) {
-      Alert.alert('Minimum Amount', `Minimum withdrawal is ${formatPaise(MIN_WITHDRAWAL_PAISE)} (₹500).`)
-      return
-    }
-
-    const requestedPaise = amtNum * 100
-    if (requestedPaise > balancePaise) {
-      Alert.alert('Insufficient Balance', 'Requested withdrawal amount exceeds your available balance.')
-      return
-    }
-
-    if (!wallet?.bankAccount?.accountNumber && !wallet?.bankAccount?.accountNumberLast4) {
-      Alert.alert('Bank Account Missing', 'Please link your payout bank account before requesting a withdrawal.', [
-        { text: 'Link Bank Account', onPress: () => navigation.navigate('InterviewerBankAccount') },
-      ])
-      return
-    }
-
-    setSubmitting(true)
+  async function submit() {
+    setBusy(true)
+    setNotice(null)
     try {
-      await interviewerApi.requestWithdrawal(requestedPaise)
-      await refresh()
-      Alert.alert(
-        'Withdrawal Requested',
-        `A payout request for ${formatPaise(requestedPaise)} has been placed. Funds will be transferred to your registered bank account within 1–2 business days.`,
-        [{ text: 'OK', onPress: () => navigation.replace('InterviewerWallet') }],
-      )
-    } catch (err: any) {
-      Alert.alert('Request Failed', err?.message || 'Unable to process withdrawal request.')
+      const r = await requestWithdrawal(paise)
+      setNotice(`${formatPaise(r.amountPaise)} requested. You’ll see its status below.`)
+      setAmount('')
+      qc.invalidateQueries({ queryKey: INTERVIEWER_KEY })
+      load()
+    } catch (e) {
+      setNotice(e instanceof ApiClientError ? e.message : 'Not requested. Check your connection and try again.')
     } finally {
-      setSubmitting(false)
+      setBusy(false)
     }
   }
 
   return (
-    <InterviewerShell back={{ label: 'Wallet', onPress: () => navigation.goBack() }}>
-      <View style={styles.header}>
-        <Eyebrow>PAYOUT DISBURSEMENT</Eyebrow>
-        <Text style={styles.title}>Withdraw Funds</Text>
-        <Text style={styles.subtitle}>
-          Transfer your earned interviewer fees directly to your verified bank account via IMPS / NEFT.
-        </Text>
+    <InterviewerShell
+      back={() => navigation.goBack()}
+      title="Withdraw"
+      sub={`${formatPaise(wallet.availablePaise)} available`}
+      footer={<IvAction label={busy ? 'Requesting…' : ok ? `Withdraw ${formatPaise(paise)}` : 'Withdraw'} tone={ok && !busy ? 'accent' : 'off'} onPress={ok && !busy ? () => { submit() } : undefined} />}
+    >
+      {!!blocked && <IvCard tone="danger"><Text style={[text.uiSm, styles.danger]}>{blocked}</Text></IvCard>}
+      <EmField
+        label="Amount"
+        note="₹"
+        error={tooLow && min != null ? `The minimum is ${formatPaise(min)}.` : tooHigh ? 'That is more than is available.' : undefined}
+        hint={min != null ? `Minimum ${formatPaise(min)}` : undefined}
+      >
+        <Input value={amount} onChangeText={(v) => setAmount(v.replace(/[^\d.]/g, ''))} keyboardType="decimal-pad" placeholder="0" editable={!blocked} />
+      </EmField>
+      <View style={styles.chips}>
+        {min != null && min <= wallet.availablePaise && <EmChip compact label="Minimum" on={paise === min} onPress={() => setAmount(String(min / 100))} />}
+        {wallet.availablePaise > 0 && <EmChip compact label="All" on={paise === wallet.availablePaise} onPress={() => setAmount(String(wallet.availablePaise / 100))} />}
       </View>
+      <IvCard>
+        <IvLabel>PAID TO</IvLabel>
+        <Text style={text.uiMdSemi}>{bank ? `${bank.accountHolder} · •••• ${bank.accountNumberLast4}` : 'No payout account yet'}</Text>
+        {!!bank && <Text style={[text.uiXs, styles.muted]}>{`IFSC ${bank.ifsc}`}</Text>}
+        <Button variant="outline" size="sm" label={bank ? 'Change account' : 'Add an account'} onPress={() => navigation.navigate('InterviewerBankAccount')} style={styles.start} />
+      </IvCard>
+      {!!notice && <Text style={[text.uiSm, styles.secondary]}>{notice}</Text>}
 
-      {/* Available Balance Box */}
-      <Card style={styles.balanceCard}>
-        <Text style={styles.balanceLabel}>Available Balance</Text>
-        <Text style={styles.balanceValue}>{formatPaise(balancePaise)}</Text>
-        <Text style={styles.minNotice}>
-          Minimum withdrawal: {formatPaise(MIN_WITHDRAWAL_PAISE)} · No processing fees
-        </Text>
-      </Card>
-
-      {/* Amount Input */}
-      <Card style={styles.formCard}>
-        <Field label="Withdrawal Amount (in INR ₹)">
-          <Input
-            value={rupees}
-            onChangeText={setRupees}
-            placeholder="e.g. 1500"
-            keyboardType="number-pad"
-          />
-        </Field>
-
-        {/* Quick Amount Chips */}
-        <View style={styles.chipsRow}>
-          {[500, 1000, 2500].map((amt) => (
-            <Pressable
-              key={amt}
-              onPress={() => handleQuickSelect(amt)}
-              style={styles.chip}
-            >
-              <Text style={styles.chipText}>₹{amt}</Text>
-            </Pressable>
-          ))}
-          {maxRupees >= 500 && (
-            <Pressable
-              onPress={() => handleQuickSelect(maxRupees)}
-              style={[styles.chip, styles.chipFull]}
-            >
-              <Text style={[styles.chipText, styles.chipFullText]}>Full Balance</Text>
-            </Pressable>
-          )}
-        </View>
-
-        {/* Bank Account Destination */}
-        <View style={styles.bankBox}>
-          <Text style={styles.bankLabel}>Destination Account:</Text>
-          {wallet?.bankAccount ? (
-            <View style={styles.bankInfo}>
-              <Text style={styles.bankName}>{wallet.bankAccount.bankName || 'Verified Bank'}</Text>
-              <Text style={styles.bankAccountNum}>
-                Account ending in {wallet.bankAccount.accountNumberLast4 || wallet.bankAccount.accountNumber?.slice(-4) || '****'} · {wallet.bankAccount.ifsc}
-              </Text>
-            </View>
-          ) : (
-            <View style={styles.noBankBox}>
-              <Text style={styles.noBankText}>No bank account linked.</Text>
-              <Pressable onPress={() => navigation.navigate('InterviewerBankAccount')}>
-                <Text style={styles.linkBankBtn}>+ Link Bank Account</Text>
-              </Pressable>
-            </View>
-          )}
-        </View>
-
-        <Button
-          label={submitting ? 'Processing Request...' : 'Confirm Withdrawal'}
-          variant="primary"
-          disabled={submitting || balancePaise < MIN_WITHDRAWAL_PAISE || isSuspended}
-          onPress={handleWithdraw}
-        />
-      </Card>
+      {!!history?.length && (
+        <>
+          <IvLabel style={styles.section}>REQUESTS</IvLabel>
+          {history.map((w) => {
+            const st = WITHDRAWAL_STATUS[w.status] ?? { label: w.status, tone: 'violet' as const }
+            return (
+              <IvCard key={w.id}>
+                <View style={styles.top}>
+                  <Text style={[text.metaXl, styles.fig]}>{formatPaise(w.amountPaise)}</Text>
+                  <EmBadge label={st.label} tone={st.tone} small />
+                </View>
+                <Text style={[text.uiXs, styles.muted]}>{`Requested ${istStamp(w.requestedAt)}${w.payment?.reference ? ` · Ref ${w.payment.reference}` : ''}`}</Text>
+                {w.status === 'REJECTED' && !!w.rejectionReason && <Text style={[text.uiXs, styles.danger]}>{w.rejectionReason}</Text>}
+              </IvCard>
+            )
+          })}
+        </>
+      )}
     </InterviewerShell>
   )
 }
 
 const styles = StyleSheet.create({
-  header: {
-    gap: space['2xs'],
-  },
-  title: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 24,
-    fontWeight: '700',
-    color: color.text,
-  },
-  subtitle: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    color: color.textMuted,
-    lineHeight: 18,
-  },
-  balanceCard: {
-    padding: space.md,
-    gap: space['2xs'],
-    backgroundColor: color.surfaceSubtle,
-  },
-  balanceLabel: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 12,
-    color: color.textMuted,
-  },
-  balanceValue: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 26,
-    fontWeight: '700',
-    color: color.text,
-  },
-  minNotice: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 11,
-    color: color.textSubtle,
-    marginTop: 2,
-  },
-  formCard: {
-    padding: space.md,
-    gap: space.md,
-  },
-  chipsRow: {
-    flexDirection: 'row',
-    gap: space.xs,
-    marginTop: -space.xs,
-  },
-  chip: {
-    paddingVertical: space.xs,
-    paddingHorizontal: space.sm,
-    backgroundColor: color.surfaceSubtle,
-    borderRadius: radius.sm,
-    borderWidth: borderWidth.thin,
-    borderColor: color.border,
-  },
-  chipFull: {
-    backgroundColor: '#eff6ff',
-    borderColor: '#bfdbfe',
-  },
-  chipText: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 12,
-    fontWeight: '600',
-    color: color.text,
-  },
-  chipFullText: {
-    color: color.accent,
-  },
-  bankBox: {
-    backgroundColor: color.surfaceSubtle,
-    padding: space.md,
-    borderRadius: radius.sm,
-    gap: space['2xs'],
-  },
-  bankLabel: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 12,
-    fontWeight: '600',
-    color: color.textMuted,
-  },
-  bankInfo: {
-    gap: 2,
-  },
-  bankName: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 14,
-    fontWeight: '700',
-    color: color.text,
-  },
-  bankAccountNum: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 12,
-    color: color.textSubtle,
-  },
-  noBankBox: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: space['2xs'],
-  },
-  noBankText: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    color: color.accent,
-  },
-  linkBankBtn: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    fontWeight: '700',
-    color: color.accent,
-  },
+  muted: { color: color.textMuted },
+  secondary: { color: color.textSecondary },
+  danger: { color: color.danger },
+  fig: { letterSpacing: trackingNative.meta },
+  loading: { paddingVertical: space['3xl'] },
+  chips: { flexDirection: 'row', gap: spaceHalf['1.5'] },
+  start: { alignSelf: 'flex-start', paddingHorizontal: space.md, marginTop: space.xs },
+  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  section: { marginTop: space.sm },
 })

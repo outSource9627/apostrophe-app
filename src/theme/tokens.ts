@@ -1,30 +1,37 @@
 /**
- * THE canonical design tokens for every Apostrophe surface.
+ * THE canonical design tokens for the Apostrophe web app.
  *
  * Nothing in a component may contain a raw colour, radius, size or spacing
- * value. Everything comes from here.
+ * value. Everything comes from here — so re-branding is a change to this file
+ * and nothing else. To change the brand colour, change `accent`, `accentHover`,
+ * `accentText`, `accentSoft`, `accentWash`, `accentMuted` and `accentBright`;
+ * to change the typeface, change `fontFamily` and the two next/font loads in
+ * app/layout.tsx.
  *
  * Web consumes these as CSS custom properties (app/globals.css is generated
- * from this table). React Native imports the object directly. The two are kept
- * identical by `npm run theme:sync` in the other repos — a colour that exists on
- * one surface and not the other is a parity defect under PRD section 7, exactly
- * like a missing feature.
+ * from this table by `npm run theme:generate`).
  *
- * ── Three families, one job each ────────────────────────────────────────────
+ * Mobile parity: `fontFamilyNative` names the bundled Geist static files.
+ * `trackingNative` and `leadingNative` still carry the previous scale until
+ * each native screen is redesigned, so a step a screen needs is added there.
+ *
+ * ── Two families, one job each ─────────────────────────────────────────────
  * The foundation rests on a single typographic idea: type carries the design,
  * so colour does not have to. Every size token therefore names the family it
  * belongs to, and the binding is not negotiable at the call site.
  *
- *   display-*   Newsreader, a bookish serif. Anything that is CONTENT — screen
- *               titles, candidate names, salary, scores, interview feedback.
- *   ui-*        Instrument Sans. Anything that is INTERFACE — every control,
- *               label, row, paragraph and button.
- *   meta-*      IBM Plex Mono. Eyebrows, status pills, timers, transaction
- *               references, requirement IDs, fine print. Always uppercase.
+ *   display-*   Geist, at its heavier weights. Anything that is CONTENT —
+ *               screen titles, names, prices, scores, interview feedback.
+ *   ui-*        Geist, at its lighter weights. Anything that is INTERFACE —
+ *               every control, label, row, paragraph and button.
+ *   meta-*      Geist Mono. Eyebrows, status pills, timers, references, fine
+ *               print. Always uppercase.
  *
- * Writing `text-ui-lg` on a candidate's name is not a style slip, it is a
- * category error — the name is content and belongs in the serif. That is why
- * the family is in the token name rather than left to a separate font utility.
+ * display-* and ui-* share one typeface — weight and size carry the hierarchy —
+ * but the token names still mark the same category. Writing `text-ui-lg` on a
+ * person's name is still a category error: the name is content, and a future
+ * redesign that gives `display-*` its own face again should not have to hunt
+ * down every place that quietly assumed otherwise.
  *
  * ── Two floors ──────────────────────────────────────────────────────────────
  * Nothing sans-serif sets below 11px, and no interactive label sets below 13px.
@@ -33,123 +40,167 @@
  * stays legible where a lowercase sans would not.
  */
 export const color = {
-  // grounds — paper white, because the brand leans editorial rather than SaaS
-  background: '#FFFFFF',
+  // grounds — a cool paper ground with white surfaces lifted off it
+  background: '#FAFAFC',
   surface: '#FFFFFF',
-  surfaceMuted: '#F6F5F3',
-  surfaceSunken: '#EDEBE7',
+  surfaceMuted: '#F1F3F7',
+  surfaceSunken: '#E6E8EE',
 
   // text
-  text: '#16191C',
-  textMuted: '#5C6066',
-  textSubtle: '#8B9096',
+  text: '#0B0F1A',
+  /** Labels, secondary copy — one step darker than `textMuted`. */
+  textSecondary: '#3A4256',
+  textMuted: '#6B7385',
+  textSubtle: '#8A91A2',
+  /** A struck-through, unavailable value — a taken time slot. */
+  textDisabled: '#B4BAC7',
+  /** A locked destination's ink — the employer nav item a pending account cannot open yet. */
+  textLocked: '#A6ACBA',
   textInverse: '#FFFFFF',
 
-  // structure — warm greys, biased toward the ink rather than pure neutral
-  border: '#E4E2DE',
-  borderStrong: '#CFCCC6',
+  // structure — cool slate hairlines
+  border: '#E3E6ED',
+  borderStrong: '#C9CED9',
+  /** The row rule inside a card — lighter than a card's own edge. */
+  borderSoft: '#F1F3F7',
 
   /**
-   * Crimson. The single loud colour in the system, and it is a verb rather than
-   * a decoration. Four jobs only: the one primary action on a screen, the
-   * active nav item, the Verified Interview mark, and live/recording. Never a
-   * background, never a section header. Budget: about 5% of a screen's pixels.
+   * Violet. The brand colour and the primary verb: the one primary action on a
+   * screen, the active nav item, a selected tile or chip, a link, the focus
+   * ring, progress. To re-brand the product, change these five values.
    */
-  accent: '#B01E24',
-  accentHover: '#8F181D',
-  accentSoft: '#FBECEC',
-  /** The dotted leader that runs out to a price, and the paywall banner's rule. */
-  accentMuted: '#D9A9AB',
+  accent: '#5B3DF5',
+  accentHover: '#4A2FE0',
+  /** Text set on `accentSoft` — the same step as the hover. */
+  accentText: '#4A2FE0',
+  accentSoft: '#EFEBFF',
+  /** A selected row's wash, one step lighter than `accentSoft`. */
+  accentWash: '#F7F6FF',
+  /** A light violet: on-ink accent text, a spacing swatch, the leader rule. */
+  accentMuted: '#C4B8FF',
+  /** Hover and processing on a violet fill, and the progress fill on ink. */
+  accentBright: '#7258FF',
+  /** The deep end of a violet gradient — an avatar or tile on ink. */
+  accentDeep: '#3B2A8F',
+  /** The hairline round a violet well — the reviewer's request on the employer status screen. */
+  accentEdge: '#DCD3FF',
 
   /**
-   * The logo mark and the darkest ink. Near-black with a blue cast.
-   *
-   * Rationed deliberately: the ground is paper everywhere, including the
-   * interview room, so ink appears only as the mark, dark-fill secondary
-   * buttons, and the letterbox behind footage. The footage itself is then the
-   * only dark area on any screen, which makes it the focal point without a
-   * single decorative pixel.
+   * The ink ground and the darkest text. Ink appears as the mark, dark-fill
+   * buttons, the letterbox behind footage and the featured card on a page.
    */
-  ink: '#0F1A22',
-  /** A panel lifted off the ink ground — the well a video thumbnail sits in. */
-  inkRaised: '#1E2429',
+  ink: '#0B0F1A',
+  /** A panel lifted off the ink ground. */
+  inkRaised: '#151B2B',
+  /** An ink control on hover, and the light end of a footage gradient. */
+  inkHover: '#2A3142',
+  /** The silhouette drawn on ink where a candidate's face goes — the employer landing's sample film. */
+  inkSilhouette: '#1E2433',
+  /** The live room's ground — darker than ink so footage owns the frame. */
+  inkDeep: '#07090F',
+  /** The dark end of a footage gradient inside the room. */
+  inkDeeper: '#11151F',
 
-  // text on the ink ground. White at a fraction, so the ground shows through
-  // and the hierarchy survives on a dark surface.
+  // text on the ink ground
   textOnInk: '#FFFFFF',
-  textOnInkMuted: 'rgba(255, 255, 255, 0.72)',
-  textOnInkSubtle: 'rgba(255, 255, 255, 0.55)',
+  /** A paragraph set on an ink card — a step softer than white, a step above `textOnInkMuted`. */
+  textOnInkSoft: '#E3E6ED',
+  textOnInkMuted: '#C9CED9',
+  textOnInkSubtle: '#8A91A2',
+  /** A step's description on the employer sign-up card — between `textOnInkMuted` and `textOnInkSubtle`. */
+  textOnInkBody: '#A6ACBA',
   /** The wash behind a sheet, and the gradient foot under a video caption. */
-  scrim: 'rgba(15, 26, 34, 0.4)',
-  scrimStrong: 'rgba(15, 26, 34, 0.82)',
+  scrim: 'rgba(11, 15, 26, 0.4)',
+  scrimStrong: 'rgba(11, 15, 26, 0.82)',
+  /** The wash behind the job-details drawer — a step lighter than a sheet's, as the design draws it. */
+  scrimDrawer: 'rgba(11, 15, 26, 0.32)',
+  /** The backdrop behind a modal over the live room. */
+  scrimModal: 'rgba(7, 9, 15, 0.7)',
 
   /**
    * ── the on-ink surface set ────────────────────────────────────────────
-   * Over footage the system has no ground and no hairline. `surface` would
-   * blow a hole in the frame and the warm greys vanish against a moving
-   * image, so everything drawn on top of footage is white at a fraction and
-   * the picture reads through it. Declared once here rather than invented per
-   * component, which is what the interview room boards do (ST-30-A..D).
-   *
-   * They are deliberately NOT text colours — `textOnInk*` above are the three
-   * type steps; these are grounds, edges and lines. Every one is a value a
-   * board actually draws, and the entry cost is exactly that: a token nothing
-   * draws is the same defect as a raw value, it just fails later, when
-   * somebody reaches for it and calls it precedent. The 0.28 scrub track was
-   * turned away once on that rule, when the claim was that the ROOM drew it —
-   * the room draws no transport at all. It is back below under its right name
-   * because student-profile draws it on four boards, which is a different
-   * fact, not a softened rule.
+   * Over footage there is no ground and no hairline, so everything drawn on top
+   * of footage is white at a fraction and the picture reads through it. These
+   * are grounds, edges and lines — not text colours.
    */
   /** The fill behind an over-footage control — mute, camera, audio, leave. */
-  onInkGround: 'rgba(255, 255, 255, 0.14)',
+  onInkGround: 'rgba(255, 255, 255, 0.12)',
   /** Its hairline, and the border on the interviewer's tile. */
-  onInkEdge: 'rgba(255, 255, 255, 0.22)',
+  onInkEdge: 'rgba(255, 255, 255, 0.2)',
   /** The 9:16 framing guide — its rect, its head-room rules, its centre line. */
   guideLine: 'rgba(255, 255, 255, 0.26)',
-  /** A quiet bar in the audio-level meter (ST-30-D). */
+  /** A quiet bar in the audio-level meter. */
   onInkLevel: 'rgba(255, 255, 255, 0.34)',
-  /**
-   * The guide's corner ticks and a loud bar in the level meter — the only two
-   * marks over footage allowed above a quarter opacity without being white.
-   * They are the ones a person has to find while looking at their own face.
-   */
-  guideEdge: 'rgba(255, 255, 255, 0.62)',
+  /** The framing guide's oval and corner ticks — the marks a person looks for. */
+  guideEdge: 'rgba(110, 231, 183, 0.6)',
 
-  /**
-   * ── the four marks that sit ON a still ────────────────────────────────
-   * The set above is for things drawn over LIVE footage in the room. These
-   * four are for a framed video anywhere else — a player, a card head, a clip
-   * thumbnail — and they are nearly opaque where the room's are nearly
-   * transparent, which is the whole difference: the room is asking you to see
-   * through its marks to your own face, and a player is asking you to read a
-   * duration off a picture you do not control.
-   */
-  /** The idle play disc on a still — white, all but solid (profile ST-20/32). */
+  /** The four marks that sit ON a still — nearly opaque where the room's are not. */
   onInkDisc: 'rgba(255, 255, 255, 0.94)',
-  /** The same disc once the film is RUNNING: ink, so the picture stays the subject. */
-  onInkDiscPlaying: 'rgba(15, 26, 34, 0.55)',
-  /** A paper badge laid on a still — a duration, an Unverified tag (profile ST-21). */
+  onInkDiscPlaying: 'rgba(11, 15, 26, 0.55)',
   onInkBadge: 'rgba(255, 255, 255, 0.92)',
-  /** The transport scrubber's unfilled track. The fill is plain white. */
   onInkTrack: 'rgba(255, 255, 255, 0.28)',
+  /** A glass chip over footage — a blurred ink wash carrying a label. */
+  onInkGlass: 'rgba(11, 15, 26, 0.6)',
+  /** The hairline round a poster card on the ink ground — fainter than `onInkGround`. */
+  onInkHairline: 'rgba(255, 255, 255, 0.1)',
+  /** A fact tile lifted a shade off an ink card — white at 6%. */
+  onInkWash: 'rgba(255, 255, 255, 0.06)',
+  /** An accent pill on the ink ground ("UPCOMING") — `accentBright` at 25%; its text is `accentMuted`. */
+  accentOnInkSoft: 'rgba(114, 88, 255, 0.25)',
+  /** The unfilled track of a progress bar on the ink ground. */
+  onInkBar: 'rgba(255, 255, 255, 0.12)',
+  /** The job deck's play disc on a card (white at 16%), and the larger one in the details panel (18%). */
+  onInkPlay: 'rgba(255, 255, 255, 0.16)',
+  onInkPlayLg: 'rgba(255, 255, 255, 0.18)',
+  /** The hairline round a skill tag over footage. */
+  onInkOutline: 'rgba(255, 255, 255, 0.3)',
 
-  // semantic state — deliberately low in chroma, so red keeps its monopoly on
-  // urgency and "brand" never collapses into "this worked"
-  success: '#0C7355',
-  successSoft: '#E4F1EC',
-  warning: '#8E540A',
-  warningSoft: '#F9EFDD',
-  danger: '#A93122',
-  dangerSoft: '#FAE9E6',
   /**
-   * The hairline on a destructive control. Danger drained the way accentMuted
-   * drains the accent — a withdraw button has to read as danger without
-   * shouting, because red is the brand and danger is its own colour.
+   * ── semantic state ────────────────────────────────────────────────────
+   * Each state has a TEXT colour (`success`), a SOFT ground (`successSoft`), a
+   * FILL for dots, bars and icons (`successFill`) and, where a state is drawn
+   * over ink, an `…OnInk` step that stays legible on a dark ground.
    */
-  dangerBorder: '#E4CDC9',
-  info: '#0E6E8C',
-  infoSoft: '#E3EFF4',
+  success: '#0B7A55',
+  successSoft: '#E6F7F0',
+  /** A confirmed code cell's ground — a step lighter than `successSoft`. */
+  successWash: '#F3FBF7',
+  /** The hairline round an open cell in the interviewer's weekly availability matrix. */
+  successEdge: '#9FDDC4',
+  successFill: '#0E9F6E',
+  /** The ring round a live status dot — `successFill` at 18%. */
+  successHalo: 'rgba(14, 159, 110, 0.18)',
+  /** The ring round an idle status dot — `textSubtle` at 15%. */
+  neutralHalo: 'rgba(138, 145, 162, 0.15)',
+  successOnInk: '#6EE7B7',
+  successOnInkSoft: 'rgba(14, 159, 110, 0.2)',
+  warning: '#935F00',
+  warningSoft: '#FFF5E1',
+  warningFill: '#F5A524',
+  /** A mid-amber score — legible on white, warmer than `warning`. */
+  warningStrong: '#B87700',
+  /** The darkest amber — body text set on `warningSoft`. */
+  warningInk: '#5C4200',
+  /** The hairline under an amber band, and the stronger edge on the outline button inside it. */
+  warningEdge: '#F5E2B8',
+  warningEdgeStrong: '#E8C77A',
+  /** The ground of a self-uploaded, unverified clip on a candidate profile (EM-09) — lighter than `warningSoft`. */
+  warningWash: '#FFFCF3',
+  warningOnInk: '#FCC96B',
+  danger: '#C22A30',
+  dangerSoft: '#FDECEC',
+  dangerFill: '#E5484D',
+  dangerFillHover: '#D13A3F',
+  /** The hairline on a destructive control. */
+  dangerBorder: '#F2B8BA',
+  dangerOnInk: '#FF8A8E',
+  dangerOnInkSoft: 'rgba(229, 72, 77, 0.16)',
+  /** The wash under a hovered Not-interested circle on the job deck. */
+  dangerWash: '#FFF7F7',
+  /** A wrong code cell's ground. */
+  dangerGround: '#FFFBFA',
+  info: '#4A2FE0',
+  infoSoft: '#EFEBFF',
 } as const
 
 /**
@@ -179,19 +230,53 @@ export const space = {
 } as const
 
 /**
+ * The half steps between the grid's whole ones, named by their Tailwind
+ * multiple (so `gap-2.5` on web and `spaceHalf['2.5']` on native are the same
+ * 10). The Android design sets card gaps and pill padding on these; they are
+ * not a licence for off-grid structure — a block's outer rhythm stays on `space`.
+ */
+export const spaceHalf = {
+  '1.5': 6,
+  '2.5': 10,
+  '3.5': 14,
+  '4.5': 18,
+  /** The auth screens' gutter (Android M1, M10): 24. */
+  '6': 24,
+} as const
+
+/**
  * Radius carries meaning here: the bigger the radius, the more the surface is
- * "lifted off" the page. A tag is almost square, a sheet is nearly a pill.
+ * "lifted off" the page. A chip is nearly square, a card is soft, a button is a
+ * pill.
  */
 export const radius = {
-  /** Tags and skeleton bars. */
-  sm: 4,
-  /** Fields, OTP cells, inline wells. */
+  /** Progress bars and meter cells. */
+  bar: 3,
+  /** The corner of a chat bubble that points back at whoever wrote it (G6): 16 everywhere else, 4 here. */
+  tail: 4,
+  /** Tags and chips. */
+  sm: 6,
+  /** The logo mark, a nav item, an icon tile. */
+  ctl: 8,
+  /** Fields and time-slot chips. */
   md: 10,
+  /** An OTP cell, an inner card, a banner. */
+  tile: 12,
+  /** A selectable tile — a domain card, a day card. */
+  panel: 14,
   /** Cards, and every framed video. */
-  lg: 14,
-  /** Bottom sheets — top corners only. */
-  xl: 22,
-  /** Every button, chip, pill and toggle. */
+  lg: 16,
+  /** The profile view's cards (G7): two pixels past `lg`, the one place the design draws 18. */
+  'card-lg': 18,
+  /** The centred employer modal (EM-13, EM-15) — a step past `xl`, which the deck (22) shares in value only. */
+  modal: 22,
+  /** Modals and floating tiles. */
+  xl: 20,
+  /** The job deck's swipe card (G2): 22. */
+  deck: 22,
+  /** The lobby's camera frame. */
+  frame: 24,
+  /** Every button, badge, pill and toggle. */
   pill: 999,
 } as const
 
@@ -219,6 +304,38 @@ export const fontSize = {
   'display-2xl': 64,
   /** Salary, scores, totals. Set tabular — see `.tnum`. */
   'display-num': 40,
+  /** A card's title. */
+  'display-card': 20,
+  /** The day number in a date tile — "26" over its month, in the interviews list. */
+  'display-tile': 19,
+  /** A saved job's title in its row (G3) — the tile's 19 set as a heading, so it has a line box. */
+  'display-row': 19,
+  /** A section heading, one step under the page title. */
+  'display-heading': 24,
+  /** A feature card's headline date. */
+  'display-lead': 28,
+  /** A form or lobby title. */
+  'display-form': 30,
+  /** A working page's title. */
+  'display-page': 32,
+  /** The dashboard greeting, and a price. */
+  'display-greet': 34,
+  /** A confirmation's headline date. */
+  'display-stat': 44,
+  /** The auth panel's headline — "Be seen, not skimmed." */
+  'display-auth': 40,
+  /** The sign-up headline — "Five things, and we're off." Between the greeting and the marketing step. */
+  'display-signup': 52,
+  /** The employer landing's headline. */
+  'display-landing': 84,
+  /** A single figure set large — the reply multiple. */
+  'display-figure': 72,
+  /** The candidate's initial on a film that has no footage yet (EM-08, EM-09): 140, set at a tenth of white. */
+  'display-poster': 140,
+  /** The Android scorecard's overall figure (M9): 56 at 600. */
+  'display-score-sm': 56,
+  /** The score. The largest number in the product. */
+  'display-score': 96,
   /**
    * The one long-form serif step: the interviewer's written feedback in the
    * room (ST-33-delivered). It is 18px like `display-xs`, and aliasing the two
@@ -241,18 +358,26 @@ export const fontSize = {
   'ui-md': 14,
   /** Body copy, sheets, and the primary button. */
   'ui-base': 15,
+  /** A person's name in a row, and the auth call to action. */
+  'ui-lead': 16,
   /** List titles, the app bar. */
   'ui-lg': 17,
   /** Large interface type, where a heading is chrome rather than content. */
-  'ui-xl': 21,
+  'ui-xl': 20,
+  /** The employer landing's section lead. */
+  'ui-intro': 19,
+  /** The employer landing's primary action. */
+  'ui-cta': 18,
 
   // ── meta · IBM Plex Mono · always uppercase ─────────────────────────────
   /** Dense badges sitting on footage. */
   'meta-xs': 9,
-  /** Eyebrows and status pills. The canonical meta step. */
+  /** Status pills. The canonical badge step. */
   'meta-sm': 10,
   /** Transaction references, durations, fine print. */
   'meta-md': 11,
+  /** Eyebrows, and the credit chip. The canonical label step. */
+  'meta-base': 12,
   /**
    * 13 — the mono step that is a MARK rather than a line of fine print: the
    * employer monogram inside a 44px Avatar (chat ST-43, ST-43Web, ST-41, ST-42
@@ -264,7 +389,7 @@ export const fontSize = {
    */
   'meta-lg': 13,
   /**
-   * ── the two clock steps ─────────────────────────────────────────────
+   * ── the three clock steps ────────────────────────────────────────────
    * A countdown is the one thing in the product set in mono at a size the
    * mono steps above were never meant to reach. It is mono because it is a
    * readout the person has to act against rather than a fact they are
@@ -278,11 +403,35 @@ export const fontSize = {
    */
   'meta-xl': 15,
   /**
+   * 20 — `Countdown`'s `ring` format, the one readout centred inside an
+   * arc instead of sitting in a well or a band. It has to clear `meta-xl`
+   * by enough to read as the ring's subject rather than another line of
+   * fine print, and it stays one size across every ring diameter the
+   * component draws: the ring itself carries the size difference, so the
+   * label does not have to.
+   */
+  'meta-2xl': 20,
+  /**
    * 56 — the join clock, and the largest element in the booking flow. It is
    * the only meta step above the fine-print range, which is the point: at the
    * moment the window opens, the time left IS the screen.
    */
   'meta-hero': 56,
+  /**
+   * 30 — a percentage read as a MONO figure. The profile's completion is the one
+   * place the design sets a number in Geist Mono rather than the display face.
+   */
+  'meta-figure': 30,
+  /** 48 — the interviewer dashboard's countdown to the next session. */
+  'meta-countdown': 48,
+  /** One digit of a one-time code in its cell (Android M1): 24 mono at 600. */
+  'meta-otp': 24,
+  /** The job deck's SAVE stamp (G2): 18 mono at 600. Its NOT INTERESTED sibling is `meta-xl`. */
+  'meta-stamp': 18,
+  /** A figure or a countdown on an interviewer phone card (Interviewer Android M1): 22 mono. */
+  'meta-tile': 22,
+  /** The scorecard deadline band's clock (Interviewer Android M4): 16 mono. */
+  'meta-band': 16,
 } as const
 
 /**
@@ -298,8 +447,23 @@ export const fontSizeLeading = {
   'display-md': 1.15,
   'display-lg': 1.08,
   'display-xl': 1.06,
-  'display-2xl': 1.04,
+  'display-2xl': 1.02,
   'display-num': 1,
+  'display-card': 1.25,
+  /** The design sets the day number at line-height 1, so the tile's two lines centre as one block. */
+  'display-tile': 1,
+  'display-row': 1.25,
+  'display-heading': 1.2,
+  'display-lead': 1.15,
+  'display-form': 1.15,
+  'display-page': 1.15,
+  'display-greet': 1.15,
+  'display-stat': 1.05,
+  'display-auth': 1.05,
+  'display-signup': 1.02,
+  'display-landing': 0.98,
+  'display-figure': 1,
+  'display-score': 0.9,
   prose: 1.55,
 
   'ui-2xs': 1.45,
@@ -307,17 +471,28 @@ export const fontSizeLeading = {
   'ui-sm': 1.45,
   'ui-md': 1.4,
   'ui-base': 1.55,
+  'ui-lead': 1.4,
   'ui-lg': 1.35,
   'ui-xl': 1.3,
+  'ui-intro': 1.55,
+  'ui-cta': 1.35,
 
   'meta-xs': 1.5,
   'meta-sm': 1.5,
   'meta-md': 1.4,
+  'meta-base': 1.4,
   /** Tighter than the steps below it: at 13 the mono is a mark, not a line. */
   'meta-lg': 1.2,
   'meta-xl': 1.4,
+  /** Same reasoning as `meta-hero`: a ring's centre label owns its own box. */
+  'meta-2xl': 1,
   /** A clock is one line and owns its own box. Nothing sets beneath it. */
   'meta-hero': 1,
+  /** The design sets no line height on it: the font's own line box, `leading.natural`. */
+  'meta-figure': 1.3,
+  'meta-countdown': 1,
+  'meta-tile': 1.2,
+  'meta-band': 1.3,
 } as const
 
 /**
@@ -332,13 +507,17 @@ export const fontSizeFluid = {
 } as const
 
 /**
- * Weights. Newsreader carries 300 for the large display steps — a serif set at
- * 36px looks heavy at 400 — and 400 everywhere else.
+ * Weights. Geist is a variable font, so the in-between weights (450, 550) are
+ * real cuts rather than a synthetic bold.
  */
 export const fontWeight = {
   light: '300',
   regular: '400',
+  /** A nav item at rest. */
+  nav: '450',
   medium: '500',
+  /** Labels and names — one step under semibold. */
+  emphasis: '550',
   semibold: '600',
   bold: '700',
 } as const
@@ -352,7 +531,13 @@ export const fontWeight = {
  * is set as a rule.
  */
 export const tracking = {
-  /** The largest display type. */
+  /** A figure set very large — the reply multiple, the score. */
+  'tight-2xl': '-0.05em',
+  'tight-hero': '-0.045em',
+  'tight-display': '-0.04em',
+  /** The display step. */
+  'tight-xl': '-0.035em',
+  /** Large display type. */
   'tight-lg': '-0.03em',
   tight: '-0.025em',
   /** Section heads and screen titles. */
@@ -384,7 +569,9 @@ export const tracking = {
    */
   'meta-snug': '0.06em',
   /** Status pills and inline mono. */
-  meta: '0.1em',
+  meta: '0.06em',
+  /** The job deck's mono meta line (G2): 0.05em, between `meta-label` and `meta`. */
+  'meta-deck': '0.05em',
   /**
    * The two clock tracks, and they tighten as the clock grows for the same
    * reason the display steps do: tracking is air between letters, and a
@@ -397,15 +584,17 @@ export const tracking = {
    * component inserts, because a mono colon sits tight against the digit
    * either side of it and a clock has to be read in groups.
    */
-  'meta-clock': '0.08em',
+  'meta-clock': '0.02em',
   'meta-clock-lg': '0.04em',
+  /** A route or section label in mono. */
+  'meta-label': '0.04em',
   /** Captions over footage. */
-  'meta-wide': '0.12em',
+  'meta-wide': '0.08em',
   /** Eyebrow labels. */
-  eyebrow: '0.14em',
+  eyebrow: '0.08em',
   /** The widest eyebrow — section numbers, the document rule. */
-  'eyebrow-wide': '0.16em',
-  widest: '0.18em',
+  'eyebrow-wide': '0.1em',
+  widest: '0.12em',
 } as const
 
 /**
@@ -415,23 +604,51 @@ export const tracking = {
 export const leading = {
   none: 1,
   display: 1.08,
+  /** A sign-up page's headline (1.04). */
+  head: 1.04,
   tight: 1.25,
+  /**
+   * What the design gets by leaving line-height unset: the font's own line box,
+   * which is 1.3 in both Geist and Geist Mono. Reach for it where a block's
+   * height is measured off a board that never set one.
+   */
+  natural: 1.3,
+  /**
+   * The same thing, exactly: CSS `normal`. `natural` is the ratio that
+   * approximates it, and no single ratio can do better — Geist's own line box
+   * is round(0.99 × size) + round(0.29 × size), so 16 at 12px, 17 at 13px, 19
+   * at 15px and 28 at 22px, which 1.3 lands 0.1–0.6px short of or past, and
+   * that is enough to move a row of text a whole pixel. Reach for this one
+   * where the rows have to land on the board's own pixels (the sign-up screen).
+   */
+  intrinsic: 'normal',
   snug: 1.4,
+  /** A big title set tight — the job deck's card title (30 / 28) and the details drawer's (26). */
+  title: 1.1,
+  /** The employer page header's 44px title (H.ph): a step tighter than `title`. */
+  'page-title': 1.05,
+  /** The mono meta line under a job deck title (11px at 1.6). */
+  meta: 1.6,
+  /** The 15px lines the design sets on an ink card — a step looser than `snug`, a step tighter than `normal`. */
+  copy: 1.45,
   normal: 1.5,
   relaxed: 1.55,
   loose: 1.65,
 } as const
 
 /**
- * Three faces, three jobs — see the header note.
+ * Two faces, two jobs — see the header note.
  *
- * The *-loaded variables are set by next/font, which self-hosts the files. The
- * stacks after them are what renders if that has not resolved yet, chosen so
- * the fallback has roughly the right colour on the page.
+ * display and body both resolve to the same loaded Geist, so a component
+ * switching between `fontFamily.display` and `.body` is choosing a weight/size
+ * role, not a typeface. The *-loaded variables are set by
+ * next/font, which self-hosts the files. The stacks after them are what
+ * renders if that has not resolved yet, chosen so the fallback has roughly
+ * the right colour on the page.
  */
 export const fontFamily = {
-  display: "var(--font-display-loaded), 'Iowan Old Style', Georgia, serif",
-  body: "var(--font-body-loaded), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif",
+  display: "var(--font-sans-loaded), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif",
+  body: "var(--font-sans-loaded), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif",
   mono: "var(--font-mono-loaded), ui-monospace, SFMono-Regular, Menlo, monospace",
 } as const
 
@@ -445,47 +662,46 @@ export const fontFamily = {
  * the string here breaks Android only, which is the kind of bug that reaches a
  * store build.
  *
- * `Newsreader16pt` is the optical size cut for text and small display, which is
- * the range a phone actually sets: the 36px screen title is the largest thing
- * in the app, well inside what the 16pt cut is drawn for.
+ * `display` and `body` are the same Geist — see `fontFamily`'s header note.
+ * They stay as separate `display*`/`body*` keys: the names still mark CONTENT
+ * vs INTERFACE, and a future redesign that gives `display-*` its own face
+ * again should not have to touch every call site. Content is set at the
+ * SemiBold weight (the design's 600 headings); interface at Regular/Medium.
+ *
+ * The static files are Google Fonts' own Geist / Geist Mono cuts (OFL). Geist
+ * has no italic, so `displayItalic` is Regular.
  *
  * RN has no synthetic weight for a custom face — asking for fontWeight 600 on a
  * Regular file silently gives you Regular on Android — so every weight the
  * design uses is bundled as its own file and named here.
  */
 export const fontFamilyNative = {
-  /** Newsreader 300 — the large display steps only. */
-  displayLight: 'Newsreader16pt-Light',
-  display: 'Newsreader16pt-Regular',
-  displayMedium: 'Newsreader16pt-Medium',
-  displayItalic: 'Newsreader16pt-Italic',
+  displayLight: 'Geist-Light',
+  display: 'Geist-SemiBold',
+  displayMedium: 'Geist-Medium',
+  displayItalic: 'Geist-Regular',
 
-  body: 'InstrumentSans-Regular',
-  bodyMedium: 'InstrumentSans-Medium',
-  bodySemiBold: 'InstrumentSans-SemiBold',
-  bodyBold: 'InstrumentSans-Bold',
+  body: 'Geist-Regular',
+  bodyMedium: 'Geist-Medium',
+  bodySemiBold: 'Geist-SemiBold',
+  bodyBold: 'Geist-Bold',
 
-  mono: 'IBMPlexMono-Regular',
-  monoMedium: 'IBMPlexMono-Medium',
-  monoSemiBold: 'IBMPlexMono-SemiBold',
+  mono: 'GeistMono-Regular',
+  monoMedium: 'GeistMono-Medium',
+  monoSemiBold: 'GeistMono-SemiBold',
 
-  /** The platform's own serif, where the bundled display face is not used. */
-  displayFallback: 'serif',
+  /** The platform's own sans, where the bundled face is not used. */
+  displayFallback: 'sans-serif',
 } as const
 
 /**
- * The wordmark's face on mobile.
- *
- * This used to fall back to the platform serif on each platform, because the
- * display face was not bundled and shipping four weights for one word was not
- * worth it. Newsreader is bundled now, so the wordmark sets in the same serif
- * as the rest of the product on both platforms — which is the point of a
- * wordmark. Kept in `Platform.select` shape so call sites do not have to change.
+ * The wordmark's face on mobile — the same Geist as the rest of the product,
+ * kept in `Platform.select` shape so call sites do not have to change.
  */
 export const fontFamilyNativeWordmark = {
-  ios: 'Newsreader16pt-Regular',
-  android: 'Newsreader16pt-Regular',
-  default: 'serif',
+  ios: 'Geist-SemiBold',
+  android: 'Geist-SemiBold',
+  default: 'sans-serif',
 } as const
 
 /**
@@ -496,6 +712,10 @@ export const fontFamilyNativeWordmark = {
  */
 export const trackingNative = {
   'tight-lg': -1.1,
+  /** -0.02em at the 28 step (`display-lead`) — the Android screen title. */
+  'tight-md': -0.56,
+  /** -0.05em at the 56 step — the Android scorecard figure. */
+  'tight-2xl': -2.8,
   tight: -0.9,
   'tight-sm': -0.7,
   snug: -0.4,
@@ -533,11 +753,24 @@ export const leadingNative = {
   'ui-base': 23,
   'ui-lg': 23,
   'ui-xl': 27,
+  'ui-lead': 24,
+  'display-lead': 32,
+  'display-page': 35,
+  'display-score-sm': 50,
+  'display-card': 25,
+  'display-heading': 29,
+  'display-greet': 39,
+  'meta-otp': 28,
+  'meta-xl': 22,
 
   'meta-xs': 14,
   'meta-sm': 15,
   'meta-md': 15,
   'meta-lg': 16,
+  /** The native ring's centre value — see `fontSizeLeading['meta-2xl']`. */
+  'meta-2xl': 20,
+  'meta-tile': 27,
+  'meta-band': 21,
 } as const
 
 /**
@@ -561,7 +794,7 @@ export const opacity = { pressed: 0.85, disabled: 0.5, hidden: 0 } as const
  * emitted nowhere for a while, which is its own defect: a component that needs
  * 1.5px and cannot reach a token writes 1.5px.
  */
-export const borderWidth = { thin: 1, medium: 1.5, accent: 2 } as const
+export const borderWidth = { thin: 1, medium: 1.5, accent: 2, /** The job deck's stamps (G2). */ stamp: 3 } as const
 
 /**
  * How far a text action's rule sits below its baseline.
@@ -576,15 +809,16 @@ export const borderWidth = { thin: 1, medium: 1.5, accent: 2 } as const
  * Web only. React Native has no text-underline-offset; a pressable label there
  * takes `textDecorationLine` and the platform picks the offset.
  */
-export const underlineOffset = { text: 3 } as const
+export const underlineOffset = { text: 3, /** The public bar's current-page link ("Sign in"). */ link: 6 } as const
 
 /**
- * Three levels of elevation in the whole system, and the rule is flat by
- * default: a hairline does the work almost everywhere.
+ * Elevation, and the rule is flat by default: a hairline does the work almost
+ * everywhere.
  *
  * `card` lifts a surface off the page — swipe cards, sheets, toasts. `raised`
- * is the small lift under a segmented control's selected pane. `focus` is the
- * ring a field wears while it has the caret: 3px of ink at 6%, never blue.
+ * is the small lift under a resting card. `focus` is the ring a field wears
+ * while it has the caret: 4px of violet at 14%, over a 1.5px violet border.
+ * `accent` is the glow under a primary action.
  *
  * `lift` is the fourth, and it exists only for what sits OVER FOOTAGE — the
  * interview room's transient band. On paper a card is separated from the page
@@ -594,17 +828,31 @@ export const underlineOffset = { text: 3 } as const
  * tint composited into it. It is the room's own `--lift`, unchanged.
  */
 export const shadow = {
-  card: '0 1px 2px rgba(15, 26, 34, 0.04), 0 12px 32px -12px rgba(15, 26, 34, 0.12)',
-  raised: '0 1px 2px rgba(15, 26, 34, 0.08)',
-  focus: '0 0 0 3px rgba(22, 25, 28, 0.06)',
-  /**
-   * The only coloured shadow in the system, and it exists for exactly one
-   * control: the save action on the job feed. That button is the whole gesture
-   * the feed is built around, so it is allowed to lift off the card in a way
-   * nothing else does.
-   */
-  accent: '0 8px 20px -8px rgba(176, 30, 36, 0.6)',
-  lift: '0 2px 6px rgba(15, 26, 34, 0.18), 0 16px 40px -16px rgba(15, 26, 34, 0.45)',
+  /** Lifts a floating surface — a sheet, a toast, an artboard. */
+  card: '0 1px 2px rgba(11, 15, 26, 0.06), 0 12px 40px rgba(11, 15, 26, 0.1)',
+  /** The hairline lift under a resting card or a selected segment. */
+  raised: '0 1px 2px rgba(11, 15, 26, 0.04)',
+  /** A card that stands off the page — the order summary. */
+  panel: '0 12px 32px rgba(11, 15, 26, 0.06)',
+  /** The 4px ring a field wears while it has the caret. */
+  focus: '0 0 0 4px rgba(91, 61, 245, 0.14)',
+  /** The ring around a selected tile, one shade softer than `focus`. */
+  ring: '0 0 0 4px rgba(91, 61, 245, 0.12)',
+  /** The glow under a primary action. */
+  accent: '0 6px 16px rgba(91, 61, 245, 0.28)',
+  /** What sits OVER FOOTAGE — the room's transient band. */
+  lift: '0 12px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1)',
+  /** The lobby's camera frame, floating on the muted ground beside the setup panel. */
+  frame: '0 24px 60px rgba(11, 15, 26, 0.25)',
+  /** The job deck (G2): the top card, the card waiting behind it, the two round actions, the undo toast and the details drawer. */
+  deck: '0 24px 60px rgba(11, 15, 26, 0.12)',
+  'deck-back': '0 8px 24px rgba(11, 15, 26, 0.05)',
+  'deck-skip': '0 6px 18px rgba(11, 15, 26, 0.07)',
+  'deck-save': '0 8px 20px rgba(11, 15, 26, 0.2)',
+  toast: '0 12px 30px rgba(11, 15, 26, 0.25)',
+  /** The centred employer modal (EM-13, EM-15): a 22px sheet floating over a dimmed page. */
+  modal: '0 30px 80px rgba(11, 15, 26, 0.3)',
+  drawer: '-20px 0 50px rgba(11, 15, 26, 0.12)',
 } as const
 
 /**
@@ -618,6 +866,9 @@ export const shadow = {
 export const rotation = {
   stamp: '-11deg',
   'stamp-alt': '11deg',
+  /** The job deck's SAVE / NOT INTERESTED stamps (G2), a degree steeper than the two above. */
+  'deck-save': '-12deg',
+  'deck-skip': '12deg',
 } as const
 
 /**
@@ -648,19 +899,44 @@ export const container = {
    * and the pay bar all share an edge. Chat's three-pane layout is full-bleed
    * instead, which is a different page type rather than a different measure.
    */
-  column: 1152,
+  column: 1184,
+  /**
+   * The column My interviews and My applications draw their cards in: 960 wide
+   * on the 1280 board (160 either side), narrower than the 1120 shell column it
+   * sits inside, so it is centred within that column.
+   */
+  'list-page': 960,
   /** The profile wizard's progress rail. */
-  rail: 296,
+  rail: 320,
+  /**
+   * The profile wizard's step pane at its widest: 816 of form between two 72px
+   * gutters, which is exactly what the 1280 board draws beside the 320 rail.
+   * A cap rather than a width, so a wider window centres the form instead of
+   * stretching a two-column grid of inputs across it.
+   */
+  'wizard-pane': 960,
   /** The wider proof rail beside the landing headline. */
   'rail-wide': 340,
   /** The aside on a split page — the proof column beside a form. */
   aside: 430,
+  /** The booking page's right rail: the match card over the selection card. */
+  'rail-book': 360,
   /** The well an unstarted video sits in, on narrow screens. */
   'thumb-col': 122,
   /** A video thumbnail, 9:16 against `height['video-thumb']`. */
   'video-thumb': 68,
   /** The same thumbnail in the mobile list, against `height['video-thumb-compact']`. */
   'video-thumb-compact': 58,
+  /** The lobby's camera frame at its widest: 360 across is the 640-tall 9:16 the design draws. */
+  'lobby-frame': 360,
+  /** The lobby's setup panel, beside the camera frame. */
+  'lobby-panel': 460,
+  /** The interviewer's tile in the live room, and the session bar under the frame's left edge. */
+  'room-tile': 240,
+  /** The chat's thread list beside the conversation (G6): 360 of list, and the transcript takes the rest. */
+  'chat-list': 360,
+  /** The widest a chat bubble runs: a long message wraps at 460 rather than crossing the pane. */
+  'chat-bubble': 460,
 
   /** The measure a line of mobile body copy runs to. */
   'measure-native': 280,
@@ -678,12 +954,72 @@ export const container = {
    */
   'chip-min': 48,
   /**
-   * The toggle track's width, paired with `height.toggle` at 26. It is the
-   * 44px tap cell the switch sits in, which is why the track is not narrower:
-   * the visible control and the box a finger has to hit are one measurement,
-   * so a change to either cannot leave the other behind.
+   * The toggle track's width, paired with `height.toggle` at 30.
    */
-  'toggle-track': 44,
+  'toggle-track': 52,
+  /** The employer notification matrix's switch (EM-29): 44 across, against `height['toggle-em']` at 26. */
+  'toggle-track-em': 44,
+  /** One channel column of the employer notification matrix (EM-29), and the narrower one on a phone. */
+  'matrix-cell': 90,
+  'matrix-cell-compact': 56,
+  /** The interviewer's weekly availability matrix: its time-label column, and the narrower one on a phone. */
+  'week-matrix-time': 72,
+  'week-matrix-time-compact': 52,
+  /** The employer account, notifications and settings pages (EM-27…EM-29): the design's 880 column. */
+  'employer-narrow': 880,
+  /** One cell of the OTP field, against `height['otp-cell']`. */
+  'otp-cell': 56,
+  'otp-cell-sm': 52,
+  'landing-film': 360,
+  /** The form column on a split auth screen — six OTP cells and their gaps fit it exactly. */
+  'auth-form': 400,
+  /** The paragraph beside the poster on the auth panel. */
+  'auth-copy': 300,
+  /** The interviewer sign-in panel's headline and steps. */
+  'auth-panel': 500,
+  /** The decorative 9:16 poster card on the auth panel, against `height['film-card']`. */
+  'film-card': 216,
+  /** The sign-up stage at its widest — the two-column body with its 120px gutters. A wider window centres it. */
+  'signup-frame': 1280,
+  /** The dark "what you get" card beside the sign-up form. */
+  'signup-aside': 400,
+  'employer-aside': 420,
+  /** The order-summary card's column beside the tier grid — pricing and pay. */
+  summary: 380,
+  /** The big-figure column inside the dark feature banner, beside its paragraph. */
+  'figure-col': 180,
+  /** The profile view's column: 900 between 190px gutters on the 1280 board. */
+  'profile-column': 900,
+  /** The film page's player: a 9:16 at 360 across is the 640-tall frame the lobby draws. */
+  'film-player': 360,
+  /** The film frame beside the name on the employer preview. */
+  'film-hero': 280,
+  /** The job feed's header row (G2): the title and the two pills, over the 420 deck. */
+  'deck-header': 880,
+  /** The employer list pages (Shortlist EM-14, Interests EM-16): a 1040 column. */
+  'employer-list': 1040,
+  /** Employer home (EM-04): the page's content measure, inside its 40px gutters. */
+  'employer-home': 1040,
+  /** Employer working pages (EM-05…EM-07): the page's content measure. */
+  'employer-page': 1080,
+  /** The reviewer-checks card (EM-05) and the live-jobs card (EM-07), beside their main column. */
+  'employer-rail': 320,
+  /** The job editor's page measure (EM-18) — a step wider than the working pages, for the form and its preview rail. */
+  'employer-editor': 1120,
+  /** The job editor's "how students see it" rail (EM-18). */
+  'job-preview': 360,
+  /** The job detail's video and moderation rail (EM-19). */
+  'job-rail': 300,
+  /** The applicant's 9:16 video column (EM-21). */
+  'applicant-video': 320,
+  /** The "what you submitted" card beside the verification status (EM-06). */
+  'employer-status-rail': 340,
+  /** The receipt card on the documents-submitted confirmation (EM-05b). */
+  'employer-receipt': 460,
+  /** The locked phone drawn in the "how the feed works" card (EM-04): 130 × 231, a 9:16 frame. */
+  'feed-lock-w': 130,
+  /** The candidate profile's sticky 9:16 film (EM-09): 400 across, beside the details. */
+  'profile-film': 400,
 } as const
 
 /**
@@ -699,40 +1035,144 @@ export const container = {
  */
 export const height = {
   /** Primary actions, and every field. */
-  control: 52,
+  control: 48,
+  /** The one call to action on a form or a hero — continue, pay, join. */
+  'control-lg': 52,
+  /** A page-footer action pair. */
+  'control-md': 46,
+  /** A button inside a card. */
+  'control-compact': 42,
   /** Inline and secondary buttons. Also the tap-target floor. */
   'control-sm': 44,
   /** The small button inside an empty or error state. */
   'control-xs': 40,
   /** The action inside a next-action block, and a sheet's paired buttons. */
   'control-block': 48,
+  /** The full-width call to action that closes a phone screen. */
+  'control-cta': 50,
+  /** The employer auth forms' action (EM-02, EM-03, sign-in). */
+  'control-auth': 56,
+  'control-hero': 58,
+  /** The outline action inside the amber verification band. */
+  'control-banner': 34,
   /** Filter and skill chips. */
-  chip: 36,
+  chip: 32,
+  /** The filter row on a list page — My interviews' All / Upcoming / Completed chips. */
+  'chip-lg': 38,
+  /** A suggested skill — the wizard's '+ Python' — a step under the chip it becomes. */
+  'chip-sm': 30,
+  /** A time-slot chip. */
+  slot: 40,
   /** One pane of a segmented control, inside its 3px track padding. */
   segment: 34,
   /**
    * A switch, and the knob inside it.
    *
-   * 26 around the 22px knob, with `container['toggle-track']` at 44 for its
-   * width. Three flows drew three tracks — 52x32 knob 26, 44x26 knob 22,
-   * 40x24 knob 20 — and account's is the reading that survives: its knob is
-   * already the knob token, and its width is exactly the 44px tap cell the
-   * switch is centred in, so the track and the target are one measurement
-   * rather than two that drift. It was 28, which matched no board at all.
+   * 30 around the 24px knob, with `container['toggle-track']` at 52. The track
+   * sits inside a 44px-tall tap cell, so the visible control is drawn at the
+   * design's size while the hit target still meets the floor.
    */
-  toggle: 26,
-  'toggle-knob': 22,
+  toggle: 30,
+  'toggle-knob': 24,
   /** The smallest square a finger reliably hits. */
   tap: 44,
   /** A glyph slot in the tab bar — placeholder until the icon set arrives. */
   glyph: 24,
   /** The pill behind an active Android tab. */
   'tab-indicator': 30,
+  /** The Android app's active-tab pill (Student App Android, M4): 60 × 32. */
+  'tab-pill-w': 60,
+  'tab-pill-h': 32,
+  /** The Android app's brand tile in the top bar — the violet square carrying the mark. */
+  'brand-mark': 30,
+  /** A status dot and the halo ring round it (M4: 10 inside 20). */
+  'status-dot': 10,
+  'status-halo': 20,
+  /** Employer header (EM-04..28): the company-initials button 40, a round header icon button 44. */
+  'header-avatar': 40,
+  /** Chat (M15): a bubble's widest 300, an image bubble 196 × 108, the composer's tallest 120, a label column 92, the note field 72. */
+  'bubble-max': 300,
+  'bubble-image-w': 196,
+  'bubble-image-h': 108,
+  'composer-max': 120,
+  'label-col': 92,
+  'label-col-lg': 128,
+  'note-field': 72,
+  /** An unread count chip (22 wide) and a job post's video well (260). */
+  'count-chip': 22,
+  'job-video': 260,
+  /** The job deck (M11): a company tile 44, the round actions 48 / 64, the video play disc 68. */
+  'deck-logo': 44,
+  'deck-action': 64,
+  'deck-action-sm': 48,
+  'deck-play': 68,
+  /** The job deck on a desktop (G2): the card is 420 × 620, the round actions beside it 76. */
+  'deck-card': 620,
+  /** The live room (M8): the self/interviewer tile is 116 wide, a round control 60, the Leave pill 76 × 60. */
+  'room-tile-w': 116,
+  'room-ctl': 60,
+  'room-leave-w': 76,
+  /** The date tile on an interview row (M13: 48 × 52). */
+  'date-tile-w': 48,
+  'date-tile-h': 52,
+  /** The bar chart on the interviewer's availability rail ("Next 14 days"). */
+  'chart-bars': 72,
+  /** One half-hour row of the interviewer's weekly availability grid. */
+  'week-cell': 30,
+  /** A button inside the availability screen's floating publish bar. */
+  'dock-action': 36,
+  /** A day card in the slot strip (M5: 72 wide). */
+  'day-card': 72,
+  /** A pricing tier row (M3: 64) and its radio (22). */
+  'tier-row': 64,
+  radio: 22,
+  /** One cell of a ten-cell score bar (M9). */
+  'score-cell': 8,
+  /** One bar of the wizard's step indicator (M2). */
+  'step-bar': 4,
+  /** The play-progress line under an employer feed card's caption (Employer Android A.card). */
+  'film-progress': 3,
+  /** The shoulders of the locked-feed silhouette (Employer Android EM-08b): 200 × 120. */
+  'lock-shoulders-w': 200,
+  'lock-shoulders-h': 120,
+  /** The 9:16 film beside a candidate's name in the employer profile sheet (Employer Android): 96 × 170. */
+  'profile-thumb-w': 96,
+  'profile-thumb-h': 170,
+  /** The 9:16 film at the top of the employer's candidate profile page (Employer Android EM-09). */
+  'profile-film': 420,
+  /** The Android drill-in header (56) and the title row of a bottom-bar screen (52). */
+  'screen-header': 56,
+  'tab-title': 52,
+  /** The Android app's top-level top bar (M4: 60) — brand left, credit chip and avatar right. */
+  'top-bar': 60,
+  /** The Android top bar's avatar circle (M4: 36). */
+  'avatar-lg': 36,
+  /** The film still on the Android dashboard row: 40 wide at 9:16, with a 10 play mark. */
+  'thumb-w': 40,
+  'thumb-play': 10,
+  /** The extended floating action button — "Book interview". */
+  fab: 56,
+  /** The bottom tab bar itself, above the safe-area inset it sits on top of. */
+  'tab-bar': 64,
+  /** The conversation's header: the counterparty's face and name, and the recording mark (G6). */
+  'chat-head': 68,
+  /** The employer conversation's header (EM-26): a taller one than the student's, with the profile actions in it. */
+  'chat-head-lg': 76,
+  /** The interviewer's messages: the two panes sit in a card this tall, and scroll inside it. */
+  'chat-pane': 640,
+  /** The employer notification matrix's switch (EM-29), against `container['toggle-track-em']`. */
+  'toggle-em': 26,
 
-  header: 60,
-  'header-lg': 72,
-  'otp-cell': 52,
-  'otp-cell-lg': 76,
+  header: 64,
+  'header-lg': 64,
+  'otp-cell': 64,
+  'otp-cell-sm': 60,
+  'landing-film': 640,
+  /** One cell of the Android one-time code (M1: 58). */
+  'otp-cell-mobile': 58,
+  'otp-cell-lg': 64,
+  /** The decorative 9:16 poster card on the auth panel, against `container['film-card']`. */
+  'film-card': 384,
   /** The pay bar itself, and the spacer that keeps it off the content. */
   'pay-bar': 88,
   /**
@@ -770,6 +1210,52 @@ export const height = {
 } as const
 
 /**
+ * Gradients, emitted as `bg-<name>` utilities. Built from `color` so a re-brand
+ * of the accent carries through: the violet glow is the accent, not a copy of it.
+ *
+ * `glow-*` is the violet bloom laid on an ink card — the same idea at four
+ * sizes and strengths, one per place the design draws it. `footage-*` is the
+ * ground a video frame shows before there is footage. `avatar-*` is a person's
+ * placeholder disc. `meter` fills a bar that measures the student against
+ * something.
+ */
+const glow = (size: string, at: string, alpha: number, stop: number) =>
+  `radial-gradient(${size} at ${at}, color-mix(in srgb, ${color.accent} ${alpha * 100}%, transparent), transparent ${stop}%)`
+
+export const gradient = {
+  /** The auth panel's bloom. */
+  'glow-hero': glow('900px 500px', '20% 0%', 0.35, 60),
+  /** A wide feature banner. */
+  'glow-banner': glow('600px 240px', '90% 0%', 0.45, 70),
+  /** A feature card on the dashboard. */
+  'glow-card': glow('500px 260px', '100% 0%', 0.4, 70),
+  /** The score card. */
+  'glow-score': glow('400px 300px', '0% 0%', 0.45, 70),
+  /** The sign-up screen's "what you get" card — the dashboard card's bloom, a touch narrower and stronger. */
+  'glow-aside': glow('420px 260px', '100% 0%', 0.45, 70),
+  /** A film poster before footage: a slate wash into ink. */
+  'footage': `linear-gradient(180deg, ${color.inkHover}, ${color.inkRaised})`,
+  /** The device-check lobby's camera frame. */
+  'footage-lobby': `linear-gradient(180deg, ${color.textSecondary}, ${color.inkRaised})`,
+  /** The live room's self view. */
+  'footage-room': `linear-gradient(180deg, ${color.inkHover}, ${color.inkDeeper})`,
+  /** The expert's placeholder tile in the live room. */
+  'avatar-deep': `linear-gradient(160deg, ${color.accentDeep}, ${color.inkRaised})`,
+  /** The expert's avatar disc. */
+  'avatar-accent': `linear-gradient(135deg, ${color.accentMuted}, ${color.accent})`,
+  /** The candidate's initials disc on the interviewer's next-session card. */
+  'avatar-mint': `linear-gradient(135deg, ${color.successOnInk}, ${color.successFill})`,
+  /** The job deck's video card before there is footage (G2): violet-deep into ink. */
+  /** The caption's foot on the employer landing's sample film — solid ink to 60%, then clear. */
+  'landing-caption': `linear-gradient(0deg, ${color.ink} 60%, transparent)`,
+  'deck-video': `linear-gradient(180deg, ${color.accentDeep} 0%, ${color.inkRaised} 70%)`,
+  /** The foot under a video card's caption — ink at 92% rising out of nothing. */
+  'deck-caption': `linear-gradient(0deg, color-mix(in srgb, ${color.inkDeep} 92%, transparent) 20%, transparent)`,
+  /** The fill of a bar that compares the student to a median. */
+  meter: `linear-gradient(90deg, ${color.accentBright}, ${color.accentMuted})`,
+} as const
+
+/**
  * The page skeletons. Three two-column layouts in the product, and the column
  * widths come from `container` above so a measure is never written twice.
  */
@@ -780,6 +1266,66 @@ export const gridTemplate = {
   pricing: `minmax(0, ${container['measure-4xl']}px) 1fr`,
   /** Admin detail: the record, then a rail of actions. */
   'admin-detail': '1fr 20rem',
+  /** The dashboard's visibility row: the state mark, the words, two counts, the switch. */
+  visibility: 'auto 1fr auto auto',
+  /** The dashboard's two cards: the dark upcoming card is a fifth wider than the film card beside it. */
+  dashboard: '1.2fr 1fr',
+  /** Interviewer home: the next-session card, then the scorecards and later-today column. */
+  'interviewer-home': 'minmax(0, 1.35fr) minmax(0, 1fr)',
+  /** One later-today row: the time, who and what, the fee. */
+  'session-row': '80px minmax(0, 1fr) auto',
+  /** Enhanced interviewer home, top row: the next-session / nothing-booked card, then the wallet card. */
+  'interviewer-home-top': 'minmax(0, 1.45fr) minmax(0, 1fr)',
+  /** One recent-interview row: avatar, who and what, when, fee, status. */
+  'recent-row': '36px minmax(0, 1fr) 200px 90px 80px',
+  /** The interviewer sign-in panel's step: its number, then the words. */
+  'auth-step': '44px minmax(0, 1fr)',
+  /** The scorecard: the overall figure's card, then the competencies. */
+  scorecard: `${container['rail-wide']}px 1fr`,
+  /** One competency row: its name, the ten-cell bar, the score. */
+  competency: '260px 1fr 48px',
+  /** The employer notification matrix (EM-29): the event, then push, email and in-app. */
+  'notify-matrix': `minmax(0, 1fr) repeat(3, ${container['matrix-cell']}px)`,
+  'notify-matrix-compact': `minmax(0, 1fr) repeat(3, ${container['matrix-cell-compact']}px)`,
+  /** The device-check lobby: the camera stage, then the setup panel. */
+  lobby: `minmax(0, 1fr) ${container['lobby-panel']}px`,
+  /** Slot booking: the day and time picker, then a rail for the match and the selection. */
+  book: `minmax(0, 1fr) ${container['rail-book']}px`,
+  /** A split auth screen on a tablet: a narrow brand rail, then the form. */
+  'auth-rail': `${container.rail}px 1fr`,
+  /** Sign-up: the form column, then the dark "what you get" card. */
+  signup: `minmax(0, 1fr) ${container['signup-aside']}px`,
+  'employer-auth': `minmax(0, 1fr) ${container['employer-aside']}px`,
+  'landing-hero': `minmax(0, 1fr) ${container['landing-film']}px`,
+  /** Pricing and pay: the tier grid, then the sticky order-summary card. */
+  checkout: `minmax(0, 1fr) ${container.summary}px`,
+  /** The dark feature banner: a fixed figure column, then its paragraph. */
+  'checkout-banner': `${container['figure-col']}px minmax(0, 1fr)`,
+  /** A job's action row (G3 page): the round Not-interested, Save, then the wider Apply. */
+  'job-actions': 'auto 1fr 1.4fr',
+  /** The same row on a phone: Not interested and Save share one line, Apply takes the next. */
+  'job-actions-compact': 'auto 1fr',
+  /** Chat: the thread list, then the conversation. */
+  chat: `${container['chat-list']}px minmax(0, 1fr)`,
+  /** Employer home: the verification card, then the "unlocks" card (EM-04). */
+  'employer-home-top': 'minmax(0, 1.4fr) minmax(0, 1fr)',
+  /** Employer home, verified: recent activity, then live jobs (EM-04b). */
+  'employer-activity': 'minmax(0, 1.3fr) minmax(0, 1fr)',
+  /** Job editor: the form, then the live preview and its actions (EM-18). */
+  'job-editor': `minmax(0, 1fr) ${container['job-preview']}px`,
+  /** Job detail: the facts, then the video and moderation timeline (EM-19). */
+  'job-detail': `minmax(0, 1fr) ${container['job-rail']}px`,
+  /** Applicant detail: the 9:16 video, then the person and the pipeline (EM-21). */
+  applicant: `${container['applicant-video']}px minmax(0, 1fr)`,
+  /** A working page: the main column, then a 320 rail (EM-05, EM-07). */
+  'employer-rail': `minmax(0, 1fr) ${container['employer-rail']}px`,
+  /** The interviewer's weekly availability matrix: the time labels, then seven day columns. */
+  'week-matrix': `${container['week-matrix-time']}px repeat(7, minmax(0, 1fr))`,
+  'week-matrix-compact': `${container['week-matrix-time-compact']}px repeat(7, minmax(0, 1fr))`,
+  /** The verification status: the main column, then the 340 "what you submitted" card (EM-06). */
+  'employer-status': `minmax(0, 1fr) ${container['employer-status-rail']}px`,
+  /** The candidate profile: the sticky film, then the details (EM-09). */
+  'employer-profile': `${container['profile-film']}px minmax(0, 1fr)`,
 } as const
 
 /**
@@ -804,29 +1350,31 @@ export const animation = {
 } as const
 
 /**
- * The brand mark's own proportions.
+ * The brand lockup's own proportions.
  *
- * The wordmark sets larger than the glyph beside it: the serif has a small
- * x-height, so matching the two sizes makes the word look shrunken next to the
- * mark. This is the ratio that makes them read as one lockup.
+ * The lockup is a violet rounded-square badge carrying a bold ’ glyph, with the
+ * wordmark beside it. The wordmark sets smaller than the badge — 17 against 28
+ * in the app bar — and the glyph is drawn as text, so its size and its optical
+ * drop are ratios of the badge rather than absolute numbers. They are tokens
+ * because the badge appears at 28 in the bar and 30 on the auth panel, and the
+ * two lockups have to match.
  */
 export const brand = {
-  wordmarkRatio: 1.15,
-  /**
-   * The mark's size inside an app bar, mobile and desktop.
-   *
-   * These are tokens rather than numbers inside AppBar because the WORDMARK is
-   * derived from them: 18 × 1.15 is the 18/20.7 lockup every mobile board in
-   * nine flows draws, and 20 × 1.15 is the 20/23 one every desktop board
-   * draws. A bar that picks its own mark size silently picks a wordmark size
-   * too, and the two lockups stop matching across surfaces.
-   */
-  markInBar: 18,
-  markInBarLg: 20,
+  /** Wordmark size as a fraction of the badge: 17 / 28. */
+  wordmarkRatio: 0.6,
+  /** The wordmark never sets smaller than this, whatever the badge size. */
+  wordmarkMin: 14,
+  /** The ’ glyph as a fraction of the badge: 26 / 28. */
+  markGlyphRatio: 0.93,
+  /** How far the glyph is nudged down inside the badge: 10 / 28. */
+  markGlyphOffset: 0.36,
+  /** The badge's size inside an app bar, mobile and desktop. */
+  markInBar: 28,
+  markInBarLg: 28,
 } as const
 
 /** Interview capture is locked to 9:16 (IR-02); every card that shows one mirrors it. */
-export const aspect = { videoResume: 9 / 16, fullVideo: 16 / 9 } as const
+export const aspect = { videoResume: 9 / 16, fullVideo: 16 / 9, deck: 420 / 620 } as const
 
 export type ColorToken = keyof typeof color
 export type FontSizeToken = keyof typeof fontSize

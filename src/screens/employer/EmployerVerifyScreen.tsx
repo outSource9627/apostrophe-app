@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import {
-  KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View, type TextInput,
+  KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View, type TextInput,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { borderWidth, color, height, opacity, space } from '../../theme'
-import { Banner, Body, Button, Display, Eyebrow } from '../../components/ui'
-import { CodeRow, Glyph, TextAction } from '../../components/employer'
+import { color, space } from '../../theme'
+import { Banner, Body, Button } from '../../components/ui'
+import { EmBar, EmFoot, EmTitle } from '../../components/employer/em'
+import { CodeRow, TextAction } from '../../components/employer'
 import { ApiClientError, ErrorCode } from '../../lib/api'
 import {
   attemptsLeft, registerEmployer, sendRegisterCodes, verifyRegisterCode,
@@ -321,53 +322,37 @@ export function EmployerVerifyScreen({
       style={[styles.page, { paddingTop: insets.top }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <View style={styles.bar}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Back to create account"
-          onPress={onEdit}
-          style={({ pressed }) => [styles.back, pressed && styles.pressed]}
-        >
-          <Glyph name="chevronLeft" size={height.glyph} weight={borderWidth.accent} />
-        </Pressable>
-        <Eyebrow>Create account</Eyebrow>
-      </View>
+      <EmBar onBack={onEdit} />
 
       <ScrollView
         style={styles.grow}
         contentContainerStyle={[styles.body, { paddingBottom: space['2xl'] + insets.bottom }]}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.title}>
-          <Display level="lg" accessibilityRole="header">
-            Confirm your email and mobile
-          </Display>
-          <Body tone="muted">We sent a 6-digit code to each. They are separate, so enter them in any order.</Body>
-        </View>
+        <EmTitle eyebrow="Step 2 of 3" title="Check two codes." sub="We sent a 6-digit code to your work email and another to your mobile. Both need to match." />
 
         {row('EMAIL')}
         {row('MOBILE')}
 
-        {!both ? (
-          <Body size="sm" tone="muted">
-            When both are confirmed, we create your account and open your home.
-          </Body>
-        ) : createError ? (
+        {!!createError && both && (
           <Banner tone="danger">
             <Body size="xs" style={styles.dangerInk}>
               {createError}
             </Body>
             <TextAction label="Try again" onPress={() => setCreateError(null)} style={styles.start} />
           </Banner>
-        ) : (
-          <View style={styles.handoff} accessibilityLiveRegion="polite">
-            <Button variant="primary" size="lg" full busy label="Creating your account…" />
-            <Body size="xs" tone="muted">
-              Next is your home, where you send two documents to verify the company.
-            </Body>
-          </View>
         )}
+        <Body size="sm" tone="muted">
+          {both ? 'Next is your home, where you send two documents to verify the company.' : 'When both are confirmed, we create your account and open your home.'}
+        </Body>
       </ScrollView>
+      <EmFoot>
+        <View style={styles.grow}>
+          {both && !createError
+            ? <Button variant="primary" size="lg" full busy label="Creating your account…" />
+            : <Button variant="primary" size="lg" full disabled label="Continue" />}
+        </View>
+      </EmFoot>
     </KeyboardAvoidingView>
   )
 }
@@ -386,28 +371,8 @@ const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.background },
   grow: { flex: 1 },
   start: { alignSelf: 'flex-start' },
-  pressed: { opacity: opacity.pressed },
 
-  bar: {
-    height: height.header,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space['2xs'],
-    paddingHorizontal: space.xl,
-    backgroundColor: color.surface,
-    borderBottomWidth: borderWidth.thin,
-    borderBottomColor: color.border,
-  },
-  // Hung over the gutter so the chevron lines up with the content edge.
-  back: {
-    width: height.tap,
-    height: height.tap,
-    marginLeft: -space.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  body: { paddingHorizontal: space.xl, paddingTop: space.xl, gap: space.xl },
+  body: { paddingHorizontal: space.lg, paddingTop: space.xs, gap: space.md },
   title: { gap: space.sm },
   handoff: { marginTop: space.sm, gap: space.sm },
   dangerInk: { color: color.danger },

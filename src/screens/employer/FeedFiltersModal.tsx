@@ -1,334 +1,212 @@
-import React, { useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
+import { StyleSheet, Text, View } from 'react-native'
+import { borderWidth, color, space, spaceHalf } from '../../theme'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { Button, Input, text } from '../../components/ui'
+import { EmChip, EmSheet } from '../../components/employer/em'
+import { fetchMatchCount, type CandidateFilters } from '../../lib/api/employerFeed'
+import { getConfig, type AppConfig } from '../../lib/api/config'
 import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native'
-import { useNavigation } from '@react-navigation/native'
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { color, radius, space, fontFamilyNative } from '../../theme'
-import { EmployerShell } from '../../components/employer/EmployerShell'
-import { saveSearch } from '../../lib/api/employerFeed'
-import type { RootStackParamList } from '../../../App'
+  EXPERIENCE_FLOORS, SALARY_BANDS, bandFilters, bandLabel, bandOf, filterCount, filterOptions, normalize, rowLabel,
+} from '../../lib/employer/feedFilters'
 
-const AVAILABILITY_OPTIONS = [
-  { value: 'IMMEDIATE', label: 'Immediate' },
-  { value: 'FIFTEEN_DAYS', label: '15 days' },
-  { value: 'THIRTY_DAYS', label: '30 days' },
-  { value: 'MORE_THAN_MONTH', label: '1+ month' },
-]
+/**
+ * EM-11 · Filters, the bottom sheet over the feed. Ten groups of chips in the
+ * design's order; several values in one group are any-of, groups AND together.
+ * The count under the title is the server's (GET /employers/feed/match-count,
+ * free) for the draft as it stands. Show saves the whole sheet on the server,
+ * so the filters stay on until cleared — on this phone and on the web.
+ *
+ * The long lists (field of study, skills, cities, languages) come from the
+ * server's master data: what is chosen shows first, then the first few of the
+ * rest, and a search finds any other.
+ */
+export function FeedFiltersSheet({
+  open, applied, onClose, onApply, onSaveAs,
+}: {
+  open: boolean
+  applied: CandidateFilters
+  onClose: () => void
+  onApply: (next: CandidateFilters) => void
+  onSaveAs: (draft: CandidateFilters) => void
+}) {
+  const [draft, setDraft] = useState<CandidateFilters>(applied)
+  const [config, setConfig] = useState<AppConfig | null>(null)
+  const [matches, setMatches] = useState<number | null>(null)
+  const insets = useSafeAreaInsets()
 
-export function FeedFiltersModal() {
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
+  // A fresh draft each time the sheet opens.
+  useEffect(() => {
+    if (open) setDraft(applied)
+  }, [open, applied])
 
-  const [city, setCity] = useState('')
-  const [skill, setSkill] = useState('')
-  const [availability, setAvailability] = useState('')
-  const [minExp, setMinExp] = useState('')
-  const [maxSalaryLakh, setMaxSalaryLakh] = useState('')
-  const [searchName, setSearchName] = useState('')
-  const [savedSuccess, setSavedSuccess] = useState(false)
-
-  const handleApply = () => {
-    navigation.navigate('EmployerFeed')
-  }
-
-  const handleSaveSearch = async () => {
-    if (!searchName.trim()) return
-    try {
-      await saveSearch(searchName.trim(), {
-        city: city.trim() || undefined,
-        skill: skill.trim() || undefined,
-        availability: availability || undefined,
-        minExperienceYears: minExp ? Number(minExp) : undefined,
-        maxExpectedSalaryPaise: maxSalaryLakh ? Number(maxSalaryLakh) * 10000000 : undefined,
-      })
-      setSavedSuccess(true)
-      setSearchName('')
-      setTimeout(() => setSavedSuccess(false), 3000)
-    } catch {
-      // Ignored
+  useEffect(() => {
+    let alive = true
+    getConfig().then((c) => alive && setConfig(c)).catch(() => {})
+    return () => {
+      alive = false
     }
-  }
+  }, [])
 
-  const footActions = (
-    <View style={styles.footRow}>
-      <TouchableOpacity
-        activeOpacity={0.8}
-        onPress={() => {
-          setCity('')
-          setSkill('')
-          setAvailability('')
-          setMinExp('')
-          setMaxSalaryLakh('')
-        }}
-        style={styles.clearBtn}
-      >
-        <Text style={styles.clearBtnText}>Clear</Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        activeOpacity={0.8}
-        onPress={handleApply}
-        style={styles.applyBtn}
-      >
-        <Text style={styles.applyBtnText}>Show candidates</Text>
-      </TouchableOpacity>
-    </View>
-  )
+  // The live count, debounced so a run of taps asks once.
+  const key = JSON.stringify(normalize(draft))
+  useEffect(() => {
+    if (!open) return
+    let alive = true
+    const t = setTimeout(() => {
+      fetchMatchCount(normalize(draft))
+        .then((r) => alive && setMatches(r.matches))
+        .catch(() => alive && setMatches(null))
+    }, 350)
+    return () => {
+      alive = false
+      clearTimeout(t)
+    }
+    // `key` is the draft's canonical form; the draft object itself changes identity on every edit.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, key])
+
+  const o = useMemo(() => filterOptions(config), [config])
+  const n = normalize(draft)
+  const set = (patch: Partial<CandidateFilters>) => setDraft((d) => normalize({ ...d, ...patch }))
+  const toggle = <T extends string | number>(list: T[] | undefined, v: T): T[] =>
+    list?.includes(v) ? list.filter((x) => x !== v) : [...(list ?? []), v].slice(0, o.listMax)
+  const band = bandOf(n)
 
   return (
-    <EmployerShell
-      back={{ label: 'FEED', onPress: () => navigation.goBack() }}
-      footer={footActions}
+    <EmSheet
+      open={open}
+      onClose={onClose}
+      tall
+      title="Filters"
+      sub={matches === null ? ' ' : `${matches.toLocaleString('en-IN')} ${matches === 1 ? 'candidate matches' : 'candidates match'}`}
+      foot={
+        <View style={styles.footWrap}>
+          <View style={styles.foot}>
+            <Button variant="ghost" size="block" label="Clear all" disabled={filterCount(n) === 0} onPress={() => setDraft({})} style={styles.slim} />
+            <Button variant="outline" size="block" label="Save search" onPress={() => onSaveAs(n)} style={styles.slim} />
+            <Button variant="primary" size="block" label="Show" onPress={() => onApply(n)} style={styles.grow} />
+          </View>
+          <Text style={[text.uiXs, styles.subtle, styles.note, { paddingBottom: space.sm + insets.bottom }]}>Filters stay on until cleared, across sessions.</Text>
+        </View>
+      }
     >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Filter candidate feed</Text>
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => navigation.navigate('SavedSearches')}
-          >
-            <Text style={styles.savedLink}>Saved searches →</Text>
-          </TouchableOpacity>
-        </View>
+      <Group title={rowLabel('tier')}>
+        {o.tiers.map((t) => <EmChip key={t.value} label={t.label} on={!!n.tiers?.includes(t.value)} onPress={() => set({ tiers: toggle(n.tiers, t.value) })} />)}
+      </Group>
 
-        {/* City */}
-        <View style={styles.fieldGroup}>
-          <Text style={styles.fieldLabel}>CITY</Text>
-          <TextInput
-            value={city}
-            onChangeText={setCity}
-            placeholder="e.g. Bengaluru, Mumbai"
-            placeholderTextColor={color.textSubtle}
-            style={styles.input}
-          />
-        </View>
+      <ListGroup title={rowLabel('fieldOfStudy')} noun="field" all={o.domains} chosen={n.domains} onChange={(domains) => set({ domains })} />
+      <ListGroup title={rowLabel('skills')} noun="skill" all={o.skills} chosen={n.skills} onChange={(skills) => set({ skills })} />
 
-        {/* Skill */}
-        <View style={styles.fieldGroup}>
-          <Text style={styles.fieldLabel}>KEY SKILL</Text>
-          <TextInput
-            value={skill}
-            onChangeText={setSkill}
-            placeholder="e.g. Python, React"
-            placeholderTextColor={color.textSubtle}
-            style={styles.input}
-          />
-        </View>
-
-        {/* Availability */}
-        <View style={styles.fieldGroup}>
-          <Text style={styles.fieldLabel}>AVAILABILITY</Text>
-          <View style={styles.chipsRow}>
-            {AVAILABILITY_OPTIONS.map((opt) => {
-              const active = availability === opt.value
-              return (
-                <TouchableOpacity
-                  key={opt.value}
-                  activeOpacity={0.8}
-                  onPress={() => setAvailability(active ? '' : opt.value)}
-                  style={[styles.chip, active && styles.chipActive]}
-                >
-                  <Text style={[styles.chipText, active && styles.chipTextActive]}>
-                    {opt.label}
-                  </Text>
-                </TouchableOpacity>
-              )
-            })}
-          </View>
-        </View>
-
-        {/* Minimum Experience */}
-        <View style={styles.fieldGroup}>
-          <Text style={styles.fieldLabel}>MINIMUM EXPERIENCE (YEARS)</Text>
-          <TextInput
-            value={minExp}
-            onChangeText={setMinExp}
-            keyboardType="numeric"
-            placeholder="e.g. 2"
-            placeholderTextColor={color.textSubtle}
-            style={styles.input}
-          />
-        </View>
-
-        {/* Maximum Salary */}
-        <View style={styles.fieldGroup}>
-          <Text style={styles.fieldLabel}>MAX EXPECTED SALARY (LAKH / YR)</Text>
-          <TextInput
-            value={maxSalaryLakh}
-            onChangeText={setMaxSalaryLakh}
-            keyboardType="numeric"
-            placeholder="e.g. 15"
-            placeholderTextColor={color.textSubtle}
-            style={styles.input}
-          />
-        </View>
-
-        {/* Save Search Section */}
-        <View style={styles.saveBox}>
-          <Text style={styles.saveBoxTitle}>Save this search</Text>
-          <View style={styles.saveInputRow}>
-            <TextInput
-              value={searchName}
-              onChangeText={setSearchName}
-              placeholder="Search name"
-              placeholderTextColor={color.textSubtle}
-              style={[styles.input, { flex: 1 }]}
+      <ListGroup title={rowLabel('location')} noun="city" all={o.cities} chosen={n.cities} onChange={(cities) => set({ cities })}>
+        {o.locationModes
+          .filter((m) => m.value !== 'LIVES' || (n.cities?.length ?? 0) > 0)
+          .map((m) => (
+            <EmChip
+              key={m.value}
+              label={m.label}
+              on={!!n.locationModes?.includes(m.value)}
+              onPress={() => set({ locationModes: toggle(n.locationModes, m.value) })}
             />
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={handleSaveSearch}
-              style={styles.saveBtn}
-            >
-              <Text style={styles.saveBtnText}>Save</Text>
-            </TouchableOpacity>
-          </View>
-          {savedSuccess && (
-            <Text style={styles.successText}>Search saved successfully!</Text>
-          )}
-        </View>
-      </ScrollView>
-    </EmployerShell>
+          ))}
+      </ListGroup>
+
+      <Group title={rowLabel('experience')}>
+        {EXPERIENCE_FLOORS.map((y) => (
+          <EmChip key={y} label={`${y}+ yrs`} on={n.minExperienceYears === y} onPress={() => set({ minExperienceYears: n.minExperienceYears === y ? undefined : y })} />
+        ))}
+      </Group>
+
+      <Group title={rowLabel('salary')}>
+        {SALARY_BANDS.map((b) => (
+          <EmChip
+            key={b.key}
+            label={bandLabel(b)}
+            on={band?.key === b.key}
+            onPress={() => set(band?.key === b.key ? { minExpectedSalaryPaise: undefined, maxExpectedSalaryPaise: undefined } : bandFilters(b))}
+          />
+        ))}
+      </Group>
+
+      <ListGroup title={rowLabel('languages')} noun="language" all={o.languages} chosen={n.languages} onChange={(languages) => set({ languages })} />
+
+      <Group title={rowLabel('availability')} hint="Joins within">
+        {o.availability.map((a) => (
+          <EmChip key={a.value} label={a.label} on={n.joinsWithin === a.value} onPress={() => set({ joinsWithin: n.joinsWithin === a.value ? undefined : a.value })} />
+        ))}
+      </Group>
+
+      <Group title={rowLabel('employmentType')}>
+        {o.employmentTypes.map((t) => (
+          <EmChip key={t.value} label={t.label} on={!!n.employmentTypes?.includes(t.value)} onPress={() => set({ employmentTypes: toggle(n.employmentTypes, t.value) })} />
+        ))}
+      </Group>
+
+      <Group title={rowLabel('recency')}>
+        {o.recency.map((r) => (
+          <EmChip
+            key={r.value}
+            label={r.label}
+            on={n.interviewedWithinDays === r.value}
+            onPress={() => set({ interviewedWithinDays: n.interviewedWithinDays === r.value ? undefined : r.value })}
+          />
+        ))}
+      </Group>
+    </EmSheet>
+  )
+}
+
+function Group({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <View style={styles.group}>
+      <View style={styles.groupHead}>
+        <Text style={text.uiMdSemi}>{title}</Text>
+        {!!hint && <Text style={[text.uiXs, styles.subtle]}>{hint}</Text>}
+      </View>
+      <View style={styles.chips}>{children}</View>
+    </View>
+  )
+}
+
+const SHOWN = 8
+
+/**
+ * A master-data list: what is chosen first, then the first few of the rest.
+ * A search box appears once the list is longer than that, and finds any value.
+ */
+function ListGroup({
+  title, noun, all, chosen = [], onChange, children,
+}: { title: string; noun: string; all: string[]; chosen?: string[]; onChange: (next: string[]) => void; children?: React.ReactNode }) {
+  const [q, setQ] = useState('')
+  const lower = chosen.map((c) => c.toLowerCase())
+  const rest = all.filter((v) => !lower.includes(v.toLowerCase()))
+  const needle = q.trim().toLowerCase()
+  const shown = (needle ? rest.filter((v) => v.toLowerCase().includes(needle)) : rest).slice(0, SHOWN)
+  if (all.length === 0 && chosen.length === 0 && !children) return null
+  return (
+    <View style={styles.group}>
+      <Text style={text.uiMdSemi}>{title}</Text>
+      {all.length > SHOWN && (
+        <Input value={q} onChangeText={setQ} placeholder={`Find a ${noun}`} autoCorrect={false} autoCapitalize="none" returnKeyType="search" />
+      )}
+      <View style={styles.chips}>
+        {chosen.map((v) => <EmChip key={`on-${v}`} label={v} on onPress={() => onChange(chosen.filter((c) => c !== v))} />)}
+        {shown.map((v) => <EmChip key={v} label={v} on={false} onPress={() => onChange([...chosen, v])} />)}
+        {children}
+      </View>
+      {!!needle && shown.length === 0 && <Text style={[text.uiXs, styles.subtle]}>{`No ${noun} matches “${q.trim()}”.`}</Text>}
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
-  scrollContent: {
-    paddingHorizontal: space.sm,
-    paddingBottom: space.xl,
-    gap: space.md,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'baseline',
-    borderBottomWidth: 1,
-    borderBottomColor: color.border,
-    paddingBottom: space.sm,
-  },
-  title: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: 22,
-    color: color.text,
-  },
-  savedLink: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: color.text,
-  },
-  fieldGroup: {
-    gap: space.xs,
-  },
-  fieldLabel: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 10,
-    fontWeight: '600',
-    color: color.textMuted,
-  },
-  input: {
-    height: 44,
-    borderWidth: 1,
-    borderColor: color.border,
-    backgroundColor: color.surface,
-    borderRadius: radius.md,
-    paddingHorizontal: space.sm,
-    fontSize: 14,
-    color: color.text,
-  },
-  chipsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-  },
-  chip: {
-    borderWidth: 1,
-    borderColor: color.border,
-    backgroundColor: color.surfaceMuted,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: radius.md,
-  },
-  chipActive: {
-    borderColor: color.text,
-    backgroundColor: color.text,
-  },
-  chipText: {
-    fontSize: 12,
-    color: color.textMuted,
-    fontWeight: '500',
-  },
-  chipTextActive: {
-    color: color.textInverse,
-    fontWeight: '600',
-  },
-  saveBox: {
-    backgroundColor: color.surfaceMuted,
-    borderRadius: radius.lg,
-    padding: space.sm,
-    gap: space.xs,
-    marginTop: space.sm,
-  },
-  saveBoxTitle: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: 15,
-    color: color.text,
-  },
-  saveInputRow: {
-    flexDirection: 'row',
-    gap: space.xs,
-  },
-  saveBtn: {
-    backgroundColor: color.text,
-    paddingHorizontal: space.md,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  saveBtnText: {
-    color: color.textInverse,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  successText: {
-    fontSize: 11,
-    color: color.accent,
-    fontWeight: '600',
-  },
-  footRow: {
-    flexDirection: 'row',
-    gap: space.sm,
-    paddingHorizontal: space.sm,
-    paddingVertical: space.xs,
-  },
-  clearBtn: {
-    flex: 1,
-    height: 44,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: color.border,
-    backgroundColor: color.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  clearBtnText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: color.text,
-  },
-  applyBtn: {
-    flex: 1,
-    height: 44,
-    borderRadius: radius.md,
-    backgroundColor: color.text,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  applyBtnText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: color.textInverse,
-  },
+  grow: { flex: 1 },
+  slim: { paddingHorizontal: space.md },
+  subtle: { color: color.textSubtle },
+  group: { gap: spaceHalf['2.5'] },
+  groupHead: { flexDirection: 'row', alignItems: 'baseline', gap: space.sm },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spaceHalf['1.5'] },
+  footWrap: { backgroundColor: color.surface },
+  foot: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingHorizontal: space.lg, paddingTop: space.md, borderTopWidth: borderWidth.thin, borderTopColor: color.border },
+  note: { paddingHorizontal: space.lg, paddingTop: space.sm },
 })

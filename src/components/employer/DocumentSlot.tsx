@@ -1,16 +1,20 @@
 import React, { useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { borderWidth, color, height, opacity, radius, space } from '../../theme'
-import { Body, Button, Card, Eyebrow, ProgressBar, StatusPill, text, type Tone } from '../ui'
+import { borderWidth, color, height, opacity, radius, shadow, space, spaceHalf, trackingNative } from '../../theme'
+import { Button, text } from '../ui'
+import { Icon } from '../ui/Icon'
+import { EmIconButton } from './em'
 import {
   COMPANY_PROOF_KINDS, EMPLOYER_UPLOAD, EmployerUploadError, checkEmployerFile, megabytes, pickEmployerDocument,
   uploadEmployerDocument, type DocKind, type PickedFile, type RequirementKey,
 } from '../../lib/api/employer'
 import { ACCEPTABLE, DOC_KIND_LABEL, SLOT_EXPLANATION } from '../../lib/employer/state'
-import { Glyph, TextAction } from './parts'
+import { useEmployerConfig } from '../../lib/employer/useEmployerConfig'
 
 /**
- * EM-05 · one slot per kind of document.
+ * EM-05 · one slot per requirement, drawn as the design's drop zone (H.drop):
+ * dashed and empty, violet while uploading with the percentage and a cancel,
+ * red with the file and the fault, and a file tile once uploaded.
  *
  * The slot owns its whole lifecycle — pick, check, presign, upload, cancel —
  * and hands the screen one thing: the uploaded key, with its kind, through
@@ -81,28 +85,23 @@ function describeType(name: string): string | null {
 }
 
 /**
- * The sentence in the refusal block: the file, the fact, the fix. Never
- * "Upload failed. Please try again." — each fault says what it was.
+ * The line under a refused file name (EM-05 · "14.2 MB. Upload up to 10 MB."):
+ * the fact and the fix, in the design's few words. Never "Upload failed".
  */
-function refusalSentence(e: EmployerUploadError, kinds: readonly DocKind[]): string {
-  const subject = kinds.length === 1 && kinds[0] === 'PHOTO_ID' ? 'card' : 'document'
+function refusalLine(e: EmployerUploadError): string {
   if (e.fault === 'type') {
     const what = describeType(e.fileName)
-    const fact = what ? `${e.fileName} is ${what}.` : `${e.fileName} is not a PDF, JPG or PNG.`
-    return `${fact} Choose a PDF, JPG or PNG of the ${subject} itself; a photo of it works.`
+    return what ? `This is ${what}. Upload a PDF, JPG or PNG.` : 'Not a PDF, JPG or PNG. Upload one of those.'
   }
-  if (e.fault === 'size') {
-    return `${e.fileName} is ${megabytes(e.sizeBytes)}, over the 10 MB limit. Scan it again at a lower quality, or take a photo of the ${subject} and choose the JPG.`
-  }
-  // The server's own words when it refused the presign already say what to choose.
-  return /^choose\b/i.test(e.message) ? e.message : `${e.message} Choose the file again.`
+  if (e.fault === 'size') return `${megabytes(e.sizeBytes)}. Upload up to 10 MB.`
+  return e.message
 }
 
 const kindsFor = (requirement: Exclude<RequirementKey, 'WORK_EMAIL'>, kinds?: readonly DocKind[]): readonly DocKind[] =>
   kinds?.length ? kinds : requirement === 'PHOTO_ID' ? ['PHOTO_ID'] : COMPANY_PROOF_KINDS
 
 export function DocumentSlot({
-  requirement, kinds, value, onChange, onStatusChange, disabled = false, ref,
+  requirement, kinds, value, onChange, onStatusChange, disabled = false, compact = false, ref,
 }: {
   requirement: Exclude<RequirementKey, 'WORK_EMAIL'>
   /** The choices. Defaults: GST, CIN, PAN for company proof; PHOTO_ID for the ID; a request passes what was asked for. */
@@ -117,16 +116,26 @@ export function DocumentSlot({
    */
   onStatusChange?: (status: SlotStatus, error: EmployerUploadError | null) => void
   disabled?: boolean
+  /** The smaller drop without its button (a reviewer's request inside EM-06b). */
+  compact?: boolean
   ref?: React.Ref<DocumentSlotHandle>
 }) {
   const choices = kindsFor(requirement, kinds)
   const [kind, setKind] = useState<DocKind>(choices[0])
+  // The kind as chosen right now: a switch mid-upload files the document under
+  // the new choice, and a switch after it re-labels the uploaded file.
+  const kindNow = useRef(kind)
   const [phase, setPhase] = useState<Phase>({ t: 'idle' })
   const abort = useRef<AbortController | null>(null)
   const alive = useRef(true)
 
   // A choice list that changes under the slot (a new request) re-points the selection.
   const selected = choices.includes(kind) ? kind : choices[0]
+  kindNow.current = selected
+  const pickKind = (k: DocKind) => {
+    setKind(k)
+    if (value && value.kind !== k) onChange({ ...value, kind: k })
+  }
 
   useEffect(() => {
     alive.current = true
@@ -149,7 +158,7 @@ export function DocumentSlot({
   }, [status, fault])
 
   const send = useCallback(
-    async (file: PickedFile, as: DocKind) => {
+    async (file: PickedFile, _as: DocKind) => {
       const refused = checkEmployerFile(file)
       if (refused) {
         setPhase({ t: 'refused', error: refused })
@@ -165,7 +174,7 @@ export function DocumentSlot({
         })
         if (!alive.current) return
         setPhase({ t: 'idle' })
-        onChange({ kind: as, key, name: file.name, size: file.size })
+        onChange({ kind: kindNow.current, key, name: file.name, size: file.size })
       } catch (e) {
         if (!alive.current) return
         const error =
@@ -195,131 +204,144 @@ export function DocumentSlot({
 
   useImperativeHandle(ref, () => ({ pick: () => { choose() } }), [choose])
 
-  // ── settled ────────────────────────────────────────────────────────────────
+  // ── settled (H.drop 'done') ────────────────────────────────────────────────
   if (value && phase.t === 'idle') {
     return (
-      <Card style={styles.card}>
-        <FileLine name={value.name} meta={`${DOC_KIND_LABEL[value.kind]} · ${megabytes(value.size)} · uploaded`} />
-        <View style={styles.settledActions}>
-          <TextAction label="Replace" underline={false} disabled={disabled} onPress={() => { choose() }} />
-          <TextAction label="Remove" tone="subtle" underline={false} disabled={disabled} onPress={() => onChange(null)} />
+      <View style={styles.slot}>
+        {choices.length > 1 && <KindChoice choices={choices} value={selected} onChange={pickKind} disabled={disabled} />}
+        <View style={[styles.drop, styles.dropDone]}>
+          <View style={styles.ext}><Text style={[text.metaXs, styles.extText]}>{extOf(value.name)}</Text></View>
+          <View style={styles.grow}>
+            <Text style={text.uiBaseMedium} numberOfLines={1}>{value.name}</Text>
+            <Text style={[text.metaMd, styles.mono, styles.ok]} numberOfLines={1}>
+              {`${KIND_SHORT[value.kind].toUpperCase()} · ${megabytes(value.size)} · UPLOADED`}
+            </Text>
+          </View>
+          <Button variant="ghost" size="sm" label="Replace" disabled={disabled} onPress={() => { choose() }} style={styles.slim} />
         </View>
-      </Card>
+      </View>
     )
   }
 
-  // ── uploading ──────────────────────────────────────────────────────────────
+  // ── uploading (H.drop 'up') ────────────────────────────────────────────────
   if (phase.t === 'uploading') {
     const pct = Math.round(phase.fraction * 100)
-    const sent = (phase.file.size * phase.fraction) / 1048576
     return (
-      <Card style={styles.card}>
-        <View style={styles.well}>
-          <FileLine
-            name={phase.file.name}
-            meta={`${DOC_KIND_LABEL[selected]} · ${sent.toFixed(1)} of ${megabytes(phase.file.size)}`}
-            trailing={<Text style={[text.metaMd, styles.pct]}>{`${pct}%`}</Text>}
-          />
-          <View style={styles.bar}>
-            <ProgressBar pct={pct} tone="ink" />
+      <View style={styles.slot}>
+        {choices.length > 1 && <KindChoice choices={choices} value={selected} onChange={pickKind} disabled={disabled} />}
+        <View style={[styles.drop, styles.dropUp]} accessibilityLabel={`Uploading ${phase.file.name}, ${pct}%`}>
+          <View style={styles.line}>
+            <Icon name="file" size={space.xl} tint={color.accent} />
+            <Text style={[text.uiBaseMedium, styles.grow]} numberOfLines={1}>{phase.file.name}</Text>
+            <Text style={[text.metaBase, styles.mono, styles.pct]}>{`${pct}%`}</Text>
+            <EmIconButton
+              name="x"
+              label={`Cancel uploading ${phase.file.name}`}
+              size={height.radio + 8}
+              iconSize={space.md + 3}
+              onPress={() => abort.current?.abort()}
+            />
           </View>
+          <View style={styles.track}><View style={[styles.fill, { width: `${pct}%` }]} /></View>
         </View>
-        <View style={styles.cancelRow}>
-          <TextAction
-            label="Cancel"
-            tone="muted"
-            accessibilityLabel={`Cancel uploading ${phase.file.name}`}
-            onPress={() => abort.current?.abort()}
-          />
-        </View>
-      </Card>
+      </View>
     )
   }
 
   // ── stopped: the network, not the file ─────────────────────────────────────
   if (phase.t === 'stopped') {
-    const { file, error } = phase
+    const { file } = phase
     return (
-      <View style={[styles.card, styles.stopped]} accessibilityLiveRegion="polite">
-        <View style={styles.paperPill}>
-          <Glyph name="wifiOff" size={space.md} tint={color.textMuted} />
-          <Text style={[text.metaPill, { color: color.textMuted }]}>Upload stopped</Text>
-        </View>
-        <Body size="sm" style={styles.message}>
-          {`${error.message} The file is still chosen, so try again when you have signal.`}
-        </Body>
-        <View style={styles.way}>
-          <Button variant="outline" size="md" label="Try again" disabled={disabled} onPress={() => { send(file, selected) }} />
+      <View style={styles.slot}>
+        <View style={[styles.drop, styles.dropStopped]} accessibilityLiveRegion="polite">
+          <Icon name="refresh" size={space.xl} tint={color.textMuted} weight={2} />
+          <View style={styles.grow}>
+            <Text style={text.uiBaseMedium} numberOfLines={1}>{file.name}</Text>
+            <Text style={[text.uiSm, styles.muted]}>Upload stopped. The file is still chosen.</Text>
+          </View>
+          <Button variant="outline" size="sm" label="Try again" disabled={disabled} onPress={() => { send(file, selected) }} style={styles.slim} />
         </View>
       </View>
     )
   }
 
-  // ── refused: a named fault ─────────────────────────────────────────────────
+  // ── refused: a named fault (H.drop 'err') ──────────────────────────────────
   if (phase.t === 'refused') {
     return (
-      <View style={[styles.card, styles.refused]} accessibilityRole="alert">
-        <View style={styles.paperPill}>
-          <Text style={[text.metaPill, { color: color.danger }]}>Not accepted</Text>
-        </View>
-        <Body size="sm" tone="danger" style={styles.message}>
-          {refusalSentence(phase.error, choices)}
-        </Body>
-        <View style={styles.way}>
-          <Button variant="destructive" size="md" label="Choose another file" disabled={disabled} onPress={() => { choose() }} />
+      <View style={styles.slot}>
+        {choices.length > 1 && <KindChoice choices={choices} value={selected} onChange={pickKind} disabled={disabled} />}
+        <View style={[styles.drop, styles.dropErr]} accessibilityRole="alert">
+          <Icon name="alert" size={space.xl} tint={color.danger} weight={2} />
+          <View style={styles.grow}>
+            <Text style={text.uiBaseMedium} numberOfLines={1}>{phase.error.fileName}</Text>
+            <Text style={[text.uiSm, styles.danger]}>{refusalLine(phase.error)}</Text>
+          </View>
+          <Button variant="outline" size="sm" label="Retry" disabled={disabled} onPress={() => { choose() }} style={styles.slim} />
         </View>
       </View>
     )
   }
 
-  // ── idle ───────────────────────────────────────────────────────────────────
+  // ── idle (H.drop 'empty') ──────────────────────────────────────────────────
   const idOnly = choices.every((k) => k === 'PHOTO_ID')
   return (
-    <Card style={styles.card}>
-      <Body size="sm" tone="muted">
-        {idOnly ? SLOT_EXPLANATION.PHOTO_ID : SLOT_EXPLANATION.COMPANY_PROOF}
-      </Body>
-      {choices.length > 1 && <KindChoice choices={choices} value={selected} onChange={setKind} disabled={disabled} />}
-      {!idOnly && selected !== 'PHOTO_ID' && (
-        <Body size="sm" style={choices.length > 1 ? styles.acceptableAfterChoice : styles.acceptable}>
-          {ACCEPTABLE[selected]}
-        </Body>
-      )}
-      <Eyebrow tone="muted" style={styles.constraint}>
-        {EMPLOYER_UPLOAD.constraint}
-      </Eyebrow>
-      <View style={styles.pick}>
-        <Button variant="outline" size="md" label="Choose a file" disabled={disabled} onPress={() => { choose() }} />
-      </View>
-    </Card>
-  )
-}
-
-/** The file glyph, the name, a mono meta line and an optional trailing figure. */
-function FileLine({ name, meta, trailing }: { name: string; meta: string; trailing?: React.ReactNode }) {
-  return (
-    <View style={styles.fileLine}>
-      <Glyph name="file" size={space.xl} tint={color.textMuted} />
-      <View style={styles.grow}>
-        <Body size="sm" weight="medium" numberOfLines={1}>
-          {name}
-        </Body>
-        <Text style={[text.metaPill, styles.fileMeta]}>{meta}</Text>
-      </View>
-      {trailing}
+    <View style={styles.slot}>
+      {choices.length > 1 && <KindChoice choices={choices} value={selected} onChange={pickKind} disabled={disabled} />}
+      <Text style={[text.uiSm, styles.muted]}>{idOnly ? SLOT_EXPLANATION.PHOTO_ID : ACCEPTABLE[selected]}</Text>
+      <DropZone
+        title={idOnly ? 'Upload photo ID' : `Upload ${KIND_SHORT[selected]}`}
+        accessibilityLabel={`Choose a file for ${idOnly ? 'your photo ID' : DOC_KIND_LABEL[selected]}`}
+        compact={compact}
+        disabled={disabled}
+        onPress={() => { choose() }}
+      />
     </View>
   )
 }
 
 /**
- * The company-proof choice: chips inside the one slot, a radio group. 36 tall
- * inside a 44 tap row; selected is ink, never crimson.
+ * The empty drop (H.drop 'empty'): dashed, the violet upload mark, a title and
+ * the file rule, and a Choose file button unless `compact`. Also drawn on EM-06b,
+ * where it opens EM-05 at the requested document.
  */
+export function DropZone({
+  title, sub, onPress, compact, disabled, accessibilityLabel,
+}: { title: string; sub?: string; onPress: () => void; compact?: boolean; disabled?: boolean; accessibilityLabel?: string }) {
+  const maxMb = useEmployerConfig().documentMaxMb ?? EMPLOYER_UPLOAD.maxBytes / 1_048_576
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? title}
+      disabled={disabled}
+      onPress={onPress}
+      style={({ pressed }) => [styles.drop, styles.dropEmpty, compact && styles.dropCompact, pressed && styles.pressed]}
+    >
+      <View style={styles.dropMark}><Icon name="upload" size={space.xl} tint={color.accent} /></View>
+      <View style={styles.grow}>
+        <Text style={text.uiBaseSemi}>{title}</Text>
+        <Text style={[text.uiSm, styles.muted]}>{sub ?? `PDF, JPG, PNG · ${maxMb} MB`}</Text>
+      </View>
+      {!compact && (
+        <View pointerEvents="none">
+          <Button variant="outline" size="sm" label="Choose file" disabled={disabled} style={styles.slim} />
+        </View>
+      )}
+    </Pressable>
+  )
+}
+
+/** The short kind names the segmented control and the file meta use (the design's GST · CIN · Company PAN). */
+const KIND_SHORT: Record<DocKind, string> = { GST: 'GST', CIN: 'CIN', PAN: 'Company PAN', PHOTO_ID: 'Photo ID' }
+
+/** 'PDF', 'JPG', 'PNG' — the tag on the file tile. */
+const extOf = (name: string) => (name.includes('.') ? name.split('.').pop()!.slice(0, 4).toUpperCase() : 'FILE')
+
+/** The segmented company-proof choice (H.seg): one slot, three kinds, a radio group. */
 function KindChoice({
   choices, value, onChange, disabled,
 }: { choices: readonly DocKind[]; value: DocKind; onChange: (k: DocKind) => void; disabled: boolean }) {
   return (
-    <View accessibilityRole="radiogroup" accessibilityLabel="Company proof" style={styles.choice}>
+    <View accessibilityRole="radiogroup" accessibilityLabel="Company document" style={styles.seg}>
       {choices.map((k) => {
         const on = k === value
         return (
@@ -329,13 +351,12 @@ function KindChoice({
             accessibilityState={{ checked: on, disabled }}
             disabled={disabled}
             onPress={() => onChange(k)}
-            style={({ pressed }) => [styles.chipTap, pressed && styles.pressed]}
+            hitSlop={{ top: space.xs, bottom: space.xs }}
+            style={({ pressed }) => [styles.segItem, on && styles.segOn, pressed && styles.pressed]}
           >
-            <View style={[styles.chip, on ? styles.chipOn : styles.chipOff]}>
-              <Body size="sm" weight="medium" tone={on ? 'inverse' : 'default'}>
-                {DOC_KIND_LABEL[k]}
-              </Body>
-            </View>
+            <Text style={[on ? text.uiSmSemi : text.uiSmMedium, { color: on ? color.text : color.textMuted }]} numberOfLines={1}>
+              {KIND_SHORT[k]}
+            </Text>
           </Pressable>
         )
       })}
@@ -343,70 +364,32 @@ function KindChoice({
   )
 }
 
-/**
- * A requirement's heading: the number, the name, its status. It sits OUTSIDE
- * the slot so it survives the slot turning into a refusal block.
- */
-export function RequirementHead({
-  n, title, pill,
-}: { n: number; title: string; pill?: { label: string; tone: Tone } }) {
-  return (
-    <View style={styles.head}>
-      <Text style={[text.uiSm, styles.headNumber]} accessibilityElementsHidden importantForAccessibility="no">
-        {String(n).padStart(2, '0')}
-      </Text>
-      <Text style={[text.uiBaseSemi, styles.grow]}>{title}</Text>
-      {!!pill && <StatusPill tone={pill.tone} label={pill.label} />}
-    </View>
-  )
-}
-
 const styles = StyleSheet.create({
-  grow: { flex: 1 },
+  grow: { flex: 1, minWidth: 0, gap: space['2xs'] + 1 },
   pressed: { opacity: opacity.pressed },
-  card: { padding: space.lg, borderRadius: radius.lg },
+  muted: { color: color.textMuted },
+  danger: { color: color.danger },
+  ok: { color: color.success },
+  pct: { color: color.accentText },
+  mono: { letterSpacing: trackingNative.eyebrow },
+  slot: { gap: spaceHalf['2.5'] },
+  slim: { paddingHorizontal: spaceHalf['3.5'] },
+  line: { flexDirection: 'row', alignItems: 'center', gap: space.md },
 
-  acceptable: { marginTop: space.sm },
-  acceptableAfterChoice: { marginTop: space.xs },
-  constraint: { marginTop: space.md },
-  pick: { marginTop: space.md, alignSelf: 'flex-start' },
+  drop: { borderRadius: radius.panel, paddingVertical: spaceHalf['3.5'], paddingHorizontal: space.lg, flexDirection: 'row', alignItems: 'center', gap: spaceHalf['3.5'] },
+  dropEmpty: { borderWidth: borderWidth.medium, borderStyle: 'dashed', borderColor: color.borderStrong, backgroundColor: color.surface, padding: spaceHalf['4.5'], gap: space.lg },
+  dropCompact: { padding: space.lg },
+  dropMark: { width: height.tap, height: height.tap, borderRadius: radius.tile, backgroundColor: color.accentSoft, alignItems: 'center', justifyContent: 'center' },
+  dropUp: { flexDirection: 'column', alignItems: 'stretch', gap: spaceHalf['2.5'], borderWidth: borderWidth.thin, borderColor: color.accentMuted, backgroundColor: color.accentWash },
+  dropErr: { borderWidth: borderWidth.medium, borderColor: color.dangerBorder, backgroundColor: color.dangerGround },
+  dropStopped: { borderWidth: borderWidth.thin, borderColor: color.border, backgroundColor: color.surfaceMuted },
+  dropDone: { borderWidth: borderWidth.thin, borderColor: color.border, backgroundColor: color.surface },
+  track: { height: space.xs, borderRadius: radius.bar, backgroundColor: color.accentEdge, overflow: 'hidden' },
+  fill: { height: space.xs, borderRadius: radius.bar, backgroundColor: color.accent },
+  ext: { width: height.avatar, height: height.control, borderRadius: radius.ctl, backgroundColor: color.surfaceMuted, alignItems: 'center', justifyContent: 'flex-end', paddingBottom: spaceHalf['1.5'] },
+  extText: { color: color.danger },
 
-  choice: { marginTop: space.sm, flexDirection: 'row', flexWrap: 'wrap', columnGap: space.sm },
-  chipTap: { height: height.tap, justifyContent: 'center' },
-  chip: {
-    height: height.chip,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: radius.pill,
-    borderWidth: borderWidth.thin,
-    paddingHorizontal: space.md,
-  },
-  chipOn: { backgroundColor: color.ink, borderColor: color.ink },
-  chipOff: { backgroundColor: color.surface, borderColor: color.borderStrong },
-
-  fileLine: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  fileMeta: { marginTop: space['2xs'], color: color.textSubtle },
-  pct: { color: color.text },
-  well: { borderRadius: radius.md, backgroundColor: color.surfaceSunken, padding: space.md },
-  bar: { marginTop: space.sm },
-  cancelRow: { marginTop: space.xs, flexDirection: 'row', justifyContent: 'flex-end' },
-  settledActions: { flexDirection: 'row', gap: space.xl, paddingLeft: space['2xl'] },
-
-  stopped: { backgroundColor: color.surfaceMuted, borderWidth: borderWidth.thin, borderColor: 'transparent' },
-  refused: { backgroundColor: color.dangerSoft, borderWidth: borderWidth.thin, borderColor: color.dangerBorder },
-  paperPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    gap: space.xs,
-    backgroundColor: color.surface,
-    borderRadius: radius.pill,
-    paddingHorizontal: space.md,
-    paddingVertical: space.xs,
-  },
-  message: { marginTop: space.sm },
-  way: { marginTop: space.md, alignSelf: 'flex-start' },
-
-  head: { flexDirection: 'row', alignItems: 'center', gap: space.md, minHeight: space['2xl'] },
-  headNumber: { width: space.xl, color: color.borderStrong },
+  seg: { flexDirection: 'row', gap: space.xs, padding: space.xs, borderRadius: radius.tile, backgroundColor: color.surfaceMuted },
+  segItem: { flex: 1, height: height.segment, borderRadius: radius.ctl + 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.xs },
+  segOn: { backgroundColor: color.surface, boxShadow: shadow.raised },
 })

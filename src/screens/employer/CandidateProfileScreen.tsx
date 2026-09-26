@@ -1,528 +1,211 @@
-import React, { useState, useEffect } from 'react'
-import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native'
+import React, { useCallback, useEffect, useState } from 'react'
+import { ActivityIndicator, Image, Linking, Pressable, StyleSheet, Text, View } from 'react-native'
 import Video from 'react-native-video'
-import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native'
+import { useIsFocused, useNavigation, useRoute, type RouteProp } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { color, radius, space, fontFamilyNative } from '../../theme'
-import { EmployerShell } from '../../components/employer/EmployerShell'
+import { color, height, opacity, radius, space, spaceHalf } from '../../theme'
+import { Button, text } from '../../components/ui'
+import { Icon } from '../../components/ui/Icon'
+import { EmployerShell } from '../../components/employer'
+import { EmError } from '../../components/employer/em'
+import { FeedFace } from '../../components/employer/feed'
+import { ClipPlayer, ProfileFacts, ProfileSections, VerifiedInterviewBadge } from '../../components/employer/profile'
+import { ApiClientError } from '../../lib/api'
 import {
-  fetchCandidateDetail,
-  postSwipe,
-  type CandidateDetail,
+  fetchCandidateDetail, fetchCandidateDocument, playSelfVideo, postSwipe, type CandidateDetail,
 } from '../../lib/api/employerFeed'
+import { interviewDate, nameInitials, tierLine } from '../../lib/employer/candidateFormat'
+import { SendInterestSheet } from './SendInterestModal'
 import type { RootStackParamList } from '../../../App'
 
 type ScreenRouteProp = RouteProp<RootStackParamList, 'CandidateProfile'>
 
+/** Past this, the bar carries the name (EM-09b). */
+const FILM_H = height['profile-film']
+
+/**
+ * EM-09 · the candidate profile page (from the shortlist, Interests, a
+ * connection or an applicant): the 9:16 film (muted; a tap turns the sound on),
+ * the name and the three facts; scrolled (EM-09b), the bar carries the name and
+ * the verified-interview date, and the page goes on to Watch full interview and
+ * the sections. The foot shortlists (a right swipe, as on the card) and sends an
+ * Interest — the same sheet as everywhere.
+ */
 export function CandidateProfileScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
   const route = useRoute<ScreenRouteProp>()
+  const focused = useIsFocused()
   const { id } = route.params
 
   const [candidate, setCandidate] = useState<CandidateDetail | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [shortlisted, setShortlisted] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [scrolled, setScrolled] = useState(false)
+  const [muted, setMuted] = useState(true)
+  const [shortlisting, setShortlisting] = useState(false)
+  const [interestOpen, setInterestOpen] = useState(false)
+  const [clip, setClip] = useState<{ url: string; title?: string } | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
+  const [openingDoc, setOpeningDoc] = useState<string | null>(null)
 
-  useEffect(() => {
-    let active = true
+  const load = useCallback(() => {
+    setError(null)
     fetchCandidateDetail(id)
-      .then((data) => {
-        if (active) {
-          setCandidate(data)
-          setShortlisted(data.shortlisted)
-        }
-      })
-      .finally(() => {
-        if (active) setLoading(false)
-      })
-    return () => {
-      active = false
-    }
+      .then(setCandidate)
+      .catch((e) => setError(e instanceof Error ? e.message : 'Could not load the profile.'))
   }, [id])
 
-  const toggleShortlist = async () => {
-    if (!candidate) return
-    const nextState = !shortlisted
-    setShortlisted(nextState)
-    try {
-      await postSwipe(candidate.id, nextState ? 'RIGHT' : 'LEFT')
-    } catch {
-      setShortlisted(!nextState)
-    }
-  }
+  useEffect(() => {
+    load()
+  }, [load])
 
-  if (loading) {
-    return (
-      <EmployerShell back={{ label: 'FEED', onPress: () => navigation.goBack() }}>
-        <View style={styles.centre}>
-          <ActivityIndicator color={color.text} size="small" />
-          <Text style={styles.loadingText}>Loading candidate profile…</Text>
-        </View>
-      </EmployerShell>
-    )
-  }
+  const back = () => navigation.goBack()
 
   if (!candidate) {
     return (
-      <EmployerShell back={{ label: 'FEED', onPress: () => navigation.goBack() }}>
-        <View style={styles.centre}>
-          <Text style={styles.errorTitle}>Profile not found</Text>
-        </View>
+      <EmployerShell back={back}>
+        {error ? (
+          <EmError title="Couldn’t load this profile." body={error} action={<Button variant="secondary" size="pair" icon="refresh" label="Try again" onPress={load} />} />
+        ) : (
+          <ActivityIndicator color={color.textSubtle} style={styles.loading} />
+        )}
       </EmployerShell>
     )
   }
 
-  const interviewDateStr = candidate.verifiedInterview.at
-    ? new Date(candidate.verifiedInterview.at).toLocaleDateString('en-GB', {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-      })
-    : null
+  const c = candidate
+  const date = c.verifiedInterview?.verified ? interviewDate(c.verifiedInterview.at) : null
+  const poster = c.posterUrl ?? c.photoUrl
+  const interestLocked = c.interest === 'SENT' || c.interest === 'ACCEPTED'
+  const openFull = () => navigation.navigate('CandidateVideo', { id: c.id, name: c.name, photoUrl: c.photoUrl, interviewAt: c.verifiedInterview?.at })
 
-  const salaryLakh =
-    candidate.expectedSalary.minPaise || candidate.expectedSalary.maxPaise
-      ? `${Math.round((candidate.expectedSalary.minPaise || 0) / 10000000)}–${Math.round(
-          (candidate.expectedSalary.maxPaise || 0) / 10000000,
-        )} Lakh`
-      : 'Competitive'
+  async function shortlist() {
+    setShortlisting(true)
+    setNotice(null)
+    try {
+      await postSwipe(c.id, 'RIGHT')
+      setCandidate((prev) => (prev ? { ...prev, shortlisted: true } : prev))
+    } catch (e) {
+      setNotice(e instanceof ApiClientError ? e.message : 'Not shortlisted. Try again.')
+    } finally {
+      setShortlisting(false)
+    }
+  }
 
-  const footActions = (
-    <View style={styles.footRow}>
-      <TouchableOpacity
-        activeOpacity={0.8}
-        onPress={toggleShortlist}
-        style={[styles.actionBtn, shortlisted ? styles.shortlistedBtn : styles.secondaryBtn]}
-      >
-        <Text style={shortlisted ? styles.shortlistedBtnText : styles.secondaryBtnText}>
-          {shortlisted ? '🔖 Shortlisted' : '🔖 Shortlist'}
-        </Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        activeOpacity={0.8}
-        onPress={() => Alert.alert('Send Interest', 'Send Interest sheet opens (EM-15 in Phase 2)')}
-        style={[styles.actionBtn, styles.primaryBtn]}
-      >
-        <Text style={styles.primaryBtnText}>Send Interest</Text>
-      </TouchableOpacity>
-    </View>
-  )
+  async function playClip(videoId: string) {
+    setNotice(null)
+    try {
+      const r = await playSelfVideo(c.id, videoId)
+      setClip({ url: r.url, title: c.videos.find((v) => v.id === videoId)?.title ?? undefined })
+    } catch (e) {
+      setNotice(e instanceof ApiClientError ? e.message : 'The clip did not load. Try again.')
+    }
+  }
+
+  async function openDocument(docId: string) {
+    setNotice(null)
+    setOpeningDoc(docId)
+    try {
+      const r = await fetchCandidateDocument(c.id, docId)
+      await Linking.openURL(r.url)
+    } catch (e) {
+      setNotice(e instanceof ApiClientError ? e.message : 'The document did not open. Try again.')
+    } finally {
+      setOpeningDoc(null)
+    }
+  }
 
   return (
     <EmployerShell
-      back={{ label: 'FEED', onPress: () => navigation.goBack() }}
-      footer={footActions}
+      back={back}
+      title={scrolled ? c.name : undefined}
+      sub={scrolled && date ? `VERIFIED INTERVIEW · ${date.toUpperCase()}` : undefined}
+      barBorder={scrolled}
+      onScroll={(e) => setScrolled(e.nativeEvent.contentOffset.y > FILM_H)}
+      footer={
+        <>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={c.shortlisted ? 'Shortlisted' : 'Shortlist'}
+            accessibilityState={{ disabled: c.shortlisted || shortlisting, selected: c.shortlisted }}
+            disabled={c.shortlisted || shortlisting}
+            onPress={() => { shortlist() }}
+            style={({ pressed }) => [styles.save, pressed && styles.pressed]}
+          >
+            {shortlisting ? <ActivityIndicator color={color.textInverse} /> : (
+              <Icon name="bookmark" size={space.xl} tint={color.textInverse} weight={2} fill={c.shortlisted ? color.textInverse : 'none'} />
+            )}
+          </Pressable>
+          <Button
+            variant="primary"
+            size="lg"
+            label={c.interest === 'ACCEPTED' ? 'Connected' : c.interest === 'SENT' ? 'Interest sent' : 'Send Interest'}
+            disabled={interestLocked}
+            style={styles.grow}
+            onPress={() => setInterestOpen(true)}
+          />
+        </>
+      }
     >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Top Video Preview & Verification */}
-        <View style={styles.videoCard}>
-          {candidate.streamUrl ? (
-            <Video
-              source={{ uri: candidate.streamUrl }}
-              poster={candidate.posterUrl || candidate.photoUrl || undefined}
-              paused={false}
-              muted={false}
-              repeat
-              resizeMode="cover"
-              style={StyleSheet.absoluteFill}
-            />
-          ) : candidate.posterUrl || candidate.photoUrl ? (
-            <Image
-              source={{ uri: candidate.posterUrl || candidate.photoUrl || '' }}
-              style={StyleSheet.absoluteFill}
-              resizeMode="cover"
-            />
-          ) : (
-            <View style={styles.videoPlaceholder}>
-              <Text style={styles.placeholderName}>{candidate.name}</Text>
-              <Text style={styles.placeholderSub}>Verified Video Resume</Text>
-            </View>
-          )}
-
-          <View style={styles.badgeRow}>
-            <View style={styles.vmark}>
-              <Text style={styles.vmarkCheck}>✓</Text>
-              <Text style={styles.vmarkText}>Verified Interview</Text>
-            </View>
-            {interviewDateStr && <Text style={styles.vmarkDate}>{interviewDateStr}</Text>}
-          </View>
-        </View>
-
-        {/* Heading */}
-        <View style={styles.headingBlock}>
-          <Text style={styles.candidateName}>{candidate.name}</Text>
-          <Text style={styles.tierLine}>
-            {candidate.tier ? `Tier ${candidate.tier}` : 'Verified candidate'}
-            {candidate.qualification ? ` · ${candidate.qualification}` : ''}
-            {candidate.city ? ` · ${candidate.city}` : ''}
-          </Text>
-          {candidate.headline && (
-            <Text style={styles.headlineText}>{candidate.headline}</Text>
-          )}
-        </View>
-
-        {/* Full 16:9 Video Link */}
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={() => navigation.navigate('CandidateVideo', { id: candidate.id })}
-          style={styles.fullVideoBox}
-        >
-          <View style={styles.fullVideoCol}>
-            <Text style={styles.fullVideoTitle}>Complete 16:9 Interview Recording</Text>
-            <Text style={styles.fullVideoSub}>Watch the full unedited interview</Text>
-          </View>
-          <Text style={styles.fullVideoArrow}>Play ▶</Text>
-        </TouchableOpacity>
-
-        {/* Key Metrics */}
-        <View style={styles.metricsGrid}>
-          <View style={styles.metricCard}>
-            <Text style={styles.metricLabel}>EXPECTED SALARY</Text>
-            <Text style={styles.metricValue}>{salaryLakh}</Text>
-            <Text style={styles.metricSub}>Annual CTC</Text>
-          </View>
-          <View style={styles.metricCard}>
-            <Text style={styles.metricLabel}>JOINING</Text>
-            <Text style={styles.metricValue}>{candidate.availability || 'Immediate'}</Text>
-            <Text style={styles.metricSub}>Availability</Text>
-          </View>
-        </View>
-
-        {/* Skills Section */}
-        {candidate.skills && candidate.skills.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>KEY SKILLS</Text>
-            <View style={styles.tagsWrap}>
-              {candidate.skills.map((s) => (
-                <View key={s} style={styles.tag}>
-                  <Text style={styles.tagText}>{s}</Text>
-                </View>
-              ))}
-            </View>
+      <View style={styles.film}>
+        {!!poster && <Image source={{ uri: poster }} style={StyleSheet.absoluteFill} resizeMode="cover" />}
+        {!poster && !c.streamUrl && (
+          <View style={styles.initialsWrap}><Text style={[text.displayPoster, styles.initials]}>{nameInitials(c.name)}</Text></View>
+        )}
+        {!!c.streamUrl && (
+          <Pressable accessibilityRole="button" accessibilityLabel={muted ? 'Turn the sound on' : 'Mute'} onPress={() => setMuted((m) => !m)} style={StyleSheet.absoluteFill}>
+            <Video source={{ uri: c.streamUrl }} style={StyleSheet.absoluteFill} resizeMode="cover" muted={muted} repeat paused={!focused || interestOpen || !!clip} />
+          </Pressable>
+        )}
+        {c.verifiedInterview?.verified && (
+          <View style={styles.filmPill} pointerEvents="none">
+            <Icon name="check" size={space.md + 1} tint={color.successOnInk} weight={2.4} />
+            <Text style={[text.uiXsMedium, styles.onInk]}>Verified video resume · 9:16</Text>
           </View>
         )}
-
-        {/* Experience Section */}
-        {candidate.experience && candidate.experience.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>EXPERIENCE</Text>
-            {candidate.experience.map((exp, idx) => (
-              <View key={idx} style={styles.timelineItem}>
-                <View style={styles.timelineHeader}>
-                  <Text style={styles.timelineTitle}>{exp.title}</Text>
-                  <Text style={styles.timelineDates}>
-                    {exp.from} – {exp.to || 'Present'}
-                  </Text>
-                </View>
-                <Text style={styles.timelineCompany}>{exp.company}</Text>
-                {exp.description && (
-                  <Text style={styles.timelineDesc}>{exp.description}</Text>
-                )}
-              </View>
-            ))}
-          </View>
+        {!!c.streamUrl && (
+          <Pressable accessibilityRole="button" accessibilityLabel={muted ? 'Turn the sound on' : 'Mute'} onPress={() => setMuted((m) => !m)} style={styles.sound}>
+            <Icon name={muted ? 'mute' : 'sound'} size={spaceHalf['4.5']} tint={color.textOnInk} />
+          </Pressable>
         )}
+      </View>
 
-        {/* Education Section */}
-        {candidate.education && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>EDUCATION</Text>
-            <View style={styles.eduCard}>
-              <Text style={styles.eduDegree}>
-                {candidate.education.qualification || 'Degree'}
-                {candidate.education.fieldOfStudy ? ` in ${candidate.education.fieldOfStudy}` : ''}
-              </Text>
-              {candidate.education.institution && (
-                <Text style={styles.eduSchool}>{candidate.education.institution}</Text>
-              )}
-              {candidate.education.score && (
-                <Text style={styles.eduScore}>
-                  Academic Claim: {candidate.education.score} {candidate.education.scoreType || '%'}
-                </Text>
-              )}
-            </View>
-          </View>
-        )}
-      </ScrollView>
+      <VerifiedInterviewBadge candidate={c} />
+      <View style={styles.who}>
+        <FeedFace name={c.name} photo={c.photoUrl} size={height.control} />
+        <View style={styles.grow}>
+          <Text style={text.displayHeading}>{c.name}</Text>
+          <Text style={[text.uiSm, styles.muted]}>{[tierLine(c.tier, c.qualification), c.city].filter(Boolean).join(' · ')}</Text>
+        </View>
+      </View>
+      <ProfileFacts candidate={c} well={false} />
+
+      {c.hasVideo !== false && <Button variant="outline" size="pair" icon="video" label="Watch full interview" onPress={openFull} />}
+      {!!notice && <Text style={[text.uiSm, styles.danger]}>{notice}</Text>}
+      <ProfileSections candidate={c} onPlayClip={playClip} onOpenDocument={openDocument} openingDoc={openingDoc} />
+
+      <SendInterestSheet
+        open={interestOpen}
+        candidate={{ id: c.id, name: c.name, photoUrl: c.photoUrl, tier: c.tier, qualification: c.qualification, city: c.city, verified: c.verifiedInterview?.verified }}
+        onClose={() => setInterestOpen(false)}
+        onSent={() => setCandidate((prev) => (prev ? { ...prev, interest: 'SENT' } : prev))}
+      />
+      <ClipPlayer url={clip?.url ?? null} title={clip?.title} onClose={() => setClip(null)} />
     </EmployerShell>
   )
 }
 
 const styles = StyleSheet.create({
-  scrollContent: {
-    paddingHorizontal: space.sm,
-    paddingBottom: space.xl,
-    gap: space.md,
-  },
-  centre: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 64,
-  },
-  loadingText: {
-    fontSize: 13,
-    color: color.textMuted,
-    marginTop: space.sm,
-  },
-  errorTitle: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: 18,
-    color: color.text,
-  },
-  videoCard: {
-    height: 380,
-    borderRadius: radius.xl,
-    overflow: 'hidden',
-    backgroundColor: color.ink,
-    justifyContent: 'flex-end',
-    padding: space.sm,
-  },
-  videoPlaceholder: {
-    ...StyleSheet.absoluteFill,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: space.md,
-  },
-  placeholderName: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: 22,
-    color: '#FFFFFF',
-  },
-  placeholderSub: {
-    fontSize: 12,
-    color: color.textSubtle,
-    marginTop: 4,
-  },
-  badgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.xs,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingHorizontal: space.xs,
-    paddingVertical: 4,
-    borderRadius: radius.md,
-    alignSelf: 'flex-start',
-  },
-  vmark: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  vmarkCheck: {
-    fontSize: 10,
-    color: color.accent,
-    fontWeight: '700',
-  },
-  vmarkText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  vmarkDate: {
-    fontSize: 10,
-    color: 'rgba(255,255,255,0.7)',
-  },
-  headingBlock: {
-    gap: space['2xs'],
-  },
-  candidateName: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: 26,
-    color: color.text,
-  },
-  tierLine: {
-    fontSize: 13,
-    color: color.textMuted,
-  },
-  headlineText: {
-    fontSize: 14,
-    color: color.text,
-    lineHeight: 20,
-    marginTop: 2,
-  },
-  fullVideoBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: color.surfaceMuted,
-    borderWidth: 1,
-    borderColor: color.border,
-    borderRadius: radius.lg,
-    padding: space.sm,
-  },
-  fullVideoCol: {
-    flex: 1,
-    gap: 2,
-  },
-  fullVideoTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: color.text,
-  },
-  fullVideoSub: {
-    fontSize: 11,
-    color: color.textMuted,
-  },
-  fullVideoArrow: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: color.text,
-  },
-  metricsGrid: {
-    flexDirection: 'row',
-    gap: space.sm,
-  },
-  metricCard: {
-    flex: 1,
-    backgroundColor: color.surfaceMuted,
-    borderRadius: radius.md,
-    padding: space.sm,
-    gap: 2,
-  },
-  metricLabel: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 9,
-    color: color.textMuted,
-  },
-  metricValue: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 16,
-    fontWeight: '600',
-    color: color.text,
-  },
-  metricSub: {
-    fontSize: 10,
-    color: color.textSubtle,
-  },
-  section: {
-    gap: space.xs,
-    borderTopWidth: 1,
-    borderTopColor: color.border,
-    paddingTop: space.sm,
-  },
-  sectionTitle: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 10,
-    fontWeight: '600',
-    color: color.textMuted,
-  },
-  tagsWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-  },
-  tag: {
-    backgroundColor: color.surfaceMuted,
-    borderWidth: 1,
-    borderColor: color.border,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: radius.sm,
-  },
-  tagText: {
-    fontSize: 11,
-    color: color.text,
-    fontWeight: '500',
-  },
-  timelineItem: {
-    gap: 2,
-    borderLeftWidth: 2,
-    borderLeftColor: color.border,
-    paddingLeft: space.sm,
-    marginBottom: space.xs,
-  },
-  timelineHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'baseline',
-  },
-  timelineTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: color.text,
-  },
-  timelineDates: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 10,
-    color: color.textSubtle,
-  },
-  timelineCompany: {
-    fontSize: 12,
-    color: color.textMuted,
-  },
-  timelineDesc: {
-    fontSize: 12,
-    color: color.textMuted,
-    lineHeight: 16,
-    marginTop: 2,
-  },
-  eduCard: {
-    backgroundColor: color.surfaceMuted,
-    padding: space.sm,
-    borderRadius: radius.md,
-    gap: 2,
-  },
-  eduDegree: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: color.text,
-  },
-  eduSchool: {
-    fontSize: 12,
-    color: color.textMuted,
-  },
-  eduScore: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 10,
-    color: color.textSubtle,
-    marginTop: 2,
-  },
-  footRow: {
-    flexDirection: 'row',
-    gap: space.sm,
-    paddingHorizontal: space.sm,
-    paddingVertical: space.xs,
-  },
-  actionBtn: {
-    flex: 1,
-    height: 44,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  secondaryBtn: {
-    borderWidth: 1,
-    borderColor: color.border,
-    backgroundColor: color.surface,
-  },
-  secondaryBtnText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: color.text,
-  },
-  shortlistedBtn: {
-    backgroundColor: color.text,
-  },
-  shortlistedBtnText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: color.textInverse,
-  },
-  primaryBtn: {
-    backgroundColor: color.accent,
-  },
-  primaryBtnText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
+  grow: { flex: 1, minWidth: 0, gap: space['2xs'] + 1 },
+  pressed: { opacity: opacity.pressed },
+  muted: { color: color.textMuted },
+  danger: { color: color.danger },
+  onInk: { color: color.textOnInk },
+  loading: { paddingVertical: space['3xl'] },
+  film: { height: FILM_H, borderRadius: radius.xl, backgroundColor: color.inkRaised, overflow: 'hidden' },
+  initialsWrap: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
+  initials: { color: color.onInkWash },
+  filmPill: { position: 'absolute', top: spaceHalf['3.5'], left: spaceHalf['3.5'], height: height['chip-sm'] - 2, paddingHorizontal: spaceHalf['2.5'], borderRadius: radius.ctl, backgroundColor: color.onInkGlass, flexDirection: 'row', alignItems: 'center', gap: spaceHalf['1.5'] },
+  sound: { position: 'absolute', right: space.md, bottom: space.md, width: height.avatar, height: height.avatar, borderRadius: radius.pill, backgroundColor: color.onInkPlay, alignItems: 'center', justifyContent: 'center' },
+  who: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  save: { width: height['control-lg'], height: height['control-lg'], borderRadius: radius.pill, backgroundColor: color.ink, alignItems: 'center', justifyContent: 'center' },
 })

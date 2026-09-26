@@ -1,9 +1,23 @@
 import React from 'react'
-import { Pressable, StyleSheet, View, type ViewProps } from 'react-native'
-import { borderWidth, color, radius, space } from '../../theme'
+import { Pressable, StyleSheet, Text, View, type ViewProps } from 'react-native'
+import Svg, { Circle } from 'react-native-svg'
+import { borderWidth, color, height, radius, space } from '../../theme'
 import { Body, Display, Eyebrow } from './Type'
+import { text } from './typography'
 
 /** Foundations §04 and §08 — surfaces, the three card archetypes, progress. */
+
+/**
+ * `ProgressRing`'s geometry, in px — arithmetic rather than a token, the same
+ * reasoning as the web `RING_SIZES`: a circle's radius and circumference
+ * follow from these two numbers, they are not a design decision with a name
+ * of its own. `sm` has no screen yet.
+ */
+const RING_SIZES = {
+  sm: { diameter: 64, stroke: 6 },
+  md: { diameter: 88, stroke: 7 },
+  hero: { diameter: 148, stroke: 10 },
+} as const
 
 /**
  * Flat by default: a hairline does the work almost everywhere. `raised` is for
@@ -120,6 +134,66 @@ export function ProgressBar({
   )
 }
 
+/**
+ * A countdown's centre value inside an arc, for the card where the countdown
+ * IS the subject — the student's booked-interview status. The sibling of
+ * `Countdown`'s `ring` format on web; native has no shared `Countdown`
+ * component to extend (every screen currently formats its own clock string),
+ * so this stays in `data.tsx` beside `ProgressBar`, the file's other progress
+ * primitive, rather than starting a new one.
+ *
+ * THE ARC IS NEVER THE ACCENT, same rule as `ProgressBar`: crimson has four
+ * jobs and a countdown is a passive readout, none of them. `tone` colours the
+ * arc and the centre value together, ink by default.
+ */
+export function ProgressRing({
+  value, label, pct, tone = 'ink', size = 'md',
+}: {
+  /** '2h 14m', '01:23:46' — shown verbatim at the ring's centre. */
+  value: string
+  /** 'until it starts'. Small, muted, beneath the value. */
+  label?: string
+  /** How much of the arc is drawn, 0–100. Pass the real fraction. */
+  pct: number
+  tone?: 'ink' | 'warning' | 'danger'
+  size?: 'sm' | 'md' | 'hero'
+}) {
+  const { diameter, stroke } = RING_SIZES[size]
+  const r = diameter / 2 - stroke / 2
+  const circumference = 2 * Math.PI * r
+  const drawn = Math.max(0, Math.min(100, pct))
+  const ink = { ink: color.text, warning: color.warning, danger: color.danger }[tone]
+  return (
+    <View style={{ width: diameter, height: diameter }}>
+      <Svg width={diameter} height={diameter} viewBox={`0 0 ${diameter} ${diameter}`} style={styles.ringRotate}>
+        <Circle cx={diameter / 2} cy={diameter / 2} r={r} fill="none" stroke={color.border} strokeWidth={stroke} />
+        <Circle
+          cx={diameter / 2}
+          cy={diameter / 2}
+          r={r}
+          fill="none"
+          stroke={ink}
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={`${circumference} ${circumference}`}
+          strokeDashoffset={circumference * (1 - drawn / 100)}
+        />
+      </Svg>
+      <View style={styles.ringCenter} pointerEvents="none">
+        {/* `sm` (64px) drops to `metaMd`: `meta2xl` wraps '2h 14m' onto two
+            lines and breaks mid-word at that diameter — the same fix the web
+            ring needed. */}
+        <Text style={[size === 'sm' ? text.metaMd : text.meta2xl, { color: ink }]}>{value}</Text>
+        {label != null && (
+          <Eyebrow tone="muted" style={styles.ringLabel}>
+            {label}
+          </Eyebrow>
+        )}
+      </View>
+    </View>
+  )
+}
+
 export function CompletionCard({ pct, gate = 80, note }: { pct: number; gate?: number; note?: string }) {
   return (
     <Card style={styles.completion}>
@@ -144,18 +218,22 @@ export function CompletionCard({ pct, gate = 80, note }: { pct: number; gate?: n
 export function ScoreRow({
   label, value, outOf = 10, emphasis = false,
 }: { label: string; value: number; outOf?: number; emphasis?: boolean }) {
+  const cells = Math.max(1, Math.round(outOf))
   return (
     <View style={styles.score}>
       <View style={styles.scoreHead}>
-        <Body size="xs" weight="medium">
+        <Body size="md" weight={emphasis ? 'semibold' : 'medium'}>
           {label}
         </Body>
-        <Body size="lg">
+        <Body size="lg" style={{ color: emphasis ? color.accentText : color.text }}>
           {value}
-          <Body size="lg" style={{ color: color.borderStrong }}>{`/${outOf}`}</Body>
         </Body>
       </View>
-      <ProgressBar pct={(value / outOf) * 100} tone={emphasis ? 'accent' : 'ink'} thin />
+      <View style={styles.cells}>
+        {Array.from({ length: cells }).map((_, i) => (
+          <View key={i} style={[styles.cell, { backgroundColor: i < Math.round(value) ? color.accent : color.surfaceSunken }]} />
+        ))}
+      </View>
     </View>
   )
 }
@@ -175,6 +253,21 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   grow: { flex: 1 },
+  cells: { flexDirection: 'row', gap: space['2xs'] + 1 },
+  cell: { flex: 1, height: height['score-cell'], borderRadius: radius.bar - 1 },
+
+  ringRotate: { transform: [{ rotate: '-90deg' }] },
+  ringCenter: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: space.xs,
+  },
+  ringLabel: { textAlign: 'center' },
 
   row: {
     flexDirection: 'row',
@@ -208,6 +301,6 @@ const styles = StyleSheet.create({
   completionHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
   completionNote: {},
 
-  score: { gap: space.sm },
+  score: { gap: space.sm, paddingVertical: space.md },
   scoreHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
 })

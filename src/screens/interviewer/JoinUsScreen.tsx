@@ -1,257 +1,162 @@
 import React from 'react'
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native'
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { borderWidth, color, fontFamilyNative, height, opacity, radius, space } from '../../theme'
-import { Logo } from '../../components/Logo'
-import { Button, Card, Eyebrow } from '../../components/ui'
-import { TIER_FEES_PAISE } from '../../lib/interviewer/state'
-import { formatPaise } from '../../lib/format/money'
+import { borderWidth, color, height, opacity, radius, space, spaceHalf, trackingNative } from '../../theme'
+import { BrandMark, Button, text } from '../../components/ui'
+import { IvCard, IvGlow, IvLabel } from '../../components/interviewer/iv'
+import { EmFoot } from '../../components/employer/em'
+import { label } from '../../lib/profile/labels'
+import { useAppConfig } from '../../lib/interviewer/useInterviewer'
+import type { RootStackParamList } from '../../../App'
 
-const TIERS = [
-  { tier: 'TIER_1', name: 'Tier 1 — Core', paise: TIER_FEES_PAISE.TIER_1, desc: 'Junior / Intern roles. Foundational technical and communication check.' },
-  { tier: 'TIER_2', name: 'Tier 2 — Intermediate', paise: TIER_FEES_PAISE.TIER_2, desc: 'Mid-level ICs (1–4 yrs). System architecture basics and real-world code.' },
-  { tier: 'TIER_3', name: 'Tier 3 — Senior', paise: TIER_FEES_PAISE.TIER_3, desc: 'Senior engineers (5+ yrs). Distributed systems, trade-offs, technical leadership.' },
-  { tier: 'TIER_4', name: 'Tier 4 — Specialist', paise: TIER_FEES_PAISE.TIER_4, desc: 'Staff / Tech Lead / Niche tech. Deep domain expertise and organizational impact.' },
+/** The web's /join-us steps, word for word — none of them carries a number. */
+const STEPS = [
+  { title: 'You apply', body: 'Your background, the domains and languages you interview in, and your CV if you have one to hand. It creates no account.' },
+  { title: 'A person screens it', body: 'Someone on the Apostrophe team reads every application.' },
+  { title: 'We create your account', body: 'If we go ahead, the team sets up your interviewer account, with the tiers and domains you will interview for.' },
+  { title: 'Sign-in details by email', body: 'They go to the address on your application, with a password to use once.' },
+  { title: 'You change the password', body: 'The first sign-in asks for a new password before anything else.' },
+  { title: 'You publish your hours', body: 'Mark the weekly hours you are free. Students can book them from then.' },
 ]
 
-const PERKS = [
-  { icon: '⏱️', title: '20-Minute Sessions', desc: 'Crisp, structured interviews with verified candidates. No 60-minute marathons.' },
-  { icon: '💰', title: 'Guaranteed Payouts', desc: 'Earn ₹40 to ₹150 per interview credited directly to your interviewer wallet.' },
-  { icon: '📅', title: 'Total Flexibility', desc: 'Set your recurring weekly slots or date overrides. Interview whenever suits your schedule.' },
-  { icon: '🎯', title: 'Clear Structured Rubrics', desc: 'Standardized 4-question script and 5-scale scorecards. Fast completion within 24 hours.' },
-]
-
+/**
+ * Join us (no artboard — the drawn screens' language). What the work is, how
+ * long each tier's interview runs and which qualification lands in it
+ * (`config.tiers`, `config.qualifications`), the rules an interviewer is held
+ * to (`config.interviewer`, each line only when the server sent its number),
+ * and the path from application to first booking. The old screen's fees
+ * ("₹40 to ₹150"), "20-minute sessions", "4-question script" and "2+ years"
+ * were written into the app; the interviewer's fee is not public, so it is
+ * described rather than priced.
+ */
 export function JoinUsScreen() {
   const insets = useSafeAreaInsets()
-  const navigation = useNavigation<NativeStackNavigationProp<any>>()
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
+  const config = useAppConfig()
+  const iv = config?.interviewer
+  const windowHours = iv?.scorecardWindowHours ?? config?.scorecard?.windowHours
+
+  const tiers = (config?.tiers ?? [])
+    .filter((t) => t.durationMin > 0)
+    .map((t) => ({
+      tier: t.tier,
+      minutes: t.durationMin,
+      quals: (config?.qualifications ?? []).filter((q) => q.tier === t.tier).map((q) => label(q.value)),
+    }))
+
+  const rules = [
+    iv?.joinOpensMinutesBefore ? `The room opens ${iv.joinOpensMinutesBefore} minutes before the start.` : null,
+    iv?.noShowMinutesAfter ? `A student who has not joined ${iv.noShowMinutesAfter} minutes in counts as a no-show.` : null,
+    windowHours ? `The scorecard is due within ${windowHours} hours of the end${iv?.scorecardReminderHoursBefore ? `, with a reminder ${iv.scorecardReminderHoursBefore} hours before` : ''}.` : null,
+    iv?.completionThresholdPct ? `A session that runs at least ${iv.completionThresholdPct}% of its length, with the scorecard in on time, is paid.` : null,
+  ].filter((r): r is string => !!r)
 
   return (
     <View style={[styles.page, { paddingTop: insets.top }]}>
-      {/* Top Bar */}
       <View style={styles.bar}>
-        <Logo size={18} />
-        <Pressable
-          onPress={() => navigation.navigate('InterviewerSignIn')}
-          hitSlop={8}
-          accessibilityRole="button"
-        >
-          <Text style={styles.signInLink}>Sign In</Text>
+        <View style={styles.brand}>
+          <BrandMark />
+          <Text style={text.uiLeadSemi}>Apostrophe</Text>
+        </View>
+        <Pressable accessibilityRole="button" hitSlop={space.sm} onPress={() => navigation.navigate('InterviewerSignIn')} style={({ pressed }) => pressed && styles.pressed}>
+          <Text style={[text.uiMdSemi, styles.muted]}>Sign in</Text>
         </Pressable>
       </View>
 
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + space['2xl'] }]}
-      >
+      <ScrollView style={styles.grow} contentContainerStyle={styles.body}>
         <View style={styles.hero}>
-          <Eyebrow>APOSTROPHE · INTERVIEWER NETWORK</Eyebrow>
-          <Text style={styles.headline}>Evaluate Talent.</Text>
-          <Text style={[styles.headline, styles.headlineItalic]}>Earn On Your Terms.</Text>
-          <Text style={styles.lede}>
-            Join an elite pool of industry practitioners conducting 20-minute structured technical and behavioral interviews. Fast, respectful, and fairly compensated.
+          <IvGlow />
+          <Text style={[text.metaMd, styles.eyebrow]}>FOR INTERVIEWERS</Text>
+          <Text style={text.displayPage}>Interview students live,</Text>
+          <Text style={[text.displayPage, styles.muted]}>on the hours you set.</Text>
+          <Text style={[text.uiBase, styles.muted]}>
+            You run the interview from a question script, write a scorecard afterwards, and are paid a fee for each one, in hours you publish yourself.
           </Text>
-
-          <Button
-            label="Apply to Interview"
-            variant="primary"
-            onPress={() => navigation.navigate('InterviewerApply')}
-          />
         </View>
 
-        {/* Tiers & Earnings */}
-        <View style={styles.section}>
-          <Eyebrow>COMPENSATION TIERS</Eyebrow>
-          <Text style={styles.sectionTitle}>Predictable per-session fees</Text>
-          <View style={styles.tierList}>
-            {TIERS.map((t) => (
-              <Card key={t.tier} style={styles.tierCard}>
-                <View style={styles.tierHeader}>
-                  <Text style={styles.tierName}>{t.name}</Text>
-                  <Text style={styles.tierFee}>{formatPaise(t.paise)}</Text>
+        {tiers.length > 0 && (
+          <IvCard>
+            <IvLabel>THE INTERVIEWS</IvLabel>
+            <Text style={[text.uiSm, styles.muted]}>The tier comes from the qualification the student declares.</Text>
+            {tiers.map((t, i) => (
+              <View key={t.tier} style={[styles.tier, i === tiers.length - 1 && styles.last]}>
+                <View style={styles.grow}>
+                  <Text style={text.uiMdSemi}>{t.quals.join(' · ') || label(t.tier)}</Text>
+                  <Text style={[text.metaSm, styles.subtle, styles.mono]}>{t.tier.replace('_', ' ')}</Text>
                 </View>
-                <Text style={styles.tierDesc}>{t.desc}</Text>
-              </Card>
-            ))}
-          </View>
-        </View>
-
-        {/* Perks */}
-        <View style={styles.section}>
-          <Eyebrow>WHY JOIN</Eyebrow>
-          <Text style={styles.sectionTitle}>Designed for working professionals</Text>
-          <View style={styles.perkGrid}>
-            {PERKS.map((p, i) => (
-              <View key={i} style={styles.perkItem}>
-                <Text style={styles.perkIcon}>{p.icon}</Text>
-                <Text style={styles.perkTitle}>{p.title}</Text>
-                <Text style={styles.perkDesc}>{p.desc}</Text>
+                <Text style={[text.metaXl, styles.fig]}>{`${t.minutes} min`}</Text>
               </View>
             ))}
-          </View>
-        </View>
+          </IvCard>
+        )}
 
-        {/* Requirements */}
-        <Card style={styles.reqCard}>
-          <Text style={styles.reqTitle}>Who We Look For</Text>
-          <Text style={styles.reqItem}>• Minimum 2+ years of professional engineering or domain experience</Text>
-          <Text style={styles.reqItem}>• Strong communication and empathetic evaluation skills</Text>
-          <Text style={styles.reqItem}>• Reliable broadband connection and quiet interview environment</Text>
-          <Text style={styles.reqItem}>• Commitment to complete scorecards within 24 hours</Text>
-          <View style={{ marginTop: space.md }}>
-            <Button
-              label="Submit Your Application"
-              variant="primary"
-              onPress={() => navigation.navigate('InterviewerApply')}
-            />
-          </View>
-        </Card>
+        <IvCard>
+          <IvLabel>THE FEE</IvLabel>
+          <Text style={text.uiMd}>A fee per interview, set for your account by tier and shown on each interview before you run it. It is credited to your wallet when the scorecard is in, and you withdraw to your bank.</Text>
+        </IvCard>
+
+        {rules.length > 0 && (
+          <IvCard>
+            <IvLabel>WHAT WE ASK</IvLabel>
+            {rules.map((r) => (
+              <View key={r} style={styles.rule}>
+                <View style={styles.dot} />
+                <Text style={[text.uiMd, styles.grow]}>{r}</Text>
+              </View>
+            ))}
+          </IvCard>
+        )}
+
+        <IvLabel style={styles.section}>HOW IT WORKS</IvLabel>
+        <View>
+          {STEPS.map((s, i) => (
+            <View key={s.title} style={styles.step}>
+              <View style={styles.rail}>
+                <View style={styles.num}><Text style={[text.metaSm, styles.onInk]}>{String(i + 1)}</Text></View>
+                {i < STEPS.length - 1 && <View style={styles.line} />}
+              </View>
+              <View style={[styles.grow, styles.stepBody]}>
+                <Text style={text.uiMdSemi}>{s.title}</Text>
+                <Text style={[text.uiSm, styles.muted]}>{s.body}</Text>
+              </View>
+            </View>
+          ))}
+        </View>
       </ScrollView>
+
+      <EmFoot>
+        <View style={styles.grow}>
+          <Button variant="primary" size="lg" full label="Apply to interview" onPress={() => navigation.navigate('InterviewerApply')} />
+        </View>
+      </EmFoot>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  page: {
-    flex: 1,
-    backgroundColor: color.background,
-  },
-  bar: {
-    height: height.header,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: space.lg,
-    backgroundColor: color.surface,
-    borderBottomWidth: borderWidth.thin,
-    borderBottomColor: color.border,
-  },
-  signInLink: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 14,
-    fontWeight: '600',
-    color: color.accent,
-  },
-  scroll: {
-    flex: 1,
-  },
-  content: {
-    padding: space.lg,
-    gap: space['2xl'],
-  },
-  hero: {
-    gap: space.sm,
-    paddingVertical: space.md,
-  },
-  headline: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 28,
-    fontWeight: '700',
-    color: color.text,
-    lineHeight: 34,
-  },
-  headlineItalic: {
-    fontFamily: fontFamilyNative.headingItalic,
-    color: color.accent,
-  },
-  lede: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 15,
-    color: color.textMuted,
-    lineHeight: 22,
-    marginBottom: space.sm,
-  },
-  section: {
-    gap: space.sm,
-  },
-  sectionTitle: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 18,
-    fontWeight: '600',
-    color: color.text,
-  },
-  tierList: {
-    gap: space.sm,
-    marginTop: space['2xs'],
-  },
-  tierCard: {
-    padding: space.md,
-    gap: space['2xs'],
-  },
-  tierHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  tierName: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 15,
-    fontWeight: '700',
-    color: color.text,
-  },
-  tierFee: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 16,
-    fontWeight: '700',
-    color: color.accent,
-  },
-  tierDesc: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    color: color.textMuted,
-    lineHeight: 18,
-  },
-  perkGrid: {
-    gap: space.md,
-    marginTop: space['2xs'],
-  },
-  perkItem: {
-    backgroundColor: color.surface,
-    borderWidth: borderWidth.thin,
-    borderColor: color.border,
-    borderRadius: radius.md,
-    padding: space.md,
-    gap: space['2xs'],
-  },
-  perkIcon: {
-    fontSize: 24,
-    marginBottom: space['2xs'],
-  },
-  perkTitle: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 15,
-    fontWeight: '700',
-    color: color.text,
-  },
-  perkDesc: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    color: color.textMuted,
-    lineHeight: 18,
-  },
-  reqCard: {
-    padding: space.lg,
-    gap: space.xs,
-    backgroundColor: color.surfaceSubtle,
-  },
-  reqTitle: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 16,
-    fontWeight: '700',
-    color: color.text,
-    marginBottom: space['2xs'],
-  },
-  reqItem: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    color: color.textMuted,
-    lineHeight: 20,
-  },
+  page: { flex: 1, backgroundColor: color.background },
+  grow: { flex: 1, minWidth: 0, gap: space['2xs'] },
+  pressed: { opacity: opacity.pressed },
+  muted: { color: color.textMuted },
+  subtle: { color: color.textSubtle },
+  onInk: { color: color.textInverse },
+  mono: { letterSpacing: trackingNative.eyebrow },
+  fig: { letterSpacing: 0 },
+  bar: { height: height.header, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: space.lg, backgroundColor: color.surface, borderBottomWidth: borderWidth.thin, borderBottomColor: color.border },
+  brand: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  body: { padding: space.lg, gap: space.md, paddingBottom: space.xl },
+  hero: { gap: space.xs, paddingVertical: space.md, overflow: 'hidden' },
+  eyebrow: { color: color.accent, letterSpacing: trackingNative.eyebrow, marginBottom: space.xs },
+  section: { marginTop: space.sm },
+  tier: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: spaceHalf['2.5'], borderBottomWidth: borderWidth.thin, borderBottomColor: color.borderSoft },
+  last: { borderBottomWidth: 0, paddingBottom: 0 },
+  rule: { flexDirection: 'row', alignItems: 'flex-start', gap: space.sm },
+  dot: { width: space.xs + 2, height: space.xs + 2, borderRadius: radius.pill, backgroundColor: color.accent, marginTop: space.sm - 1 },
+  step: { flexDirection: 'row', gap: space.md },
+  rail: { alignItems: 'center', width: height.chip },
+  num: { width: height.chip, height: height.chip, borderRadius: radius.pill, backgroundColor: color.inkRaised, alignItems: 'center', justifyContent: 'center' },
+  line: { flex: 1, width: borderWidth.thin, backgroundColor: color.border, marginVertical: space['2xs'] },
+  stepBody: { paddingBottom: space.lg },
 })

@@ -63,13 +63,25 @@ export class ChatSendError extends Error {
 
 type SendInput = { body?: string; attachment?: SendAttachment; clientMessageId?: string }
 
+/**
+ * The REST half for one role. The socket is the same for every role; its REST
+ * fallback is not (/students/me/messages vs /employers/messages), so a caller
+ * that is not a student passes its own.
+ */
+export interface ThreadRest {
+  send: (threadId: string, input: SendInput) => Promise<{ message: MessageDto; duplicate: boolean }>
+  markRead: (threadId: string) => Promise<unknown>
+}
+
+const STUDENT_REST: ThreadRest = { send: restSend, markRead: restMarkRead }
+
 /** Send over the socket with an ack (5s), or fall back to REST when disconnected. */
-function socketSend(threadId: string, input: SendInput): Promise<{ message: MessageDto; duplicate: boolean }> {
+function socketSend(threadId: string, input: SendInput, rest: ThreadRest = STUDENT_REST): Promise<{ message: MessageDto; duplicate: boolean }> {
   const s = getChatSocket()
-  if (!s.connected) return restSend(threadId, input)
+  if (!s.connected) return rest.send(threadId, input)
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
-      restSend(threadId, input).then(resolve, reject)
+      rest.send(threadId, input).then(resolve, reject)
     }, 5000)
     s.emit(EV.send, { threadId, ...input }, (res: unknown) => {
       clearTimeout(timer)
@@ -99,7 +111,7 @@ export interface ThreadSocket {
  * wires its live events. `message:new` also arrives via the auto-joined user
  * room, so it is delivered even before the join resolves.
  */
-export function useThreadSocket(threadId: string | null, handlers: ThreadSocketHandlers): ThreadSocket {
+export function useThreadSocket(threadId: string | null, handlers: ThreadSocketHandlers, rest: ThreadRest = STUDENT_REST): ThreadSocket {
   const [connected, setConnected] = useState(false)
   const h = useRef(handlers)
   h.current = handlers
@@ -136,11 +148,11 @@ export function useThreadSocket(threadId: string | null, handlers: ThreadSocketH
 
   return {
     connected,
-    send: (input) => socketSend(threadId!, input),
+    send: (input) => socketSend(threadId!, input, rest),
     markRead: () => {
       const s = getChatSocket()
       if (s.connected) s.emit(EV.read, { threadId })
-      else if (threadId) void restMarkRead(threadId).catch(() => {})
+      else if (threadId) void rest.markRead(threadId).catch(() => {})
     },
     setTyping: (typing) => {
       const s = getChatSocket()

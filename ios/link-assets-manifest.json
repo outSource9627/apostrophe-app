@@ -14,36 +14,28 @@
       "sha1": "f3a7efe0dc14fce44455e570ab6dea33dddc5133"
     },
     {
-      "path": "src/assets/fonts/InstrumentSans-Bold.ttf",
-      "sha1": "06b38f01cf77cea8b09370ecfa0c4bfcbf03e90b"
+      "path": "src/assets/fonts/LibreFranklin-Bold.ttf",
+      "sha1": "6980b06a2ed8e034994a158d1a13b7324c89891d"
     },
     {
-      "path": "src/assets/fonts/InstrumentSans-Medium.ttf",
-      "sha1": "c43c6c7ae2ab3befb1aeb9bdf70f73cb7fc15e7c"
+      "path": "src/assets/fonts/LibreFranklin-Italic.ttf",
+      "sha1": "db8cd545d661c4191d6bf091044e42f7c02784b7"
     },
     {
-      "path": "src/assets/fonts/InstrumentSans-Regular.ttf",
-      "sha1": "2e547286b12f7d762f099b412a8b9bd9fb6cc387"
+      "path": "src/assets/fonts/LibreFranklin-Light.ttf",
+      "sha1": "aa2e04bd29a1df235523aa1be5be65d772fbdc6f"
     },
     {
-      "path": "src/assets/fonts/InstrumentSans-SemiBold.ttf",
-      "sha1": "961e9e775e84d121ee7163e5a36dd580715cbd23"
+      "path": "src/assets/fonts/LibreFranklin-Medium.ttf",
+      "sha1": "85a8b1ddd2bebcd4bef9987c05c47560749c5543"
     },
     {
-      "path": "src/assets/fonts/Newsreader16pt-Italic.ttf",
-      "sha1": "670be95c9cc81b6d5ebb37939f1bcefb2673f2ef"
+      "path": "src/assets/fonts/LibreFranklin-Regular.ttf",
+      "sha1": "df8d8a885843c89c98fe28b1c6dd3faf3921651b"
     },
     {
-      "path": "src/assets/fonts/Newsreader16pt-Light.ttf",
-      "sha1": "d428a365ec40034b030c4f925f8b9042b8d4cd64"
-    },
-    {
-      "path": "src/assets/fonts/Newsreader16pt-Medium.ttf",
-      "sha1": "6e86e40737011035b5bc19f803c1a7d8b66f99f3"
-    },
-    {
-      "path": "src/assets/fonts/Newsreader16pt-Regular.ttf",
-      "sha1": "858059950b90b9c88ee5645978d73cb874839c1b"
+      "path": "src/assets/fonts/LibreFranklin-SemiBold.ttf",
+      "sha1": "249c840abcd42e336ff6d40b7760d3531aa48ce7"
     }
   ]
 }

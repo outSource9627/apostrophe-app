@@ -21,3 +21,6 @@ jest.mock('@react-native-community/netinfo', () =>
 // The Razorpay SDK is only require()d inside a pay handler, but stub it so any
 // eager resolution in a test cannot fail on the unlinked native module.
 jest.mock('react-native-razorpay', () => ({ default: { open: jest.fn(() => Promise.resolve({})) } }), { virtual: true })
+
+// Gesture handler's native module does not exist under Jest; its own mock stands in.
+import 'react-native-gesture-handler/jestSetup'

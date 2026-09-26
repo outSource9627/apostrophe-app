@@ -1,207 +1,93 @@
-import React from 'react'
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native'
-import { useNavigation } from '@react-navigation/native'
+import React, { useCallback, useEffect, useState } from 'react'
+import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native'
+import { useIsFocused, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { borderWidth, color, fontFamilyNative, radius, space } from '../../theme'
-import { Button, Card, Eyebrow } from '../../components/ui'
+import { color, space } from '../../theme'
+import { Button, text } from '../../components/ui'
 import { InterviewerShell } from '../../components/interviewer/InterviewerShell'
-import { useInterviewer } from '../../lib/interviewer/useInterviewer'
-import { formatScorecardCountdown, isScorecardOverdue, TIER_FEES_PAISE } from '../../lib/interviewer/state'
+import { IvOwedRow } from '../../components/interviewer/iv'
+import { EmEmpty, EmError, EmPills } from '../../components/employer/em'
+import { listScorecards, type ScorecardOwedRowDto } from '../../lib/api/interviewer'
 import { formatPaise } from '../../lib/format/money'
+import { useNow } from '../../lib/employer/useNow'
+import { hms, istDay, owedClock } from '../../lib/interviewer/state'
+import { useAppConfig } from '../../lib/interviewer/useInterviewer'
+import type { RootStackParamList } from '../../../App'
 
+type Tab = 'open' | 'closed'
+
+/**
+ * Scorecards owed (no artboard — M1's owed rows, as a page). GET
+ * /interviewers/me/scorecards: open rows with their live clock (red under
+ * `scorecardReminderHoursBefore`) and what submitting releases; closed rows
+ * (past `dueAt`) with the fee withheld. Allowed while suspended.
+ */
 export function PendingScorecardsScreen() {
-  const navigation = useNavigation<NativeStackNavigationProp<any>>()
-  const { owedScorecards } = useInterviewer()
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
+  const focused = useIsFocused()
+  const config = useAppConfig()
+  const now = useNow() || Date.now()
+  const [rows, setRows] = useState<ScorecardOwedRowDto[] | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [tab, setTab] = useState<Tab>('open')
+
+  const load = useCallback(async () => {
+    setError(null)
+    try {
+      setRows((await listScorecards('ALL')).rows)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not load your scorecards.')
+    }
+  }, [])
+  useEffect(() => {
+    if (focused) load()
+  }, [focused, load])
+
+  const open = (rows ?? []).filter((r) => !r.overdue)
+  const closed = (rows ?? []).filter((r) => r.overdue)
+  const shown = tab === 'open' ? open : closed
 
   return (
-    <InterviewerShell back={{ label: 'Home', onPress: () => navigation.goBack() }}>
-      <View style={styles.header}>
-        <Eyebrow>ACTION REQUIRED</Eyebrow>
-        <Text style={styles.title}>Pending Scorecards</Text>
-        <Text style={styles.subtitle}>
-          All scorecards must be submitted within 24 hours of session end. Failure to submit leads to fee forfeiture.
-        </Text>
-      </View>
-
-      {owedScorecards.length === 0 ? (
-        <Card style={styles.emptyCard}>
-          <Text style={styles.emptyIcon}>🎉</Text>
-          <Text style={styles.emptyTitle}>All Caught Up!</Text>
-          <Text style={styles.emptyDesc}>
-            You have no pending scorecards awaiting submission. All completed session fees have been credited.
-          </Text>
-          <Button
-            label="Back to Dashboard"
-            variant="secondary"
-            onPress={() => navigation.goBack()}
-          />
-        </Card>
+    <InterviewerShell back={() => navigation.goBack()} title="Scorecards owed" sub={rows ? `${open.length} open · ${closed.length} closed` : undefined} scroll={false}>
+      {rows === null && !error ? (
+        <ActivityIndicator color={color.textSubtle} style={styles.loading} />
+      ) : error && !rows ? (
+        <View style={styles.pad}><EmError title="Couldn’t load your scorecards." body={error} action={<Button variant="secondary" size="pair" icon="refresh" label="Try again" onPress={() => { load() }} />} /></View>
+      ) : (rows ?? []).length === 0 ? (
+        <View style={[styles.pad, styles.center]}><EmEmpty icon="check" title="None to write." body="Every scorecard is in." /></View>
       ) : (
-        <View style={styles.list}>
-          {owedScorecards.map((sc) => {
-            const overdue = isScorecardOverdue(sc.slotEnd)
-            const fee = TIER_FEES_PAISE[sc.tier as keyof typeof TIER_FEES_PAISE] ?? 4000
-
+        <FlatList
+          data={shown}
+          keyExtractor={(r) => r.interviewId}
+          contentContainerStyle={styles.list}
+          ListHeaderComponent={<EmPills<Tab> items={[{ key: 'open', label: 'Open', count: open.length }, { key: 'closed', label: 'Closed', count: closed.length }]} value={tab} onChange={setTab} />}
+          ListHeaderComponentStyle={styles.pillsWrap}
+          ListEmptyComponent={<Text style={[text.uiMd, styles.muted, styles.none]}>Nothing here.</Text>}
+          renderItem={({ item: r }) => {
+            const c = owedClock(r, config, now)
+            const secs = c.status === 'OPEN' || c.status === 'URGENT' ? c.secondsLeft : 0
             return (
-              <Card key={sc.id} style={styles.card}>
-                <View style={styles.cardHeader}>
-                  <View>
-                    <Text style={styles.candidateName}>{sc.student?.name || 'Candidate'}</Text>
-                    <Text style={styles.sessionMeta}>
-                      {sc.tier.replace('_', ' ')} · Fee: {formatPaise(fee)}
-                    </Text>
-                  </View>
-                  <View style={[styles.badge, overdue && styles.badgeOverdue]}>
-                    <Text style={[styles.badgeText, overdue && styles.badgeTextOverdue]}>
-                      {overdue ? 'FORFEITED' : 'OWED'}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Countdown */}
-                <View style={[styles.clockRow, overdue && styles.clockRowOverdue]}>
-                  <Text style={styles.clockIcon}>⏱️</Text>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.clockText, overdue && styles.clockTextOverdue]}>
-                      {formatScorecardCountdown(sc.slotEnd)}
-                    </Text>
-                    <Text style={styles.clockDesc}>
-                      {overdue
-                        ? '24-hour evaluation window has expired.'
-                        : 'Submit now to unlock fee credit.'}
-                    </Text>
-                  </View>
-                </View>
-
-                <Button
-                  label={overdue ? 'View Details' : 'Complete Scorecard'}
-                  variant={overdue ? 'secondary' : 'primary'}
-                  onPress={() => navigation.navigate('ScorecardDraft', { id: sc.id })}
-                />
-              </Card>
+              <IvOwedRow
+                name={r.student.name}
+                line={r.overdue ? `${istDay(r.slotStart)} · closed · fee withheld` : r.payable ? `${istDay(r.slotStart)} · ${formatPaise(r.feePaise)} releases on submit` : `${istDay(r.slotStart)} · submit to close it`}
+                clock={hms(secs)}
+                urgent={c.status === 'URGENT'}
+                onPress={() => navigation.navigate(r.overdue ? 'InterviewerDetail' : 'ScorecardDraft', { id: r.interviewId })}
+              />
             )
-          })}
-        </View>
+          }}
+        />
       )}
     </InterviewerShell>
   )
 }
 
 const styles = StyleSheet.create({
-  header: {
-    gap: space['2xs'],
-  },
-  title: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 24,
-    fontWeight: '700',
-    color: color.text,
-  },
-  subtitle: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    color: color.textMuted,
-    lineHeight: 18,
-  },
-  list: {
-    gap: space.md,
-  },
-  card: {
-    padding: space.md,
-    gap: space.md,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  candidateName: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 16,
-    fontWeight: '700',
-    color: color.text,
-  },
-  sessionMeta: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 12,
-    color: color.textMuted,
-    marginTop: 2,
-  },
-  badge: {
-    backgroundColor: '#fef3c7',
-    paddingHorizontal: space.xs,
-    paddingVertical: 2,
-    borderRadius: radius.sm,
-  },
-  badgeOverdue: {
-    backgroundColor: '#fee2e2',
-  },
-  badgeText: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#b45309',
-  },
-  badgeTextOverdue: {
-    color: color.accent,
-  },
-  clockRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.sm,
-    backgroundColor: '#fffbeb',
-    padding: space.sm,
-    borderRadius: radius.sm,
-    borderWidth: borderWidth.thin,
-    borderColor: '#fde68a',
-  },
-  clockRowOverdue: {
-    backgroundColor: '#fef2f2',
-    borderColor: '#fecaca',
-  },
-  clockIcon: {
-    fontSize: 18,
-  },
-  clockText: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#92400e',
-  },
-  clockTextOverdue: {
-    color: color.accent,
-  },
-  clockDesc: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 11,
-    color: '#b45309',
-    marginTop: 1,
-  },
-  emptyCard: {
-    padding: space['2xl'],
-    alignItems: 'center',
-    gap: space.xs,
-  },
-  emptyIcon: {
-    fontSize: 40,
-  },
-  emptyTitle: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 18,
-    fontWeight: '700',
-    color: color.text,
-  },
-  emptyDesc: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    color: color.textMuted,
-    textAlign: 'center',
-    lineHeight: 18,
-    marginBottom: space.sm,
-  },
+  muted: { color: color.textMuted },
+  pad: { flex: 1, paddingHorizontal: space.lg },
+  center: { justifyContent: 'center' },
+  loading: { paddingVertical: space['3xl'] },
+  none: { paddingVertical: space.xl, textAlign: 'center' },
+  pillsWrap: { marginHorizontal: -space.lg },
+  list: { paddingHorizontal: space.lg, paddingBottom: space.lg, gap: space.sm },
 })

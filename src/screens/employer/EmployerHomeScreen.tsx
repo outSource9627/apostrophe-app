@@ -1,60 +1,50 @@
 import React, { useEffect, useRef } from 'react'
-import { StyleSheet, Text, View } from 'react-native'
-import { space } from '../../theme'
-import { Body, Button, Card, Display, Eyebrow, Meta, text } from '../../components/ui'
-import { DocumentStatusRow, EmployerShell, FeedExplainer, VerifiedEmployerBadge } from '../../components/employer'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { useNavigation } from '@react-navigation/native'
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import { useQuery } from '@tanstack/react-query'
+import { color, opacity, space, spaceHalf } from '../../theme'
+import { Button, text } from '../../components/ui'
+import { Icon, type IconName } from '../../components/ui/Icon'
+import { EmployerShell } from '../../components/employer'
+import { EmBadge, EmCard, EmMono, EmSteps, EmWell, type EmTone, type StepState } from '../../components/employer/em'
+import { fetchShortlist } from '../../lib/api/employerShortlist'
+import { fetchEmployerInterests, liveInterestOutcome } from '../../lib/api/employerInterests'
+import { fetchEmployerJobs } from '../../lib/api/employerJobs'
+import { useChatUnread } from '../../lib/employer/useNavCounts'
+import { useEmployerConfig } from '../../lib/employer/useEmployerConfig'
+import type { RootStackParamList } from '../../../App'
 import { useEmployer } from '../../lib/employer/useEmployer'
-import { EMPLOYER_UPLOAD, type EmployerState } from '../../lib/api/employer'
-import {
-  REQUIREMENT_SUMMARY, REQUIREMENT_TITLE, formatIst, needsAction, promptState, requirementKindLine,
-  requirementTimes, requirementTitle, requirementsProgress,
-} from '../../lib/employer/state'
-import {
-  EmployerLoadState, FactRow, KeptList, RequirementPill, RowActionButton, TitleBlock, UnnamedRequestRow,
-  requirementActions, requirementNoun, reviewedAt, unnamedRequest, type DocumentKey,
-} from './EmployerStatusScreen'
+import type { EmployerState } from '../../lib/api/employer'
+import { formatIst, formatIstStep, needsAction, promptState } from '../../lib/employer/state'
+import { EmployerLoadState, requirementActions, type DocumentKey } from './EmployerStatusScreen'
 
 export interface EmployerHomeScreenProps {
   /** EM-05, optionally scrolled to one requirement. */
   onDocuments: (focus?: DocumentKey) => void
   /** EM-06. */
   onStatus: () => void
-  /** EM-07, from the company monogram in the app bar. */
-  onCompany: () => void
-  /**
-   * EM-08, the candidate feed, from a verified employer's home. The feed is
-   * the next flow and has no screen yet; until App passes this, home is the
-   * feed's stand-in and draws no button that would open itself.
-   */
+  /** EM-08, the candidate feed, from a verified employer's home. */
   onFeed?: () => void
 }
 
 /**
- * EM-04 · Home, pending verification — and EM-04 · Rejected beside it.
+ * EM-04 · Home while verification is pending, and EM-04b once verified.
  *
- * While pending it is the shell's prompt (EmployerShell draws it; this screen
- * never does), a title that says where they stand, the one thing to do about
- * it, and a drawing of the feed they are working towards — FeedExplainer,
- * never the feed and never a blurred card. Which variant draws is the prompt's
- * own state, read from the same cache, so the band and the page under it
- * cannot disagree:
+ * Pending: one status card (badge, a sentence, the timeline, the reviewer's
+ * words when there are any, and the one thing to do) over the list of what
+ * verification unlocks. The design draws "in review"; the other pending states
+ * (documents still to submit, more requested, not approved) reuse the card with
+ * their own badge, step and action. The bell and the initials (to Account) are
+ * the shell's.
  *
- *   todo       Welcome, the checklist, and Submit documents (the one crimson).
- *   review     Welcome back, each document's own pill, and no primary: there
- *              is nothing to push while a reviewer decides.
- *   rejected   The decision: the failed document's row with the reviewer's
- *   moreInfo   sentences and Resubmit (or Add) one tap away, what passed kept
- *              as passed. A request is amber and adds; a refusal is danger and
- *              replaces. Neither is crimson.
+ * Verified: the badge card and four numbers, each from its own endpoint — a
+ * read that failed shows a dash, never a made-up zero.
  *
  * When a read sees approval land while home is open, home hands over to EM-06,
- * where the Verified Employer moment is drawn — no reload and no sign-in.
- *
- * Copy is the board's (docs/design/canvas/employer-onboarding/boards/home.mjs)
- * and the web's (apostrophe-user app/employers/home), filled from the state;
- * the 24 hours is `verification.slaHours`.
+ * where the Verified Employer moment is drawn.
  */
-export function EmployerHomeScreen({ onDocuments, onStatus, onCompany, onFeed }: EmployerHomeScreenProps) {
+export function EmployerHomeScreen({ onDocuments, onStatus, onFeed }: EmployerHomeScreenProps) {
   const { state, error, refresh, justVerified } = useEmployer()
 
   const handedOver = useRef(false)
@@ -66,284 +56,177 @@ export function EmployerHomeScreen({ onDocuments, onStatus, onCompany, onFeed }:
 
   if (!state) {
     return (
-      <EmployerShell onAccount={onCompany}>
+      <EmployerShell title="Home">
         <EmployerLoadState error={error} onRetry={refresh} />
       </EmployerShell>
     )
   }
 
   const first = state.company.authorisedPerson.name.trim().split(/\s+/)[0] ?? ''
+  const prompt = promptState(state, { justVerified })
 
-  let body: React.ReactNode
-  switch (promptState(state, { justVerified })) {
-    case null:
-    case 'verified':
-      body = <Verified state={state} first={first} onFeed={onFeed} />
-      break
-    case 'todo':
-      body = (
-        <>
-          <TitleBlock
-            title={`Welcome, ${first}.`}
-            sub="Your account is ready. Candidates open once a reviewer confirms your company is real, and it stays free after that."
-          />
-          <TodoChecklist state={state} onDocuments={onDocuments} />
-          <FeedExplainer />
-        </>
-      )
-      break
-    case 'review':
-      body = (
-        <>
-          <TitleBlock
-            title={`Welcome back, ${first}.`}
-            sub="Nothing to do while we review. This page updates the moment there is a decision, and we email you too."
-          />
-          <ReviewChecklist state={state} onStatus={onStatus} />
-          <FeedExplainer />
-        </>
-      )
-      break
-    case 'rejected':
-      body = (
-        <>
-          <Decision state={state} prompt="rejected" onDocuments={onDocuments} />
-          <FeedExplainer />
-        </>
-      )
-      break
-    case 'moreInfo':
-      body = (
-        <>
-          <Decision state={state} prompt="moreInfo" onDocuments={onDocuments} />
-          <FeedExplainer />
-        </>
-      )
-      break
+  if (prompt === null || prompt === 'verified') {
+    return (
+      <EmployerShell title={`Welcome back, ${first}.`}>
+        <VerifiedHome state={state} onFeed={onFeed} />
+      </EmployerShell>
+    )
   }
 
-  return <EmployerShell onAccount={onCompany}>{body}</EmployerShell>
-}
-
-const COUNT_WORD = ['No', 'One', 'Two', 'Three', 'Four']
-const countWord = (n: number) => COUNT_WORD[n] ?? String(n)
-
-/** The card's heading: the job in the sans (it is interface), and where it stands in mono. */
-function ChecklistHead({ status }: { status: string }) {
   return (
-    <View style={styles.cardHead}>
-      <Text style={[text.uiLgSemi, styles.grow]}>Verify your company</Text>
-      <Meta>{status}</Meta>
-    </View>
-  )
-}
-
-/**
- * 01 · Documents not submitted. What verification takes, as three rows: a ring
- * for what is still to send, a tick for what is done. The limit is said under
- * the list, before the screen that opens the picker; the one crimson is Submit
- * documents.
- */
-function TodoChecklist({ state, onDocuments }: { state: EmployerState; onDocuments: () => void }) {
-  const { done, total } = requirementsProgress(state)
-  const base = state.requirements.filter((r) => r.key !== 'REQUESTED')
-  const missing = base.filter((r) => r.status === 'MISSING').length
-
-  return (
-    <Card style={styles.card}>
-      <ChecklistHead status={`${done} of ${total} done`} />
-      <View style={styles.list}>
-        {base.map((req, i) => {
-          const last = i === base.length - 1
-          // Sent is not passed: the tick is for a decision, as it is on the in-review card.
-          const mark = req.status === 'APPROVED' ? 'check' : 'ring'
-          if (req.key === 'WORK_EMAIL') {
-            return (
-              <FactRow
-                key={req.key}
-                mark={mark}
-                label={REQUIREMENT_TITLE.WORK_EMAIL}
-                sub={REQUIREMENT_SUMMARY.WORK_EMAIL}
-                // An address off the website's domain waits on a reviewer, and says so.
-                trailing={req.status === 'APPROVED' ? undefined : <RequirementPill requirement={req} />}
-                last={last}
-              />
-            )
-          }
-          const key = req.key as 'COMPANY_PROOF' | 'PHOTO_ID'
-          return req.status === 'MISSING' ? (
-            <FactRow key={key} mark="ring" label={REQUIREMENT_TITLE[key]} sub={REQUIREMENT_SUMMARY[key]} last={last} />
-          ) : (
-            <FactRow
-              key={key}
-              mark={mark}
-              label={REQUIREMENT_TITLE[key]}
-              sub={requirementKindLine(req)}
-              trailing={<RequirementPill requirement={req} />}
-              last={last}
-            />
-          )
-        })}
-      </View>
-      {missing > 0 && (
-        <Eyebrow tone="muted" style={styles.constraint}>
-          {`${EMPLOYER_UPLOAD.constraint}${missing > 1 ? ' each' : ''}`}
-        </Eyebrow>
-      )}
-      <Button variant="primary" size="lg" full label="Submit documents" onPress={() => onDocuments()} style={styles.primary} />
-      {missing > 0 && (
-        <Body size="xs" tone="muted" style={styles.helper}>
-          {missing > 1 ? 'Have both files on your phone before you start.' : 'Have the file on your phone before you start.'}
-        </Body>
-      )}
-    </Card>
-  )
-}
-
-/**
- * 02 · Submitted, waiting. The same card with each row's own pill — there is
- * no one chip for the account — and when it went in. No primary: there is
- * nothing to push, so the way to the detail is outlined.
- */
-function ReviewChecklist({ state, onStatus }: { state: EmployerState; onStatus: () => void }) {
-  return (
-    <Card style={styles.card}>
-      <ChecklistHead status="In review" />
-      <View style={styles.list}>
-        {state.requirements.map((req, i) => (
-          <FactRow
-            key={req.key}
-            mark={req.status === 'APPROVED' ? 'check' : 'ring'}
-            label={req.key === 'WORK_EMAIL' ? 'Work email' : requirementTitle(req)}
-            sub={
-              req.key === 'WORK_EMAIL'
-                ? // 'On your company domain' only when it is; otherwise the address a reviewer is checking.
-                  req.status === 'APPROVED' || req.matchesWebsite
-                  ? 'On your company domain'
-                  : requirementKindLine(req)
-                : requirementKindLine(req)
-            }
-            trailing={<RequirementPill requirement={req} />}
-            last={i === state.requirements.length - 1}
-          />
+    <EmployerShell title={`Welcome, ${first}.`}>
+      <PendingCard state={state} prompt={prompt} onDocuments={onDocuments} onStatus={onStatus} />
+      <EmCard>
+        <EmMono>UNLOCKS WHEN VERIFIED</EmMono>
+        {UNLOCKS.map((t) => (
+          <View key={t} style={styles.unlock}>
+            <Icon name="lock" size={space.md + 2} tint={color.textSubtle} weight={2} />
+            <Text style={[text.uiMd, styles.secondary]}>{t}</Text>
+          </View>
         ))}
-      </View>
-      {!!state.verification.submittedAt && (
-        <Meta style={styles.submitted}>{`Submitted ${formatIst(state.verification.submittedAt)}`}</Meta>
-      )}
-      <View style={styles.statusAction}>
-        <Button variant="outline" size="md" label="See verification status" onPress={onStatus} />
-      </View>
-    </Card>
+      </EmCard>
+    </EmployerShell>
   )
 }
 
+/** What is locked until a reviewer approves — product copy, as the design draws it. */
+const UNLOCKS = [
+  'Browse the candidate feed',
+  'Play videos and full interviews',
+  'Shortlist candidates',
+  'Send Interests',
+  'Post jobs',
+  'Chat with connections',
+]
+
+const DOC_NAME: Record<'COMPANY_PROOF' | 'PHOTO_ID', string> = { COMPANY_PROOF: 'Company proof', PHOTO_ID: 'Photo ID' }
+
 /**
- * EM-04 · Rejected, and more information requested beside it, drawn so the two
- * cannot be confused: a refusal names the document and the reviewer's reason
- * on a danger well with Resubmit; a request is a warning well with Add, and
- * nothing on the screen reads refused.
+ * EM-04 · the pending card. The design draws "in review"; the product has four
+ * pending states, so one card carries each: its badge, its sentence, the
+ * timeline, the reviewer's words when there are any, and the one thing to do.
  */
-function Decision({
-  state, prompt, onDocuments,
+function PendingCard({
+  state, prompt, onDocuments, onStatus,
 }: {
   state: EmployerState
-  prompt: 'rejected' | 'moreInfo'
+  prompt: 'todo' | 'review' | 'moreInfo' | 'rejected'
   onDocuments: (focus?: DocumentKey) => void
+  onStatus: () => void
 }) {
+  const company = state.company.name
+  const v = state.verification
+  const hours = useEmployerConfig().verificationTargetHours ?? v.slaHours
+  const missing = state.requirements.filter((r) => (r.key === 'COMPANY_PROOF' || r.key === 'PHOTO_ID') && r.status === 'MISSING')
   const acting = state.requirements.filter((r) => r.key !== 'WORK_EMAIL' && needsAction(r))
-  const kept = state.requirements.filter((r) => !acting.includes(r))
-  const refused = acting.filter((r) => r.status === 'REJECTED')
-  const actions = requirementActions(acting)
-  const at = reviewedAt(state)
-  const over = at ? `Reviewed ${formatIst(at)}` : null
-
-  const unnamed = prompt === 'moreInfo' && unnamedRequest(state)
-  const everythingElsePassed = acting.length === refused.length && kept.every((r) => r.status === 'APPROVED')
-  const title =
-    prompt === 'moreInfo'
-      ? unnamed
-        ? 'One more thing, please.'
-        : 'One more document, please.'
-      : refused.length
-        ? `${countWord(refused.length)} ${refused.length === 1 ? 'document' : 'documents'} to fix.`
-        : 'Verification not accepted.'
-  const sub =
-    prompt === 'moreInfo'
-      ? 'This is a request, not a refusal. Your account and what you sent stay as they are.'
-      : refused.length
-        ? `A reviewer could not accept ${refused.map((r) => `your ${requirementNoun(r)}`).join(' and ')}.${
-            everythingElsePassed ? ' Everything else passed.' : ''
-          }`
-        : state.verification.reason
+  const firstAction = requirementActions(acting).values().next().value
+  const badge: Record<typeof prompt, { label: string; tone: EmTone; icon: IconName }> = {
+    todo: { label: 'Pending verification', tone: 'amber', icon: 'clock' },
+    review: { label: 'Pending verification', tone: 'amber', icon: 'clock' },
+    moreInfo: { label: 'More documents', tone: 'violet', icon: 'file' },
+    rejected: { label: 'Not approved', tone: 'red', icon: 'x' },
+  }
+  const title = {
+    todo: `Verify ${company}.`,
+    review: `We’re checking ${company}.`,
+    moreInfo: 'One more document, please.',
+    rejected: 'We couldn’t verify the company.',
+  }[prompt]
+  const decisionLine = hours ? `Usually within ${hours} hours` : undefined
+  const steps: { title: string; sub?: string; state: StepState }[] = [
+    { title: 'Account created', state: 'done' },
+    { title: 'Email and mobile verified', state: 'done' },
+    prompt === 'todo'
+      ? { title: 'Documents to submit', sub: missing.map((r) => DOC_NAME[r.key as 'COMPANY_PROOF' | 'PHOTO_ID']).join(' · ') || undefined, state: 'now' }
+      : { title: 'Documents submitted', sub: v.submittedAt ? formatIstStep(v.submittedAt) : undefined, state: 'done' },
+    prompt === 'rejected'
+      ? { title: 'Not approved', sub: 'Fix it and resubmit. There’s no limit.', state: 'bad' }
+      : prompt === 'moreInfo'
+        ? { title: 'More documents requested', sub: 'Add them and the review carries on', state: 'now' }
+        : { title: 'Reviewer decision', sub: decisionLine, state: prompt === 'review' ? 'now' : 'todo' },
+  ]
+  const action =
+    prompt === 'todo' ? { label: 'Submit documents', onPress: () => onDocuments() }
+      : prompt === 'review' ? { label: 'View status', onPress: onStatus }
+        : { label: prompt === 'moreInfo' ? 'Add document' : 'Update and resubmit', onPress: () => onDocuments(firstAction?.focus ?? undefined) }
 
   return (
-    <>
-      <TitleBlock over={over} title={title} sub={sub} />
-      {unnamed && <UnnamedRequestRow state={state} onPress={() => onDocuments()} />}
-      {acting.map((req) => {
-        const action = actions.get(req.key)
-        const refusedRow = req.status === 'REJECTED'
-        return (
-          <DocumentStatusRow
-            key={req.key}
-            requirement={req}
-            state={state}
-            // Home keeps only the decision's stamp; EM-06 carries the full history.
-            times={refusedRow ? requirementTimes(req, state).slice(-1) : []}
-            action={
-              action && (
-                <RowActionButton action={action} onPress={() => onDocuments(action.focus ?? undefined)} />
-              )
-            }
-            after={
-              refusedRow
-                ? `Only the ${requirementNoun(req)} goes back to a reviewer. We aim to decide within ${state.verification.slaHours} hours.`
-                : req.status === 'MORE_INFO'
-                  ? 'It joins your submission. Nothing goes back to the start.'
-                  : undefined
-            }
-          />
-        )
-      })}
-      {kept.length > 0 && <KeptList requirements={kept} />}
-    </>
+    <EmCard style={styles.pending}>
+      <EmBadge label={badge[prompt].label} tone={badge[prompt].tone} icon={badge[prompt].icon} />
+      <Text style={text.displayCard}>{title}</Text>
+      <EmSteps steps={steps} />
+      {(prompt === 'moreInfo' || prompt === 'rejected') && !!v.reason && (
+        <EmWell label={prompt === 'rejected' ? 'Reason' : 'From the reviewer'} tone={prompt === 'rejected' ? 'red' : 'violet'}>{v.reason}</EmWell>
+      )}
+      <Button variant="secondary" size="pair" full label={action.label} onPress={action.onPress} />
+    </EmCard>
   )
 }
 
 /**
- * A verified employer who opened home rather than watching approval land (that
- * one is handed to EM-06). The badge, and what is true, in the serif; and, once
- * the feed exists, the one way into it.
+ * EM-04b · verified. The badge card, then four numbers — each from its own
+ * endpoint and each allowed to fail on its own: a card whose read failed shows
+ * a dash rather than a made-up zero (the web's rule).
  */
-function Verified({ state, first, onFeed }: { state: EmployerState; first: string; onFeed?: () => void }) {
+function VerifiedHome({ state, onFeed }: { state: EmployerState; onFeed?: () => void }) {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
   const approvedAt = state.verification.approvedAt ?? state.verification.reviewedAt
+  const shortlist = useQuery({ queryKey: ['employer', 'shortlist', 'count'], queryFn: () => fetchShortlist({ perPage: 1 }) })
+  const interests = useQuery({ queryKey: ['employer', 'interests', 'sent'], queryFn: () => fetchEmployerInterests({ outcome: 'SENT', perPage: 50 }) })
+  const jobs = useQuery({ queryKey: ['employer', 'jobs', 'live'], queryFn: () => fetchEmployerJobs({ status: 'PUBLISHED', perPage: 50 }) })
+  const chats = useChatUnread(true)
+  const dash = '—'
+  const liveInterests = interests.data
+    ? interests.data.total > interests.data.rows.length ? interests.data.total : interests.data.rows.filter((i) => liveInterestOutcome(i) === 'SENT').length
+    : null
+  const liveJobs = jobs.data ? jobs.data.counts.PUBLISHED ?? jobs.data.total : null
+  // Applicants are the sum over the live jobs — only honest while every live job was read.
+  const applicants = jobs.data && liveJobs !== null && jobs.data.rows.length >= liveJobs
+    ? jobs.data.rows.reduce((sum, j) => sum + j.counters.applications, 0) : null
+
+  const stats: { icon: IconName; value: string; label: string; to: keyof RootStackParamList }[] = [
+    { icon: 'bookmark', value: shortlist.data ? String(shortlist.data.totalAll ?? shortlist.data.total) : dash, label: 'SHORTLISTED', to: 'EmployerShortlist' },
+    { icon: 'heart', value: liveInterests !== null ? String(liveInterests) : dash, label: 'INTEREST PENDING', to: 'EmployerInterests' },
+    { icon: 'brief', value: liveJobs !== null ? (applicants !== null ? `${liveJobs} · ${applicants}` : String(liveJobs)) : dash, label: applicants !== null ? 'JOBS · APPLICANTS' : 'LIVE JOBS', to: 'EmployerJobs' },
+    { icon: 'chat', value: String(chats), label: chats === 1 ? 'UNREAD CHAT' : 'UNREAD CHATS', to: 'EmployerChats' },
+  ]
+
   return (
     <>
-      <TitleBlock title={`Welcome back, ${first}.`} />
-      <Card style={styles.verifiedCard}>
-        <VerifiedEmployerBadge />
-        <Display level="md">{`${state.company.name} is a Verified Employer.`}</Display>
-        {!!approvedAt && <Meta>{`Approved ${formatIst(approvedAt)}`}</Meta>}
-        {!!onFeed && (
-          <Button variant="primary" size="lg" full label="Open the candidate feed" onPress={onFeed} style={styles.feed} />
-        )}
-      </Card>
+      <EmCard style={styles.verified}>
+        <EmBadge label="Verified employer" tone="green" icon="shield" />
+        <Text style={text.displaySm}>{`${state.company.name} is a Verified Employer.`}</Text>
+        {!!approvedAt && <EmMono tone="subtle">{`APPROVED ${formatIst(approvedAt).toUpperCase()}`}</EmMono>}
+        <Button variant="primary" size="cta" full label="Open the candidate feed" onPress={onFeed ?? (() => navigation.navigate('EmployerFeed'))} />
+      </EmCard>
+      <View style={styles.grid}>
+        {stats.map((st) => (
+          <Pressable
+            key={st.label}
+            accessibilityRole="button"
+            accessibilityLabel={`${st.value} ${st.label.toLowerCase()}`}
+            onPress={() => navigation.navigate(st.to as never)}
+            style={({ pressed }) => [styles.cell, pressed && styles.pressed]}
+          >
+            <EmCard style={styles.stat}>
+              <Icon name={st.icon} size={space.lg + 2} tint={color.accent} />
+              <Text style={text.displayHeading}>{st.value}</Text>
+              <EmMono>{st.label}</EmMono>
+            </EmCard>
+          </Pressable>
+        ))}
+      </View>
     </>
   )
 }
 
 const styles = StyleSheet.create({
-  grow: { flex: 1 },
-  card: { padding: space.lg },
-  cardHead: { flexDirection: 'row', alignItems: 'baseline', gap: space.md },
-  list: { marginTop: space.xs },
-  constraint: { marginTop: space.sm },
-  primary: { marginTop: space.lg },
-  helper: { marginTop: space.sm },
-  submitted: { marginTop: space.sm },
-  statusAction: { marginTop: space.md, alignSelf: 'flex-start' },
-  verifiedCard: { padding: space.xl, gap: space.md, alignItems: 'flex-start' },
-  // 20 over the action, as the web card sets it: the card's 12 gap and 8 more.
-  feed: { marginTop: space.sm },
+  pending: { padding: spaceHalf['4.5'], gap: spaceHalf['3.5'] },
+  verified: { padding: spaceHalf['4.5'], gap: space.md },
+  unlock: { flexDirection: 'row', alignItems: 'center', gap: spaceHalf['2.5'] },
+  secondary: { color: color.textSecondary },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spaceHalf['2.5'] },
+  cell: { width: '48.5%', flexGrow: 1 },
+  stat: { gap: space.sm },
+  pressed: { opacity: opacity.pressed },
 })

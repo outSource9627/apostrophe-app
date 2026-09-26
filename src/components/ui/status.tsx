@@ -1,6 +1,6 @@
 import React from 'react'
 import { StyleSheet, Text, View, type ViewProps } from 'react-native'
-import { borderWidth, color, radius, space } from '../../theme'
+import { borderWidth, color, radius, space, spaceHalf } from '../../theme'
 import { Body } from './Type'
 import { text } from './typography'
 
@@ -36,7 +36,7 @@ export function StatusPill({ tone = 'neutral', label, dot = false }: { tone?: To
   const t = TONES[tone]
   return (
     <View style={[styles.pill, { backgroundColor: t.bg }]}>
-      {dot && <View style={{ width: 6, height: 6, borderRadius: 999, backgroundColor: t.fg, marginRight: 6 }} />}
+      {dot && <View style={{ width: spaceHalf['1.5'], height: spaceHalf['1.5'], borderRadius: radius.pill, backgroundColor: t.fg, marginRight: spaceHalf['1.5'] }} />}
       <Text style={[text.metaPill, { color: t.fg }]}>{label}</Text>
     </View>
   )

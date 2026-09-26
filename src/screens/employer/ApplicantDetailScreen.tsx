@@ -1,486 +1,294 @@
-import React, { useState, useEffect, useCallback } from 'react'
-import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native'
+import React, { useCallback, useEffect, useState } from 'react'
+import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { color, radius, space, fontFamilyNative } from '../../theme'
-import { EmployerShell } from '../../components/employer/EmployerShell'
+import { aspect, borderWidth, color, height, opacity, radius, space, spaceHalf, trackingNative } from '../../theme'
+import { Button, Input, text } from '../../components/ui'
+import { Icon } from '../../components/ui/Icon'
+import { EmployerShell } from '../../components/employer'
+import { EmBadge, EmCard, EmChip, EmError, EmLabel, EmMono, EmSheet } from '../../components/employer/em'
 import {
-  fetchApplicationDetail,
-  updateApplicationStatus,
-  type ApplicationDetail,
+  EMPLOYER_APPLICATION_STATUS_LABEL, fetchApplicationDetail, updateApplicationStatus,
+  type ApplicationDetail, type ApplicationStatus,
 } from '../../lib/api/employerJobs'
+import { experienceLine, interviewDate, joinsLine, monthYear, nameInitials, salaryLine } from '../../lib/employer/candidateFormat'
+import { APPLICATION_TONE, istStamp, useJobConfig } from '../../lib/employer/jobs'
+import { label } from '../../lib/profile/labels'
 import type { RootStackParamList } from '../../../App'
 
+const STEPS: ApplicationStatus[] = ['APPLIED', 'VIEWED', 'SHORTLISTED', 'CONNECTED']
+
+/** The design's suggestions: one tap fills the field, and it stays editable. */
+const REASONS = [
+  'The role has been filled',
+  'We need more experience for this role',
+  'Location doesn’t work for this role',
+  'Skills don’t match this role',
+]
+
+/**
+ * EM-21 · one application (Employer Android): the film and the facts, the
+ * application status as steps, the profile, and the actions in the foot —
+ * Reject (a sheet with the design's reasons), Shortlist, and Open chat once
+ * connected.
+ *
+ * The server's rules, as on the web: opening this marks an Applied application
+ * Viewed (the GET does it); an employer can move it to Shortlisted or Rejected
+ * only — Connected happens through the student — and a rejection needs a
+ * reason (the server refuses one without), which the student sees.
+ */
 export function ApplicantDetailScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
   const route = useRoute<RouteProp<RootStackParamList, 'ApplicantDetail'>>()
+  const insets = useSafeAreaInsets()
   const { id } = route.params
+  const { rejectMax } = useJobConfig()
 
-  const [application, setApplication] = useState<ApplicationDetail | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [actionLoading, setActionLoading] = useState(false)
+  const [app, setApp] = useState<ApplicationDetail | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [notice, setNotice] = useState<string | null>(null)
+  const [rejecting, setRejecting] = useState(false)
+  const [reason, setReason] = useState('')
 
-  const loadApplication = useCallback(async () => {
+  const load = useCallback(async () => {
+    setError(null)
     try {
-      setLoading(true)
-      const data = await fetchApplicationDetail(id)
-      setApplication(data)
-    } catch (err) {
-      console.error('Failed to load application', err)
-    } finally {
-      setLoading(false)
+      setApp(await fetchApplicationDetail(id))
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not load this application.')
     }
   }, [id])
 
   useEffect(() => {
-    loadApplication()
-  }, [loadApplication])
+    load()
+  }, [load])
 
-  const handleStatusMove = async (to: 'SHORTLISTED' | 'REJECTED' | 'CONNECTED', reason?: string) => {
-    if (!application) return
+  async function move(status: 'SHORTLISTED' | 'REJECTED', rejectionReason?: string) {
+    setBusy(true)
+    setNotice(null)
     try {
-      setActionLoading(true)
-      await updateApplicationStatus(id, {
-        to,
-        from: application.status,
-        reason,
-      })
-      loadApplication()
-    } catch (err) {
-      console.error('Failed to update application status', err)
+      await updateApplicationStatus(id, { status, rejectionReason })
+      setRejecting(false)
+      setReason('')
+      await load()
+    } catch (e) {
+      setNotice(e instanceof Error ? e.message : 'Could not update the application.')
     } finally {
-      setActionLoading(false)
+      setBusy(false)
     }
   }
 
-  const promptDecline = () => {
-    Alert.prompt
-      ? Alert.prompt(
-          'Decline application',
-          'Optionally enter a feedback reason for the candidate:',
-          [
-            { text: 'Cancel', style: 'cancel' },
-            {
-              text: 'Decline',
-              style: 'destructive',
-              onPress: (reason) => handleStatusMove('REJECTED', reason?.trim() || undefined),
-            },
-          ],
-        )
-      : Alert.alert('Decline application', 'Are you sure you want to decline this candidate?', [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Decline',
-            style: 'destructive',
-            onPress: () => handleStatusMove('REJECTED'),
-          },
-        ])
+  if (!app) {
+    return (
+      <EmployerShell back={() => navigation.goBack()} title="Applicant">
+        {error ? (
+          <EmError title="This application didn’t load." body={error} action={<Button variant="secondary" size="pair" icon="refresh" label="Try again" onPress={() => { load() }} />} />
+        ) : (
+          <ActivityIndicator color={color.textSubtle} style={styles.loading} />
+        )}
+      </EmployerShell>
+    )
   }
 
-  const candidate = application?.candidate
+  const c = app.candidate
+  const first = c.name.split(' ')[0] || 'The student'
+  const status = app.status
+  const canShortlist = status === 'APPLIED' || status === 'VIEWED' || status === 'REJECTED'
+  const canReject = status !== 'REJECTED' && status !== 'CONNECTED'
+  const date = c.verifiedInterview.verified ? interviewDate(c.verifiedInterview.at) : null
+  const salary = salaryLine({ minPaise: c.preferences?.expectedSalaryMinPaise ?? null, maxPaise: c.preferences?.expectedSalaryMaxPaise ?? null })
+  const joins = joinsLine(c.preferences?.availabilityToJoin)
+  const reached = (s: ApplicationStatus) => STEPS.indexOf(s) <= STEPS.indexOf(status === 'REJECTED' ? 'VIEWED' : status)
+  const at = (s: ApplicationStatus) => app.statusHistory.find((h) => h.status === s)?.at
+  const openFull = () => navigation.navigate('CandidateVideo', { id: c.id, name: c.name, photoUrl: c.photoUrl, interviewAt: c.verifiedInterview.at })
+
+  const edu = c.education
+  const eduTitle = edu ? [edu.qualification ? label(edu.qualification) : null, edu.fieldOfStudy].filter(Boolean).join(', ') : ''
+  const eduMeta = edu ? [edu.institution, edu.yearOfCompletion].filter(Boolean).join(' · ') : ''
 
   return (
     <EmployerShell
-      back={{ label: 'APPLICANTS', onPress: () => navigation.goBack() }}
+      back={() => navigation.goBack()}
+      title={c.name}
+      sub={app.job?.title.toUpperCase()}
       footer={
-        application ? (
-          <View style={styles.footRow}>
-            {application.status === 'CONNECTED' ? (
-              <TouchableOpacity
-                activeOpacity={0.8}
-                style={styles.actionBtnPrimary}
-              >
-                <Text style={styles.actionBtnPrimaryText}>Open Chat →</Text>
-              </TouchableOpacity>
+        c.removed ? undefined : (
+          <>
+            {canReject && <Button variant="destructive" size="cta" label="Reject" disabled={busy} onPress={() => setRejecting(true)} style={styles.reject} />}
+            {status === 'CONNECTED' || app.connected ? (
+              <Button variant="primary" size="cta" icon="chat" label="Open chat" style={styles.grow} onPress={() => navigation.navigate('EmployerChats')} />
+            ) : canShortlist ? (
+              <Button variant="secondary" size="cta" label="Shortlist" busy={busy} disabled={busy} style={styles.grow} onPress={() => { move('SHORTLISTED') }} />
             ) : (
-              <View style={styles.actionButtonsRow}>
-                {application.status !== 'SHORTLISTED' && (
-                  <TouchableOpacity
-                    activeOpacity={0.8}
-                    onPress={() => handleStatusMove('SHORTLISTED')}
-                    disabled={actionLoading}
-                    style={styles.actionBtnOutline}
-                  >
-                    <Text style={styles.actionBtnOutlineText}>Shortlist</Text>
-                  </TouchableOpacity>
-                )}
-
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  onPress={() => handleStatusMove('CONNECTED')}
-                  disabled={actionLoading}
-                  style={styles.actionBtnPrimary}
-                >
-                  <Text style={styles.actionBtnPrimaryText}>Connect & Chat</Text>
-                </TouchableOpacity>
-
-                {application.status !== 'REJECTED' && (
-                  <TouchableOpacity
-                    activeOpacity={0.8}
-                    onPress={promptDecline}
-                    disabled={actionLoading}
-                    style={styles.actionBtnGhost}
-                  >
-                    <Text style={styles.actionBtnGhostText}>Decline</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
+              <Button variant="quiet" size="cta" label="Shortlisted" disabled style={styles.grow} />
             )}
-          </View>
-        ) : undefined
+          </>
+        )
       }
     >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {loading ? (
-          <View style={styles.centre}>
-            <ActivityIndicator color={color.text} size="small" />
-            <Text style={styles.loadingText}>Loading applicant review…</Text>
-          </View>
-        ) : !application ? (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyTitle}>Application not found</Text>
-          </View>
-        ) : (
-          <View style={styles.container}>
-            {/* Candidate Header */}
-            <View style={styles.header}>
-              <View style={styles.avatarRow}>
-                <View style={styles.posterBox}>
-                  {candidate?.photoUrl ? (
-                    <Image source={{ uri: candidate.photoUrl }} style={styles.posterImg} />
-                  ) : (
-                    <View style={styles.posterPlaceholder}>
-                      <Text style={styles.monogramLetter}>{candidate?.name?.charAt(0) || 'C'}</Text>
-                    </View>
-                  )}
-                  {candidate?.verifiedInterview?.verified && (
-                    <View style={styles.verifiedDot}>
-                      <Text style={styles.verifiedDotText}>✓</Text>
-                    </View>
-                  )}
-                </View>
+      <View style={styles.head}>
+        <Pressable accessibilityRole="button" accessibilityLabel={`Watch ${c.name}’s full interview`} onPress={openFull} style={({ pressed }) => [styles.thumb, pressed && styles.pressed]}>
+          {c.photoUrl ? <Image source={{ uri: c.photoUrl }} style={StyleSheet.absoluteFill} resizeMode="cover" /> : (
+            <Text style={[text.displayCard, styles.thumbText]}>{nameInitials(c.name)}</Text>
+          )}
+          <View style={styles.disc}><Icon name="tri" size={space.md} tint={color.ink} fill={color.ink} weight={1.5} /></View>
+        </Pressable>
+        <View style={styles.headText}>
+          {!!date && <EmBadge label={`Verified interview · ${date}`} tone="green" icon="check" small />}
+          <Text style={[text.uiSm, styles.muted]}>{[c.tier, c.city, experienceLine(c.experienceYears)].filter(Boolean).join(' · ')}</Text>
+          {(!!salary || !!joins) && <Text style={[text.uiSm, styles.secondary]}>{[salary, joins ? `joins ${joins.toLowerCase()}` : null].filter(Boolean).join(' · ')}</Text>}
+          <EmBadge label={EMPLOYER_APPLICATION_STATUS_LABEL[status]} tone={APPLICATION_TONE[status]} small />
+          <Button variant="outline" size="sm" icon="video" label="Full video" onPress={openFull} style={styles.start} />
+        </View>
+      </View>
 
-                <View style={styles.headerInfo}>
-                  <Text style={styles.candidateName}>{candidate?.name || 'Candidate'}</Text>
-                  <Text style={styles.candidateMeta}>
-                    {[candidate?.qualification, candidate?.city, `${candidate?.experienceYears ?? 0}y exp`]
-                      .filter(Boolean)
-                      .join(' · ')}
-                  </Text>
-                  <View style={styles.stageBadge}>
-                    <Text style={styles.stageBadgeText}>{application.statusLabel}</Text>
-                  </View>
+      {c.removed && <Text style={[text.uiSm, styles.muted]}>This student is no longer on Apostrophe.</Text>}
+      {!!notice && <Text style={[text.uiSm, styles.danger]}>{notice}</Text>}
+
+      <EmCard>
+        <EmMono>APPLICATION STATUS</EmMono>
+        <View>
+          {STEPS.map((s, i) => {
+            const on = s === status
+            const done = reached(s)
+            return (
+              <View key={s} style={styles.step}>
+                <View style={styles.rail}>
+                  <View style={[styles.dot, on ? styles.dotOn : done ? styles.dotDone : styles.dotTodo]} />
+                  {i < STEPS.length - 1 && <View style={[styles.bar, done && reached(STEPS[i + 1]) ? styles.barDone : null]} />}
+                </View>
+                <View style={styles.stepText}>
+                  <Text style={[text.uiMdSemi, !done && styles.subtle]}>{EMPLOYER_APPLICATION_STATUS_LABEL[s]}</Text>
+                  {!!at(s) && <Text style={[text.uiXs, styles.muted]}>{istStamp(at(s)!)}</Text>}
                 </View>
               </View>
-
-              <Text style={styles.appliedDate}>
-                Applied for <Text style={styles.jobTitleBold}>{application.job.title}</Text> on{' '}
-                {new Date(application.appliedAt).toLocaleDateString('en-IN', { dateStyle: 'medium' })}
-              </Text>
-            </View>
-
-            {/* Verified Badge Banner */}
-            {candidate?.verifiedInterview?.verified && (
-              <View style={styles.verifiedBanner}>
-                <Text style={styles.verifiedBannerIcon}>✓</Text>
-                <View style={styles.verifiedBannerText}>
-                  <Text style={styles.verifiedBannerTitle}>Verified Interview Passed</Text>
-                  <Text style={styles.verifiedBannerSub}>
-                    Conducted by independent subject-matter expert
-                  </Text>
-                </View>
-              </View>
-            )}
-
-            {/* Note from Candidate */}
-            {application.message && (
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>NOTE FROM CANDIDATE</Text>
-                <View style={styles.messageCard}>
-                  <Text style={styles.messageBody}>&ldquo;{application.message}&rdquo;</Text>
-                </View>
-              </View>
-            )}
-
-            {/* Skills */}
-            {candidate?.skills && candidate.skills.length > 0 && (
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>KEY SKILLS</Text>
-                <View style={styles.skillWrap}>
-                  {candidate.skills.map((s) => (
-                    <View key={s} style={styles.skillPill}>
-                      <Text style={styles.skillText}>{s}</Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            )}
-
-            {/* Candidate Profile Link */}
-            {candidate?.id && (
-              <TouchableOpacity
-                activeOpacity={0.8}
-                onPress={() => navigation.navigate('CandidateProfile', { id: candidate.id })}
-                style={styles.profileLinkCard}
-              >
-                <Text style={styles.profileLinkText}>View full candidate profile & video →</Text>
-              </TouchableOpacity>
-            )}
+            )
+          })}
+        </View>
+        {status === 'REJECTED' && (
+          <View style={styles.rejected}>
+            <Text style={[text.uiXs, styles.rejectedText]}>{`Rejected${app.rejectionReason ? ` · ${app.rejectionReason}` : ''}`}</Text>
           </View>
         )}
-      </ScrollView>
+      </EmCard>
+
+      {!!app.message && (
+        <EmCard>
+          <EmMono>{`${first.toUpperCase()}’S NOTE`}</EmMono>
+          <Text style={[text.uiMd, styles.secondary]}>{app.message}</Text>
+        </EmCard>
+      )}
+
+      {edu && (eduTitle || eduMeta) ? (
+        <EmCard>
+          <EmMono>EDUCATION</EmMono>
+          <View style={styles.line}>
+            <Text style={text.uiMdSemi}>{eduTitle || 'Education'}</Text>
+            {!!eduMeta && <Text style={[text.uiXs, styles.muted]}>{eduMeta}</Text>}
+          </View>
+        </EmCard>
+      ) : null}
+
+      <EmCard>
+        <EmMono>EXPERIENCE</EmMono>
+        {c.experience.length > 0 ? (
+          c.experience.map((x, i) => (
+            <View key={i} style={styles.line}>
+              <Text style={text.uiMdSemi}>{[x.role, x.company].filter(Boolean).join(' · ')}</Text>
+              <Text style={[text.uiXs, styles.muted]}>{[monthYear(x.from), x.to ? monthYear(x.to) : 'Present'].filter(Boolean).join(' – ')}</Text>
+              {!!x.description && <Text style={[text.uiSm, styles.secondary]}>{x.description}</Text>}
+            </View>
+          ))
+        ) : (
+          <Text style={[text.uiMd, styles.muted]}>No work experience listed.</Text>
+        )}
+      </EmCard>
+
+      {c.skills.length > 0 && (
+        <EmCard>
+          <EmMono>SKILLS</EmMono>
+          <View style={styles.tags}>
+            {c.skills.map((s) => <View key={s} style={styles.tag}><Text style={[text.metaMd, styles.mono, styles.secondary]}>{s.toUpperCase()}</Text></View>)}
+          </View>
+        </EmCard>
+      )}
+
+      {c.languages.length > 0 && (
+        <EmCard>
+          <EmMono>LANGUAGES</EmMono>
+          <Text style={text.uiMd}>{c.languages.join(', ')}</Text>
+        </EmCard>
+      )}
+
+      <EmSheet
+        open={rejecting}
+        onClose={() => setRejecting(false)}
+        title="Reject application?"
+        sub={`${first} sees your reason with the status change.`}
+        foot={
+          <View style={[styles.foot, { paddingBottom: space.md + insets.bottom }]}>
+            <Button
+              variant="dangerFill"
+              size="lg"
+              full
+              label="Reject application"
+              busy={busy}
+              disabled={busy || !reason.trim()}
+              onPress={() => { move('REJECTED', reason.trim()) }}
+            />
+          </View>
+        }
+      >
+        <View style={styles.chips}>
+          {REASONS.map((r) => <EmChip key={r} label={r} on={reason === r} onPress={() => setReason(r)} />)}
+        </View>
+        <View style={styles.field}>
+          <EmLabel hint={rejectMax ? `${reason.length} / ${rejectMax}` : undefined}>Reason shared with the student</EmLabel>
+          <Input value={reason} onChangeText={setReason} maxLength={rejectMax} multiline textAlignVertical="top" placeholder="Why this application didn’t go ahead." style={styles.area} />
+        </View>
+      </EmSheet>
     </EmployerShell>
   )
 }
 
 const styles = StyleSheet.create({
-  scrollContent: {
-    paddingHorizontal: space.sm,
-    paddingBottom: space.xl,
-    gap: space.md,
-  },
-  centre: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 48,
-  },
-  loadingText: {
-    fontSize: 13,
-    color: color.textMuted,
-    marginTop: space.xs,
-  },
-  emptyCard: {
-    padding: space.xl,
-    alignItems: 'center',
-  },
-  emptyTitle: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: 18,
-    color: color.text,
-  },
-  container: {
-    gap: space.md,
-  },
-  header: {
-    borderBottomWidth: 1,
-    borderBottomColor: color.border,
-    paddingBottom: space.sm,
-    gap: space.xs,
-  },
-  avatarRow: {
-    flexDirection: 'row',
-    gap: space.sm,
-    alignItems: 'center',
-  },
-  posterBox: {
-    width: 52,
-    height: 64,
-    borderRadius: radius.md,
-    backgroundColor: color.surfaceMuted,
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  posterImg: {
-    width: '100%',
-    height: '100%',
-  },
-  posterPlaceholder: {
-    width: '100%',
-    height: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  monogramLetter: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: 22,
-    color: color.textSubtle,
-  },
-  verifiedDot: {
-    position: 'absolute',
-    bottom: 2,
-    right: 2,
-    backgroundColor: color.accent,
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  verifiedDotText: {
-    fontSize: 8,
-    color: color.textInverse,
-    fontWeight: 'bold',
-  },
-  headerInfo: {
-    flex: 1,
-    gap: 2,
-  },
-  candidateName: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: 20,
-    color: color.text,
-  },
-  candidateMeta: {
-    fontSize: 12,
-    color: color.textMuted,
-  },
-  stageBadge: {
-    backgroundColor: color.surfaceMuted,
-    alignSelf: 'flex-start',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: radius.pill,
-    marginTop: 2,
-  },
-  stageBadgeText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: color.text,
-  },
-  appliedDate: {
-    fontSize: 12,
-    color: color.textMuted,
-    marginTop: 4,
-  },
-  jobTitleBold: {
-    fontWeight: '600',
-    color: color.text,
-  },
-  verifiedBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.sm,
-    backgroundColor: color.surfaceMuted,
-    borderWidth: 1,
-    borderColor: color.border,
-    borderRadius: radius.md,
-    padding: space.sm,
-  },
-  verifiedBannerIcon: {
-    backgroundColor: color.accent,
-    color: color.textInverse,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    textAlign: 'center',
-    lineHeight: 20,
-    fontSize: 10,
-    fontWeight: 'bold',
-  },
-  verifiedBannerText: {
-    flex: 1,
-    gap: 1,
-  },
-  verifiedBannerTitle: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: color.text,
-  },
-  verifiedBannerSub: {
-    fontSize: 11,
-    color: color.textMuted,
-  },
-  section: {
-    gap: space.xs,
-  },
-  sectionTitle: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 10,
-    letterSpacing: 1,
-    color: color.textSubtle,
-  },
-  messageCard: {
-    backgroundColor: color.surfaceMuted,
-    borderRadius: radius.md,
-    padding: space.sm,
-  },
-  messageBody: {
-    fontSize: 13,
-    color: color.text,
-    fontStyle: 'italic',
-    lineHeight: 18,
-  },
-  skillWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-  },
-  skillPill: {
-    backgroundColor: color.surfaceMuted,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: radius.sm,
-  },
-  skillText: {
-    fontSize: 12,
-    color: color.text,
-  },
-  profileLinkCard: {
-    backgroundColor: color.surface,
-    borderWidth: 1,
-    borderColor: color.border,
-    borderRadius: radius.md,
-    padding: space.sm,
-    alignItems: 'center',
-  },
-  profileLinkText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: color.accent,
-  },
-  footRow: {
-    paddingHorizontal: space.sm,
-    paddingVertical: space.xs,
-  },
-  actionButtonsRow: {
-    flexDirection: 'row',
-    gap: space.xs,
-  },
-  actionBtnPrimary: {
-    flex: 2,
-    backgroundColor: color.text,
-    borderRadius: radius.lg,
-    paddingVertical: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  actionBtnPrimaryText: {
-    color: color.textInverse,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  actionBtnOutline: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: color.border,
-    borderRadius: radius.lg,
-    paddingVertical: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  actionBtnOutlineText: {
-    color: color.text,
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  actionBtnGhost: {
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  actionBtnGhostText: {
-    color: color.danger,
-    fontSize: 13,
-    fontWeight: '500',
-  },
+  grow: { flex: 1, minWidth: 0 },
+  pressed: { opacity: opacity.pressed },
+  muted: { color: color.textMuted },
+  subtle: { color: color.textSubtle },
+  secondary: { color: color.textSecondary },
+  danger: { color: color.danger },
+  mono: { letterSpacing: trackingNative.eyebrow },
+  loading: { paddingVertical: space['3xl'] },
+  start: { alignSelf: 'flex-start', paddingHorizontal: space.md },
+  reject: { paddingHorizontal: spaceHalf['4.5'] },
+
+  head: { flexDirection: 'row', gap: space.md },
+  thumb: { width: height['room-tile-w'] - space.xs - 2, aspectRatio: aspect.videoResume, borderRadius: radius.panel, backgroundColor: color.inkRaised, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+  thumbText: { color: color.textOnInkMuted },
+  disc: { position: 'absolute', width: height.chip + 4, height: height.chip + 4, borderRadius: radius.pill, backgroundColor: color.onInkBadge, alignItems: 'center', justifyContent: 'center', paddingLeft: space['2xs'] },
+  headText: { flex: 1, minWidth: 0, gap: spaceHalf['1.5'] },
+
+  step: { flexDirection: 'row', gap: space.md },
+  rail: { alignItems: 'center' },
+  dot: { width: spaceHalf['4.5'], height: spaceHalf['4.5'], borderRadius: radius.pill },
+  dotOn: { backgroundColor: color.accent },
+  dotDone: { backgroundColor: color.successFill },
+  dotTodo: { backgroundColor: color.surface, borderWidth: borderWidth.medium, borderColor: color.borderStrong },
+  bar: { width: borderWidth.accent, flex: 1, minHeight: space.lg, backgroundColor: color.border },
+  barDone: { backgroundColor: color.successFill },
+  stepText: { flex: 1, paddingBottom: space.md, gap: space['2xs'] },
+  rejected: { borderRadius: radius.md, backgroundColor: color.dangerSoft, paddingVertical: spaceHalf['2.5'], paddingHorizontal: space.md },
+  rejectedText: { color: color.danger },
+
+  line: { borderLeftWidth: borderWidth.accent, borderLeftColor: color.border, paddingLeft: space.md, gap: space['2xs'] + 1 },
+  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: spaceHalf['1.5'] },
+  tag: { height: height['chip-sm'], paddingHorizontal: spaceHalf['2.5'] + 1, borderRadius: radius.pill, borderWidth: borderWidth.thin, borderColor: color.borderStrong, justifyContent: 'center' },
+
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spaceHalf['1.5'] },
+  field: { gap: spaceHalf['1.5'] },
+  area: { height: height['note-field'] + spaceHalf['4.5'], paddingTop: space.md },
+  foot: { paddingHorizontal: space.lg, paddingTop: space.md, borderTopWidth: borderWidth.thin, borderTopColor: color.border, backgroundColor: color.surface },
 })

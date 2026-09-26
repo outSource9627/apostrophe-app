@@ -29,7 +29,7 @@ export { StatusPill, StatusDot, StatusLadder, VerifiedSeal, UnverifiedMark } fro
 export type { Tone } from './status'
 
 // §04 / §08 surfaces, cards, progress
-export { Card, ObjectRow, NextAction, ProgressBar, CompletionCard, ScoreRow } from './data'
+export { Card, ObjectRow, NextAction, ProgressBar, ProgressRing, CompletionCard, ScoreRow } from './data'
 
 // §07 video — the most important pieces in the system
 export {
@@ -56,3 +56,7 @@ export { GoogleButton } from './GoogleButton'
 
 // The job feed — student app only
 export { SwipeCard, SwipeActions } from './SwipeCard'
+
+// The Student app's shell — top bar, credit chip, ink card, floating action
+export { MenuGroup, MenuRow, StickyFooter, StepBars, PhoneInput, OptionTile, ScreenHeader, TabTitle, BrandMark, Avatar, CreditChip, AppHeader, InkCard, InkPill, InkButton, FilmThumb, Fab } from './student'
+export { JobsHeader, PipelineDots, JobDeckCard, DeckStamp, DeckActions, UndoToast } from './student-jobs'

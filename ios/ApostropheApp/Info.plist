@@ -2,6 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSCameraUsageDescription</key>
+	<string>Your camera is used for the interview and the pre-join device check.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Your microphone is used during the interview.</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
@@ -59,16 +63,14 @@
 	<key>UIAppFonts</key>
 	<array>
 		<string>IBMPlexMono-Medium.ttf</string>
-		<string>Newsreader16pt-Italic.ttf</string>
 		<string>IBMPlexMono-Regular.ttf</string>
-		<string>Newsreader16pt-Regular.ttf</string>
-		<string>Newsreader16pt-Light.ttf</string>
-		<string>Newsreader16pt-Medium.ttf</string>
-		<string>InstrumentSans-Regular.ttf</string>
-		<string>InstrumentSans-SemiBold.ttf</string>
-		<string>InstrumentSans-Medium.ttf</string>
 		<string>IBMPlexMono-SemiBold.ttf</string>
-		<string>InstrumentSans-Bold.ttf</string>
+		<string>LibreFranklin-Light.ttf</string>
+		<string>LibreFranklin-Regular.ttf</string>
+		<string>LibreFranklin-Bold.ttf</string>
+		<string>LibreFranklin-SemiBold.ttf</string>
+		<string>LibreFranklin-Italic.ttf</string>
+		<string>LibreFranklin-Medium.ttf</string>
 	</array>
 </dict>
 </plist>

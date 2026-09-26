@@ -1,11 +1,11 @@
 import React, { useState } from 'react'
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native'
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { getNotifications, markNotificationsRead, type NotificationRow } from '../../lib/api/account'
 import { fmtClock, fmtDayDivider, fmtDayMonthYear } from '../../lib/chat/format'
-import { color, space, borderWidth, radius } from '../../theme'
-import { AppBar, Body, Display, Eyebrow, Meta } from '../../components/ui'
+import { borderWidth, color, height, radius, space, spaceHalf, trackingNative } from '../../theme'
+import { EmptyState, ErrorState, ScreenHeader, Skeleton, text } from '../../components/ui'
 
 /**
  * ST-46 — a day-grouped list kept for NINETY DAYS. Read/unread are a MARKER and
@@ -25,12 +25,19 @@ export function NotificationsScreen({ onBack, onNavigate }: {
   const rows = q.data?.rows
   const unread = rows?.some((n) => !n.read) ?? false
   const bar = (
-    <AppBar onBack={onBack}
-      action={unread ? <Body size="sm" weight="medium" style={{ color: color.accent }} onPress={() => markAll.mutate()}>Mark all read</Body> : undefined} />
+    <ScreenHeader
+      title="Notifications"
+      onBack={onBack}
+      right={unread ? (
+        <Pressable accessibilityRole="button" onPress={() => markAll.mutate()} hitSlop={space.sm} style={styles.markAll}>
+          <Text style={[text.uiSmSemi, styles.accent]}>Mark all read</Text>
+        </Pressable>
+      ) : undefined}
+    />
   )
   const frame = (c: React.ReactNode) => <View style={[styles.page, { paddingTop: insets.top }]}>{bar}{c}</View>
-  if (q.isPending) return frame(<View style={styles.centre}><Meta style={{ color: color.textMuted }}>LOADING…</Meta></View>)
-  if (q.isError) return frame(<View style={styles.centre}><Body tone="muted">Could not load your notifications.</Body></View>)
+  if (q.isPending) return frame(<View style={styles.loading}><Skeleton lines={3} /></View>)
+  if (q.isError) return frame(<View style={styles.centre}><ErrorState title="Could not load your notifications." body="Pull down or come back in a moment." /></View>)
 
   function open(n: NotificationRow) {
     if (!n.read) void markNotificationsRead([n.id]).then(() => qc.invalidateQueries({ queryKey: ['notifications'] })).catch(() => {})
@@ -43,34 +50,42 @@ export function NotificationsScreen({ onBack, onNavigate }: {
   return (
     <View style={[styles.page, { paddingTop: insets.top }]}>
       {bar}
-      <ScrollView contentContainerStyle={styles.body}>
-        <Display level="lg">Notifications</Display>
-
+      <ScrollView
+        contentContainerStyle={styles.body}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={q.isRefetching} onRefresh={() => q.refetch().then(() => undefined)} tintColor={color.textSubtle} />}
+      >
         {rows!.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <Display level="xs">Nothing yet.</Display>
-            <Body size="sm" tone="muted" style={{ marginTop: space.xs }}>When an employer is interested, or your interview moves, it lands here.</Body>
+          <View style={styles.empty}>
+            <EmptyState title="Nothing yet." body="When an employer is interested, or your interview moves, it lands here." />
           </View>
         ) : (
           <>
             {groups.map((g) => (
-              <View key={g.key} style={{ gap: space.xs }}>
-                <Eyebrow>{g.label}</Eyebrow>
-                {g.items.map((n) => (
-                  <Pressable key={n.id} onPress={() => open(n)} style={styles.row}>
-                    <View style={styles.gutter}>{!n.read && <View style={styles.dot} />}</View>
-                    <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-                      <View style={styles.rowTop}>
-                        <Body size="base" weight={n.read ? 'regular' : 'semibold'} tone={n.read ? 'muted' : 'default'} style={{ flex: 1 }}>{n.title}</Body>
-                        <Meta style={{ color: color.textSubtle }}>{fmtClock(n.createdAt)}</Meta>
+              <View key={g.key} style={styles.group}>
+                <Text style={[text.metaMd, styles.eyebrow]}>{g.label.toUpperCase()}</Text>
+                <View style={styles.card}>
+                  {g.items.map((n, i) => (
+                    <Pressable
+                      key={n.id}
+                      accessibilityRole="button"
+                      onPress={() => open(n)}
+                      style={({ pressed }) => [styles.row, i < g.items.length - 1 && styles.rule, !n.read && styles.unreadRow, pressed && styles.pressed]}
+                    >
+                      <View style={styles.gutter}>{!n.read && <View style={styles.dot} />}</View>
+                      <View style={styles.rowText}>
+                        <View style={styles.rowTop}>
+                          <Text style={[n.read ? text.uiMd : text.uiMdSemi, styles.title, n.read && styles.muted]}>{n.title}</Text>
+                          <Text style={[text.metaSm, styles.subtle]}>{fmtClock(n.createdAt)}</Text>
+                        </View>
+                        {!!n.body && <Text style={[text.uiSm, styles.muted]}>{n.body}</Text>}
                       </View>
-                      {!!n.body && <Body size="sm" tone="muted">{n.body}</Body>}
-                    </View>
-                  </Pressable>
-                ))}
+                    </Pressable>
+                  ))}
+                </View>
               </View>
             ))}
-            <Meta style={{ color: color.textSubtle }}>{`Notifications are kept for ninety days · nothing before ${fmtDayMonthYear(now - 90 * 86_400_000)}`}</Meta>
+            <Text style={[text.uiXs, styles.subtle, styles.footNote]}>{`Notifications are kept for ninety days · nothing before ${fmtDayMonthYear(now - 90 * 86_400_000)}`}</Text>
           </>
         )}
       </ScrollView>
@@ -105,12 +120,26 @@ function groupByDay(rows: NotificationRow[], now: number): { key: string; label:
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: color.surface },
-  centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  body: { padding: space.xl, gap: space['2xl'], paddingBottom: space['4xl'] },
-  emptyCard: { borderRadius: radius.lg, borderWidth: borderWidth.thin, borderColor: color.border, padding: space.lg },
-  row: { flexDirection: 'row', alignItems: 'flex-start', gap: space.md, paddingVertical: space.md },
-  gutter: { width: 8, alignItems: 'center', paddingTop: 7 },
-  dot: { width: 7, height: 7, borderRadius: 999, backgroundColor: color.ink },
+  page: { flex: 1, backgroundColor: color.background },
+  centre: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.xl },
+  loading: { padding: space.xl },
+  empty: { paddingTop: space['3xl'] },
+  body: { paddingHorizontal: space.lg, paddingTop: space.xs, gap: space.lg, paddingBottom: space.xl },
+  markAll: { height: height.tap, justifyContent: 'center', paddingRight: space.sm },
+  accent: { color: color.accent },
+  group: { gap: space.sm },
+  eyebrow: { color: color.textMuted, letterSpacing: trackingNative.eyebrow, paddingHorizontal: space.xs },
+  card: { backgroundColor: color.surface, borderRadius: radius.lg, borderWidth: borderWidth.thin, borderColor: color.border, overflow: 'hidden' },
+  row: { flexDirection: 'row', alignItems: 'flex-start', gap: spaceHalf['2.5'], paddingHorizontal: spaceHalf['3.5'], paddingVertical: space.md },
+  rule: { borderBottomWidth: borderWidth.thin, borderBottomColor: color.borderSoft },
+  unreadRow: { backgroundColor: color.accentWash },
+  pressed: { backgroundColor: color.surfaceMuted },
+  gutter: { width: space.sm, alignItems: 'center', paddingTop: spaceHalf['1.5'] },
+  dot: { width: space.sm, height: space.sm, borderRadius: radius.pill, backgroundColor: color.accent },
+  rowText: { flex: 1, minWidth: 0, gap: space['2xs'] },
   rowTop: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: space.md },
+  title: { flex: 1 },
+  muted: { color: color.textMuted },
+  subtle: { color: color.textSubtle },
+  footNote: { paddingHorizontal: space.xs },
 })

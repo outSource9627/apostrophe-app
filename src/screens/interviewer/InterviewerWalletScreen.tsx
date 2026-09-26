@@ -1,352 +1,155 @@
-import React from 'react'
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native'
-import { useNavigation } from '@react-navigation/native'
+import React, { useCallback, useEffect, useState } from 'react'
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native'
+import { useIsFocused, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { borderWidth, color, fontFamilyNative, radius, space } from '../../theme'
-import { Button, Card, Eyebrow, StatusPill } from '../../components/ui'
+import { borderWidth, color, height, opacity, radius, space, spaceHalf } from '../../theme'
+import { Button, text } from '../../components/ui'
+import { Icon } from '../../components/ui/Icon'
 import { InterviewerShell } from '../../components/interviewer/InterviewerShell'
-import { useInterviewer } from '../../lib/interviewer/useInterviewer'
+import { IvAction, IvCard, IvGlow, IvLabel, IvStat } from '../../components/interviewer/iv'
+import { EmError } from '../../components/employer/em'
+import { getBank, getLedger, getWallet, LEDGER_KIND_LABELS, type BankDto, type LedgerRowDto, type WalletDto } from '../../lib/api/interviewer'
 import { formatPaise } from '../../lib/format/money'
-import { MIN_WITHDRAWAL_PAISE } from '../../lib/interviewer/state'
+import { istStamp } from '../../lib/interviewer/state'
+import { withdrawBlockedText } from '../../lib/interviewer/wallet'
+import { useAppConfig, useInterviewerMe } from '../../lib/interviewer/useInterviewer'
+import type { RootStackParamList } from '../../../App'
 
+/**
+ * Wallet (no artboard — the drawn screens' language). The server's four
+ * balances (available, locked in a withdrawal, pending on scorecards, lifetime),
+ * Withdraw — or the server's reason it is unavailable — the saved payout account,
+ * an open request, the latest ledger rows, and the ledger and statements.
+ */
 export function InterviewerWalletScreen() {
-  const navigation = useNavigation<NativeStackNavigationProp<any>>()
-  const { profile, wallet, owedScorecards } = useInterviewer()
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
+  const focused = useIsFocused()
+  const config = useAppConfig()
+  const { suspended } = useInterviewerMe()
+  const [wallet, setWallet] = useState<WalletDto | null>(null)
+  const [bank, setBank] = useState<BankDto | null | undefined>(undefined)
+  const [recent, setRecent] = useState<LedgerRowDto[] | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
-  const isSuspended = profile?.status === 'SUSPENDED'
-  const balancePaise = wallet?.balancePaise ?? 0
-  const lockedPaise = wallet?.lockedPaise ?? 0
-  const lifetimePaise = wallet?.lifetimePaise ?? 0
-  const canWithdraw = !isSuspended && balancePaise >= MIN_WITHDRAWAL_PAISE
-
-  const formatTxDate = (iso: string) => {
+  const load = useCallback(async () => {
+    setError(null)
     try {
-      const d = new Date(iso)
-      return d.toLocaleDateString([], { month: 'short', day: 'numeric' })
-    } catch {
-      return iso
+      const [w, b, l] = await Promise.all([getWallet(), getBank().catch(() => undefined), getLedger({ perPage: 5 }).catch(() => null)])
+      setWallet(w)
+      setBank(b)
+      setRecent(l?.rows ?? null)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not load your wallet.')
     }
+  }, [])
+  useEffect(() => {
+    if (focused) load()
+  }, [focused, load])
+
+  if (!wallet) {
+    return (
+      <InterviewerShell title="Wallet">
+        {error ? <EmError title="Couldn’t load your wallet." body={error} action={<Button variant="secondary" size="pair" icon="refresh" label="Try again" onPress={() => { load() }} />} /> : <ActivityIndicator color={color.textSubtle} style={styles.loading} />}
+      </InterviewerShell>
+    )
   }
 
+  const blocked = withdrawBlockedText(wallet, config, suspended)
+  const windowH = config?.interviewer?.scorecardWindowHours
+
   return (
-    <InterviewerShell navTab="wallet">
-      <View style={styles.header}>
-        <Eyebrow>COMPENSATION & LEDGER</Eyebrow>
-        <Text style={styles.title}>Interviewer Wallet</Text>
+    <InterviewerShell title="Wallet" sub="YOUR EARNINGS · INR">
+      <View style={styles.hero}>
+        <IvGlow />
+        <IvLabel tone="accent">AVAILABLE TO WITHDRAW</IvLabel>
+        <Text style={[text.metaFigure, styles.fig]}>{formatPaise(wallet.availablePaise)}</Text>
+        <IvAction label="Withdraw" tone={blocked ? 'off' : 'accent'} onPress={blocked ? undefined : () => navigation.navigate('InterviewerWithdraw')} />
+        {!!blocked && <Text style={[text.uiXs, styles.muted]}>{blocked}</Text>}
       </View>
 
-      {/* Balances Hero Card */}
-      <Card style={styles.heroCard}>
-        <View style={styles.heroHeader}>
-          <Text style={styles.heroLabel}>Available for Withdrawal</Text>
-          <Text style={styles.heroAmount}>{formatPaise(balancePaise)}</Text>
-        </View>
-
-        <View style={styles.statsRow}>
-          <View style={styles.statBox}>
-            <Text style={styles.statLabel}>Locked (Owed)</Text>
-            <Text style={styles.statVal}>{formatPaise(lockedPaise)}</Text>
-          </View>
-          <View style={styles.divider} />
-          <View style={styles.statBox}>
-            <Text style={styles.statLabel}>Lifetime Earned</Text>
-            <Text style={styles.statVal}>{formatPaise(lifetimePaise)}</Text>
-          </View>
-        </View>
-
-        <View style={styles.withdrawAction}>
-          <Button
-            label={
-              isSuspended
-                ? 'Withdrawals Locked (Suspended)'
-                : balancePaise < MIN_WITHDRAWAL_PAISE
-                ? `Min ${formatPaise(MIN_WITHDRAWAL_PAISE)} to withdraw`
-                : 'Request Withdrawal'
-            }
-            variant="primary"
-            disabled={!canWithdraw}
-            onPress={() => navigation.navigate('InterviewerWithdraw')}
-          />
-        </View>
-      </Card>
-
-      {/* Bank Account Status */}
-      <Card style={styles.bankCard}>
-        <View style={styles.bankHeader}>
-          <Text style={styles.bankIcon}>🏦</Text>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.bankTitle}>Payout Bank Account</Text>
-            <Text style={styles.bankSub}>
-              {wallet?.bankAccount
-                ? `${wallet.bankAccount.bankName || 'Bank'} · Ending in ${wallet.bankAccount.accountNumberLast4 || wallet.bankAccount.accountNumber?.slice(-4) || '****'}`
-                : 'No bank account linked yet.'}
-            </Text>
-          </View>
-          <Button
-            label={wallet?.bankAccount ? 'Edit' : 'Link'}
-            variant="secondary"
-            size="sm"
-            onPress={() => navigation.navigate('InterviewerBankAccount')}
-          />
-        </View>
-      </Card>
-
-      {/* Quick Navigation Links */}
-      <View style={styles.linksRow}>
-        <Pressable
-          style={styles.linkCard}
-          onPress={() => navigation.navigate('InterviewerLedger')}
-        >
-          <Text style={styles.linkIcon}>📜</Text>
-          <Text style={styles.linkTitle}>Itemised Ledger</Text>
-          <Text style={styles.linkSub}>Every credit, fee & forfeit →</Text>
-        </Pressable>
-
-        <Pressable
-          style={styles.linkCard}
-          onPress={() => navigation.navigate('InterviewerStatements')}
-        >
-          <Text style={styles.linkIcon}>📊</Text>
-          <Text style={styles.linkTitle}>Tax & Statements</Text>
-          <Text style={styles.linkSub}>Monthly 1% TDS summary →</Text>
-        </Pressable>
+      <View style={styles.row}>
+        <IvStat k="PENDING" v={formatPaise(wallet.pendingPaise)} />
+        <IvStat k="IN WITHDRAWAL" v={formatPaise(wallet.lockedPaise)} />
       </View>
+      <IvStat k="LIFETIME EARNED" v={formatPaise(wallet.lifetimePaise)} />
+      {wallet.pendingPaise > 0 && (
+        <Text style={[text.uiXs, styles.muted]}>
+          {`Pending fees release when you submit each scorecard${windowH ? ` within ${windowH} hours` : ' on time'}.`}
+        </Text>
+      )}
 
-      {/* Recent Ledger Entries */}
-      <View style={styles.ledgerSection}>
-        <View style={styles.ledgerHeader}>
-          <Text style={styles.sectionTitle}>Recent Transactions</Text>
-          <Pressable onPress={() => navigation.navigate('InterviewerLedger')}>
-            <Text style={styles.viewAllLink}>View All</Text>
-          </Pressable>
+      {!!wallet.openRequest && (
+        <IvCard tone="accent">
+          <IvLabel tone="accent">WITHDRAWAL IN PROGRESS</IvLabel>
+          <Text style={text.uiMdSemi}>{`${formatPaise(wallet.openRequest.amountPaise)} requested ${istStamp(wallet.openRequest.requestedAt)}`}</Text>
+          <Pressable accessibilityRole="button" onPress={() => navigation.navigate('InterviewerWithdraw')}><Text style={[text.uiSmSemi, styles.accent]}>See its status</Text></Pressable>
+        </IvCard>
+      )}
+
+      <Pressable accessibilityRole="button" onPress={() => navigation.navigate('InterviewerBankAccount')} style={({ pressed }) => [styles.link, pressed && styles.pressed]}>
+        <View style={styles.linkIcon}><Icon name="building" size={space.lg + 2} tint={color.textSecondary} /></View>
+        <View style={styles.grow}>
+          <Text style={text.uiMdSemi}>Payout account</Text>
+          <Text style={[text.uiXs, styles.muted]}>{bank ? `${bank.accountHolder} · •••• ${bank.accountNumberLast4} · ${bank.ifsc}` : bank === null ? 'Not added yet' : 'Could not load'}</Text>
         </View>
+        <Icon name="chevR" size={space.lg} tint={color.textSubtle} />
+      </Pressable>
 
-        {!wallet?.ledger || wallet.ledger.length === 0 ? (
-          <Card style={styles.emptyLedger}>
-            <Text style={styles.emptyText}>No transactions yet.</Text>
-            <Text style={styles.emptySub}>
-              Conduct sessions and submit scorecards to earn fees.
-            </Text>
-          </Card>
-        ) : (
-          <Card style={styles.ledgerList}>
-            {wallet.ledger.slice(0, 5).map((entry) => {
-              const isCredit = entry.type === 'FEE_CREDIT'
-              const isForfeit = entry.type === 'FORFEIT'
-
-              return (
-                <View key={entry.id} style={styles.txRow}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.txDesc}>{entry.description || entry.type}</Text>
-                    <Text style={styles.txDate}>{formatTxDate(entry.createdAt)}</Text>
-                  </View>
-                  <Text
-                    style={[
-                      styles.txAmount,
-                      isCredit && styles.txCredit,
-                      isForfeit && styles.txForfeit,
-                    ]}
-                  >
-                    {isCredit ? '+' : '−'}
-                    {formatPaise(Math.abs(entry.amountPaise))}
-                  </Text>
-                </View>
-              )
-            })}
-          </Card>
-        )}
+      <View style={styles.headRow}>
+        <IvLabel>RECENT</IvLabel>
+        <Pressable accessibilityRole="button" onPress={() => navigation.navigate('InterviewerLedger')} hitSlop={space.sm}><Text style={[text.uiSmSemi, styles.accent]}>Full ledger</Text></Pressable>
       </View>
+      {recent === null ? (
+        <Text style={[text.uiSm, styles.muted]}>The ledger could not be read.</Text>
+      ) : recent.length === 0 ? (
+        <Text style={[text.uiSm, styles.muted]}>No transactions yet.</Text>
+      ) : (
+        <IvCard style={styles.list}>
+          {recent.map((r, i) => <LedgerLine key={r.id} r={r} last={i === recent.length - 1} />)}
+        </IvCard>
+      )}
+
+      <Pressable accessibilityRole="button" onPress={() => navigation.navigate('InterviewerStatements')} style={({ pressed }) => [styles.link, pressed && styles.pressed]}>
+        <View style={styles.linkIcon}><Icon name="file" size={space.lg + 2} tint={color.textSecondary} /></View>
+        <View style={styles.grow}>
+          <Text style={text.uiMdSemi}>Earnings statements</Text>
+          <Text style={[text.uiXs, styles.muted]}>Request a statement for a date range</Text>
+        </View>
+        <Icon name="chevR" size={space.lg} tint={color.textSubtle} />
+      </Pressable>
     </InterviewerShell>
   )
 }
 
+/** One ledger row: the platform's label for the kind, who it was for, when, and the signed amount in mono. */
+export function LedgerLine({ r, last }: { r: LedgerRowDto; last?: boolean }) {
+  const credit = r.sign > 0
+  return (
+    <View style={[styles.line, !last && styles.lineRule]}>
+      <View style={styles.grow}>
+        <Text style={text.uiMdSemi}>{LEDGER_KIND_LABELS[r.kind] ?? r.kind}</Text>
+        <Text style={[text.uiXs, styles.muted]} numberOfLines={2}>
+          {[r.interview ? `${r.interview.studentName} · ${r.interview.tier}` : null, r.note, istStamp(r.at)].filter(Boolean).join(' · ')}
+        </Text>
+      </View>
+      <Text style={[text.metaXl, { color: credit ? color.success : color.text }]}>{`${credit ? '+' : '−'}${formatPaise(r.amountPaise)}`}</Text>
+    </View>
+  )
+}
+
 const styles = StyleSheet.create({
-  header: {
-    gap: space['2xs'],
-  },
-  title: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 24,
-    fontWeight: '700',
-    color: color.text,
-  },
-  heroCard: {
-    padding: space.lg,
-    gap: space.md,
-  },
-  heroHeader: {
-    gap: space['2xs'],
-  },
-  heroLabel: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    color: color.textMuted,
-  },
-  heroAmount: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 32,
-    fontWeight: '700',
-    color: color.text,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: color.surfaceSubtle,
-    borderRadius: radius.md,
-    padding: space.md,
-  },
-  statBox: {
-    flex: 1,
-    gap: 2,
-  },
-  statLabel: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 11,
-    color: color.textSubtle,
-  },
-  statVal: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 15,
-    fontWeight: '700',
-    color: color.text,
-  },
-  divider: {
-    width: 1,
-    height: 30,
-    backgroundColor: color.border,
-    marginHorizontal: space.sm,
-  },
-  withdrawAction: {
-    marginTop: space['2xs'],
-  },
-  bankCard: {
-    padding: space.md,
-  },
-  bankHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.sm,
-  },
-  bankIcon: {
-    fontSize: 24,
-  },
-  bankTitle: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 14,
-    fontWeight: '700',
-    color: color.text,
-  },
-  bankSub: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 12,
-    color: color.textMuted,
-    marginTop: 2,
-  },
-  linksRow: {
-    flexDirection: 'row',
-    gap: space.md,
-  },
-  linkCard: {
-    flex: 1,
-    backgroundColor: color.surface,
-    borderWidth: borderWidth.thin,
-    borderColor: color.border,
-    borderRadius: radius.md,
-    padding: space.md,
-    gap: space['2xs'],
-  },
-  linkIcon: {
-    fontSize: 20,
-    marginBottom: 2,
-  },
-  linkTitle: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 14,
-    fontWeight: '700',
-    color: color.text,
-  },
-  linkSub: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 11,
-    color: color.textSubtle,
-    marginTop: 2,
-  },
-  ledgerSection: {
-    gap: space.xs,
-  },
-  ledgerHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  sectionTitle: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 16,
-    fontWeight: '700',
-    color: color.text,
-  },
-  viewAllLink: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    fontWeight: '600',
-    color: color.accent,
-  },
-  emptyLedger: {
-    padding: space.lg,
-    alignItems: 'center',
-    gap: space['2xs'],
-  },
-  emptyText: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 14,
-    fontWeight: '600',
-    color: color.text,
-  },
-  emptySub: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 12,
-    color: color.textMuted,
-  },
-  ledgerList: {
-    padding: space.xs,
-  },
-  txRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: space.sm,
-    paddingHorizontal: space.sm,
-    borderBottomWidth: borderWidth.thin,
-    borderBottomColor: color.border,
-  },
-  txDesc: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    fontWeight: '600',
-    color: color.text,
-  },
-  txDate: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 11,
-    color: color.textSubtle,
-    marginTop: 2,
-  },
-  txAmount: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 14,
-    fontWeight: '700',
-    color: color.text,
-  },
-  txCredit: {
-    color: '#059669',
-  },
-  txForfeit: {
-    color: color.accent,
-  },
+  grow: { flex: 1, minWidth: 0, gap: space['2xs'] },
+  pressed: { opacity: opacity.pressed },
+  muted: { color: color.textMuted },
+  accent: { color: color.accent },
+  fig: { letterSpacing: 0 },
+  loading: { paddingVertical: space['3xl'] },
+  hero: { borderRadius: radius['card-lg'], backgroundColor: color.surface, borderWidth: borderWidth.thin, borderColor: color.border, padding: spaceHalf['4.5'], gap: space.md, overflow: 'hidden' },
+  row: { flexDirection: 'row', gap: space.sm },
+  link: { flexDirection: 'row', alignItems: 'center', gap: space.md, borderRadius: radius.panel, backgroundColor: color.surface, borderWidth: borderWidth.thin, borderColor: color.border, paddingVertical: space.md, paddingHorizontal: spaceHalf['3.5'] },
+  linkIcon: { width: height.avatar, height: height.avatar, borderRadius: radius.tile, backgroundColor: color.surfaceMuted, alignItems: 'center', justifyContent: 'center' },
+  headRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: space.xs },
+  list: { paddingVertical: 0 },
+  line: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space.md },
+  lineRule: { borderBottomWidth: borderWidth.thin, borderBottomColor: color.borderSoft },
 })

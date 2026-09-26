@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react'
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { ScrollView, StyleSheet, View } from 'react-native'
 import { api } from '../lib/api'
-import { color, space, radius, fontSize, fontWeight, borderWidth, trackingNative } from '../theme'
+import { space } from '../theme'
+import { Body, Card, Display, ErrorState, Eyebrow, ListRow, Meta, ObjectRow, Skeleton, StatusPill } from '../components/ui'
 
 type Health = { status: string; checks: Record<string, { ok: boolean; detail?: string }>; at: string }
 type Config = { tiers: { tier: string; amountPaise: number; durationMin: number }[] }
@@ -37,51 +38,57 @@ export function HealthScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.page}>
-      <Text style={styles.eyebrow}>APOSTROPHE · MOBILE</Text>
-      <Text style={styles.title}>Connection check</Text>
+      <Eyebrow>APOSTROPHE · MOBILE</Eyebrow>
+      <Display level="md" style={styles.title}>
+        Connection check
+      </Display>
 
-      {loading && <ActivityIndicator style={styles.spinner} color={color.accent} />}
+      {loading && <Skeleton lines={3} />}
 
       {error && (
-        <View style={[styles.card, styles.cardBad]}>
-          <Text style={styles.cardTitle}>Cannot reach the API</Text>
-          <Text style={styles.muted}>{error}</Text>
-          <Text style={styles.hint}>
-            Start it with `npm run dev` in apostrophe-admin. On an Android emulator the host is 10.0.2.2, not
-            localhost.
-          </Text>
-        </View>
+        <ErrorState
+          title="Cannot reach the API"
+          body={`${error} Start it with \`npm run dev\` in apostrophe-admin. On an Android emulator the host is 10.0.2.2, not localhost.`}
+        />
       )}
 
       {health && (
         <>
-          <View style={[styles.card, ok ? styles.cardGood : styles.cardBad]}>
-            <Text style={styles.cardTitle}>{health.status.toUpperCase()}</Text>
-            <Text style={styles.muted}>{new Date(health.at).toLocaleString('en-IN')}</Text>
-          </View>
-          {Object.entries(health.checks).map(([name, check]) => (
-            <View key={name} style={styles.row}>
-              <Text style={styles.rowName}>{name}</Text>
-              <Text style={check.ok ? styles.ok : styles.bad}>{check.ok ? 'ok' : check.detail ?? 'failed'}</Text>
-            </View>
-          ))}
+          <Card style={styles.statusCard}>
+            <StatusPill tone={ok ? 'success' : 'danger'} label={health.status.toUpperCase()} dot />
+            <Meta>{new Date(health.at).toLocaleString('en-IN')}</Meta>
+          </Card>
+          <Card>
+            {Object.entries(health.checks).map(([name, check], i, all) => (
+              <ObjectRow
+                key={name}
+                title={name}
+                status={
+                  <StatusPill tone={check.ok ? 'success' : 'danger'} label={check.ok ? 'ok' : check.detail ?? 'failed'} />
+                }
+                last={i === all.length - 1}
+              />
+            ))}
+          </Card>
         </>
       )}
 
       {config && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>PRICING, READ FROM THE BACKEND</Text>
-          <Text style={styles.muted}>
+          <Eyebrow>PRICING, READ FROM THE BACKEND</Eyebrow>
+          <Body size="sm" tone="muted">
             Nothing below is hard-coded in this app. An admin changes a price and it updates with no release.
-          </Text>
-          {config.tiers.map((t) => (
-            <View key={t.tier} style={styles.row}>
-              <Text style={styles.rowName}>{t.tier}</Text>
-              <Text style={styles.muted}>
-                {rupees(t.amountPaise)} · {t.durationMin} min
-              </Text>
-            </View>
-          ))}
+          </Body>
+          <Card>
+            {config.tiers.map((t, i, all) => (
+              <ListRow
+                key={t.tier}
+                label={t.tier}
+                value={`${rupees(t.amountPaise)} · ${t.durationMin} min`}
+                style={i === all.length - 1 ? styles.rowLast : undefined}
+              />
+            ))}
+          </Card>
         </View>
       )}
     </ScrollView>
@@ -90,31 +97,8 @@ export function HealthScreen() {
 
 const styles = StyleSheet.create({
   page: { padding: space.xl, paddingTop: space['4xl'], gap: space.md },
-  eyebrow: { fontSize: fontSize['ui-2xs'], letterSpacing: trackingNative.eyebrow, color: color.textSubtle },
-  title: {
-    fontSize: fontSize['display-md'],
-    fontWeight: fontWeight.bold,
-    letterSpacing: trackingNative.snug,
-    color: color.text,
-    marginBottom: space.md,
-  },
-  spinner: { marginTop: space.xl },
-  card: { borderRadius: radius.md, padding: space.lg, borderWidth: borderWidth.thin, gap: space.xs },
-  cardGood: { backgroundColor: color.successSoft, borderColor: color.success },
-  cardBad: { backgroundColor: color.dangerSoft, borderColor: color.danger },
-  cardTitle: { fontSize: fontSize['ui-lg'], fontWeight: fontWeight.semibold, color: color.text },
-  muted: { fontSize: fontSize['ui-sm'], color: color.textMuted },
-  hint: { fontSize: fontSize['ui-sm'], color: color.textMuted, marginTop: space.sm },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: space.md,
-    borderBottomWidth: borderWidth.thin,
-    borderBottomColor: color.border,
-  },
-  rowName: { fontSize: fontSize['ui-base'], color: color.text, fontWeight: fontWeight.semibold },
-  ok: { fontSize: fontSize['ui-sm'], color: color.success },
-  bad: { fontSize: fontSize['ui-sm'], color: color.danger, flexShrink: 1, textAlign: 'right' },
+  title: { marginBottom: space.md },
+  statusCard: { padding: space.lg, gap: space.xs },
   section: { marginTop: space.xl, gap: space.xs },
-  sectionTitle: { fontSize: fontSize['ui-2xs'], letterSpacing: trackingNative['meta-wide'], color: color.textSubtle },
+  rowLast: { borderBottomWidth: 0 },
 })

@@ -1,526 +1,222 @@
-import React, { useEffect, useState } from 'react'
-import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native'
-import { useNavigation, useRoute } from '@react-navigation/native'
+import React, { useCallback, useEffect, useState } from 'react'
+import { ActivityIndicator, Linking, StyleSheet, Text, View } from 'react-native'
+import { useIsFocused, useNavigation, useRoute, type RouteProp } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { borderWidth, color, fontFamilyNative, radius, space } from '../../theme'
-import { Button, Card, Eyebrow, StatusPill } from '../../components/ui'
+import { useQueryClient } from '@tanstack/react-query'
+import { color, height, space, spaceHalf, trackingNative } from '../../theme'
+import { Button, Input, text } from '../../components/ui'
 import { InterviewerShell } from '../../components/interviewer/InterviewerShell'
-import { interviewerApi, type InterviewSessionDto } from '../../lib/api/interviewer'
-import { canJoinInterviewRoom, formatScorecardCountdown, isScorecardOverdue, TIER_FEES_PAISE } from '../../lib/interviewer/state'
+import { IvAction, IvCard, IvLabel } from '../../components/interviewer/iv'
+import { EmBadge, EmDialog, EmError, type EmTone } from '../../components/employer/em'
+import { ApiClientError } from '../../lib/api'
+import {
+  declineInterview, getInterviewerInterview, getPrivateNotes, getQuestionScript, savePrivateNotes,
+  type InterviewerInterviewDto, type QuestionScriptDto,
+} from '../../lib/api/interviewer'
 import { formatPaise } from '../../lib/format/money'
+import { label } from '../../lib/profile/labels'
+import { useNow } from '../../lib/employer/useNow'
+import {
+  clock, educationLine, groupOf, hms, interviewClock, istTime, istWeekday, joinState, NON_PAYABLE_TEXT, pastLabel,
+} from '../../lib/interviewer/state'
+import { INTERVIEWER_KEY, useAppConfig, useInterviewerMe } from '../../lib/interviewer/useInterviewer'
+import type { RootStackParamList } from '../../../App'
 
-const SCRIPT_AREAS = [
-  {
-    n: '01',
-    title: 'Introduction & Ground Rules (3 min)',
-    questions: [
-      'Welcome candidate, confirm audio/video clarity, state that the session is recorded for employer shortlisting.',
-      'Ask the candidate to summarize their background and primary technical stack in 90 seconds.',
-    ],
-  },
-  {
-    n: '02',
-    title: 'Technical Depth & Projects (10 min)',
-    questions: [
-      'Walk through a complex project on their profile. Why did you choose this architecture over alternatives?',
-      'How do you handle error states, database migrations, or latency spikes in that system?',
-      'Explain a bug that took you hours or days to diagnose. What was the root cause?',
-    ],
-  },
-  {
-    n: '03',
-    title: 'Problem Solving & Trade-offs (5 min)',
-    questions: [
-      'How would you design an idempotent payment webhook receiver?',
-      'Candidate is given a trade-off scenario: fast delivery vs robust caching. Ask them to defend their decision.',
-    ],
-  },
-  {
-    n: '04',
-    title: 'Candidate Q&A & Wrap-up (2 min)',
-    questions: [
-      'Invite 1–2 questions from the candidate about industry practices or working as a software engineer.',
-      'Thank them for their time and explain that verified feedback will be reviewed within 24 hours.',
-    ],
-  },
-]
-
+/**
+ * An interview (no artboard — the drawn screens' language): where it stands
+ * and its one action (Join, Scorecard), the candidate as the profile carries
+ * them, the assigned question script (with its opening and closing when the
+ * server has them), the private notes (read from and saved to their own
+ * endpoint — the interview payload carries none), and Decline for a booked
+ * interview (the server decides whether it is still allowed and says why not).
+ */
 export function InterviewerDetailScreen() {
-  const navigation = useNavigation<NativeStackNavigationProp<any>>()
-  const route = useRoute<any>()
-  const id = route.params?.id
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
+  const route = useRoute<RouteProp<RootStackParamList, 'InterviewerDetail'>>()
+  const { id } = route.params
+  const focused = useIsFocused()
+  const qc = useQueryClient()
+  const config = useAppConfig()
+  const { suspended } = useInterviewerMe()
+  const now = useNow() || Date.now()
 
-  const [session, setSession] = useState<InterviewSessionDto | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [activeArea, setActiveArea] = useState(0)
-  const [notes, setNotes] = useState('')
-  const [savingNotes, setSavingNotes] = useState(false)
-  const [showDeclineModal, setShowDeclineModal] = useState(false)
-  const [declineReason, setDeclineReason] = useState('')
+  const [iv, setIv] = useState<InterviewerInterviewDto | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [script, setScript] = useState<QuestionScriptDto | null>(null)
+  const [notes, setNotes] = useState<string | null>(null)
+  const [draft, setDraft] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [notice, setNotice] = useState<string | null>(null)
+  const [declineOpen, setDeclineOpen] = useState(false)
   const [declining, setDeclining] = useState(false)
 
-  useEffect(() => {
-    if (!id) return
-    interviewerApi
-      .getInterview(id)
-      .then((data) => {
-        setSession(data)
-        setNotes(data.privateNotes || '')
-      })
-      .catch((err) => {
-        Alert.alert('Error', err?.message || 'Unable to load interview details.')
-      })
-      .finally(() => setLoading(false))
+  const load = useCallback(async () => {
+    setError(null)
+    try {
+      setIv(await getInterviewerInterview(id))
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not load this interview.')
+    }
   }, [id])
 
-  const handleSaveNotes = async () => {
-    if (!id) return
-    setSavingNotes(true)
+  useEffect(() => {
+    if (focused) load()
+  }, [focused, load])
+  useEffect(() => {
+    getQuestionScript(id).then((r) => setScript(r.script)).catch(() => {})
+    getPrivateNotes(id).then((r) => { setNotes(r.notes ?? ''); setDraft(r.notes ?? '') }).catch(() => setNotes(null))
+  }, [id])
+
+  if (!iv) {
+    return (
+      <InterviewerShell back={() => navigation.goBack()} title="Interview">
+        {error ? <EmError title="Couldn’t load this interview." body={error} action={<Button variant="secondary" size="pair" icon="refresh" label="Try again" onPress={() => { load() }} />} /> : <ActivityIndicator color={color.textSubtle} style={styles.loading} />}
+      </InterviewerShell>
+    )
+  }
+
+  const g = groupOf(iv, config, now)
+  const j = joinState(iv, config, now)
+  const c = interviewClock(iv, config, now)
+  let badge: { label: string; tone: EmTone }
+  if (g === 'live') badge = { label: iv.status === 'IN_PROGRESS' ? 'In progress' : 'Join open', tone: 'green' }
+  else if (g === 'upcoming') badge = { label: 'Booked', tone: 'violet' }
+  else if (g === 'owed') badge = { label: 'Scorecard due', tone: c.status === 'URGENT' ? 'red' : 'violet' }
+  else badge = { label: pastLabel(iv, config, now).text, tone: pastLabel(iv, config, now).tone }
+
+  const s = iv.student
+  const areas = script?.areas ?? iv.script?.areas ?? []
+  const notesMax = config?.interviewer?.notesMaxChars
+
+  async function saveNotes() {
+    setSaving(true)
+    setNotice(null)
     try {
-      await interviewerApi.savePrivateNotes(id, notes)
-      Alert.alert('Saved', 'Your private prep notes have been saved.')
-    } catch (err: any) {
-      Alert.alert('Save Failed', err?.message || 'Unable to save notes.')
+      const r = await savePrivateNotes(id, draft)
+      setNotes(r.notes ?? draft)
+      setNotice('Notes saved.')
+    } catch (e) {
+      setNotice(e instanceof ApiClientError ? e.message : 'Notes not saved. Try again.')
     } finally {
-      setSavingNotes(false)
+      setSaving(false)
     }
   }
 
-  const handleDecline = async () => {
-    if (!id || !declineReason.trim()) {
-      Alert.alert('Reason Required', 'Please explain why you need to decline this session.')
-      return
-    }
-
+  async function decline() {
     setDeclining(true)
     try {
-      await interviewerApi.declineSession(id, declineReason.trim())
-      Alert.alert('Session Declined', 'The session has been unassigned and candidate notified.', [
-        { text: 'OK', onPress: () => navigation.goBack() },
-      ])
-    } catch (err: any) {
-      Alert.alert('Decline Failed', err?.message || 'Unable to decline session.')
+      const r = await declineInterview(id)
+      setDeclineOpen(false)
+      setNotice(r.message)
+      qc.invalidateQueries({ queryKey: INTERVIEWER_KEY })
+      load()
+    } catch (e) {
+      setDeclineOpen(false)
+      setNotice(e instanceof ApiClientError ? e.message : 'Not declined. Try again.')
     } finally {
       setDeclining(false)
     }
   }
 
-  if (loading || !session) {
-    return (
-      <InterviewerShell back={{ label: 'Interviews', onPress: () => navigation.goBack() }}>
-        <Text style={styles.loadingText}>Loading session details...</Text>
-      </InterviewerShell>
-    )
-  }
-
-  const canJoin = canJoinInterviewRoom(session.slotStart)
-  const fee = TIER_FEES_PAISE[session.tier as keyof typeof TIER_FEES_PAISE] ?? 4000
-  const isOwed = session.status === 'COMPLETED' && !session.scorecardSubmittedAt
-  const overdue = isOwed ? isScorecardOverdue(session.slotEnd) : false
-
   return (
-    <InterviewerShell
-      back={{ label: 'Interviews', onPress: () => navigation.goBack() }}
-      footer={
-        isOwed ? (
-          <Button
-            label="Draft Scorecard"
-            variant="primary"
-            onPress={() => navigation.navigate('ScorecardDraft', { id: session.id })}
+    <InterviewerShell back={() => navigation.goBack()} title={s.name} sub={`${istWeekday(iv.slotStart)} · ${istTime(iv.slotStart)} · ${iv.durationMin} min`}>
+      <IvCard>
+        <View style={styles.top}>
+          <EmBadge label={badge.label} tone={badge.tone} small />
+          <Text style={[text.metaXl, styles.fig]}>{formatPaise(iv.feePaise)}</Text>
+        </View>
+        <Text style={[text.uiSm, styles.muted]}>{[iv.tier, iv.domain, iv.language].filter(Boolean).join(' · ')}</Text>
+        {g === 'live' || g === 'upcoming' ? (
+          <IvAction
+            label={j.kind === 'open' ? (j.rejoin ? 'Rejoin room' : 'Join room') : j.kind === 'closed' ? 'Join window closed' : j.opensInSec != null ? `Join opens in ${clock(j.opensInSec)}` : 'Join opens before the start'}
+            tone={j.kind === 'open' && !suspended ? 'accent' : 'off'}
+            onPress={j.kind === 'open' && !suspended ? () => navigation.navigate('InterviewerRoom', { id }) : undefined}
           />
-        ) : canJoin ? (
-          <Button
-            label="Join Video Interview Room"
-            variant="primary"
-            onPress={() => navigation.navigate('Room', { id: session.id })}
-          />
-        ) : (
-          <Button
-            label="Join Room (Opens 10m before)"
-            variant="secondary"
-            disabled
-          />
-        )
-      }
-    >
-      {/* Session Header */}
-      <View style={styles.header}>
-        <View style={{ flex: 1 }}>
-          <Eyebrow>{session.tier.replace('_', ' ')} INTERVIEW</Eyebrow>
-          <Text style={styles.title}>{session.student?.name || 'Candidate'}</Text>
-          <Text style={styles.subtitle}>
-            Fee: {formatPaise(fee)} · Status: {session.status}
-          </Text>
-        </View>
-        <StatusPill
-          tone={canJoin ? 'success' : 'info'}
-          label={canJoin ? 'READY TO JOIN' : 'BOOKED'}
-        />
-      </View>
+        ) : g === 'owed' ? (
+          <>
+            {(c.status === 'OPEN' || c.status === 'URGENT') && <Text style={[text.metaBase, { color: c.status === 'URGENT' ? color.danger : color.text }]}>{`${hms(c.secondsLeft)} LEFT TO SUBMIT`}</Text>}
+            <IvAction label="Write the scorecard" onPress={() => navigation.navigate('ScorecardDraft', { id })} />
+          </>
+        ) : iv.scorecard?.submittedAt ? (
+          <Button variant="outline" size="md" label="View the scorecard" onPress={() => navigation.navigate('ScorecardDraft', { id })} />
+        ) : null}
+        {iv.payable === false && !!iv.nonPayableReason && g === 'past' && <Text style={[text.uiXs, styles.muted]}>{NON_PAYABLE_TEXT[iv.nonPayableReason]}</Text>}
+        {!!iv.threadId && <Button variant="outline" size="md" icon="chat" label="Message" onPress={() => navigation.navigate('InterviewerThread', { id: iv.threadId! })} />}
+      </IvCard>
 
-      {/* Scorecard countdown alert if completed */}
-      {isOwed && (
-        <View style={[styles.owedClockRow, overdue && styles.owedClockOverdue]}>
-          <Text style={styles.clockIcon}>⏱️</Text>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.clockTitle, overdue && styles.clockTextOverdue]}>
-              {overdue ? 'Scorecard Overdue (Forfeited)' : 'Scorecard Window Open'}
-            </Text>
-            <Text style={[styles.clockSub, overdue && styles.clockTextOverdue]}>
-              {formatScorecardCountdown(session.slotEnd)}
-            </Text>
-          </View>
-          <Button
-            label="Submit Now"
-            variant="primary"
-            size="sm"
-            onPress={() => navigation.navigate('ScorecardDraft', { id: session.id })}
-          />
-        </View>
-      )}
+      <IvCard>
+        <IvLabel>CANDIDATE</IvLabel>
+        <Text style={text.uiLeadSemi}>{s.name}</Text>
+        {!!educationLine(s.education) && <Text style={[text.uiSm, styles.secondary]}>{educationLine(s.education)}</Text>}
+        {!!s.city && <Text style={[text.uiSm, styles.muted]}>{s.city}</Text>}
+        {!!s.languages?.length && <Text style={[text.uiSm, styles.muted]}>{s.languages.join(', ')}</Text>}
+        {!!s.skills?.length && <Text style={[text.uiSm, styles.secondary]}>{s.skills.join(' · ')}</Text>}
+        {(s.experience ?? []).map((x, k) => (
+          <Text key={k} style={[text.uiSm, styles.muted]}>{[x.role ?? x.title, x.company, x.duration].filter(Boolean).join(' · ')}</Text>
+        ))}
+        {!!s.resumeUrl && <Button variant="outline" size="sm" icon="file" label="Open the resume" onPress={() => Linking.openURL(s.resumeUrl!).catch(() => {})} style={styles.start} />}
+      </IvCard>
 
-      {/* Candidate Profile Summary */}
-      <Card style={styles.profileCard}>
-        <Text style={styles.cardHeading}>Candidate Information</Text>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Location:</Text>
-          <Text style={styles.infoVal}>{session.student?.city || 'Not specified'}</Text>
-        </View>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Education:</Text>
-          <Text style={styles.infoVal}>{session.student?.education || 'Degree in Engineering / CS'}</Text>
-        </View>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Experience:</Text>
-          <Text style={styles.infoVal}>{session.student?.headline || 'Standard candidate'}</Text>
-        </View>
-      </Card>
-
-      {/* 4-Area Standard Script */}
-      <View style={styles.scriptSection}>
-        <Eyebrow>STRUCTURED EVALUATION SCRIPT</Eyebrow>
-        <Text style={styles.scriptTitle}>20-Minute Protocol</Text>
-
-        <View style={styles.areaTabs}>
-          {SCRIPT_AREAS.map((area, idx) => (
-            <Pressable
-              key={area.n}
-              onPress={() => setActiveArea(idx)}
-              style={[styles.areaTab, activeArea === idx && styles.areaTabActive]}
-            >
-              <Text style={[styles.areaTabNum, activeArea === idx && styles.areaTabNumActive]}>
-                {area.n}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-
-        <Card style={styles.areaContentCard}>
-          <Text style={styles.areaHeading}>{SCRIPT_AREAS[activeArea].title}</Text>
-          {SCRIPT_AREAS[activeArea].questions.map((q, i) => (
-            <View key={i} style={styles.questionItem}>
-              <Text style={styles.bullet}>•</Text>
-              <Text style={styles.questionText}>{q}</Text>
+      {areas.length > 0 && (
+        <IvCard>
+          <IvLabel>QUESTION SCRIPT</IvLabel>
+          {!!script?.intro && <Text style={[text.uiSm, styles.muted]}>{`Opening: ${script.intro}`}</Text>}
+          {areas.map((a, k) => (
+            <View key={k} style={styles.area}>
+              <Text style={text.uiMdSemi}>{a.title}</Text>
+              {a.prompts.map((p, pi) => <Text key={pi} style={[text.uiSm, styles.secondary]}>{`— ${p}`}</Text>)}
             </View>
           ))}
-        </Card>
-      </View>
+          {!!script?.closing && <Text style={[text.uiSm, styles.muted]}>{`Closing: ${script.closing}`}</Text>}
+        </IvCard>
+      )}
 
-      {/* Private Notes Scratchpad */}
-      <Card style={styles.notesCard}>
-        <View style={styles.notesHeader}>
-          <View>
-            <Text style={styles.cardHeading}>Private Prep Notes</Text>
-            <Text style={styles.notesSub}>Only visible to you, never shared with the candidate.</Text>
+      {notes !== null && (
+        <IvCard>
+          <IvLabel>PRIVATE NOTES</IvLabel>
+          <Input value={draft} onChangeText={setDraft} maxLength={notesMax} multiline textAlignVertical="top" placeholder="Only you see these. They flow into your scorecard." style={styles.notes} />
+          <View style={styles.top}>
+            <Text style={[text.uiXs, styles.muted]}>{notesMax ? `${draft.length} / ${notesMax}` : ''}</Text>
+            <Button variant="secondary" size="sm" label="Save notes" busy={saving} disabled={saving || draft === notes} onPress={() => { saveNotes() }} />
           </View>
-          <Pressable onPress={handleSaveNotes}>
-            <Text style={styles.saveNotesLink}>
-              {savingNotes ? 'Saving...' : 'Save'}
-            </Text>
-          </Pressable>
-        </View>
-        <TextInput
-          style={styles.notesInput}
-          value={notes}
-          onChangeText={setNotes}
-          placeholder="Jot down notes during or before the session..."
-          multiline
-          numberOfLines={4}
-          textAlignVertical="top"
-        />
-      </Card>
+        </IvCard>
+      )}
 
-      {/* Decline Option */}
-      {(session.status === 'BOOKED' || (session.status as string) === 'SCHEDULED') && (
-        <View style={styles.declineSection}>
-          <Pressable
-            onPress={() => setShowDeclineModal(!showDeclineModal)}
-            style={styles.declineToggle}
-          >
-            <Text style={styles.declineToggleText}>
-              {showDeclineModal ? '▲ Hide Decline Option' : '▼ Cannot conduct this session? Decline'}
-            </Text>
-          </Pressable>
+      {!!notice && <Text style={[text.uiSm, styles.secondary]}>{notice}</Text>}
 
-          {showDeclineModal && (
-            <Card style={styles.declineCard}>
-              <Text style={styles.declineTitle}>Decline Scheduled Session</Text>
-              <Text style={styles.declineWarning}>
-                Declining less than 2 hours before the start time affects your reliability metrics.
-              </Text>
-              <TextInput
-                style={styles.declineInput}
-                value={declineReason}
-                onChangeText={setDeclineReason}
-                placeholder="Reason for declining (e.g., sudden emergency, domain mismatch)..."
-                multiline
-                numberOfLines={3}
-              />
-              <Button
-                label={declining ? 'Declining...' : 'Confirm Decline'}
-                variant="primary"
-                disabled={declining}
-                onPress={handleDecline}
-              />
-            </Card>
-          )}
-        </View>
+      {iv.status === 'BOOKED' && g !== 'past' && (
+        <Button variant="dangerText" size="md" label="Decline this interview" onPress={() => setDeclineOpen(true)} style={styles.start} />
+      )}
+
+      <EmDialog
+        open={declineOpen}
+        onClose={() => setDeclineOpen(false)}
+        title="Decline this interview?"
+        body={`${s.name.split(' ')[0]}’s interview is offered to another interviewer where one is free. Close to the start the server may not allow it.`}
+        actions={
+          <>
+            <Button variant="ghost" size="md" label="Keep it" disabled={declining} onPress={() => setDeclineOpen(false)} />
+            <Button variant="dangerFill" size="md" label="Decline" busy={declining} disabled={declining} onPress={() => { decline() }} />
+          </>
+        }
+      />
+      {!!iv.scorecard?.submittedAt && (
+        <IvCard>
+          <IvLabel>SCORECARD SUBMITTED</IvLabel>
+          <Text style={[text.uiSm, styles.muted]}>{Object.entries(iv.scorecard.scores).map(([k, v]) => `${label(k)} ${v}`).join(' · ')}</Text>
+        </IvCard>
       )}
     </InterviewerShell>
   )
 }
 
 const styles = StyleSheet.create({
-  loadingText: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 14,
-    color: color.textMuted,
-    textAlign: 'center',
-    marginTop: space['2xl'],
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: space.xs,
-  },
-  title: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 22,
-    fontWeight: '700',
-    color: color.text,
-    marginTop: 2,
-  },
-  subtitle: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 12,
-    color: color.textMuted,
-    marginTop: 2,
-  },
-  owedClockRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.sm,
-    backgroundColor: '#fffbeb',
-    padding: space.md,
-    borderRadius: radius.md,
-    borderWidth: borderWidth.thin,
-    borderColor: '#fde68a',
-  },
-  owedClockOverdue: {
-    backgroundColor: '#fef2f2',
-    borderColor: '#fecaca',
-  },
-  clockIcon: {
-    fontSize: 20,
-  },
-  clockTitle: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#92400e',
-  },
-  clockSub: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#b45309',
-    marginTop: 2,
-  },
-  clockTextOverdue: {
-    color: color.accent,
-  },
-  profileCard: {
-    padding: space.md,
-    gap: space.xs,
-  },
-  cardHeading: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 15,
-    fontWeight: '700',
-    color: color.text,
-    marginBottom: space['2xs'],
-  },
-  infoRow: {
-    flexDirection: 'row',
-    gap: space.xs,
-  },
-  infoLabel: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    fontWeight: '600',
-    color: color.textMuted,
-    width: 80,
-  },
-  infoVal: {
-    flex: 1,
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    color: color.text,
-  },
-  scriptSection: {
-    gap: space.xs,
-  },
-  scriptTitle: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 16,
-    fontWeight: '700',
-    color: color.text,
-  },
-  areaTabs: {
-    flexDirection: 'row',
-    gap: space.xs,
-    marginVertical: space['2xs'],
-  },
-  areaTab: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: space.xs,
-    backgroundColor: color.surfaceSubtle,
-    borderRadius: radius.sm,
-    borderWidth: borderWidth.thin,
-    borderColor: color.border,
-  },
-  areaTabActive: {
-    backgroundColor: color.accent,
-    borderColor: color.accent,
-  },
-  areaTabNum: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 13,
-    fontWeight: '700',
-    color: color.textMuted,
-  },
-  areaTabNumActive: {
-    color: color.surface,
-  },
-  areaContentCard: {
-    padding: space.md,
-    gap: space.sm,
-  },
-  areaHeading: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 14,
-    fontWeight: '700',
-    color: color.text,
-  },
-  questionItem: {
-    flexDirection: 'row',
-    gap: space.xs,
-    alignItems: 'flex-start',
-  },
-  bullet: {
-    color: color.accent,
-    fontSize: 14,
-    lineHeight: 18,
-  },
-  questionText: {
-    flex: 1,
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    color: color.text,
-    lineHeight: 18,
-  },
-  notesCard: {
-    padding: space.md,
-    gap: space.xs,
-  },
-  notesHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  notesSub: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 11,
-    color: color.textSubtle,
-  },
-  saveNotesLink: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    fontWeight: '700',
-    color: color.accent,
-  },
-  notesInput: {
-    borderWidth: borderWidth.thin,
-    borderColor: color.border,
-    borderRadius: radius.sm,
-    padding: space.sm,
-    minHeight: 80,
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    color: color.text,
-    backgroundColor: color.surfaceSubtle,
-  },
-  declineSection: {
-    gap: space.xs,
-  },
-  declineToggle: {
-    paddingVertical: space.xs,
-    alignItems: 'center',
-  },
-  declineToggleText: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 12,
-    fontWeight: '600',
-    color: color.accent,
-  },
-  declineCard: {
-    padding: space.md,
-    gap: space.sm,
-    backgroundColor: '#fff1f2',
-    borderColor: '#fecdd3',
-  },
-  declineTitle: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#9f1239',
-  },
-  declineWarning: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 12,
-    color: '#be123c',
-    lineHeight: 16,
-  },
-  declineInput: {
-    borderWidth: borderWidth.thin,
-    borderColor: '#fecdd3',
-    borderRadius: radius.sm,
-    padding: space.sm,
-    backgroundColor: color.surface,
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    minHeight: 60,
-  },
+  muted: { color: color.textMuted },
+  secondary: { color: color.textSecondary },
+  fig: { letterSpacing: trackingNative.meta },
+  loading: { paddingVertical: space['3xl'] },
+  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.sm },
+  start: { alignSelf: 'flex-start', paddingHorizontal: space.md },
+  area: { gap: space.xs, paddingTop: spaceHalf['1.5'] },
+  notes: { height: height['note-field'] + space['2xl'], paddingTop: space.md },
 })

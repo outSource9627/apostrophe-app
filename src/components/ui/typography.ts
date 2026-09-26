@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native'
-import { color, fontFamilyNative, fontSize, leadingNative, trackingNative } from '../../theme'
+import { color, fontFamilyNative, fontSize, fontSizeLeading, leadingNative, trackingNative } from '../../theme'
 
 /**
  * Foundations §03 on React Native — three families, one job each.
@@ -43,12 +43,59 @@ export const text = StyleSheet.create({
     letterSpacing: trackingNative.snug,
     color: color.text,
   },
-  /** The screen title. Light, because a serif at 36pt reads heavy at Regular. */
+  /** The screen title: 28 at 600 on Android (the design's `Enter the code` / `Five things` step). */
   displayLg: {
-    fontFamily: fontFamilyNative.displayLight,
-    fontSize: fontSize['display-lg'],
-    lineHeight: leadingNative['display-lg'],
-    letterSpacing: trackingNative['tight-sm'],
+    fontFamily: fontFamilyNative.display,
+    fontSize: fontSize['display-lead'],
+    lineHeight: leadingNative['display-lead'],
+    letterSpacing: trackingNative['tight-md'],
+    color: color.text,
+  },
+  /** The Android screen title ("Enter the code", "Five things"): 28 at 600, pulled together. */
+  displayLead: {
+    fontFamily: fontFamilyNative.display,
+    fontSize: fontSize['display-lead'],
+    lineHeight: leadingNative['display-lead'],
+    letterSpacing: trackingNative['tight-md'],
+    color: color.text,
+  },
+  /** A date's day number on a card (Android M5): 20 at 600. */
+  displayCard: {
+    fontFamily: fontFamilyNative.display,
+    fontSize: fontSize['display-card'],
+    lineHeight: leadingNative['display-card'],
+    color: color.text,
+  },
+  /** The scorecard's overall figure (Android M9): 56 at 600, tight. */
+  displayScore: {
+    fontFamily: fontFamilyNative.display,
+    fontSize: fontSize['display-score-sm'],
+    lineHeight: leadingNative['display-score-sm'],
+    letterSpacing: trackingNative['tight-2xl'],
+    color: color.textOnInk,
+  },
+  /** A step's title (Android M2): 24 at 600. */
+  displayHeading: {
+    fontFamily: fontFamilyNative.display,
+    fontSize: fontSize['display-heading'],
+    lineHeight: leadingNative['display-heading'],
+    letterSpacing: trackingNative['tight-md'],
+    color: color.text,
+  },
+  /** The employer auth/section title (Employer Android h1): 32 at 600. */
+  displayPage: {
+    fontFamily: fontFamilyNative.display,
+    fontSize: fontSize['display-page'],
+    lineHeight: leadingNative['display-page'],
+    letterSpacing: trackingNative.tight,
+    color: color.text,
+  },
+  /** The sign-up headline and the dashboard greeting scale: 34 at 600. */
+  displayGreet: {
+    fontFamily: fontFamilyNative.display,
+    fontSize: fontSize['display-greet'],
+    lineHeight: leadingNative['display-greet'],
+    letterSpacing: trackingNative['tight-lg'],
     color: color.text,
   },
   /** Salary, scores, totals. */
@@ -73,6 +120,19 @@ export const text = StyleSheet.create({
     lineHeight: leadingNative['ui-xs'],
     color: color.text,
   },
+  /** The tab label: Geist 12 at 500, and 600 when active (Android M4). */
+  uiXsMedium: {
+    fontFamily: fontFamilyNative.bodyMedium,
+    fontSize: fontSize['ui-xs'],
+    lineHeight: leadingNative['ui-xs'],
+    color: color.text,
+  },
+  uiXsSemi: {
+    fontFamily: fontFamilyNative.bodySemiBold,
+    fontSize: fontSize['ui-xs'],
+    lineHeight: leadingNative['ui-xs'],
+    color: color.text,
+  },
   uiSm: {
     fontFamily: fontFamilyNative.body,
     fontSize: fontSize['ui-sm'],
@@ -83,6 +143,19 @@ export const text = StyleSheet.create({
     fontFamily: fontFamilyNative.bodyMedium,
     fontSize: fontSize['ui-sm'],
     lineHeight: leadingNative['ui-sm'],
+    color: color.text,
+  },
+  /** A field label: Geist 13 at 600, one step darker than muted. */
+  uiSmSemi: {
+    fontFamily: fontFamilyNative.bodySemiBold,
+    fontSize: fontSize['ui-sm'],
+    lineHeight: leadingNative['ui-sm'],
+    color: color.textSecondary,
+  },
+  uiMdMedium: {
+    fontFamily: fontFamilyNative.bodyMedium,
+    fontSize: fontSize['ui-md'],
+    lineHeight: leadingNative['ui-md'],
     color: color.text,
   },
   uiMd: {
@@ -97,9 +170,30 @@ export const text = StyleSheet.create({
     lineHeight: leadingNative['ui-md'],
     color: color.text,
   },
+  /** The large button's label (Android CTA): 16 at 600. */
+  uiLeadSemi: {
+    fontFamily: fontFamilyNative.bodySemiBold,
+    fontSize: fontSize['ui-lead'],
+    lineHeight: leadingNative['ui-lead'],
+    color: color.text,
+  },
   /** Body copy, and the primary button's label. */
   uiBase: {
     fontFamily: fontFamilyNative.body,
+    fontSize: fontSize['ui-base'],
+    lineHeight: leadingNative['ui-base'],
+    color: color.text,
+  },
+  /** The initials standing in for a film with no poster (Employer Android A.card): 140, a watermark. */
+  displayPoster: {
+    fontFamily: fontFamilyNative.display,
+    fontSize: fontSize['display-poster'],
+    lineHeight: fontSize['display-poster'],
+    color: color.text,
+  },
+  /** A file name in a drop zone (Employer Android H.drop): 15 at 550. */
+  uiBaseMedium: {
+    fontFamily: fontFamilyNative.bodyMedium,
     fontSize: fontSize['ui-base'],
     lineHeight: leadingNative['ui-base'],
     color: color.text,
@@ -139,6 +233,35 @@ export const text = StyleSheet.create({
     textTransform: 'uppercase',
     color: color.textSubtle,
   },
+  /** A balance read as a mono figure (the interviewer wallet's headline): 30. */
+  metaFigure: {
+    fontFamily: fontFamilyNative.mono,
+    fontSize: fontSize['meta-figure'],
+    lineHeight: Math.round(fontSize['meta-figure'] * fontSizeLeading['meta-figure']),
+    color: color.text,
+  },
+  /** A figure or countdown on an interviewer card (Interviewer Android M1): 22 mono. */
+  metaTile: {
+    fontFamily: fontFamilyNative.mono,
+    fontSize: fontSize['meta-tile'],
+    lineHeight: leadingNative['meta-tile'],
+    color: color.text,
+  },
+  /** The scorecard deadline band's clock (Interviewer Android M4): 16 mono. */
+  metaBand: {
+    fontFamily: fontFamilyNative.mono,
+    fontSize: fontSize['meta-band'],
+    lineHeight: leadingNative['meta-band'],
+    color: color.text,
+  },
+  /** A figure in mono beside a file (Employer Android H.drop's percentage): 12. */
+  metaBase: {
+    fontFamily: fontFamilyNative.monoMedium,
+    fontSize: fontSize['meta-base'],
+    lineHeight: leadingNative['meta-md'],
+    letterSpacing: trackingNative.eyebrow,
+    color: color.textSubtle,
+  },
   /** The same step inside a pill, where the tracking tightens slightly. */
   metaPill: {
     fontFamily: fontFamilyNative.monoMedium,
@@ -147,6 +270,28 @@ export const text = StyleSheet.create({
     letterSpacing: trackingNative.meta,
     textTransform: 'uppercase',
   },
+  /** A monogram inside a 44 avatar: 13 mono. */
+  metaLg: {
+    fontFamily: fontFamilyNative.monoMedium,
+    fontSize: fontSize['meta-lg'],
+    lineHeight: leadingNative['meta-lg'],
+    color: color.textSubtle,
+  },
+  /** A countdown or elapsed clock: 15 mono. */
+  metaXl: {
+    fontFamily: fontFamilyNative.mono,
+    fontSize: fontSize['meta-xl'],
+    lineHeight: leadingNative['meta-xl'],
+    letterSpacing: trackingNative.meta,
+    color: color.text,
+  },
+  /** One digit of a one-time code. */
+  metaOtp: {
+    fontFamily: fontFamilyNative.monoSemiBold,
+    fontSize: fontSize['meta-otp'],
+    lineHeight: leadingNative['meta-otp'],
+    color: color.text,
+  },
   /** Transaction references, durations, fine print. */
   metaMd: {
     fontFamily: fontFamilyNative.mono,
@@ -154,5 +299,17 @@ export const text = StyleSheet.create({
     lineHeight: leadingNative['meta-md'],
     textTransform: 'uppercase',
     color: color.textSubtle,
+  },
+  /**
+   * `ProgressRing`'s centre value. No baked-in colour, unlike the steps
+   * above: the ring's digits take their tone from the ring itself (ink,
+   * warning, danger), the same way `Eyebrow` and `Body` apply theirs.
+   */
+  meta2xl: {
+    fontFamily: fontFamilyNative.mono,
+    fontSize: fontSize['meta-2xl'],
+    lineHeight: leadingNative['meta-2xl'],
+    letterSpacing: trackingNative.meta,
+    textTransform: 'uppercase',
   },
 })

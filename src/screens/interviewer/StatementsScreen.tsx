@@ -1,255 +1,147 @@
-import React, { useState } from 'react'
-import {
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native'
+import React, { useCallback, useEffect, useState } from 'react'
+import { ActivityIndicator, Linking, StyleSheet, Text, View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { borderWidth, color, fontFamilyNative, radius, space } from '../../theme'
-import { Button, Card, Eyebrow } from '../../components/ui'
+import { borderWidth, color, space, spaceHalf } from '../../theme'
+import { Button, text } from '../../components/ui'
 import { InterviewerShell } from '../../components/interviewer/InterviewerShell'
-import { useInterviewer } from '../../lib/interviewer/useInterviewer'
+import { IvCard } from '../../components/interviewer/iv'
+import { EmBadge, EmEmpty, EmError, EmSheet } from '../../components/employer/em'
+import { EmDateField, EmField, todayIst, type Ymd } from '../../components/employer/form'
+import { ApiClientError } from '../../lib/api'
+import { listStatements, requestStatement, type StatementDto } from '../../lib/api/interviewer'
 import { formatPaise } from '../../lib/format/money'
+import { istDay, istStamp } from '../../lib/interviewer/state'
+import { useAppConfig } from '../../lib/interviewer/useInterviewer'
+import type { RootStackParamList } from '../../../App'
 
+const pad = (n: number) => String(n).padStart(2, '0')
+const keyOf = (v: Ymd) => `${v.y}-${pad(v.m + 1)}-${pad(v.d)}`
+const daysBetween = (a: Ymd, b: Ymd) => Math.round((Date.UTC(b.y, b.m, b.d) - Date.UTC(a.y, a.m, a.d)) / 86_400_000)
+const STATUS: Record<StatementDto['status'], { label: string; tone: 'amber' | 'green' | 'red' }> = {
+  PENDING: { label: 'Preparing', tone: 'amber' },
+  READY: { label: 'Ready', tone: 'green' },
+  FAILED: { label: 'Failed', tone: 'red' },
+}
+
+/**
+ * Earnings statements (no artboard — the drawn screens' language). The
+ * platform's own statements: request one for a date range (up to the server's
+ * `statementMaxDays`), watch it go from Preparing to Ready, and open the file.
+ * The old screen's months, TDS and "Form 16A" were invented and are gone.
+ */
 export function StatementsScreen() {
-  const navigation = useNavigation<NativeStackNavigationProp<any>>()
-  const { wallet } = useInterviewer()
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
+  const insets = useSafeAreaInsets()
+  const config = useAppConfig()
+  const [rows, setRows] = useState<StatementDto[] | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [open, setOpen] = useState(false)
+  const [from, setFrom] = useState<Ymd | null>(null)
+  const [to, setTo] = useState<Ymd | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [notice, setNotice] = useState<string | null>(null)
 
-  const lifetimePaise = wallet?.lifetimePaise ?? 0
-  // 1% TDS standard under Indian Income Tax Act (194J/194C)
-  const tdsPaise = Math.round(lifetimePaise * 0.01)
-  const netDisbursedPaise = lifetimePaise - tdsPaise
+  const load = useCallback(async () => {
+    setError(null)
+    try {
+      setRows(await listStatements())
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not load your statements.')
+    }
+  }, [])
+  useEffect(() => {
+    load()
+  }, [load])
+  // A statement being prepared is polled until it settles.
+  useEffect(() => {
+    if (!rows?.some((r) => r.status === 'PENDING')) return
+    const t = setInterval(load, 5000)
+    return () => clearInterval(t)
+  }, [rows, load])
 
-  const months = [
-    {
-      month: 'September 2026',
-      sessions: 8,
-      grossPaise: 80000,
-      tdsPaise: 800,
-      netPaise: 79200,
-    },
-    {
-      month: 'August 2026',
-      sessions: 14,
-      grossPaise: 154000,
-      tdsPaise: 1540,
-      netPaise: 152460,
-    },
-    {
-      month: 'July 2026',
-      sessions: 10,
-      grossPaise: 110000,
-      tdsPaise: 1100,
-      netPaise: 108900,
-    },
-  ]
+  const maxDays = config?.interviewer?.statementMaxDays
+  const today = todayIst()
+  const span = from && to ? daysBetween(from, to) + 1 : 0
+  const rangeError = from && to && daysBetween(from, to) < 0 ? 'The range ends before it starts.' : maxDays && span > maxDays ? `A statement covers up to ${maxDays} days.` : undefined
+
+  async function request() {
+    if (!from || !to || rangeError) return
+    setBusy(true)
+    setNotice(null)
+    try {
+      const s = await requestStatement(keyOf(from), keyOf(to))
+      setRows((prev) => [s, ...(prev ?? [])])
+      setOpen(false)
+      setFrom(null)
+      setTo(null)
+    } catch (e) {
+      setNotice(e instanceof ApiClientError ? e.message : 'Not requested. Try again.')
+    } finally {
+      setBusy(false)
+    }
+  }
 
   return (
-    <InterviewerShell back={{ label: 'Wallet', onPress: () => navigation.goBack() }}>
-      <View style={styles.header}>
-        <Eyebrow>TAX & ANNUAL SUMMARY</Eyebrow>
-        <Text style={styles.title}>Monthly Statements</Text>
-        <Text style={styles.subtitle}>
-          Summary of gross fees credited, 1% TDS statutory deductions, and net disbursed earnings.
-        </Text>
-      </View>
+    <InterviewerShell
+      back={() => navigation.goBack()}
+      title="Earnings statements"
+      sub="Interview fees and payouts, for a date range"
+      footer={<Button variant="primary" size="lg" full icon="plus" label="Request a statement" onPress={() => setOpen(true)} />}
+    >
+      {rows === null && !error ? (
+        <ActivityIndicator color={color.textSubtle} style={styles.loading} />
+      ) : error && !rows ? (
+        <EmError title="Couldn’t load your statements." body={error} action={<Button variant="secondary" size="pair" icon="refresh" label="Try again" onPress={() => { load() }} />} />
+      ) : (rows ?? []).length === 0 ? (
+        <EmEmpty icon="file" title="No statements yet." body="Request one for any range; it is prepared in the background." />
+      ) : (
+        (rows ?? []).map((s) => (
+          <IvCard key={s.id}>
+            <View style={styles.top}>
+              <Text style={text.uiMdSemi}>{`${istDay(`${s.from}T00:00:00+05:30`)} – ${istDay(`${s.to}T00:00:00+05:30`)}`}</Text>
+              <EmBadge label={STATUS[s.status].label} tone={STATUS[s.status].tone} small />
+            </View>
+            {s.status === 'READY' && (
+              <Text style={[text.uiXs, styles.muted]}>{`${s.rowCount} entries · ${formatPaise(s.creditedPaise)} credited · ${formatPaise(s.paidOutPaise)} paid out`}</Text>
+            )}
+            {s.status === 'FAILED' && !!s.error && <Text style={[text.uiXs, styles.danger]}>{s.error}</Text>}
+            <Text style={[text.uiXs, styles.subtle]}>{`Requested ${istStamp(s.requestedAt)}`}</Text>
+            {s.status === 'READY' && !!s.url && <Button variant="outline" size="sm" icon="download" label="Open" onPress={() => Linking.openURL(s.url!).catch(() => {})} style={styles.start} />}
+          </IvCard>
+        ))
+      )}
 
-      {/* Summary Card */}
-      <Card style={styles.summaryCard}>
-        <Text style={styles.summaryTitle}>FY 2026–27 Cumulative Summary</Text>
-        <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>Gross Interviewer Fees</Text>
-          <Text style={styles.summaryVal}>{formatPaise(lifetimePaise)}</Text>
-        </View>
-        <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>1% TDS Deducted (Sec 194J)</Text>
-          <Text style={[styles.summaryVal, styles.tdsVal]}>
-            −{formatPaise(tdsPaise)}
-          </Text>
-        </View>
-        <View style={[styles.summaryRow, styles.netRow]}>
-          <Text style={styles.netLabel}>Net Disbursed to Bank</Text>
-          <Text style={styles.netVal}>{formatPaise(netDisbursedPaise)}</Text>
-        </View>
-      </Card>
-
-      {/* Monthly Statements List */}
-      <View style={styles.listSection}>
-        <Text style={styles.sectionTitle}>Monthly Breakdown</Text>
-        <View style={styles.list}>
-          {months.map((m) => (
-            <Card key={m.month} style={styles.monthCard}>
-              <View style={styles.monthHeader}>
-                <Text style={styles.monthName}>{m.month}</Text>
-                <Text style={styles.sessionCount}>{m.sessions} interviews</Text>
-              </View>
-
-              <View style={styles.metricGrid}>
-                <View style={styles.metricItem}>
-                  <Text style={styles.metricLabel}>Gross Fees</Text>
-                  <Text style={styles.metricVal}>{formatPaise(m.grossPaise)}</Text>
-                </View>
-                <View style={styles.metricItem}>
-                  <Text style={styles.metricLabel}>TDS (1%)</Text>
-                  <Text style={[styles.metricVal, styles.tdsVal]}>
-                    −{formatPaise(m.tdsPaise)}
-                  </Text>
-                </View>
-                <View style={styles.metricItem}>
-                  <Text style={styles.metricLabel}>Net Payout</Text>
-                  <Text style={[styles.metricVal, styles.netMetricVal]}>
-                    {formatPaise(m.netPaise)}
-                  </Text>
-                </View>
-              </View>
-
-              <Pressable
-                style={styles.downloadBtn}
-                onPress={() => Alert.alert('Statement Dispatched', `Monthly summary for ${m.month} has been emailed to your registered address.`)}
-              >
-                <Text style={styles.downloadText}>Download Form 16A / PDF →</Text>
-              </Pressable>
-            </Card>
-          ))}
-        </View>
-      </View>
+      <EmSheet
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Request a statement"
+        sub={maxDays ? `Up to ${maxDays} days at a time.` : undefined}
+        foot={
+          <View style={[styles.foot, { paddingBottom: space.md + insets.bottom }]}>
+            {!!notice && <Text style={[text.uiSm, styles.danger]}>{notice}</Text>}
+            <Button variant="primary" size="lg" full label="Request" busy={busy} disabled={busy || !from || !to || !!rangeError} onPress={() => { request() }} />
+          </View>
+        }
+      >
+        <EmField label="From">
+          <EmDateField title="From" value={from} onChange={setFrom} min={{ y: today.y - 5, m: 0, d: 1 }} max={today} placeholder="Choose a date" clearable={false} />
+        </EmField>
+        <EmField label="To" error={rangeError}>
+          <EmDateField title="To" value={to} onChange={setTo} min={from ?? { y: today.y - 5, m: 0, d: 1 }} max={today} placeholder="Choose a date" clearable={false} />
+        </EmField>
+      </EmSheet>
     </InterviewerShell>
   )
 }
 
 const styles = StyleSheet.create({
-  header: {
-    gap: space['2xs'],
-  },
-  title: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 24,
-    fontWeight: '700',
-    color: color.text,
-  },
-  subtitle: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    color: color.textMuted,
-    lineHeight: 18,
-  },
-  summaryCard: {
-    padding: space.md,
-    gap: space.xs,
-    backgroundColor: color.surfaceSubtle,
-  },
-  summaryTitle: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 15,
-    fontWeight: '700',
-    color: color.text,
-    marginBottom: space['2xs'],
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 2,
-  },
-  summaryLabel: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    color: color.textMuted,
-  },
-  summaryVal: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 14,
-    fontWeight: '600',
-    color: color.text,
-  },
-  tdsVal: {
-    color: color.accent,
-  },
-  netRow: {
-    borderTopWidth: borderWidth.thin,
-    borderTopColor: color.border,
-    paddingTop: space.xs,
-    marginTop: space['2xs'],
-  },
-  netLabel: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 14,
-    fontWeight: '700',
-    color: color.text,
-  },
-  netVal: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#059669',
-  },
-  listSection: {
-    gap: space.sm,
-  },
-  sectionTitle: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 16,
-    fontWeight: '700',
-    color: color.text,
-  },
-  list: {
-    gap: space.sm,
-  },
-  monthCard: {
-    padding: space.md,
-    gap: space.sm,
-  },
-  monthHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  monthName: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 15,
-    fontWeight: '700',
-    color: color.text,
-  },
-  sessionCount: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 12,
-    color: color.textMuted,
-  },
-  metricGrid: {
-    flexDirection: 'row',
-    backgroundColor: color.surfaceSubtle,
-    borderRadius: radius.sm,
-    padding: space.sm,
-  },
-  metricItem: {
-    flex: 1,
-    gap: 2,
-  },
-  metricLabel: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 10,
-    color: color.textSubtle,
-  },
-  metricVal: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 12,
-    fontWeight: '600',
-    color: color.text,
-  },
-  netMetricVal: {
-    color: '#059669',
-    fontWeight: '700',
-  },
-  downloadBtn: {
-    paddingTop: space['2xs'],
-  },
-  downloadText: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 12,
-    fontWeight: '600',
-    color: color.accent,
-  },
+  muted: { color: color.textMuted },
+  subtle: { color: color.textSubtle },
+  danger: { color: color.danger },
+  loading: { paddingVertical: space['3xl'] },
+  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.sm },
+  start: { alignSelf: 'flex-start', paddingHorizontal: space.md },
+  foot: { paddingHorizontal: space.lg, paddingTop: space.md, gap: spaceHalf['1.5'], borderTopWidth: borderWidth.thin, borderTopColor: color.border, backgroundColor: color.surface },
 })

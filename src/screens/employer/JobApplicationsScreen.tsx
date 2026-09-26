@@ -1,479 +1,159 @@
-import React, { useState, useEffect, useCallback } from 'react'
-import {
-  ActivityIndicator,
-  Image,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native'
-import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import { ActivityIndicator, FlatList, Image, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native'
+import { useIsFocused, useNavigation, useRoute, type RouteProp } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { color, radius, space, fontFamilyNative } from '../../theme'
-import { EmployerShell } from '../../components/employer/EmployerShell'
+import { aspect, borderWidth, color, height, opacity, radius, space, spaceHalf } from '../../theme'
+import { Button, text } from '../../components/ui'
+import { Icon } from '../../components/ui/Icon'
+import { EmployerShell } from '../../components/employer'
+import { EmBadge, EmEmpty, EmError, EmPills } from '../../components/employer/em'
 import {
-  fetchJobApplications,
-  updateApplicationStatus,
-  type ApplicationRow,
-  type ApplicationStatus,
+  EMPLOYER_APPLICATION_STATUS_LABEL, fetchJobApplications, type ApplicationRow, type ApplicationStatus,
 } from '../../lib/api/employerJobs'
+import { experienceLine, nameInitials } from '../../lib/employer/candidateFormat'
+import { APPLICATION_TONE, istDay } from '../../lib/employer/jobs'
 import type { RootStackParamList } from '../../../App'
 
+type Tab = 'ALL' | ApplicationStatus
+const ORDER: ApplicationStatus[] = ['APPLIED', 'VIEWED', 'SHORTLISTED', 'REJECTED', 'CONNECTED']
+const PER_PAGE = 100
+
+/**
+ * EM-20 · the applicants to one post (Employer Android): pill tabs with the
+ * server's counts, then a row per application — the film thumb, the name, the
+ * city and experience, and where the application stands. The list summary
+ * carries no tier or salary, so the row leaves them out (the web's call).
+ */
 export function JobApplicationsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
   const route = useRoute<RouteProp<RootStackParamList, 'JobApplications'>>()
+  const focused = useIsFocused()
   const { id } = route.params
 
+  const [rows, setRows] = useState<ApplicationRow[] | null>(null)
   const [jobTitle, setJobTitle] = useState('')
-  const [activeTab, setActiveTab] = useState<'all' | ApplicationStatus>('all')
-  const [rows, setRows] = useState<ApplicationRow[]>([])
-  const [total, setTotal] = useState(0)
   const [counts, setCounts] = useState<Partial<Record<ApplicationStatus, number>>>({})
-  const [loading, setLoading] = useState(true)
-  const [actionRunningId, setActionRunningId] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [refreshing, setRefreshing] = useState(false)
+  const [tab, setTab] = useState<Tab>('ALL')
 
-  const loadApplications = useCallback(async () => {
+  const load = useCallback(async () => {
+    setError(null)
     try {
-      setLoading(true)
-      const res = await fetchJobApplications(id, {
-        status: activeTab === 'all' ? undefined : activeTab,
-      })
-      setJobTitle(res.job.title)
+      const res = await fetchJobApplications(id, { perPage: PER_PAGE })
       setRows(res.rows)
-      setTotal(res.total)
-      setCounts(res.counts)
-    } catch (err) {
-      console.error('Failed to load applications', err)
-    } finally {
-      setLoading(false)
+      setJobTitle(res.job?.title ?? '')
+      setCounts(res.counts ?? {})
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not load the applicants.')
     }
-  }, [id, activeTab])
+  }, [id])
 
+  // Every return reads again: a status changed on the applicant shows here.
   useEffect(() => {
-    loadApplications()
-  }, [loadApplications])
+    if (focused) load()
+  }, [focused, load])
 
-  const handleMoveStatus = async (
-    applicationId: string,
-    to: 'SHORTLISTED' | 'REJECTED' | 'CONNECTED',
-    from: ApplicationStatus,
-  ) => {
-    try {
-      setActionRunningId(applicationId)
-      await updateApplicationStatus(applicationId, { to, from })
-      loadApplications()
-    } catch (err) {
-      console.error('Failed to move application status', err)
-    } finally {
-      setActionRunningId(null)
-    }
+  const all = rows?.length ?? 0
+  const count = (s: ApplicationStatus) => counts[s] ?? (rows ?? []).filter((r) => r.status === s).length
+  const shown = useMemo(() => (tab === 'ALL' ? rows ?? [] : (rows ?? []).filter((r) => r.status === tab)), [rows, tab])
+
+  let body: React.ReactNode
+  if (rows === null && !error) {
+    body = <ActivityIndicator color={color.textSubtle} style={styles.loading} />
+  } else if (error && !rows) {
+    body = (
+      <View style={styles.pad}>
+        <EmError title="Couldn’t load the applicants." body={error} action={<Button variant="secondary" size="pair" icon="refresh" label="Try again" onPress={() => { load() }} />} />
+      </View>
+    )
+  } else if (all === 0) {
+    body = (
+      <View style={[styles.pad, styles.center]}>
+        <EmEmpty icon="users" title="No applicants yet." body="Applications appear here as students apply to this post." />
+      </View>
+    )
+  } else {
+    body = (
+      <FlatList
+        data={shown}
+        keyExtractor={(r) => r.id}
+        contentContainerStyle={styles.list}
+        ItemSeparatorComponent={Gap}
+        ListHeaderComponent={
+          <EmPills<Tab>
+            items={[{ key: 'ALL', label: 'All', count: all }, ...ORDER.filter((s) => count(s) > 0).map((s) => ({ key: s, label: EMPLOYER_APPLICATION_STATUS_LABEL[s], count: count(s) }))]}
+            value={tab}
+            onChange={setTab}
+          />
+        }
+        ListHeaderComponentStyle={styles.pillsWrap}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            tintColor={color.textSubtle}
+            onRefresh={async () => {
+              setRefreshing(true)
+              await load()
+              setRefreshing(false)
+            }}
+          />
+        }
+        renderItem={({ item }) => {
+          const c = item.candidate
+          const name = c?.name ?? 'Candidate'
+          const sub = [c?.city, experienceLine(c?.experienceYears)].filter(Boolean).join(' · ')
+          return (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`${name}, ${EMPLOYER_APPLICATION_STATUS_LABEL[item.status]}`}
+              onPress={() => navigation.navigate('ApplicantDetail', { id: item.id })}
+              style={({ pressed }) => [styles.row, c && !c.available && styles.rowGone, pressed && styles.pressed]}
+            >
+              <View style={styles.thumb}>
+                {c?.photoUrl ? <Image source={{ uri: c.photoUrl }} style={StyleSheet.absoluteFill} resizeMode="cover" /> : (
+                  <Text style={[text.uiSmSemi, styles.thumbText]}>{nameInitials(name)}</Text>
+                )}
+              </View>
+              <View style={styles.grow}>
+                <Text style={text.uiBaseSemi} numberOfLines={1}>{name}</Text>
+                {!!sub && <Text style={[text.uiXs, styles.muted]} numberOfLines={1}>{sub}</Text>}
+                <View style={styles.meta}>
+                  <EmBadge label={EMPLOYER_APPLICATION_STATUS_LABEL[item.status]} tone={APPLICATION_TONE[item.status]} small />
+                  <Text style={[text.metaSm, styles.subtle]}>{`APPLIED ${istDay(item.appliedAt).toUpperCase()}`}</Text>
+                </View>
+              </View>
+              <Icon name="chevR" size={spaceHalf['4.5']} tint={color.textSubtle} />
+            </Pressable>
+          )
+        }}
+      />
+    )
   }
 
   return (
-    <EmployerShell
-      back={{ label: 'ROLES', onPress: () => navigation.goBack() }}
-    >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.eyebrow}>PIPELINE</Text>
-          <Text style={styles.title}>{jobTitle ? `Applicants: ${jobTitle}` : 'Applicants'}</Text>
-        </View>
-
-        {/* Status Tabs */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.tabRow}
-        >
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => setActiveTab('all')}
-            style={[styles.tabBtn, activeTab === 'all' && styles.tabBtnActive]}
-          >
-            <Text style={[styles.tabBtnText, activeTab === 'all' && styles.tabBtnTextActive]}>
-              All ({total})
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => setActiveTab('APPLIED')}
-            style={[styles.tabBtn, activeTab === 'APPLIED' && styles.tabBtnActive]}
-          >
-            <Text style={[styles.tabBtnText, activeTab === 'APPLIED' && styles.tabBtnTextActive]}>
-              New ({counts.APPLIED ?? 0})
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => setActiveTab('VIEWED')}
-            style={[styles.tabBtn, activeTab === 'VIEWED' && styles.tabBtnActive]}
-          >
-            <Text style={[styles.tabBtnText, activeTab === 'VIEWED' && styles.tabBtnTextActive]}>
-              Viewed ({counts.VIEWED ?? 0})
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => setActiveTab('SHORTLISTED')}
-            style={[styles.tabBtn, activeTab === 'SHORTLISTED' && styles.tabBtnActive]}
-          >
-            <Text style={[styles.tabBtnText, activeTab === 'SHORTLISTED' && styles.tabBtnTextActive]}>
-              Shortlisted ({counts.SHORTLISTED ?? 0})
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => setActiveTab('CONNECTED')}
-            style={[styles.tabBtn, activeTab === 'CONNECTED' && styles.tabBtnActive]}
-          >
-            <Text style={[styles.tabBtnText, activeTab === 'CONNECTED' && styles.tabBtnTextActive]}>
-              Connected ({counts.CONNECTED ?? 0})
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => setActiveTab('REJECTED')}
-            style={[styles.tabBtn, activeTab === 'REJECTED' && styles.tabBtnActive]}
-          >
-            <Text style={[styles.tabBtnText, activeTab === 'REJECTED' && styles.tabBtnTextActive]}>
-              Rejected ({counts.REJECTED ?? 0})
-            </Text>
-          </TouchableOpacity>
-        </ScrollView>
-
-        {/* Content */}
-        {loading ? (
-          <View style={styles.centre}>
-            <ActivityIndicator color={color.text} size="small" />
-            <Text style={styles.loadingText}>Loading applicants…</Text>
-          </View>
-        ) : rows.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyTitle}>No applicants found</Text>
-            <Text style={styles.emptyBody}>
-              Applications received for this position will appear here.
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.list}>
-            {rows.map((row) => {
-              const candidate = row.candidate
-              const isActionRunning = actionRunningId === row.id
-
-              return (
-                <View key={row.id} style={styles.card}>
-                  <View style={styles.cardTop}>
-                    <View style={styles.posterBox}>
-                      {candidate?.photoUrl ? (
-                        <Image source={{ uri: candidate.photoUrl }} style={styles.posterImg} />
-                      ) : (
-                        <View style={styles.posterPlaceholder}>
-                          <Text style={styles.monogramLetter}>{candidate?.name?.charAt(0) || 'C'}</Text>
-                        </View>
-                      )}
-                      {candidate?.verifiedInterview?.verified && (
-                        <View style={styles.verifiedDot}>
-                          <Text style={styles.verifiedDotText}>✓</Text>
-                        </View>
-                      )}
-                    </View>
-
-                    <View style={styles.cardInfo}>
-                      <TouchableOpacity
-                        activeOpacity={0.7}
-                        onPress={() => navigation.navigate('ApplicantDetail', { id: row.id })}
-                      >
-                        <Text style={styles.candidateName}>{candidate?.name || 'Candidate'}</Text>
-                      </TouchableOpacity>
-
-                      <Text style={styles.candidateMeta}>
-                        {[
-                          candidate?.headline,
-                          candidate?.city,
-                          candidate?.experienceYears != null ? `${candidate.experienceYears}y exp` : null,
-                        ]
-                          .filter(Boolean)
-                          .join(' · ')}
-                      </Text>
-
-                      <View style={styles.statusBadge}>
-                        <Text style={styles.statusBadgeText}>{row.statusLabel}</Text>
-                      </View>
-                    </View>
-                  </View>
-
-                  {/* Message from Candidate */}
-                  {row.message && (
-                    <View style={styles.messageBox}>
-                      <Text style={styles.messageText} numberOfLines={2}>
-                        &ldquo;{row.message}&rdquo;
-                      </Text>
-                    </View>
-                  )}
-
-                  {/* Foot actions */}
-                  <View style={styles.cardFoot}>
-                    <TouchableOpacity
-                      activeOpacity={0.7}
-                      onPress={() => navigation.navigate('ApplicantDetail', { id: row.id })}
-                      style={styles.reviewBtn}
-                    >
-                      <Text style={styles.reviewBtnText}>Review →</Text>
-                    </TouchableOpacity>
-
-                    <View style={styles.quickActions}>
-                      {(row.status === 'APPLIED' || row.status === 'VIEWED') && (
-                        <>
-                          <TouchableOpacity
-                            onPress={() => handleMoveStatus(row.id, 'SHORTLISTED', row.status)}
-                            disabled={isActionRunning}
-                            style={styles.quickBtn}
-                          >
-                            <Text style={styles.quickBtnText}>Shortlist</Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            onPress={() => handleMoveStatus(row.id, 'CONNECTED', row.status)}
-                            disabled={isActionRunning}
-                            style={styles.quickBtnAccent}
-                          >
-                            <Text style={styles.quickBtnAccentText}>Connect</Text>
-                          </TouchableOpacity>
-                        </>
-                      )}
-
-                      {row.status === 'SHORTLISTED' && (
-                        <TouchableOpacity
-                          onPress={() => handleMoveStatus(row.id, 'CONNECTED', row.status)}
-                          disabled={isActionRunning}
-                          style={styles.quickBtnAccent}
-                        >
-                          <Text style={styles.quickBtnAccentText}>Connect</Text>
-                        </TouchableOpacity>
-                      )}
-                    </View>
-                  </View>
-                </View>
-              )
-            })}
-          </View>
-        )}
-      </ScrollView>
+    <EmployerShell back={() => navigation.goBack()} title="Applicants" sub={jobTitle ? jobTitle.toUpperCase() : undefined} scroll={false}>
+      {body}
     </EmployerShell>
   )
 }
 
+const Gap = () => <View style={styles.gap} />
+
 const styles = StyleSheet.create({
-  scrollContent: {
-    paddingHorizontal: space.sm,
-    paddingBottom: space.xl,
-    gap: space.md,
-  },
-  header: {
-    borderBottomWidth: 1,
-    borderBottomColor: color.border,
-    paddingBottom: space.sm,
-    gap: 2,
-  },
-  eyebrow: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 10,
-    letterSpacing: 1,
-    color: color.accent,
-  },
-  title: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: 22,
-    color: color.text,
-  },
-  tabRow: {
-    gap: 6,
-    paddingVertical: 2,
-  },
-  tabBtn: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: radius.md,
-    backgroundColor: color.surfaceMuted,
-  },
-  tabBtnActive: {
-    backgroundColor: color.text,
-  },
-  tabBtnText: {
-    fontSize: 12,
-    color: color.textMuted,
-    fontWeight: '500',
-  },
-  tabBtnTextActive: {
-    color: color.textInverse,
-    fontWeight: '600',
-  },
-  centre: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 48,
-  },
-  loadingText: {
-    fontSize: 13,
-    color: color.textMuted,
-    marginTop: space.xs,
-  },
-  emptyCard: {
-    backgroundColor: color.surfaceMuted,
-    borderRadius: radius.lg,
-    padding: space.lg,
-    alignItems: 'center',
-    gap: space.xs,
-    marginTop: space.lg,
-  },
-  emptyTitle: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: 18,
-    color: color.text,
-  },
-  emptyBody: {
-    fontSize: 13,
-    color: color.textMuted,
-    textAlign: 'center',
-    lineHeight: 18,
-  },
-  list: {
-    gap: space.sm,
-  },
-  card: {
-    backgroundColor: color.surface,
-    borderWidth: 1,
-    borderColor: color.border,
-    borderRadius: radius.lg,
-    padding: space.sm,
-    gap: space.xs,
-  },
-  cardTop: {
-    flexDirection: 'row',
-    gap: space.sm,
-  },
-  posterBox: {
-    width: 44,
-    height: 52,
-    borderRadius: radius.sm,
-    backgroundColor: color.surfaceMuted,
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  posterImg: {
-    width: '100%',
-    height: '100%',
-  },
-  posterPlaceholder: {
-    width: '100%',
-    height: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  monogramLetter: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: 18,
-    color: color.textSubtle,
-  },
-  verifiedDot: {
-    position: 'absolute',
-    bottom: 2,
-    right: 2,
-    backgroundColor: color.accent,
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  verifiedDotText: {
-    fontSize: 7,
-    color: color.textInverse,
-    fontWeight: 'bold',
-  },
-  cardInfo: {
-    flex: 1,
-    gap: 2,
-  },
-  candidateName: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: 16,
-    color: color.text,
-  },
-  candidateMeta: {
-    fontSize: 12,
-    color: color.textMuted,
-  },
-  statusBadge: {
-    backgroundColor: color.surfaceMuted,
-    alignSelf: 'flex-start',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    marginTop: 2,
-  },
-  statusBadgeText: {
-    fontSize: 10,
-    color: color.textSubtle,
-    fontWeight: '500',
-  },
-  messageBox: {
-    backgroundColor: color.surfaceMuted,
-    borderRadius: radius.sm,
-    padding: 6,
-  },
-  messageText: {
-    fontSize: 11,
-    color: color.text,
-    fontStyle: 'italic',
-  },
-  cardFoot: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: 6,
-    borderTopWidth: 1,
-    borderTopColor: color.border,
-  },
-  reviewBtn: {
-    paddingHorizontal: 4,
-    paddingVertical: 4,
-  },
-  reviewBtnText: {
-    fontSize: 12,
-    color: color.text,
-    fontWeight: '600',
-  },
-  quickActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  quickBtn: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: radius.sm,
-    backgroundColor: color.surfaceMuted,
-  },
-  quickBtnText: {
-    fontSize: 11,
-    color: color.text,
-  },
-  quickBtnAccent: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: radius.sm,
-    backgroundColor: color.text,
-  },
-  quickBtnAccentText: {
-    fontSize: 11,
-    color: color.textInverse,
-    fontWeight: '600',
-  },
+  grow: { flex: 1, minWidth: 0, gap: space['2xs'] + 1 },
+  pressed: { opacity: opacity.pressed },
+  muted: { color: color.textMuted },
+  subtle: { color: color.textSubtle },
+  pad: { flex: 1, paddingHorizontal: space.lg },
+  center: { justifyContent: 'center' },
+  loading: { paddingVertical: space['3xl'] },
+  pillsWrap: { marginHorizontal: -space.lg },
+  list: { paddingHorizontal: space.lg, paddingBottom: space.lg },
+  gap: { height: space.sm },
+  row: { flexDirection: 'row', alignItems: 'center', gap: space.md, backgroundColor: color.surface, borderWidth: borderWidth.thin, borderColor: color.border, borderRadius: radius.panel, paddingVertical: spaceHalf['2.5'], paddingHorizontal: space.md },
+  rowGone: { opacity: opacity.disabled + 0.25 },
+  thumb: { width: height.avatar, aspectRatio: aspect.videoResume, borderRadius: radius.ctl, backgroundColor: color.inkRaised, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+  thumbText: { color: color.textOnInkMuted },
+  meta: { flexDirection: 'row', alignItems: 'center', gap: space.sm, marginTop: space['2xs'] },
 })

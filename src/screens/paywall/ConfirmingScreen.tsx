@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { StyleSheet, View } from 'react-native'
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useQueryClient } from '@tanstack/react-query'
 import { getPaymentStatus } from '../../lib/api/payments'
-import { color, space, borderWidth } from '../../theme'
-import { AppBar, Body, Button, Display, Eyebrow, Meta } from '../../components/ui'
+import { borderWidth, color, height, radius, space } from '../../theme'
+import { openSupport } from '../../lib/support'
+import { Body, Button, Eyebrow, Meta, ScreenHeader, StickyFooter, text } from '../../components/ui'
 
 /**
  * ST-08 — the wait while the webhook settles. The money is safe and the account
@@ -24,54 +25,78 @@ export function ConfirmingScreen({
   const insets = useSafeAreaInsets()
   const qc = useQueryClient()
   const [pending, setPending] = useState(false)
-  const started = useRef(Date.now())
+  // Bumped by "I'll wait": a new round restarts the poll and its 90-second clock.
+  const [round, setRound] = useState(0)
+  const [elapsed, setElapsed] = useState(0)
   const payRef = `PAY-${paymentId.slice(-7).toUpperCase()}`
+
+  // The callbacks are recreated on every parent render; the poll reads the latest
+  // through refs so a navigation elsewhere never restarts it.
+  const done = useRef(onDone); done.current = onDone
+  const failed = useRef(onFailed); failed.current = onFailed
 
   useEffect(() => {
     let live = true
+    const started = Date.now()
+    const clock = setInterval(() => live && setElapsed(Math.floor((Date.now() - started) / 1000)), 1000)
     const tick = async () => {
       if (!live) return
       try {
         const s = await getPaymentStatus(paymentId)
         if (!live) return
-        if (s.status === 'SUCCESS') { qc.invalidateQueries({ queryKey: ['me'] }); onDone(); return }
-        if (s.status === 'FAILED') { onFailed(paymentId, s.failureReason); return }
+        if (s.status === 'SUCCESS') { live = false; void qc.invalidateQueries({ queryKey: ['me'] }); done.current(); return }
+        if (s.status === 'FAILED') { live = false; failed.current(paymentId, s.failureReason); return }
       } catch { /* transient — keep polling */ }
-      if (Date.now() - started.current > TIMEOUT_MS) { setPending(true); return }
+      if (!live) return
+      if (Date.now() - started > TIMEOUT_MS) { setPending(true); return }
       setTimeout(tick, POLL_MS)
     }
-    tick()
-    return () => { live = false }
-  }, [paymentId, onDone, onFailed, qc])
+    void tick()
+    return () => { live = false; clearInterval(clock) }
+  }, [paymentId, qc, round])
+
+  const mmss = `${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, '0')}`
 
   return (
     <View style={[styles.page, { paddingTop: insets.top }]}>
-      <AppBar title="" />
+      <ScreenHeader />
       <View style={styles.body}>
-        <Eyebrow>{pending ? 'Still working' : 'One-time'}</Eyebrow>
-        <Display level="lg" style={{ marginTop: space.sm }}>
+        {pending ? (
+          <View style={[styles.disc, styles.discWarn]}><Text style={[text.displayLead, styles.warn]}>!</Text></View>
+        ) : (
+          <View style={styles.disc}><ActivityIndicator color={color.accent} /></View>
+        )}
+        <Eyebrow tone="accent">{pending ? 'Still working' : 'Payment submitted'}</Eyebrow>
+        <Text style={[text.displayLead, styles.title]}>
           {pending ? 'This is taking a little longer.' : 'Confirming with your bank.'}
-        </Display>
-        <Body tone="muted" style={{ marginTop: space.md }}>
+        </Text>
+        <Body tone="muted" style={styles.copy}>
           {pending
-            ? 'Your money is not lost. The confirmation is just slow to reach us — you can wait here, or reach support with the reference below and we will settle it.'
+            ? 'Your money is not lost. The confirmation is just slow to reach us — keep waiting here, or email support with the reference below and we will settle it.'
             : 'Your money is safe and your account is being set up. This usually takes a few seconds.'}
         </Body>
         <View style={styles.refRow}>
           <Meta style={{ color: color.textSubtle }}>Reference · {payRef}</Meta>
+          {!pending && <Meta style={{ color: color.textSubtle }}>{`Checking · ${mmss}`}</Meta>}
         </View>
-        {pending && (
-          <View style={{ marginTop: space.xl, gap: space.md }}>
-            <Button variant="outline" size="block" full label="I'll wait" onPress={() => { started.current = Date.now(); setPending(false) }} />
-          </View>
-        )}
       </View>
+      {pending && (
+        <StickyFooter>
+          <Button variant="primary" size="lg" full label="Keep waiting" onPress={() => { setPending(false); setElapsed(0); setRound((r) => r + 1) }} />
+          <Button variant="outline" size="md" full label="Email support" onPress={() => { void openSupport(`Payment ${payRef}`) }} />
+        </StickyFooter>
+      )}
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: color.surface },
+  page: { flex: 1, backgroundColor: color.background },
   body: { flex: 1, padding: space.xl, justifyContent: 'center' },
-  refRow: { marginTop: space.xl, borderTopWidth: borderWidth.thin, borderTopColor: color.border, paddingTop: space.md },
+  refRow: { marginTop: space.xl, borderTopWidth: borderWidth.thin, borderTopColor: color.border, paddingTop: space.md, flexDirection: 'row', justifyContent: 'space-between' },
+  disc: { width: height.fab, height: height.fab, borderRadius: radius.pill, backgroundColor: color.accentSoft, alignItems: 'center', justifyContent: 'center', marginBottom: space.lg },
+  discWarn: { backgroundColor: color.warningSoft },
+  warn: { color: color.warning },
+  title: { marginTop: space.sm },
+  copy: { marginTop: space.md },
 })

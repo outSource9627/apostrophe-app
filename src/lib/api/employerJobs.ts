@@ -2,14 +2,6 @@ import { api } from './index'
 
 export type JobStatus = 'DRAFT' | 'PENDING_MODERATION' | 'PUBLISHED' | 'PAUSED' | 'CLOSED'
 
-export const EMPLOYER_JOB_STATUS_LABEL: Record<JobStatus, string> = {
-  DRAFT: 'Draft',
-  PENDING_MODERATION: 'Pending review',
-  PUBLISHED: 'Published',
-  PAUSED: 'Paused',
-  CLOSED: 'Closed',
-}
-
 export type ApplicationStatus = 'APPLIED' | 'VIEWED' | 'SHORTLISTED' | 'REJECTED' | 'CONNECTED'
 
 export const EMPLOYER_APPLICATION_STATUS_LABEL: Record<ApplicationStatus, string> = {
@@ -20,50 +12,51 @@ export const EMPLOYER_APPLICATION_STATUS_LABEL: Record<ApplicationStatus, string
   CONNECTED: 'Connected',
 }
 
+/**
+ * The wire shape is `toEmployerJobDto` (apostrophe-admin, src/server/domain/jobs.ts).
+ * It carries no status label, no deadline flag and no paused/closed timestamps —
+ * the screens derive what they need (see app/employers/jobs/jobParts.tsx).
+ */
 export interface EmployerJobRow {
   id: string
   title: string
   category: string | null
+  department: string | null
+  vacancies: number
   location: string | null
   remote: boolean
   employmentType: string | null
-  status: JobStatus
-  statusLabel: string
+  minQualification: string | null
+  experience: { minYears: number; maxYears: number | null }
+  salary: { minPaise: number; maxPaise: number }
+  joiningPreference: string | null
   applicationDeadline: string | null
-  deadlinePassed: boolean
+  hasVideo: boolean
+  status: JobStatus
+  moderation: {
+    submittedAt: string | null
+    decidedAt: string | null
+    reason: string | null
+  }
   counters: {
     views: number
     saves: number
     applications: number
     shortlisted: number
   }
-  video?: { durationSec: number; url?: string | null } | null
-  moderation: {
-    submittedAt: string | null
-    reason: string | null
-  }
-  firstIncompleteStep?: string | null
   publishedAt: string | null
-  pausedAt: string | null
-  closedAt: string | null
   createdAt: string
   updatedAt: string
 }
 
 export interface EmployerJobDetail extends EmployerJobRow {
-  department?: string | null
-  vacancies: number
   description: string
   responsibilities: string[]
   requirements: string[]
   benefits: string[]
+  /** Master-data ids, not names — there is no endpoint that resolves them for an employer. */
   requiredSkills: string[]
-  minQualification?: string
-  experienceMinYears: number
-  experienceMaxYears?: number
-  salaryMinPaise: number
-  salaryMaxPaise: number
-  joiningPreference?: string | null
+  video: { durationSec: number; uploadedAt: string; url: string | null } | null
 }
 
 export interface EmployerJobListResponse {
@@ -83,7 +76,6 @@ export interface JobDraftInput {
   responsibilities?: string[]
   requirements?: string[]
   benefits?: string[]
-  requiredSkills?: string[]
   minQualification: string
   experienceMinYears?: number
   experienceMaxYears?: number
@@ -94,6 +86,8 @@ export interface JobDraftInput {
   employmentType: string
   joiningPreference?: string
   applicationDeadline?: string
+  /** `null` removes the video; omit to leave it as it is. */
+  video?: { key: string; durationSec: number } | null
 }
 
 export type JobPatchInput = Partial<JobDraftInput>
@@ -105,7 +99,6 @@ export interface ApplicationCandidateSummary {
   headline: string | null
   photoUrl: string | null
   experienceYears: number
-  skills: string[]
   verifiedInterview: {
     verified: boolean
     at: string | null
@@ -118,7 +111,6 @@ export interface ApplicationRow {
   candidate: ApplicationCandidateSummary | null
   message: string | null
   status: ApplicationStatus
-  statusLabel: string
   rejectionReason: string | null
   hasVideoResume: boolean
   connected: boolean
@@ -142,28 +134,49 @@ export interface ApplicationDetail {
     category: string
     location: string
     employmentType: string
-  }
+  } | null
   candidate: {
     id: string
     name: string
+    removed: boolean
     city: string | null
-    qualification?: string | null
+    qualification: string | null
+    tier: string | null
+    languages: string[]
+    education: {
+      qualification?: string
+      institution?: string
+      fieldOfStudy?: string
+      yearOfCompletion?: number
+      scoreType?: string
+      score?: number
+    } | null
+    experience: { company?: string; role?: string; from?: string; to?: string; description?: string }[]
     experienceYears: number
     skills: string[]
+    preferences: {
+      desiredRoles: string[]
+      preferredLocations: string[]
+      expectedSalaryMinPaise?: number
+      expectedSalaryMaxPaise?: number
+      employmentTypes: string[]
+      availabilityToJoin?: string
+    } | null
+    portfolioLinks: string[]
     photoUrl: string | null
     verifiedInterview: {
       verified: boolean
       at: string | null
     }
     available: boolean
-  } | null
+  }
   message: string | null
+  videoResumeId: string | null
   status: ApplicationStatus
-  statusLabel: string
   rejectionReason: string | null
-  appliedAt: string
+  statusHistory: { status: ApplicationStatus; at: string; by: string }[]
   connected: boolean
-  threadId?: string | null
+  appliedAt: string
 }
 
 export async function fetchEmployerJobs(query: {
@@ -224,17 +237,16 @@ export async function fetchApplicationDetail(applicationId: string): Promise<App
   return api.get<ApplicationDetail>(`/employers/applications/${applicationId}`)
 }
 
+/**
+ * CONNECTED is not settable by an employer (the server refuses it): a chat opens
+ * only through the student's own act. A rejection carries the reason the student reads.
+ */
 export async function updateApplicationStatus(
   applicationId: string,
-  input: {
-    to: 'SHORTLISTED' | 'REJECTED' | 'CONNECTED'
-    from?: ApplicationStatus
-    reason?: string
-  },
-): Promise<{ id: string; status: ApplicationStatus }> {
-  return api.patch<{ id: string; status: ApplicationStatus }>(`/employers/applications/${applicationId}`, {
-    to: input.to,
-    from: input.from,
-    reason: input.reason,
-  })
+  input: { status: 'VIEWED' | 'SHORTLISTED' | 'REJECTED'; rejectionReason?: string },
+): Promise<{ id: string; status: ApplicationStatus; changed: boolean }> {
+  return api.patch<{ id: string; status: ApplicationStatus; changed: boolean }>(
+    `/employers/applications/${applicationId}`,
+    input,
+  )
 }

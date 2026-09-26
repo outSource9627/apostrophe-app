@@ -1,540 +1,212 @@
-import React, { useState, useEffect, useCallback } from 'react'
-import {
-  ActivityIndicator,
-  Image,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native'
-import { useNavigation } from '@react-navigation/native'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native'
+import { useIsFocused, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { color, radius, space, fontFamilyNative } from '../../theme'
-import { EmployerShell } from '../../components/employer/EmployerShell'
-import { EmployerNav, type EmployerNavKey } from '../../components/employer/EmployerNav'
+import { borderWidth, color, height, opacity, space, spaceHalf, trackingNative } from '../../theme'
+import { Button, text } from '../../components/ui'
+import { Icon } from '../../components/ui/Icon'
+import { EmployerShell } from '../../components/employer'
+import { EmBadge, EmCard, EmEmpty, EmError, EmPerson, EmPills, initialsOf, type EmTone } from '../../components/employer/em'
 import {
-  fetchEmployerInterests,
-  liveInterestOutcome,
-  type EmployerInterestRow,
-  type InterestOutcome,
+  fetchAllEmployerInterests, interestNextEligibleAt, liveInterestOutcome, type EmployerInterestRow, type InterestOutcome,
 } from '../../lib/api/employerInterests'
+import { formatIst } from '../../lib/employer/state'
+import { useEmployer } from '../../lib/employer/useEmployer'
+import { useEmployerJobRefs } from '../../lib/employer/useLinkableJobs'
+import { useShortlistConfig } from '../../lib/employer/useShortlistConfig'
+import { SendInterestSheet } from './SendInterestModal'
 import type { RootStackParamList } from '../../../App'
 
+type Tab = 'all' | InterestOutcome
+
+const BADGE: Record<InterestOutcome, { label: string; tone: EmTone }> = {
+  SENT: { label: 'Sent', tone: 'violet' },
+  ACCEPTED: { label: 'Accepted', tone: 'green' },
+  NOT_ACCEPTED: { label: 'Not accepted', tone: 'gray' },
+}
+
+/** '8 OCT' in IST, for the row's mono line. */
+const day = (iso: string) => formatIst(iso).split(' · ')[0].split(' ').slice(0, 2).join(' ').toUpperCase()
+
+/**
+ * EM-16 · Interests (outbound), Employer Android. Pill tabs with counts — All,
+ * Sent, Accepted, Not accepted (a decline and an expiry are the same outcome to
+ * the sender, so there is no Expired tab). Each row: the person, the outcome
+ * badge, the message sent, the linked job, and one mono line — when it
+ * expires, when it connected, or when the next can go — with the one action:
+ * Open chat once connected, Send again once the cooldown has passed. EM-16b is
+ * the empty list.
+ */
 export function EmployerInterestsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
+  const focused = useIsFocused()
+  const { state } = useEmployer()
+  const verified = Boolean(state?.verified)
+  const cfg = useShortlistConfig()
+  const jobs = useEmployerJobRefs(verified)
 
-  const [activeTab, setActiveTab] = useState<'all' | InterestOutcome>('all')
-  const [rows, setRows] = useState<EmployerInterestRow[]>([])
-  const [counts, setCounts] = useState<{ all: number; SENT: number; ACCEPTED: number; NOT_ACCEPTED: number }>({
-    all: 0,
-    SENT: 0,
-    ACCEPTED: 0,
-    NOT_ACCEPTED: 0,
-  })
-  const [since, setSince] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [rows, setRows] = useState<EmployerInterestRow[] | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [refreshing, setRefreshing] = useState(false)
+  const [tab, setTab] = useState<Tab>('all')
+  const [now, setNow] = useState(() => new Date())
+  const [resend, setResend] = useState<EmployerInterestRow | null>(null)
 
-  const loadInterests = useCallback(async () => {
+  const load = useCallback(async () => {
+    setError(null)
     try {
-      setLoading(true)
-      const res = await fetchEmployerInterests({
-        outcome: activeTab === 'all' ? undefined : activeTab,
-      })
-      setRows(res.rows)
-      setCounts(res.counts)
-      setSince(res.since)
-    } catch (err) {
-      console.error('Failed to load interests', err)
-    } finally {
-      setLoading(false)
+      setRows(await fetchAllEmployerInterests())
+      setNow(new Date())
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not load your sent Interests.')
     }
-  }, [activeTab])
+  }, [])
 
   useEffect(() => {
-    loadInterests()
-  }, [loadInterests])
+    if (verified && focused) load()
+  }, [verified, focused, load])
 
-  const handleNavSelect = (key: EmployerNavKey) => {
-    if (key === 'feed') navigation.navigate('EmployerFeed')
-    else if (key === 'shortlist') navigation.navigate('EmployerShortlist')
-    else if (key === 'interests') loadInterests()
-    else if (key === 'jobs') navigation.navigate('EmployerJobs')
-    else if (key === 'chat') navigation.navigate('EmployerChats')
-  }
+  // A SENT Interest past its expiry already reads Not accepted, without waiting for the server's sweep.
+  const outcomeOf = useCallback((r: EmployerInterestRow) => liveInterestOutcome(r, now), [now])
+  const counts = useMemo(() => {
+    const c = { all: rows?.length ?? 0, SENT: 0, ACCEPTED: 0, NOT_ACCEPTED: 0 }
+    for (const r of rows ?? []) c[outcomeOf(r)] += 1
+    return c
+  }, [rows, outcomeOf])
+  const shown = tab === 'all' ? rows ?? [] : (rows ?? []).filter((r) => outcomeOf(r) === tab)
+  const jobTitle = (id: string | null) => (id ? jobs?.find((j) => j.id === id)?.title ?? null : null)
 
-  const now = new Date()
-
-  return (
-    <EmployerShell
-      nav={<EmployerNav current="interests" onSelect={handleNavSelect} />}
-    >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.eyebrow}>OUTBOUND REACH</Text>
-          <Text style={styles.title}>Interests Sent</Text>
-          <Text style={styles.subtitle}>
-            {since
-              ? `Tracking outreach since ${new Date(since).toLocaleDateString('en-IN', { dateStyle: 'medium' })}`
-              : 'Direct introductions and invitation tracking'}
-          </Text>
-        </View>
-
-        {/* Tab Strip */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.tabRow}
-        >
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => setActiveTab('all')}
-            style={[styles.tabBtn, activeTab === 'all' && styles.tabBtnActive]}
-          >
-            <Text style={[styles.tabBtnText, activeTab === 'all' && styles.tabBtnTextActive]}>
-              All ({counts.all})
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => setActiveTab('SENT')}
-            style={[styles.tabBtn, activeTab === 'SENT' && styles.tabBtnActive]}
-          >
-            <Text style={[styles.tabBtnText, activeTab === 'SENT' && styles.tabBtnTextActive]}>
-              Interest sent ({counts.SENT})
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => setActiveTab('ACCEPTED')}
-            style={[styles.tabBtn, activeTab === 'ACCEPTED' && styles.tabBtnActive]}
-          >
-            <Text style={[styles.tabBtnText, activeTab === 'ACCEPTED' && styles.tabBtnTextActive]}>
-              Accepted ({counts.ACCEPTED})
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => setActiveTab('NOT_ACCEPTED')}
-            style={[styles.tabBtn, activeTab === 'NOT_ACCEPTED' && styles.tabBtnActive]}
-          >
-            <Text style={[styles.tabBtnText, activeTab === 'NOT_ACCEPTED' && styles.tabBtnTextActive]}>
-              Not accepted ({counts.NOT_ACCEPTED})
-            </Text>
-          </TouchableOpacity>
-        </ScrollView>
-
-        {/* Content */}
-        {loading ? (
-          <View style={styles.centre}>
-            <ActivityIndicator color={color.text} size="small" />
-            <Text style={styles.loadingText}>Loading interests…</Text>
-          </View>
-        ) : counts.all === 0 ? (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyTitle}>No Interests sent yet</Text>
-            <Text style={styles.emptyBody}>
-              Discover candidates on the feed or shortlist and send an Interest to initiate a conversation.
-            </Text>
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => navigation.navigate('EmployerFeed')}
-              style={styles.exploreBtn}
-            >
-              <Text style={styles.exploreBtnText}>Explore candidate feed</Text>
-            </TouchableOpacity>
-          </View>
-        ) : rows.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyTitle}>No entries in this tab</Text>
-            <Text style={styles.emptyBody}>No candidates currently match this status.</Text>
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => setActiveTab('all')}
-              style={styles.clearBtn}
-            >
-              <Text style={styles.clearBtnText}>View all</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <View style={styles.list}>
-            {rows.map((row) => {
-              const outcome = liveInterestOutcome(row, now)
-              const canResend =
-                row.available &&
-                outcome !== 'SENT' &&
-                (!row.nextEligibleAt || new Date(row.nextEligibleAt).getTime() <= now.getTime())
-
-              return (
-                <View
-                  key={row.id}
-                  style={[styles.card, !row.available && styles.cardUnavailable]}
-                >
-                  <View style={styles.cardTop}>
-                    <View style={styles.posterBox}>
-                      {row.posterUrl ? (
-                        <Image source={{ uri: row.posterUrl }} style={styles.posterImg} />
-                      ) : (
-                        <View style={styles.posterPlaceholder}>
-                          <Text style={styles.monogramLetter}>{row.name.charAt(0)}</Text>
-                        </View>
-                      )}
-                    </View>
-
-                    <View style={styles.cardInfo}>
-                      <TouchableOpacity
-                        activeOpacity={row.available ? 0.7 : 1}
-                        onPress={() => {
-                          if (row.available) {
-                            navigation.navigate('CandidateProfile', { id: row.candidateId })
-                          }
-                        }}
-                      >
-                        <Text style={styles.candidateName}>{row.name}</Text>
-                      </TouchableOpacity>
-
-                      <Text style={styles.candidateMeta}>
-                        {row.city || 'India'} · Sent{' '}
-                        {new Date(row.sentAt).toLocaleDateString('en-IN', { dateStyle: 'medium' })}
-                      </Text>
-
-                      {row.job && (
-                        <View style={styles.jobPill}>
-                          <Text style={styles.jobPillText}>For: {row.job.title}</Text>
-                        </View>
-                      )}
-                    </View>
-                  </View>
-
-                  {row.message && (
-                    <View style={styles.messageBox}>
-                      <Text style={styles.messageText} numberOfLines={2}>
-                        &ldquo;{row.message}&rdquo;
-                      </Text>
+  let body: React.ReactNode
+  if (rows === null && !error) {
+    body = <ActivityIndicator color={color.textSubtle} style={styles.loading} />
+  } else if (error && !rows) {
+    body = (
+      <View style={styles.pad}>
+        <EmError title="Couldn’t load your Interests." body={error} action={<Button variant="secondary" size="pair" icon="refresh" label="Try again" onPress={() => { load() }} />} />
+      </View>
+    )
+  } else if (counts.all === 0) {
+    body = (
+      <View style={[styles.pad, styles.center]}>
+        <EmEmpty
+          icon="heart"
+          title="No Interests yet."
+          body="Send one from your shortlist or a profile. If accepted, a chat opens."
+          action={<Button variant="primary" size="pair" label="Open shortlist" onPress={() => navigation.navigate('EmployerShortlist')} />}
+        />
+      </View>
+    )
+  } else {
+    body = (
+      <FlatList
+        data={shown}
+        keyExtractor={(r) => r.id}
+        contentContainerStyle={styles.list}
+        ItemSeparatorComponent={Gap}
+        ListHeaderComponent={
+          <EmPills<Tab>
+            items={[
+              { key: 'all', label: 'All', count: counts.all },
+              { key: 'SENT', label: 'Sent', count: counts.SENT },
+              { key: 'ACCEPTED', label: 'Accepted', count: counts.ACCEPTED },
+              { key: 'NOT_ACCEPTED', label: 'Not accepted', count: counts.NOT_ACCEPTED },
+            ]}
+            value={tab}
+            onChange={setTab}
+          />
+        }
+        ListHeaderComponentStyle={styles.pillsWrap}
+        ListEmptyComponent={<Text style={[text.uiMd, styles.muted, styles.none]}>Nothing here.</Text>}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            tintColor={color.textSubtle}
+            onRefresh={async () => {
+              setRefreshing(true)
+              await load()
+              setRefreshing(false)
+            }}
+          />
+        }
+        renderItem={({ item }) => {
+          const outcome = outcomeOf(item)
+          const next = interestNextEligibleAt(item, cfg.interestCooldownDays)
+          const coolingDown = !!next && next.getTime() > now.getTime()
+          const line =
+            outcome === 'SENT'
+              ? `EXPIRES ${day(item.expiresAt)}`
+              : outcome === 'ACCEPTED'
+                ? item.closedAt ? `CONNECTED ${day(item.closedAt)}` : 'ACCEPTED'
+                : coolingDown && next ? `NEXT FROM ${day(next.toISOString())}` : `SENT ${day(item.sentAt)}`
+          const job = jobTitle(item.jobId)
+          return (
+            <EmCard>
+              <Pressable accessibilityRole="button" onPress={() => navigation.navigate('CandidateProfile', { id: item.candidateId })} style={({ pressed }) => [styles.head, pressed && styles.pressed]}>
+                <EmPerson initials={initialsOf(item.name)} size={height.tap} />
+                <View style={styles.grow}>
+                  <Text style={text.uiBaseSemi} numberOfLines={1}>{item.name}</Text>
+                  {!!job && (
+                    <View style={styles.job}>
+                      <Icon name="brief" size={space.md} tint={color.textMuted} />
+                      <Text style={[text.uiXs, styles.muted]} numberOfLines={1}>{job}</Text>
                     </View>
                   )}
-
-                  <View style={styles.cardFoot}>
-                    {outcome === 'ACCEPTED' ? (
-                      <View style={styles.statusRow}>
-                        <View style={styles.slotBadgeSuccess}>
-                          <Text style={styles.slotBadgeSuccessText}>✓ Accepted</Text>
-                        </View>
-                        <TouchableOpacity
-                          activeOpacity={0.8}
-                          style={styles.actionBtnPrimary}
-                        >
-                          <Text style={styles.actionBtnPrimaryText}>Open chat</Text>
-                        </TouchableOpacity>
-                      </View>
-                    ) : outcome === 'SENT' ? (
-                      <View style={styles.statusCol}>
-                        <View style={styles.slotBadgeAccent}>
-                          <Text style={styles.slotBadgeAccentText}>Interest sent · Pending</Text>
-                        </View>
-                        <Text style={styles.expiresText}>
-                          Expires {new Date(row.expiresAt).toLocaleDateString('en-IN', { dateStyle: 'medium' })}
-                        </Text>
-                      </View>
-                    ) : (
-                      <View style={styles.statusRow}>
-                        <View style={styles.slotBadgeMuted}>
-                          <Text style={styles.slotBadgeMutedText}>Not accepted</Text>
-                        </View>
-                        {canResend ? (
-                          <TouchableOpacity
-                            activeOpacity={0.8}
-                            onPress={() =>
-                              navigation.navigate('SendInterest', {
-                                candidateId: row.candidateId,
-                                candidateName: row.name,
-                                candidateCity: row.city,
-                              })
-                            }
-                            style={styles.resendBtn}
-                          >
-                            <Text style={styles.resendBtnText}>Resend</Text>
-                          </TouchableOpacity>
-                        ) : row.nextEligibleAt && new Date(row.nextEligibleAt).getTime() > now.getTime() ? (
-                          <Text style={styles.cooldownDate}>
-                            Eligible {new Date(row.nextEligibleAt).toLocaleDateString('en-IN', { dateStyle: 'medium' })}
-                          </Text>
-                        ) : null}
-                      </View>
-                    )}
-                  </View>
                 </View>
-              )
-            })}
-          </View>
-        )}
-      </ScrollView>
+                <EmBadge label={BADGE[outcome].label} tone={BADGE[outcome].tone} small />
+              </Pressable>
+              {!!item.message && <Text style={[text.uiSm, styles.message]} numberOfLines={3}>{item.message}</Text>}
+              <View style={styles.foot}>
+                <Text style={[text.metaSm, styles.mono, styles.muted]}>{line}</Text>
+                {outcome === 'ACCEPTED' && item.connected ? (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    icon="chat"
+                    label="Open chat"
+                    onPress={() => (item.threadId ? navigation.navigate('EmployerThread', { id: item.threadId }) : navigation.navigate('EmployerChats'))}
+                  />
+                ) : outcome === 'NOT_ACCEPTED' && !coolingDown ? (
+                  <Button variant="outline" size="sm" label="Send again" onPress={() => setResend(item)} />
+                ) : null}
+              </View>
+            </EmCard>
+          )
+        }}
+      />
+    )
+  }
+
+  return (
+    <EmployerShell title="Interests" sub="OUTBOUND" scroll={false}>
+      {body}
+      {resend && (
+        <SendInterestSheet
+          open
+          candidate={{ id: resend.candidateId, name: resend.name }}
+          onClose={() => setResend(null)}
+          onSent={() => { load() }}
+        />
+      )}
     </EmployerShell>
   )
 }
 
+const Gap = () => <View style={styles.gap} />
+
 const styles = StyleSheet.create({
-  scrollContent: {
-    paddingHorizontal: space.sm,
-    paddingBottom: space.xl,
-    gap: space.md,
-  },
-  header: {
-    borderBottomWidth: 1,
-    borderBottomColor: color.border,
-    paddingBottom: space.sm,
-    gap: 2,
-  },
-  eyebrow: {
-    fontFamily: fontFamilyNative.mono,
-    fontSize: 10,
-    letterSpacing: 1,
-    color: color.accent,
-  },
-  title: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: 24,
-    color: color.text,
-  },
-  subtitle: {
-    fontSize: 12,
-    color: color.textMuted,
-  },
-  tabRow: {
-    gap: 6,
-    paddingVertical: 2,
-  },
-  tabBtn: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: radius.md,
-    backgroundColor: color.surfaceMuted,
-  },
-  tabBtnActive: {
-    backgroundColor: color.text,
-  },
-  tabBtnText: {
-    fontSize: 12,
-    color: color.textMuted,
-    fontWeight: '500',
-  },
-  tabBtnTextActive: {
-    color: color.textInverse,
-    fontWeight: '600',
-  },
-  centre: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 48,
-  },
-  loadingText: {
-    fontSize: 13,
-    color: color.textMuted,
-    marginTop: space.xs,
-  },
-  emptyCard: {
-    backgroundColor: color.surfaceMuted,
-    borderRadius: radius.lg,
-    padding: space.lg,
-    alignItems: 'center',
-    gap: space.xs,
-    marginTop: space.lg,
-  },
-  emptyTitle: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: 18,
-    color: color.text,
-  },
-  emptyBody: {
-    fontSize: 13,
-    color: color.textMuted,
-    textAlign: 'center',
-    lineHeight: 18,
-  },
-  exploreBtn: {
-    backgroundColor: color.text,
-    paddingHorizontal: space.md,
-    paddingVertical: 8,
-    borderRadius: radius.md,
-    marginTop: space.xs,
-  },
-  exploreBtnText: {
-    color: color.textInverse,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  clearBtn: {
-    borderWidth: 1,
-    borderColor: color.border,
-    paddingHorizontal: space.md,
-    paddingVertical: 6,
-    borderRadius: radius.md,
-    marginTop: space.xs,
-  },
-  clearBtnText: {
-    color: color.text,
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  list: {
-    gap: space.sm,
-  },
-  card: {
-    backgroundColor: color.surface,
-    borderWidth: 1,
-    borderColor: color.border,
-    borderRadius: radius.lg,
-    padding: space.sm,
-    gap: space.xs,
-  },
-  cardUnavailable: {
-    opacity: 0.65,
-  },
-  cardTop: {
-    flexDirection: 'row',
-    gap: space.sm,
-  },
-  posterBox: {
-    width: 44,
-    height: 52,
-    borderRadius: radius.sm,
-    backgroundColor: color.surfaceMuted,
-    overflow: 'hidden',
-  },
-  posterImg: {
-    width: '100%',
-    height: '100%',
-  },
-  posterPlaceholder: {
-    width: '100%',
-    height: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  monogramLetter: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: 18,
-    color: color.textSubtle,
-  },
-  cardInfo: {
-    flex: 1,
-    gap: 2,
-  },
-  candidateName: {
-    fontFamily: fontFamilyNative.display,
-    fontSize: 16,
-    color: color.text,
-  },
-  candidateMeta: {
-    fontSize: 12,
-    color: color.textMuted,
-  },
-  jobPill: {
-    backgroundColor: color.surfaceMuted,
-    alignSelf: 'flex-start',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    marginTop: 2,
-  },
-  jobPillText: {
-    fontSize: 10,
-    color: color.textSubtle,
-    fontWeight: '500',
-  },
-  messageBox: {
-    backgroundColor: color.surfaceMuted,
-    borderRadius: radius.sm,
-    padding: 8,
-  },
-  messageText: {
-    fontSize: 12,
-    color: color.text,
-    fontStyle: 'italic',
-  },
-  cardFoot: {
-    paddingTop: 6,
-    borderTopWidth: 1,
-    borderTopColor: color.border,
-  },
-  statusRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  statusCol: {
-    gap: 2,
-  },
-  slotBadgeSuccess: {
-    backgroundColor: 'rgba(34, 197, 94, 0.1)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: radius.pill,
-    alignSelf: 'flex-start',
-  },
-  slotBadgeSuccessText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: color.success,
-  },
-  slotBadgeAccent: {
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: radius.pill,
-    alignSelf: 'flex-start',
-  },
-  slotBadgeAccentText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: color.accent,
-  },
-  slotBadgeMuted: {
-    backgroundColor: color.surfaceMuted,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: radius.pill,
-    alignSelf: 'flex-start',
-  },
-  slotBadgeMutedText: {
-    fontSize: 10,
-    color: color.textMuted,
-  },
-  expiresText: {
-    fontSize: 10,
-    color: color.textMuted,
-    marginTop: 2,
-  },
-  cooldownDate: {
-    fontSize: 10,
-    fontFamily: fontFamilyNative.mono,
-    color: color.textMuted,
-  },
-  actionBtnPrimary: {
-    backgroundColor: color.text,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: radius.md,
-  },
-  actionBtnPrimaryText: {
-    color: color.textInverse,
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  resendBtn: {
-    borderWidth: 1,
-    borderColor: color.border,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: radius.md,
-  },
-  resendBtnText: {
-    fontSize: 11,
-    color: color.text,
-    fontWeight: '500',
-  },
+  grow: { flex: 1, minWidth: 0, gap: space['2xs'] + 1 },
+  pressed: { opacity: opacity.pressed },
+  muted: { color: color.textMuted },
+  mono: { letterSpacing: trackingNative.eyebrow },
+  pad: { flex: 1, paddingHorizontal: space.lg },
+  center: { justifyContent: 'center' },
+  loading: { paddingVertical: space['3xl'] },
+  pillsWrap: { marginHorizontal: -space.lg },
+  list: { paddingHorizontal: space.lg, paddingBottom: space.lg },
+  gap: { height: spaceHalf['2.5'] },
+  none: { paddingVertical: space.xl, textAlign: 'center' },
+  head: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  job: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
+  message: { color: color.textSecondary, borderLeftWidth: borderWidth.accent, borderLeftColor: color.border, paddingLeft: space.md },
+  foot: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: space.sm, minHeight: height.tap },
 })

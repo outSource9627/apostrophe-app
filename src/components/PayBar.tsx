@@ -1,7 +1,7 @@
 import React from 'react'
-import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { color, space, radius, fontSize, fontWeight, fontFamilyNative, borderWidth, height } from '../theme'
+import { StyleSheet, Text, View } from 'react-native'
+import { Button, StickyFooter, text } from './ui'
+import { color, space } from '../theme'
 
 /**
  * ST-13 — a persistent, non-dismissible payment CTA on every screen an unpaid
@@ -25,52 +25,27 @@ export function PayBar({
   durationMin?: number
   onPay: () => void
 }) {
-  const insets = useSafeAreaInsets()
   const rupees = amountPaise != null ? `₹${Math.round(amountPaise / 100).toLocaleString('en-IN')}` : null
 
   return (
-    <View style={[styles.bar, { paddingBottom: insets.bottom + space.md }]}>
+    <StickyFooter>
       <View style={styles.row}>
         <View style={styles.priceRow}>
-          {!!rupees && <Text style={styles.price}>{rupees}</Text>}
-          <Text style={styles.detail}>
+          {!!rupees && <Text style={text.displaySm}>{rupees}</Text>}
+          <Text style={[text.uiXs, styles.detail]}>
             {['one-time', tierLabel].filter(Boolean).join(' · ')}
           </Text>
         </View>
-        {!!durationMin && <Text style={styles.aside}>{durationMin}-min interview</Text>}
+        {!!durationMin && <Text style={[text.uiXs, styles.aside]}>{durationMin}-min interview</Text>}
       </View>
-
-      <Pressable
-        onPress={onPay}
-        accessibilityRole="button"
-        style={({ pressed }) => [styles.cta, pressed && styles.pressed]}
-      >
-        <Text style={styles.ctaLabel}>Pay and book my interview</Text>
-      </Pressable>
-    </View>
+      <Button variant="primary" size="lg" full label="Pay and book my interview" onPress={onPay} />
+    </StickyFooter>
   )
 }
 
 const styles = StyleSheet.create({
-  bar: {
-    borderTopWidth: borderWidth.thin,
-    borderTopColor: color.border,
-    backgroundColor: color.surface,
-    paddingHorizontal: space.xl,
-    paddingTop: space.lg,
-  },
-  row: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: space.md },
+  row: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
   priceRow: { flexDirection: 'row', alignItems: 'baseline', gap: space.sm },
-  price: { fontFamily: fontFamilyNative.display, fontSize: fontSize['ui-xl'], color: color.text },
-  detail: { fontSize: fontSize['ui-xs'], color: color.textMuted },
-  aside: { fontSize: fontSize['ui-xs'], color: color.textSubtle },
-  cta: {
-    height: height.control,
-    borderRadius: radius.pill,
-    backgroundColor: color.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pressed: { backgroundColor: color.accentHover },
-  ctaLabel: { color: color.textInverse, fontSize: fontSize['ui-base'], fontWeight: fontWeight.semibold },
+  detail: { color: color.textMuted },
+  aside: { color: color.textSubtle },
 })

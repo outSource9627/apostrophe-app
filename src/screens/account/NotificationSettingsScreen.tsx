@@ -6,8 +6,8 @@ import {
   CATEGORY_LABELS, CHANNEL_ORDER, getNotificationPrefs, putNotificationPrefs,
   type NotificationCategory, type NotificationChannel,
 } from '../../lib/api/account'
-import { color, space, radius, fontFamilyNative, fontSize } from '../../theme'
-import { AppBar, Body, Display, Eyebrow, Meta, Toggle } from '../../components/ui'
+import { borderWidth, color, radius, space, trackingNative } from '../../theme'
+import { ErrorState, MenuGroup, MenuRow, ScreenHeader, Skeleton, StatusPill, Toggle, text } from '../../components/ui'
 
 const SUBLINE: Partial<Record<NotificationCategory, string>> = {
   CONNECTION: 'When an employer sends an Interest',
@@ -36,10 +36,10 @@ export function NotificationSettingsScreen({ onBack }: { onBack: () => void }) {
     onError: () => qc.invalidateQueries({ queryKey: ['notification-prefs'] }),
   })
 
-  const bar = <AppBar onBack={onBack} />
+  const bar = <ScreenHeader title="Notification settings" subtitle="Push, email and in-app" onBack={onBack} />
   const frame = (c: React.ReactNode) => <View style={[styles.page, { paddingTop: insets.top }]}>{bar}{c}</View>
-  if (q.isPending) return frame(<View style={styles.centre}><Meta style={{ color: color.textMuted }}>LOADING…</Meta></View>)
-  if (q.isError) return frame(<View style={styles.centre}><Body tone="muted">Could not load your settings.</Body></View>)
+  if (q.isPending) return frame(<View style={styles.loading}><Skeleton lines={3} /></View>)
+  if (q.isError) return frame(<View style={styles.centre}><ErrorState title="Could not load your settings." body="Nothing was changed. Try again in a moment." /></View>)
 
   const rows = q.data!.filter((r) => !HIDDEN.includes(r.category))
   const locked = rows.filter((r) => r.locked)
@@ -48,43 +48,37 @@ export function NotificationSettingsScreen({ onBack }: { onBack: () => void }) {
   return (
     <View style={[styles.page, { paddingTop: insets.top }]}>
       {bar}
-      <ScrollView contentContainerStyle={styles.body}>
-        <View style={{ gap: space.sm }}>
-          <Display level="lg">Notifications</Display>
-          <Body size="sm" tone="muted">Choose how each kind of message reaches you.</Body>
-        </View>
+      <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
+        <Text style={[text.uiMd, styles.muted, styles.intro]}>Choose how each kind of message reaches you.</Text>
 
-        <View style={styles.headRow}>
-          <View style={{ flex: 1 }} />
-          {CHANNEL_ORDER.map((c) => <View key={c} style={styles.col}><Meta style={{ color: color.textSubtle }}>{channelHead(c)}</Meta></View>)}
-        </View>
-
-        <View style={{ gap: space.md }}>
-          <Eyebrow>Always on</Eyebrow>
+        <MenuGroup label="Always on">
           {locked.map((r) => (
-            <View key={r.category} style={styles.lockedRow}>
-              <Body size="lg" style={{ flex: 1 }}>{CATEGORY_LABELS[r.category]}</Body>
-              <View style={styles.pill}><Text style={styles.pillText}>PUSH · EMAIL · IN-APP</Text></View>
-            </View>
+            <MenuRow key={r.category} title={CATEGORY_LABELS[r.category]} right={<StatusPill tone="neutral" label="All channels" />} />
           ))}
-          <Body size="xs" tone="muted">We always send these three. They carry money, a booked time, or your account&rsquo;s security, so they aren&rsquo;t ours to switch off.</Body>
-        </View>
+        </MenuGroup>
+        <Text style={[text.uiXs, styles.muted, styles.intro]}>We always send these. They carry money, a booked time, or your account&rsquo;s security, so they aren&rsquo;t ours to switch off.</Text>
 
-        <View style={{ gap: space.md }}>
-          <Eyebrow>You choose</Eyebrow>
-          {choose.map((r, i) => (
-            <View key={r.category} style={[styles.chooseRow, i === 0 ? null : styles.chooseBorder]}>
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <Body size="lg">{CATEGORY_LABELS[r.category]}</Body>
-                {!!SUBLINE[r.category] && <Body size="xs" tone="muted">{SUBLINE[r.category]}</Body>}
-              </View>
-              {CHANNEL_ORDER.map((c) => (
-                <View key={c} style={styles.col}>
-                  <Toggle on={r.channels[c]} onChange={(v) => put.mutate({ category: r.category, channel: c, enabled: v })} label={`${channelHead(c)} for ${CATEGORY_LABELS[r.category]}`} />
-                </View>
-              ))}
+        <View style={styles.group}>
+          <Text style={[text.metaMd, styles.eyebrow]}>YOU CHOOSE</Text>
+          <View style={styles.card}>
+            <View style={styles.headRow}>
+              <View style={styles.grow} />
+              {CHANNEL_ORDER.map((c) => <View key={c} style={styles.col}><Text style={[text.metaSm, styles.subtle]}>{channelHead(c)}</Text></View>)}
             </View>
-          ))}
+            {choose.map((r) => (
+              <View key={r.category} style={styles.chooseRow}>
+                <View style={styles.grow}>
+                  <Text style={text.uiMdSemi}>{CATEGORY_LABELS[r.category]}</Text>
+                  {!!SUBLINE[r.category] && <Text style={[text.uiXs, styles.muted]}>{SUBLINE[r.category]}</Text>}
+                </View>
+                {CHANNEL_ORDER.map((c) => (
+                  <View key={c} style={styles.col}>
+                    <Toggle on={r.channels[c]} onChange={(v) => put.mutate({ category: r.category, channel: c, enabled: v })} label={`${channelHead(c)} for ${CATEGORY_LABELS[r.category]}`} />
+                  </View>
+                ))}
+              </View>
+            ))}
+          </View>
         </View>
       </ScrollView>
     </View>
@@ -92,14 +86,18 @@ export function NotificationSettingsScreen({ onBack }: { onBack: () => void }) {
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: color.surface },
-  centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  body: { padding: space.xl, gap: space['2xl'], paddingBottom: space['4xl'] },
-  headRow: { flexDirection: 'row', alignItems: 'flex-end' },
-  col: { width: 56, alignItems: 'center' },
-  lockedRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.md },
-  pill: { borderRadius: radius.pill, backgroundColor: color.surfaceSunken, paddingHorizontal: 10, paddingVertical: 5 },
-  pillText: { fontFamily: fontFamilyNative.monoMedium, fontSize: fontSize['meta-sm'], letterSpacing: 1, textTransform: 'uppercase', color: color.textMuted },
-  chooseRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: space.md },
-  chooseBorder: { borderTopWidth: 1, borderTopColor: color.border },
+  page: { flex: 1, backgroundColor: color.background },
+  centre: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.xl },
+  loading: { padding: space.xl },
+  body: { paddingHorizontal: space.lg, paddingTop: space.xs, gap: space.md, paddingBottom: space.xl },
+  intro: { paddingHorizontal: space.xs },
+  muted: { color: color.textMuted },
+  subtle: { color: color.textSubtle },
+  group: { gap: space.sm, marginTop: space.sm },
+  eyebrow: { color: color.textMuted, letterSpacing: trackingNative.eyebrow, paddingHorizontal: space.xs },
+  card: { backgroundColor: color.surface, borderRadius: radius.lg, borderWidth: borderWidth.thin, borderColor: color.border, paddingHorizontal: space.md },
+  headRow: { flexDirection: 'row', alignItems: 'flex-end', paddingTop: space.md, paddingBottom: space.xs },
+  grow: { flex: 1, minWidth: 0, gap: space['2xs'] },
+  col: { width: space['4xl'], alignItems: 'center' },
+  chooseRow: { flexDirection: 'row', alignItems: 'center', gap: space.xs, paddingVertical: space.md, borderTopWidth: borderWidth.thin, borderTopColor: color.borderSoft },
 })

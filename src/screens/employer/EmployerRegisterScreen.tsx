@@ -6,10 +6,10 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useFocusEffect } from '@react-navigation/native'
 import { useQuery } from '@tanstack/react-query'
-import { borderWidth, color, height, opacity, radius, space } from '../../theme'
-import { Banner, Body, Button, Display, Eyebrow, Input, Sheet, Skeleton, text } from '../../components/ui'
+import { borderWidth, color, height, opacity, radius, space, spaceHalf } from '../../theme'
+import { Banner, Body, Button, Chip, ErrorState, Input, Sheet, Skeleton, text } from '../../components/ui'
+import { EmBar, EmFoot, EmMono, EmTitle } from '../../components/employer/em'
 import { Glyph, TextAction } from '../../components/employer'
-import { Logo } from '../../components/Logo'
 import { api, ApiClientError, ErrorCode } from '../../lib/api'
 import {
   COMPANY_SIZES, retryAfterSeconds, sendRegisterCodes,
@@ -322,6 +322,8 @@ function webmailRefusal(email: string, website: string): string | null {
 }
 
 /** Everything the server would refuse, checked before a code is sent. The contract's own messages. */
+const COMPANY_KEYS: FieldKey[] = ['companyName', 'industry', 'companySize', 'website', 'officeLocation']
+
 function validateForm(form: Form): FieldErrors {
   const errors: FieldErrors = {}
   if (form.companyName.trim().length < 2) errors.companyName = 'Enter the registered company name'
@@ -392,6 +394,8 @@ export function EmployerRegisterScreen({ onBack, onSignIn, onCodesSent }: Employ
   const [failure, setFailure] = useState<string | null>(null)
   const [industryOpen, setIndustryOpen] = useState(false)
   const [passwordShown, setPasswordShown] = useState(false)
+  /** The design's two steps: the company (1 of 2), then the person (2 of 2). One form, one submit. */
+  const [step, setStep] = useState<1 | 2>(1)
 
   const scrollRef = useRef<React.ComponentRef<typeof ScrollView>>(null)
   const contentRef = useRef<ViewRef>(null)
@@ -442,7 +446,10 @@ export function EmployerRegisterScreen({ onBack, onSignIn, onCodesSent }: Employ
       setSummaryOn(false)
       setFailure(null)
       const target = r.focus
-      if (target) requestAnimationFrame(() => focusField(target))
+      if (target) {
+        setStep(COMPANY_KEYS.includes(target) ? 1 : 2)
+        requestAnimationFrame(() => focusField(target))
+      }
     }, [focusField]),
   )
 
@@ -462,6 +469,7 @@ export function EmployerRegisterScreen({ onBack, onSignIn, onCodesSent }: Employ
     setFailure(null)
     const first = FIELD_ORDER.find((k) => found[k])
     if (first) {
+      if (COMPANY_KEYS.includes(first)) setStep(1)
       setSummaryOn(true)
       const s = summarise(found)
       if (s) AccessibilityInfo.announceForAccessibility(`${s.title}. ${s.body}`)
@@ -521,6 +529,22 @@ export function EmployerRegisterScreen({ onBack, onSignIn, onCodesSent }: Employ
     onCodesSent({ registration: draft, sent })
   }
 
+  /** Step 1's Next: the company fields only. */
+  function goNext() {
+    const found = validateForm(form)
+    const companyErrors: FieldErrors = {}
+    for (const k of COMPANY_KEYS) if (found[k]) companyErrors[k] = found[k]
+    setErrors((e) => ({ ...e, ...companyErrors }))
+    const first = COMPANY_KEYS.find((k) => companyErrors[k])
+    if (first) {
+      requestAnimationFrame(() => focusField(first))
+      return
+    }
+    Keyboard.dismiss()
+    setStep(2)
+    scrollRef.current?.scrollTo({ y: 0, animated: false })
+  }
+
   const blockRef = (key: FieldKey) => (node: ViewRef | null) => {
     blocks.current[key] = node
   }
@@ -536,18 +560,7 @@ export function EmployerRegisterScreen({ onBack, onSignIn, onCodesSent }: Employ
       style={[styles.page, { paddingTop: insets.top }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <View style={styles.bar}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Apostrophe, back"
-          onPress={onBack}
-          style={({ pressed }) => [styles.brand, pressed && styles.pressed]}
-        >
-          <Logo size={18} />
-        </Pressable>
-        <View style={styles.grow} />
-        <TextAction label="Sign in" onPress={onSignIn} style={styles.barAction} />
-      </View>
+      <EmBar onBack={step === 2 ? () => setStep(1) : onBack} />
 
       <ScrollView
         ref={scrollRef}
@@ -556,13 +569,11 @@ export function EmployerRegisterScreen({ onBack, onSignIn, onCodesSent }: Employ
         keyboardShouldPersistTaps="handled"
       >
         <View ref={contentRef} collapsable={false} style={styles.content}>
-          <View style={styles.title}>
-            <Eyebrow>Employer account</Eyebrow>
-            <Display level="lg" accessibilityRole="header">
-              Create your employer account
-            </Display>
-            <Body tone="muted">Free, with no plan to pick. We verify your company before you see candidates.</Body>
-          </View>
+          {step === 1 ? (
+            <EmTitle eyebrow="Employer account" title="Create your account" sub="We verify your company before you see candidates." />
+          ) : (
+            <EmTitle eyebrow="You, the authorised person" title="Who’s vouching?" sub="The person who can vouch that this company is real. Usually whoever is signing up." />
+          )}
 
           {!!summary && (
             <View ref={summaryRef} collapsable={false} accessibilityLiveRegion="assertive">
@@ -573,8 +584,8 @@ export function EmployerRegisterScreen({ onBack, onSignIn, onCodesSent }: Employ
           )}
 
           {/* ── The company ──────────────────────────────────────────── */}
+          {step === 1 && (
           <View style={styles.block}>
-            <BlockHead label="The company" />
 
             <FormField label="Company name" error={errors.companyName} blockRef={blockRef('companyName')}>
               <Input
@@ -621,25 +632,14 @@ export function EmployerRegisterScreen({ onBack, onSignIn, onCodesSent }: Employ
               blockRef={blockRef('companySize')}
             >
               <View accessibilityRole="radiogroup" accessibilityLabel="Company size" style={styles.chips}>
-                {COMPANY_SIZES.map((size) => {
-                  const on = form.companySize === size
-                  return (
-                    <Pressable
-                      key={size}
-                      accessibilityRole="radio"
-                      accessibilityState={{ checked: on, disabled: sending }}
-                      disabled={sending}
-                      onPress={() => change('companySize', { companySize: size })}
-                      style={({ pressed }) => [styles.chipTap, pressed && styles.pressed]}
-                    >
-                      <View style={[styles.chip, on ? styles.chipOn : styles.chipOff]}>
-                        <Body size="sm" weight="medium" tone={on ? 'inverse' : 'default'}>
-                          {COMPANY_SIZE_LABEL[size]}
-                        </Body>
-                      </View>
-                    </Pressable>
-                  )
-                })}
+                {COMPANY_SIZES.map((size) => (
+                  <Chip
+                    key={size}
+                    label={COMPANY_SIZE_LABEL[size]}
+                    selected={form.companySize === size}
+                    onPress={sending ? undefined : () => change('companySize', { companySize: size })}
+                  />
+                ))}
               </View>
             </FormField>
 
@@ -685,14 +685,11 @@ export function EmployerRegisterScreen({ onBack, onSignIn, onCodesSent }: Employ
             </FormField>
           </View>
 
+          )}
+
           {/* ── The person ───────────────────────────────────────────── */}
+          {step === 2 && (
           <View style={styles.block}>
-            <View style={styles.personHead}>
-              <BlockHead label="You, the authorised person" />
-              <Body size="xs" tone="muted">
-                The person who can vouch that this company is real. Usually whoever is signing up.
-              </Body>
-            </View>
 
             <FormField label="Your name" error={errors.name} blockRef={blockRef('name')}>
               <Input
@@ -808,8 +805,26 @@ export function EmployerRegisterScreen({ onBack, onSignIn, onCodesSent }: Employ
             </FormField>
           </View>
 
-          <View style={styles.actions}>
-            {!!failure && <Banner tone="danger">{failure}</Banner>}
+          )}
+
+          {!!failure && <Banner tone="danger">{failure}</Banner>}
+          {step === 2 && (
+            <Body size="xs" tone="muted">
+              Next, we send a 6-digit code to your work email and another to your mobile.
+            </Body>
+          )}
+        </View>
+      </ScrollView>
+
+      <EmFoot>
+        {step === 1 ? (
+          <>
+            <EmMono>1 OF 2</EmMono>
+            <View style={styles.grow} />
+            <Button variant="secondary" size="lg" label="Next" onPress={goNext} style={styles.next} />
+          </>
+        ) : (
+          <View style={styles.grow}>
             <Button
               variant="primary"
               size="lg"
@@ -818,12 +833,9 @@ export function EmployerRegisterScreen({ onBack, onSignIn, onCodesSent }: Employ
               label={sending ? 'Sending your codes…' : 'Create account'}
               onPress={submit}
             />
-            <Body size="xs" tone="muted">
-              Next, we send a 6-digit code to your work email and another to your mobile.
-            </Body>
           </View>
-        </View>
-      </ScrollView>
+        )}
+      </EmFoot>
 
       <Sheet open={industryOpen} onClose={() => setIndustryOpen(false)} title="Industry">
         {industries.length ? (
@@ -854,19 +866,13 @@ export function EmployerRegisterScreen({ onBack, onSignIn, onCodesSent }: Employ
             })}
           </ScrollView>
         ) : config.isError || (config.isSuccess && !config.isFetching) ? (
-          <View style={styles.sheetFailure}>
-            <Body size="sm" tone="muted">
-              The list of industries didn’t load. Check your connection, then try again.
-            </Body>
-            <Button
-              variant="outline"
-              size="md"
-              label="Try again"
-              busy={config.isFetching}
-              onPress={() => config.refetch()}
-              style={styles.start}
-            />
-          </View>
+          <ErrorState
+            title="The list of industries didn’t load."
+            body="Check your connection, then try again."
+            action={
+              <Button variant="outline" size="sm" label="Try again" busy={config.isFetching} onPress={() => config.refetch()} />
+            }
+          />
         ) : (
           <Skeleton lines={6} block={false} />
         )}
@@ -876,16 +882,6 @@ export function EmployerRegisterScreen({ onBack, onSignIn, onCodesSent }: Employ
 }
 
 // ── Pieces ───────────────────────────────────────────────────────────────────
-
-/** ListSection with an inline rule: the mono label, then a hairline to the edge. */
-function BlockHead({ label }: { label: string }) {
-  return (
-    <View style={styles.blockHead} accessibilityRole="header">
-      <Eyebrow>{label}</Eyebrow>
-      <View style={styles.rule} />
-    </View>
-  )
-}
 
 /**
  * The library Field, with the two things the board adds: a grey constraint on
@@ -908,7 +904,7 @@ function FormField({
   return (
     <View ref={blockRef} collapsable={false} style={styles.field}>
       <View style={styles.labelRow}>
-        <Eyebrow>{label}</Eyebrow>
+        <Text style={text.uiSmSemi}>{label}</Text>
         {!!constraint && (
           <Body size="xs" tone="subtle" style={styles.shrink}>
             {constraint}
@@ -1016,7 +1012,6 @@ const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.background },
   grow: { flex: 1 },
   shrink: { flexShrink: 1 },
-  start: { alignSelf: 'flex-start' },
   pressed: { opacity: opacity.pressed },
 
   bar: {
@@ -1031,8 +1026,9 @@ const styles = StyleSheet.create({
   brand: { minHeight: height.tap, justifyContent: 'center' },
   barAction: { marginRight: -space.sm },
 
-  body: { paddingHorizontal: space.xl, paddingTop: space.xl },
-  content: { gap: space['2xl'] },
+  body: { paddingHorizontal: space.lg, paddingTop: space.xs },
+  content: { gap: spaceHalf['4.5'] },
+  next: { paddingHorizontal: space['2xl'] },
   title: { gap: space.sm },
 
   block: { gap: space.xl },
@@ -1063,17 +1059,6 @@ const styles = StyleSheet.create({
   trailingAction: { marginRight: -space.md },
 
   chips: { flexDirection: 'row', flexWrap: 'wrap', columnGap: space.sm },
-  chipTap: { height: height.tap, justifyContent: 'center' },
-  chip: {
-    height: height.chip,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: radius.pill,
-    borderWidth: borderWidth.thin,
-    paddingHorizontal: space.md,
-  },
-  chipOn: { backgroundColor: color.ink, borderColor: color.ink },
-  chipOff: { backgroundColor: color.surface, borderColor: color.borderStrong },
 
   actions: { gap: space.sm },
 
@@ -1085,5 +1070,4 @@ const styles = StyleSheet.create({
     borderBottomWidth: borderWidth.thin,
     borderBottomColor: color.border,
   },
-  sheetFailure: { gap: space.md },
 })

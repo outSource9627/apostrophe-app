@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Pressable, StyleSheet, Text, TextInput, View, type TextInputProps, type ViewProps } from 'react-native'
 import { borderWidth, color, height, radius, space } from '../../theme'
-import { Body, Eyebrow } from './Type'
+import { Body } from './Type'
 import { text } from './typography'
 
 /**
@@ -30,10 +30,10 @@ export function Field({
 }) {
   return (
     <View style={styles.field}>
-      <Eyebrow>
+      <Text style={text.uiSmSemi}>
         {label}
-        {locked ? <Text style={{ color: color.borderStrong }}> · locked</Text> : null}
-      </Eyebrow>
+        {locked ? <Text style={styles.lockedNote}> · locked</Text> : null}
+      </Text>
       {children}
       {!!(error || helper) && (
         <Body size="xs" tone={error ? 'danger' : 'subtle'}>
@@ -122,16 +122,15 @@ export function OtpInput({
       <View style={styles.otpRow} pointerEvents="none">
         {Array.from({ length }).map((_, i) => {
           const active = !inert && focused && i === caretAt
-          const filled = i < digits.length
           return (
             <View
               key={i}
               style={[
                 styles.otpCell,
-                invalid ? styles.inputInvalid : active ? styles.inputFocus : filled ? styles.inputIdle : styles.inputOff,
+                invalid ? styles.inputInvalid : active ? styles.inputFocus : styles.inputIdle,
               ]}
             >
-              <Text style={text.displaySm}>{digits[i] ?? ''}</Text>
+              <Text style={text.metaOtp}>{digits[i] ?? ''}</Text>
             </View>
           )
         })}
@@ -201,7 +200,8 @@ export function ListRow({
 }
 
 const styles = StyleSheet.create({
-  field: { gap: space.sm },
+  field: { gap: space.xs },
+  lockedNote: { color: color.textSubtle },
   grow: { flex: 1 },
   input: {
     height: height.control,
@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.lg,
   },
   inputIdle: { borderColor: color.borderStrong, backgroundColor: color.surface },
-  inputFocus: { borderColor: color.ink, backgroundColor: color.surface },
+  inputFocus: { borderColor: color.accent, borderWidth: borderWidth.medium, backgroundColor: color.surface },
   inputInvalid: { borderColor: color.danger, backgroundColor: color.dangerSoft },
   inputOff: { borderColor: color.border, backgroundColor: color.surfaceMuted },
   lockedRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
@@ -218,13 +218,13 @@ const styles = StyleSheet.create({
   otpRow: { flexDirection: 'row', gap: space.sm },
   otpCell: {
     flex: 1,
-    height: height.control,
+    height: height['otp-cell-mobile'],
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: radius.md,
+    borderRadius: radius.tile,
     borderWidth: borderWidth.thin,
   },
-  otpCatcher: { position: 'absolute', top: 0, left: 0, right: 0, height: height.control, opacity: 0 },
+  otpCatcher: { position: 'absolute', top: 0, left: 0, right: 0, height: height['otp-cell-mobile'], opacity: 0 },
 
   file: {
     flexDirection: 'row',

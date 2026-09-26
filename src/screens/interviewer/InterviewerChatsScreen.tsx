@@ -1,136 +1,112 @@
-import React from 'react'
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native'
-import { useNavigation } from '@react-navigation/native'
+import React, { useCallback, useEffect, useState } from 'react'
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
+import { useIsFocused, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { borderWidth, color, fontFamilyNative, radius, space } from '../../theme'
-import { Card, Eyebrow } from '../../components/ui'
+import { borderWidth, color, height, opacity, radius, space, spaceHalf } from '../../theme'
+import { Button, text } from '../../components/ui'
 import { InterviewerShell } from '../../components/interviewer/InterviewerShell'
+import { EmEmpty, EmError, initialsOf } from '../../components/employer/em'
+import type { ThreadDto } from '../../lib/api/chat'
+import { listInterviewerThreads } from '../../lib/api/interviewer'
+import { useChatSocketEvents } from '../../lib/chat/socket'
+import { fmtRowStamp } from '../../lib/chat/format'
+import { useAppConfig } from '../../lib/interviewer/useInterviewer'
+import type { RootStackParamList } from '../../../App'
 
+/**
+ * Messages (no artboard — the drawn screens' language). The platform's chat
+ * contract (`/interviewers/me/messages`): one thread per interview, opening
+ * before it and turning read-only after it by the server's `config.chat`
+ * windows. Rows: the candidate, the time, the last line and the unread count;
+ * a thread not yet open or already read-only says so. New messages bump the
+ * list live over the socket.
+ */
 export function InterviewerChatsScreen() {
-  const navigation = useNavigation<NativeStackNavigationProp<any>>()
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
+  const focused = useIsFocused()
+  const config = useAppConfig()
+  const [threads, setThreads] = useState<ThreadDto[] | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [now, setNow] = useState(() => Date.now())
 
-  const sampleChats = [
-    {
-      id: 'chat-1',
-      candidateName: 'Candidate #4092 (Tier 2)',
-      lastMsg: 'Hello, looking forward to our interview session tomorrow at 2 PM.',
-      time: '10:45 AM',
-      unread: true,
-    },
-    {
-      id: 'chat-2',
-      candidateName: 'Candidate #3811 (Tier 1)',
-      lastMsg: 'Thank you for the detailed feedback in the scorecard!',
-      time: 'Yesterday',
-      unread: false,
-    },
-  ]
+  const load = useCallback(async () => {
+    setError(null)
+    try {
+      setThreads((await listInterviewerThreads()).rows)
+      setNow(Date.now())
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not load your messages.')
+    }
+  }, [])
+  useEffect(() => {
+    if (focused) load()
+  }, [focused, load])
+  useChatSocketEvents({ onMessage: () => { load() } })
+
+  const opens = config?.chat?.opensHoursBefore
+  const closes = config?.chat?.readOnlyHoursAfter
+  const rule = opens && closes
+    ? `A chat opens ${opens} hours before each interview and turns read-only ${closes} hours after it.`
+    : 'A chat opens before each interview and turns read-only after it.'
 
   return (
-    <InterviewerShell back={{ label: 'Account', onPress: () => navigation.goBack() }}>
-      <View style={styles.header}>
-        <Eyebrow>SECURE MESSAGING</Eyebrow>
-        <Text style={styles.title}>Candidate Conversations</Text>
-      </View>
-
-      {/* Identity Masking Privacy Banner */}
-      <Card style={styles.maskingBanner}>
-        <View style={styles.maskingHeader}>
-          <Text style={styles.maskingIcon}>🛡️</Text>
-          <Text style={styles.maskingTitle}>Identity Masking Protocol</Text>
-        </View>
-        <Text style={styles.maskingBody}>
-          All communications with candidates are relayed through Apostrophe’s masked proxy. Sharing personal contact information (phone numbers, personal emails, LinkedIn or social handles) is strictly prohibited to prevent evaluation bias and platform disintermediation.
-        </Text>
-      </Card>
-
-      {/* Conversations List */}
-      <View style={styles.list}>
-        {sampleChats.map((c) => (
-          <Card key={c.id} style={styles.chatCard}>
-            <View style={styles.chatHeader}>
-              <Text style={styles.candidateTitle}>{c.candidateName}</Text>
-              <Text style={styles.timeText}>{c.time}</Text>
-            </View>
-            <Text style={styles.msgText} numberOfLines={2}>
-              {c.lastMsg}
-            </Text>
-          </Card>
-        ))}
-      </View>
+    <InterviewerShell back={() => navigation.goBack()} title="Messages" sub={rule} scroll={false}>
+      {threads === null && !error ? (
+        <ActivityIndicator color={color.textSubtle} style={styles.loading} />
+      ) : error && !threads ? (
+        <View style={styles.pad}><EmError title="Couldn’t load your messages." body={error} action={<Button variant="secondary" size="pair" icon="refresh" label="Try again" onPress={() => { load() }} />} /></View>
+      ) : (threads ?? []).length === 0 ? (
+        <View style={[styles.pad, styles.center]}><EmEmpty icon="chat" title="No conversations yet." body={rule} /></View>
+      ) : (
+        <FlatList
+          data={threads ?? []}
+          keyExtractor={(t) => t.id}
+          contentContainerStyle={styles.list}
+          renderItem={({ item: t }) => {
+            const support = t.kind === 'USER_ADMIN'
+            const name = support ? 'Apostrophe Support' : t.counterparty.name || 'Candidate'
+            const readOnly = t.state.readOnly || t.state.archived
+            const notYet = !t.state.open && !readOnly
+            const preview = notYet && t.opensAt ? `Opens ${fmtRowStamp(t.opensAt, now)}` : readOnly ? 'Read-only' : t.lastMessagePreview || 'No messages yet'
+            return (
+              <Pressable accessibilityRole="button" onPress={() => navigation.navigate('InterviewerThread', { id: t.id })} style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
+                <View style={[styles.face, support ? styles.faceSupport : readOnly ? styles.faceMuted : styles.facePerson]}>
+                  <Text style={[text.uiBaseSemi, { color: readOnly && !support ? color.textMuted : color.textInverse }]}>{support ? '’' : initialsOf(name)}</Text>
+                </View>
+                <View style={styles.grow}>
+                  <View style={styles.line}>
+                    <Text style={[text.uiBaseSemi, styles.grow, readOnly && styles.subtle]} numberOfLines={1}>{name}</Text>
+                    {!!t.lastMessageAt && <Text style={[text.metaSm, styles.subtle]}>{fmtRowStamp(t.lastMessageAt, now).toUpperCase()}</Text>}
+                  </View>
+                  <View style={styles.line}>
+                    <Text style={[t.unread ? text.uiSmMedium : text.uiSm, styles.grow, { color: t.unread ? color.text : color.textMuted }]} numberOfLines={1}>{preview}</Text>
+                    {t.unread > 0 && <View style={styles.count}><Text style={[text.uiXsSemi, styles.countText]}>{t.unread}</Text></View>}
+                  </View>
+                </View>
+              </Pressable>
+            )
+          }}
+        />
+      )}
     </InterviewerShell>
   )
 }
 
 const styles = StyleSheet.create({
-  header: {
-    gap: space['2xs'],
-  },
-  title: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 24,
-    fontWeight: '700',
-    color: color.text,
-  },
-  maskingBanner: {
-    padding: space.md,
-    gap: space.xs,
-    backgroundColor: '#eff6ff',
-    borderColor: '#bfdbfe',
-  },
-  maskingHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.xs,
-  },
-  maskingIcon: {
-    fontSize: 18,
-  },
-  maskingTitle: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#1e40af',
-  },
-  maskingBody: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 12,
-    color: '#1d4ed8',
-    lineHeight: 17,
-  },
-  list: {
-    gap: space.sm,
-  },
-  chatCard: {
-    padding: space.md,
-    gap: space.xs,
-  },
-  chatHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  candidateTitle: {
-    fontFamily: fontFamilyNative.heading,
-    fontSize: 14,
-    fontWeight: '700',
-    color: color.text,
-  },
-  timeText: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 11,
-    color: color.textSubtle,
-  },
-  msgText: {
-    fontFamily: fontFamilyNative.body,
-    fontSize: 13,
-    color: color.textMuted,
-    lineHeight: 18,
-  },
+  grow: { flex: 1, minWidth: 0, gap: space['2xs'] + 1 },
+  pressed: { opacity: opacity.pressed },
+  muted: { color: color.textMuted },
+  subtle: { color: color.textSubtle },
+  pad: { flex: 1, paddingHorizontal: space.lg },
+  center: { justifyContent: 'center' },
+  loading: { paddingVertical: space['3xl'] },
+  list: { paddingHorizontal: space.sm, paddingBottom: space.lg },
+  row: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space.md, paddingHorizontal: space.sm, borderBottomWidth: borderWidth.thin, borderBottomColor: color.borderSoft },
+  line: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  face: { width: height.control, height: height.control, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
+  facePerson: { backgroundColor: color.accentBright },
+  faceSupport: { backgroundColor: color.accent },
+  faceMuted: { backgroundColor: color.border },
+  count: { minWidth: spaceHalf['4.5'], height: spaceHalf['4.5'], paddingHorizontal: space.xs + 1, borderRadius: radius.pill, backgroundColor: color.accent, alignItems: 'center', justifyContent: 'center' },
+  countText: { color: color.textInverse },
 })

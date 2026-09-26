@@ -1,4 +1,4 @@
-import { api } from './index'
+import { api, tokenStore, API_BASE_URL } from './index'
 
 /**
  * The booking wire shapes, mirrored from the platform core
@@ -29,7 +29,7 @@ export interface StudentInterview {
   roomReady: boolean
   joinUrl?: string
   /** SC-16 — absent until the session starts; never a real name before then. */
-  interviewer?: { name: string }
+  interviewer?: { name: string; photoUrl?: string | null; headline?: string | null; company?: string | null; bio?: string | null }
 }
 
 export interface CapacitySlot {
@@ -59,6 +59,9 @@ export const bookInterview = (slotStartIso: string) =>
 export const listInterviews = () => api.get<{ interviews: StudentInterview[] }>('/interviews/me')
 
 export const getInterview = (id: string) => api.get<StudentInterview>(`/interviews/${id}`)
+
+/** SC-08 — the server-generated .ics (RFC 5545, UTC times, no interviewer identity). */
+export const getInterviewIcs = (id: string) => api.getText(`/interviews/${id}/calendar.ics`)
 
 export interface Readiness {
   spec: {
@@ -98,7 +101,12 @@ export interface RoomCredentials {
   uid: number
   /** The interviewer is masked until the session starts (SC-16) — name only then. */
   interviewer?: { name: string; photoUrl?: string | null }
+  /** Minutes-left warnings the room should raise (PRD 10.2) — the server's list, e.g. [5, 1]. */
+  warnings?: number[]
+  scheduledEndAt?: string
+  sessionStartedAt?: string
 }
+/** Entering the room stamps the student present server-side; it must be called on entry. */
 export const getRoomCredentials = (id: string) => api.get<RoomCredentials>(`/interviews/${id}/room`)
 
 /** SS-08 — the five scores, strengths and improvements. Employers never see any of this. */
@@ -115,3 +123,53 @@ export interface Feedback {
 }
 /** 404 'Your feedback is not ready yet.' is the AWAITING state (ST-33), not an error. */
 export const getFeedback = (id: string) => api.get<Feedback>(`/interviews/${id}/feedback`)
+
+// ── Readiness result, preparation, leave, student events (IR-06, SC-30/34) ───
+
+/** The mandatory device check result the room gate looks for. Bandwidth is measured, never claimed. */
+export interface ReadinessResult {
+  camera: boolean
+  microphone: boolean
+  speaker: boolean
+  bandwidthMbps: number
+  permissions: boolean
+}
+export const postReadiness = (id: string, r: ReadinessResult) =>
+  api.post<{ passed?: boolean; success?: boolean }>(`/interviews/${id}/readiness`, r)
+
+/** SC-34 — lighting, background, network and expected question areas. Shape is rendered defensively. */
+export interface Preparation {
+  lighting?: string | string[]
+  background?: string | string[]
+  network?: string | string[]
+  questionAreas?: Array<string | { title: string; prompts?: string[] }>
+  [k: string]: unknown
+}
+export const getPreparation = (id: string) => api.get<Preparation>(`/interviews/${id}/preparation`)
+
+/** Student leaves the room; only the interviewer ends the interview. */
+export const leaveRoom = (id: string) => api.post<{ success?: boolean }>(`/interviews/${id}/room/leave`)
+
+export type StudentEventKind = 'MUTE' | 'UNMUTE' | 'CAMERA' | 'NETWORK' | 'AUDIO_ONLY' | 'RECONNECT'
+export const postRoomEvent = (id: string, kind: StudentEventKind, payload?: Record<string, unknown>) =>
+  api.post<{ success?: boolean }>(`/interviews/${id}/events`, payload ? { kind, payload } : { kind })
+
+/**
+ * Measures download bandwidth (Mbps) against the platform's own probe endpoint —
+ * GET /readiness/probe, not a third party. Returns 0 when the probe fails.
+ */
+export async function measureBandwidthMbps(): Promise<number> {
+  try {
+    const tokens = await tokenStore.get()
+    const headers: Record<string, string> = {}
+    if (tokens?.accessToken) headers.authorization = `Bearer ${tokens.accessToken}`
+    const t0 = Date.now()
+    const res = await fetch(`${API_BASE_URL}/readiness/probe?t=${t0}`, { headers })
+    const buf = await res.arrayBuffer()
+    const sec = Math.max(0.001, (Date.now() - t0) / 1000)
+    if (!res.ok || buf.byteLength === 0) return 0
+    return Math.round(((buf.byteLength * 8) / sec / 1e6) * 100) / 100
+  } catch {
+    return 0
+  }
+}

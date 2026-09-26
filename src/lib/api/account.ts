@@ -72,9 +72,14 @@ export const markNotificationsRead = (ids?: string[]) =>
 // ── Notification preferences (ST-47, NT-05) ──────────────────────────────────
 export interface PrefRow {
   category: NotificationCategory
-  /** true on ACCOUNT / PAYMENT / INTERVIEW — the three that cannot be switched off. */
+  /** true on the categories that cannot be switched off for this role. */
   locked: boolean
   channels: Record<NotificationChannel, boolean>
+  /** The server's own words for the row (NT-05); absent on an older server. */
+  label?: string
+  line?: string
+  /** Which cells are switches at all; a channel the category never uses is drawn as a dash. */
+  available?: Record<NotificationChannel, boolean>
 }
 
 /** A bare array of 8 rows. Human labels are NOT in the payload — see CATEGORY_LABELS. */
@@ -178,3 +183,11 @@ export interface Audience {
  * only the number moves.
  */
 export const getAudience = () => api.get<Audience>('/students/me/audience')
+
+/** Ask for a password-reset link. Always answers "sent" — it never says whether the account exists. */
+export const requestPasswordReset = (email: string) =>
+  api.post<{ sent: boolean; message: string }>('/auth/password/forgot', { email }, { anonymous: true })
+
+/** Set a new password with the token from the reset link. Every other session is signed out. */
+export const resetPassword = (token: string, newPassword: string) =>
+  api.post<{ success?: boolean; message?: string }>('/auth/password/reset', { token, newPassword }, { anonymous: true })

@@ -1,53 +1,38 @@
 import React from 'react'
-import { Linking, Pressable, StyleSheet, View } from 'react-native'
-import { borderWidth, color, height, opacity, radius, space } from '../../theme'
-import { Body, Button, Card, Display, Divider, ErrorState, Eyebrow } from '../../components/ui'
-import { CompanyMonogram, EmployerShell, Glyph, VerifiedEmployerBadge } from '../../components/employer'
+import { Linking, Pressable, StyleSheet, Text, View } from 'react-native'
+import { useNavigation } from '@react-navigation/native'
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import { useQuery } from '@tanstack/react-query'
+import { color, height, opacity, radius, space, spaceHalf } from '../../theme'
+import { Button, ErrorState, Skeleton, text } from '../../components/ui'
+import { Icon } from '../../components/ui/Icon'
+import { EmployerShell } from '../../components/employer'
+import { EmBadge, EmCard, EmMono, initialsOf } from '../../components/employer/em'
 import type { EmployerState } from '../../lib/api/employer'
+import { fetchEmployerJobs } from '../../lib/api/employerJobs'
 import { companySizeLabel } from '../../lib/employer/state'
 import { useEmployer } from '../../lib/employer/useEmployer'
+import type { RootStackParamList } from '../../../App'
 
 export interface EmployerCompanyScreenProps {
   onBack: () => void
 }
 
 /**
- * EM-07 · Company profile.
+ * EM-07 · Company profile — what a candidate sees on a job post or an Interest.
  *
- * The page a candidate opens from an Interest or a job post, drawn inside the
- * employer's own shell so they can see exactly what candidates will see — and,
- * under it, the record it is drawn from. The same screen as the web's
- * /employers/company.
- *
- * Four rules are built in:
- *
- *   THE BADGE IS EARNED OR ABSENT. A verified company carries the Verified
- *   Employer badge beside its name. A pending one gets nothing in that place:
- *   no greyed badge, no "verification pending" chip on the card. The shell's
- *   prompt already says where verification stands, once, in the one place it
- *   is said.
- *
- *   NAMES ARE CONTENT. The company and the authorised person are set in the
- *   serif — on the card and again in the details — and the designation, the
- *   industry and every label are interface, in the sans and the mono.
- *
- *   A COMPANY IS A MONOGRAM. The employer record has no logo field, so the
- *   card draws the initials, and the Logo row says so rather than offering an
- *   upload the API cannot take.
- *
- *   READ-ONLY. There is no update endpoint for the company record
- *   (GET /employers/me only), so the board's Edit actions are not drawn: an
- *   Edit that leads nowhere is a control that lies.
+ * The design's monogram, name and badge, the one-line facts, and the live jobs.
+ * Left out, as on the web: the About block (the record has no such field) and
+ * the Edit button (there is no endpoint to update the company). The badge is
+ * earned or absent — a pending company gets no greyed badge; the strip above
+ * already says where verification stands. Live jobs are read only once
+ * verified: a pending account has none and the API refuses the read.
  */
 export function EmployerCompanyScreen({ onBack }: EmployerCompanyScreenProps) {
   const { state, error, refresh } = useEmployer()
 
   return (
-    <EmployerShell back={{ label: 'Home', onPress: onBack }}>
-      <Display level="lg" accessibilityRole="header">
-        Company profile
-      </Display>
-
+    <EmployerShell back={onBack} title="Company profile">
       {state ? (
         <Profile state={state} />
       ) : error ? (
@@ -57,160 +42,75 @@ export function EmployerCompanyScreen({ onBack }: EmployerCompanyScreenProps) {
           action={<Button variant="outline" size="sm" label="Try again" onPress={() => refresh()} />}
         />
       ) : (
-        <LoadingCard />
+        <Skeleton lines={4} />
       )}
     </EmployerShell>
   )
 }
 
 function Profile({ state }: { state: EmployerState }) {
-  const { company, contact } = state
-  const person = company.authorisedPerson
+  const { company } = state
+  const site = company.website ? websiteLabel(company.website) : null
+  const facts = [company.industry, companySizeLabel(company.size), company.officeLocation].filter(Boolean).join(' · ')
 
   return (
     <>
-      <View style={styles.section}>
-        <View style={styles.sectionIntro}>
-          <Eyebrow>How candidates see you</Eyebrow>
-          <Body size="xs" tone="muted">
-            {state.verified
-              ? 'This is the page a candidate opens from your Interest or a job you post.'
-              : 'Candidates cannot see your company until it is verified. This is how the page will look.'}
-          </Body>
-        </View>
-        <PublicCard state={state} />
-      </View>
-
-      <View>
-        <Eyebrow accessibilityRole="header">Company details</Eyebrow>
-        <View style={styles.grid}>
-          <KeyValue label="Company name" value={<Name>{company.name}</Name>} />
-          <View style={styles.gridRow}>
-            <KeyValue label="Industry" value={company.industry} />
-            <KeyValue label="Company size" value={`${companySizeLabel(company.size)} people`} />
-          </View>
-          <View style={styles.gridRow}>
-            <KeyValue label="Office location" value={company.officeLocation} />
-            <KeyValue label="Website" value={company.website ? websiteLabel(company.website) : null} />
-          </View>
-          <KeyValue label="Logo" value="Not uploaded · initials shown" />
+      <View style={styles.identity}>
+        <View style={styles.mono}><Text style={[text.displayCard, styles.monoText]}>{initialsOf(company.name)}</Text></View>
+        <View style={styles.naming}>
+          <Text style={text.displayCard}>{company.name}</Text>
+          {state.verified && <EmBadge label="Verified employer" tone="green" icon="shield" small />}
         </View>
       </View>
 
-      <View>
-        <Eyebrow accessibilityRole="header">Authorised person</Eyebrow>
-        <View style={styles.grid}>
-          <View style={styles.gridRow}>
-            <KeyValue label="Name" value={<Name>{person.name}</Name>} />
-            <KeyValue label="Designation" value={person.designation} />
-          </View>
-          <KeyValue label="Work email" value={contact.email} />
-          <View style={styles.gridRow}>
-            <KeyValue label="Mobile" value={mobileLabel(contact.mobile)} />
-            <View style={styles.cell} />
-          </View>
-        </View>
-      </View>
+      <Text style={[text.uiMd, styles.muted]}>
+        {facts}
+        {!!site && (
+          <>
+            {' · '}
+            <Text
+              accessibilityRole="link"
+              style={styles.link}
+              onPress={() => Linking.openURL(websiteHref(company.website!)).catch(() => undefined)}
+            >
+              {site}
+            </Text>
+          </>
+        )}
+      </Text>
+
+      {state.verified && <LiveJobs />}
+
+      <Text style={[text.uiXs, styles.subtle]}>
+        {state.verified
+          ? 'Students see this on your job posts and Interests.'
+          : 'Students see this once your company is verified.'}
+      </Text>
     </>
   )
 }
 
-/**
- * The public card, on a muted well so it reads as a page held up for the
- * employer to look at rather than as part of their own screen.
- */
-function PublicCard({ state }: { state: EmployerState }) {
-  const { company } = state
-  const person = company.authorisedPerson
-
+/** LIVE JOBS · N, each title opening its job. Nothing is drawn while there are none or the read failed. */
+function LiveJobs() {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
+  const jobs = useQuery({ queryKey: ['employer', 'jobs', 'live'], queryFn: () => fetchEmployerJobs({ status: 'PUBLISHED', perPage: 50 }) })
+  if (!jobs.data || jobs.data.rows.length === 0) return null
+  const n = jobs.data.counts.PUBLISHED ?? jobs.data.total
   return (
-    <View style={styles.well}>
-      <Card style={styles.card}>
-        <View style={styles.identity}>
-          <CompanyMonogram name={company.name} size={space['4xl']} />
-          <View style={styles.naming}>
-            <Display level="md">{company.name}</Display>
-            {state.verified && <VerifiedEmployerBadge />}
-          </View>
-        </View>
-
-        <Body size="sm" tone="muted" style={styles.meta}>
-          {`${company.industry} · ${companySizeLabel(company.size)} people · ${company.officeLocation}`}
-        </Body>
-
-        {!!company.website && (
-          <Pressable
-            accessibilityRole="link"
-            accessibilityLabel={`Website, ${websiteLabel(company.website)}`}
-            onPress={() => Linking.openURL(websiteHref(company.website!)).catch(() => undefined)}
-            style={({ pressed }) => [styles.site, pressed && styles.pressed]}
-          >
-            <Glyph name="globe" size={space.md} tint={color.textMuted} />
-            <Body size="sm" weight="medium" style={styles.siteText}>
-              {websiteLabel(company.website)}
-            </Body>
-          </Pressable>
-        )}
-
-        <Divider style={company.website ? styles.ruleAfterSite : styles.rule} />
-
-        <View style={styles.person}>
-          <Eyebrow>Authorised person</Eyebrow>
-          <Display level="xs" style={styles.personName}>
-            {person.name}
-          </Display>
-          <Body size="sm" tone="muted">
-            {person.designation}
-          </Body>
-        </View>
-      </Card>
-    </View>
-  )
-}
-
-/**
- * One fact: the mono label, then the value at 13 medium. An empty value reads
- * 'Not set yet' rather than leaving a hole. A name is content, so it is passed
- * in already set in the serif.
- */
-function KeyValue({ label, value }: { label: string; value: React.ReactNode }) {
-  const empty = value == null || value === ''
-  return (
-    <View style={styles.cell}>
-      <Eyebrow>{label}</Eyebrow>
-      {typeof value === 'string' || empty ? (
-        <Body size="sm" weight="medium" tone={empty ? 'subtle' : 'default'}>
-          {empty ? 'Not set yet' : value}
-        </Body>
-      ) : (
-        value
-      )}
-    </View>
-  )
-}
-
-/** A name inside a KeyValue: the serif at the list-row step, not the fact's sans. */
-function Name({ children }: { children: string }) {
-  return <Display level="xs">{children}</Display>
-}
-
-/** Loading holds the card's own geometry open: the well, the monogram, the name and the meta line. */
-function LoadingCard() {
-  return (
-    <View style={styles.section} accessibilityLabel="Loading" accessibilityState={{ busy: true }}>
-      <Eyebrow>How candidates see you</Eyebrow>
-      <View style={styles.well}>
-        <Card style={styles.card}>
-          <View style={styles.identity}>
-            <View style={styles.skeletonMonogram} />
-            <View style={[styles.bar, styles.barName]} />
-          </View>
-          <View style={[styles.bar, styles.barMeta]} />
-          <Divider style={styles.skeletonRule} />
-          <View style={[styles.bar, styles.barPerson]} />
-        </Card>
-      </View>
-    </View>
+    <EmCard>
+      <EmMono>{`LIVE JOBS · ${n}`}</EmMono>
+      {jobs.data.rows.map((j) => (
+        <Pressable
+          key={j.id}
+          accessibilityRole="button"
+          onPress={() => navigation.navigate('EmployerJobDetail', { id: j.id })}
+          style={({ pressed }) => [styles.job, pressed && styles.pressed]}
+        >
+          <Text style={[text.uiBaseSemi, styles.grow]} numberOfLines={1}>{j.title}</Text>
+          <Icon name="chevR" size={space.lg} tint={color.textSubtle} />
+        </Pressable>
+      ))}
+    </EmCard>
   )
 }
 
@@ -219,52 +119,21 @@ function websiteHref(site: string): string {
   return /^https?:\/\//i.test(site) ? site : `https://${site}`
 }
 
-/** 'https://copperleaf.test/' → 'copperleaf.test' — the address as a person reads it out. */
+/** 'https://www.copperleaf.test/' → 'copperleaf.test' — the address as a person reads it out. */
 function websiteLabel(site: string): string {
-  return site.replace(/^https?:\/\//i, '').replace(/\/$/, '')
-}
-
-/** '9800000003' → '+91 98000 00003'. Anything that is not ten digits is shown as stored. */
-function mobileLabel(mobile: string): string {
-  const digits = mobile.replace(/\D/g, '').slice(-10)
-  return digits.length === 10 ? `+91 ${digits.slice(0, 5)} ${digits.slice(5)}` : mobile
+  return site.replace(/^https?:\/\//i, '').replace(/^www\./i, '').replace(/\/$/, '')
 }
 
 const styles = StyleSheet.create({
+  grow: { flex: 1 },
   pressed: { opacity: opacity.pressed },
+  muted: { color: color.textMuted },
+  subtle: { color: color.textSubtle },
+  link: { color: color.textMuted, textDecorationLine: 'underline', textDecorationColor: color.borderStrong },
 
-  section: { gap: space.md },
-  sectionIntro: { gap: space.xs },
-
-  well: { borderRadius: radius.lg, backgroundColor: color.surfaceMuted, padding: space.md },
-  card: { padding: space.xl },
-  identity: { flexDirection: 'row', alignItems: 'flex-start', gap: space.md },
-  naming: { flex: 1, alignItems: 'flex-start', gap: space.sm },
-  meta: { marginTop: space.md },
-  site: { minHeight: height.tap, flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: space.xs },
-  siteText: {
-    flexShrink: 1,
-    textDecorationLine: 'underline',
-    textDecorationColor: color.borderStrong,
-  },
-  rule: { marginTop: space.md },
-  ruleAfterSite: { marginTop: space.xs },
-  person: { marginTop: space.md, gap: space['2xs'] },
-  personName: { marginTop: space.xs },
-
-  grid: { marginTop: space.xs },
-  gridRow: { flexDirection: 'row', gap: space.lg },
-  cell: { flex: 1, gap: space['2xs'], paddingVertical: space.sm },
-
-  skeletonMonogram: {
-    width: space['4xl'],
-    height: space['4xl'],
-    borderRadius: radius.md,
-    backgroundColor: color.surfaceSunken,
-  },
-  bar: { height: space.md, borderRadius: radius.sm },
-  barName: { marginTop: space.sm, width: '60%', height: space.xl, backgroundColor: color.surfaceSunken },
-  barMeta: { marginTop: space.md, width: '80%', backgroundColor: color.surfaceMuted },
-  skeletonRule: { marginTop: space.xl, height: borderWidth.thin },
-  barPerson: { marginTop: space.md, width: '40%', height: space.lg, backgroundColor: color.surfaceSunken },
+  identity: { flexDirection: 'row', alignItems: 'center', gap: spaceHalf['3.5'] },
+  mono: { width: height.fab + 4, height: height.fab + 4, borderRadius: radius.panel, backgroundColor: color.surfaceMuted, alignItems: 'center', justifyContent: 'center' },
+  monoText: { color: color.textSecondary },
+  naming: { flex: 1, gap: spaceHalf['1.5'], alignItems: 'flex-start' },
+  job: { minHeight: height.tap, flexDirection: 'row', alignItems: 'center', gap: space.sm },
 })
