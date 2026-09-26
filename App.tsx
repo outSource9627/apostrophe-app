@@ -30,6 +30,7 @@ import { ConfirmingScreen } from './src/screens/paywall/ConfirmingScreen'
 import { PaymentFailedScreen } from './src/screens/paywall/PaymentFailedScreen'
 import { VisibilityScreen } from './src/screens/profile/VisibilityScreen'
 import { ProfileViewScreen } from './src/screens/profile/ProfileViewScreen'
+import { VideoResumeScreen } from './src/screens/profile/VideoResumeScreen'
 import { JobFeedScreen } from './src/screens/jobs/JobFeedScreen'
 import { JobDetailScreen } from './src/screens/jobs/JobDetailScreen'
 import { ApplyScreen } from './src/screens/jobs/ApplyScreen'
@@ -115,6 +116,7 @@ export type RootStackParamList = {
   Videos: undefined
   Visibility: undefined
   ProfileView: undefined
+  VideoResume: undefined
   JobFeed: undefined
   JobDetail: { id: string }
   JobApply: { id: string }
@@ -325,7 +327,7 @@ export default function App() {
                   onJoin={(id) => navigation.navigate('Readiness', { id })}
                   onReschedule={(id) => navigation.navigate('Reschedule', { id })}
                   onFeedback={(id) => navigation.navigate('Feedback', { id })}
-                  onSupport={() => { void openSupport() }}
+                  onVideoResume={() => navigation.navigate('VideoResume')}
                   onAccount={() => navigation.navigate('Account')}
                 />
               )}
@@ -521,6 +523,16 @@ export default function App() {
                   onBook={() => navigation.navigate('BookInterview')}
                   onVisibility={() => navigation.navigate('Visibility')}
                   onVideos={() => navigation.navigate('Videos')}
+                  onVideoResume={() => navigation.navigate('VideoResume')}
+                />
+              )}
+            </Stack.Screen>
+
+            <Stack.Screen name="VideoResume">
+              {({ navigation }) => (
+                <VideoResumeScreen
+                  onBack={() => navigation.goBack()}
+                  onBook={() => navigation.navigate('BookInterview')}
                 />
               )}
             </Stack.Screen>
@@ -539,7 +551,7 @@ export default function App() {
                 <InterestsScreen
                   onBack={() => navigation.goBack()}
                   onConnections={() => navigation.navigate('Connections')}
-                  onVideoResume={() => navigation.navigate('ProfileView')}
+                  onVideoResume={() => navigation.navigate('VideoResume')}
                 />
               )}
             </Stack.Screen>
@@ -594,7 +606,7 @@ export default function App() {
 
             <Stack.Screen name="Ended">
               {({ navigation, route }) => (
-                <EndedScreen id={route.params.id} onRejoin={() => navigation.replace('Room', { id: route.params.id })} onBack={() => navigation.navigate('Interviews')} onBook={() => navigation.navigate('BookInterview')} />
+                <EndedScreen id={route.params.id} onRejoin={() => navigation.replace('Room', { id: route.params.id })} onBack={() => navigation.navigate('Interviews')} onDetail={() => navigation.replace('InterviewDetail', { id: route.params.id })} />
               )}
             </Stack.Screen>
 
@@ -627,7 +639,7 @@ export default function App() {
               {({ navigation }) => (
                 <StatsScreen
                   onBack={() => navigation.goBack()}
-                  onVideoResume={() => navigation.navigate('ProfileView')}
+                  onVideoResume={() => navigation.navigate('VideoResume')}
                   onVisibility={() => navigation.navigate('Visibility')}
                 />
               )}

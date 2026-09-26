@@ -98,6 +98,8 @@ function routeFor(n: NotificationRow): { screen: string; params?: Record<string,
   const threadId = typeof meta.threadId === 'string' ? meta.threadId : null
   const interviewId = typeof meta.interviewId === 'string' ? meta.interviewId : null
   if (threadId) return { screen: 'Thread', params: { id: threadId } }
+  // RC-11 / RC-12 / RC-13 — the film went live, was taken down, or could not be made: the film screen says which.
+  if (n.kind.startsWith('interview.video.')) return { screen: 'VideoResume' }
   if (interviewId) return { screen: 'InterviewDetail', params: { id: interviewId } }
   switch (n.category) {
     case 'MESSAGE': return { screen: 'Chats' }

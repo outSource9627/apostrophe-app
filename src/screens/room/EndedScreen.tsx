@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { Image, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useQuery } from '@tanstack/react-query'
@@ -11,15 +11,22 @@ import { Banner, Body, Button, ScreenHeader, Skeleton, StickyFooter, text } from
  * publishes ITSELF with no approval step; feedback within 24 hours. No
  * refund/error/sorry language. COMPLETED → processing; INCOMPLETE → ended early.
  */
-export function EndedScreen({ id, onBack, onBook, onRejoin }: {
-  id: string; onBack: () => void; onBook: () => void; onRejoin?: () => void
+export function EndedScreen({ id, onBack, onDetail, onRejoin }: {
+  id: string; onBack: () => void; onDetail: () => void; onRejoin?: () => void
 }) {
   const insets = useSafeAreaInsets()
   const q = useQuery({ queryKey: ['interview', id], queryFn: () => getInterview(id) })
+  // An admin has reviewed the session: the status now names the outcome, and the interview screen tells that story
+  // (and what the student is owed). This screen is only for a session still waiting for that review.
+  const st = q.data?.status
+  const reviewed = Boolean(q.data?.reviewedAs) && st !== 'COMPLETED' && st !== 'INCOMPLETE'
+  useEffect(() => {
+    if (reviewed) onDetail()
+  }, [reviewed, onDetail])
 
   const bar = <ScreenHeader onBack={onBack} />
   const frame = (c: React.ReactNode) => <View style={[styles.page, { paddingTop: insets.top }]}>{bar}{c}</View>
-  if (q.isPending) return frame(<View style={styles.body}><Skeleton lines={3} /></View>)
+  if (q.isPending || reviewed) return frame(<View style={styles.body}><Skeleton lines={3} /></View>)
   if (q.isError) return frame(<View style={styles.centre}><Body tone="muted">Could not load your interview.</Body></View>)
 
   const incomplete = q.data!.status === 'INCOMPLETE'
@@ -67,7 +74,7 @@ export function EndedScreen({ id, onBack, onBook, onRejoin }: {
           <Text style={[text.metaMd, styles.eyebrow, { color: incomplete ? color.warning : color.success }]}>
             {incomplete ? 'INTERVIEW ENDED EARLY' : 'THAT IS A WRAP'}
           </Text>
-          <Text style={text.displayLead}>{incomplete ? 'Your interview was marked incomplete.' : 'Your video is being made.'}</Text>
+          <Text style={text.displayLead}>{incomplete ? 'Your interview is under review.' : 'Your video is being made.'}</Text>
           {!incomplete && (
             <Text style={[text.uiMd, styles.muted]}>It joins the employer feed on its own — there is no approval step to wait for.</Text>
           )}
@@ -75,7 +82,7 @@ export function EndedScreen({ id, onBack, onBook, onRejoin }: {
 
         {reveal}
         {incomplete ? (
-          <Banner tone="warning">The session ended before it finished, so it did not become a video resume. Your paid interview still stands — book the rest of it whenever you are ready.</Banner>
+          <Banner tone="warning">The session ended before it finished, so it did not become a video resume. Our team is reviewing what happened. If it was not on you, a free re-interview is added to your account and you will be told here and in your notifications.</Banner>
         ) : (
           <View>
             <Text style={[text.uiBaseSemi, styles.listHead]}>What happens next</Text>
@@ -87,7 +94,6 @@ export function EndedScreen({ id, onBack, onBook, onRejoin }: {
       </ScrollView>
 
       <StickyFooter>
-        {incomplete && <Button variant="primary" size="lg" full label="Book the rest of it" onPress={onBook} />}
         <Button variant={incomplete ? 'outline' : 'secondary'} size={incomplete ? 'md' : 'lg'} full label="Back to my interviews" onPress={onBack} />
       </StickyFooter>
     </View>

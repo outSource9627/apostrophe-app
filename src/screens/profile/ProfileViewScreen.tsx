@@ -50,8 +50,8 @@ function draftFor(step: StepKey, p: Profile): Record<string, unknown> {
  * verified video resume at the top. Mirrors the web ProfileViewClient; the
  * sheet reuses the same wizard step bodies so the two never drift.
  */
-export function ProfileViewScreen({ onBack, onBook, onVisibility, onVideos }: {
-  onBack: () => void; onBook: () => void; onVisibility: () => void; onVideos: () => void
+export function ProfileViewScreen({ onBack, onBook, onVisibility, onVideos, onVideoResume }: {
+  onBack: () => void; onBook: () => void; onVisibility: () => void; onVideos: () => void; onVideoResume: () => void
 }) {
   const insets = useSafeAreaInsets()
   const qc = useQueryClient()
@@ -91,6 +91,7 @@ export function ProfileViewScreen({ onBack, onBook, onVisibility, onVideos }: {
             <Body size="sm" tone="muted" style={{ marginTop: space.xs }}>The film from your interview. This is the only video employers see.</Body>
             <View style={{ marginTop: space.md, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
               <VerifiedSeal date={p.publishedAt ? fmtDate(p.publishedAt) : undefined} />
+              <Button variant="outline" size="sm" label="Watch my film" onPress={onVideoResume} />
             </View>
           </Card>
         ) : (

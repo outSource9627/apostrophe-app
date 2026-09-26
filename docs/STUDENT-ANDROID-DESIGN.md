@@ -94,9 +94,49 @@ Source of truth: Claude Design project "Apostrophe Student Portal Redesign", fil
 - **Stats** said "Last 30 days" but `profileViews` is a lifetime counter; it now says "All time". The web
   (`apostrophe-user/app/stats/StatsClient.tsx`) still says "Last 30 days" — not changed.
 
+## Round 3 — the video-resume screen (SP-07, RC-10..RC-13)
+
+New `VideoResumeScreen` (`src/screens/profile/VideoResumeScreen.tsx`, route `VideoResume`). No artboard exists for it
+(M4/M17 only draw the film's card); it is the native twin of the web `/profile/video-resume` page and follows the
+same rules, so the two say the same thing in the same words.
+
+- **States (all from `GET /students/me/video-resume`).** PUBLISHED: a 9:16 player (max width `container['film-player']`)
+  with the poster, the Verified seal carrying the interview date, native controls, and Duration / Published /
+  Interviewed facts. PROCESSING: "being prepared" (or "not ready yet" when `pipelinePending`) + Check again.
+  FAILED: "could not be made" + Talk to support. UNPUBLISHED: "taken down" + the admin's reason in a "Reason given"
+  well + Talk to support. NONE: "no video resume yet" + Book an interview. A PUBLISHED film with no address is drawn
+  as PROCESSING, never as a dead player.
+- **Signed link.** The address lasts ~15 minutes (RC-06). It lives only in a query with `gcTime: 0` and is read
+  again on every open. When the player errors (a lapsed link, a broken segment) it asks for a new one and resumes
+  from where it stopped; a second error within 8 s says so with a Try again instead of looping.
+- **Where it opens from.** Home's film card (every state but "none", which still books), Profile → "Watch my film"
+  (published only), Stats and Interests "video resume" links (they went to Profile before), and the three
+  `interview.video.*` notifications (live / taken down / could not be made), which used to open the interview.
+- **`FilmThumb`** now takes `status` (+ `posterUrl`, `width`) and draws a ground and glyph per state — footage
+  only for PUBLISHED, a spinner for PROCESSING, "!" on rose for FAILED, eye-off for UNPUBLISHED, dashed for NONE.
+  Existing callers are unchanged (default PUBLISHED, list-row size).
+
+Deviations from the web page (all deliberate): no "Preview as employer" button (there is no native employer-preview
+screen); the duration reads `m:ss` (`clock`) rather than "N min"; the player uses the native controls of
+react-native-video rather than a drawn bar. Nothing here states who is at fault or what was charged — the API does not
+say — even though the backend now issues the automatic free re-interview for a COMPLETED interview (the notification
+says so); if the API starts returning that, this is the place to add it.
+
+### Round 3b — a session that ended below the completion threshold (6.3 / 6.5)
+
+The Ended screen used to say "Your paid interview still stands — book the rest of it", but the credit is spent and
+nothing gave it back. Now: an INCOMPLETE session says it is **under review** (no booking offered, no promise); when an
+admin decides, the backend issues what 6.5 says the student is owed (free reschedule / free re-interview) in the same
+step, and the student's screens read the outcome from `reviewedAs` on the interview. Ended hands a reviewed session
+over to `InterviewDetail`, which tells the story: interviewer left / student left ("Ended early", free reschedule) or
+"Platform / technical issue" (free re-interview at no charge) with a **Book your free reschedule / re-interview**
+button. The pre-join no-show panel now says the same as the web (no refund, one free reschedule; an interviewer who did
+not join is "not on you") instead of "Your interview was spent. Nothing was refunded."
+
 ## Not done / not verified
 
-- **Nothing has been run on a device by me.** Type-check, lint (no new errors) and jest pass; the raw-value check
+- **Nothing has been run on a device by me** (including the video-resume screen: jest renders each state and the
+  types/lint pass, but playback and link renewal were never exercised on Android). Type-check, lint (no new errors) and jest pass; the raw-value check
   has no findings in Student files. The emulator was booted once but the app was not exercised.
 - iOS: `Info.plist` / `project.pbxproj` still list the old fonts (run `npx react-native-asset`); Android only was in scope.
 - Employer and Interviewer files were not edited, but they read the same tokens and shared components, so their

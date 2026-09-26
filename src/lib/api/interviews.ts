@@ -28,6 +28,12 @@ export interface StudentInterview {
   canCancel: boolean
   roomReady: boolean
   joinUrl?: string
+  /**
+   * 6.3 — what an admin decided about a session that ended below the completion threshold. Present once it has
+   * been reviewed (`status` then names the outcome), so a no-show out of a session that STARTED tells a different
+   * story from one where nobody joined. Never the admin's note.
+   */
+  reviewedAs?: 'COMPLETED' | 'STUDENT_NO_SHOW' | 'INTERVIEWER_NO_SHOW' | 'CANCELLED'
   /** SC-16 — absent until the session starts; never a real name before then. */
   interviewer?: { name: string; photoUrl?: string | null; headline?: string | null; company?: string | null; bio?: string | null }
 }

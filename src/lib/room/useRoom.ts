@@ -289,7 +289,11 @@ export function useRoom(
     : endMs != null ? Math.max(0, Math.floor((endMs - now) / 1000))
     : Math.max(0, durationMin * 60 - elapsedSec)
   const thresholds = (creds?.warnings?.length ? creds.warnings : DEFAULT_WARNINGS).slice().sort((a, b) => a - b)
-  const warning = remainingSec != null && remainingSec > 0 ? (thresholds.find((w) => remainingSec <= w * 60) ?? null) : null
+  // IR-09 — each warning shows for the 15 s after its threshold is crossed (as on web), so the text
+  // always matches the clock: "5 minutes left" at 5:00, not still up at 1:30.
+  const warning = remainingSec != null && remainingSec > 0
+    ? (thresholds.find((w) => remainingSec <= w * 60 && remainingSec > w * 60 - 15) ?? null)
+    : null
   const interviewer = interview?.interviewer?.name
     ? { name: interview.interviewer.name, photoUrl: interview.interviewer.photoUrl ?? null }
     : creds?.interviewer?.name ? { name: creds.interviewer.name, photoUrl: creds.interviewer.photoUrl ?? null } : null

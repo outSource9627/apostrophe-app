@@ -105,6 +105,9 @@ export function CandidateVideoScreen() {
             muted={muted}
             progressUpdateInterval={250}
             onLoad={(d) => {
+              // The link that just loaded works: a LATER lapse (links live 15 minutes, a full
+              // interview is longer) is a new lapse and gets its own renewal, not "stopped playing".
+              retried.current = false
               setTime({ at: resumeAt.current, total: d.duration })
               if (resumeAt.current) player.current?.seek(resumeAt.current)
             }}

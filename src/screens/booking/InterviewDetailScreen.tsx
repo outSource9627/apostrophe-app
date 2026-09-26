@@ -150,24 +150,52 @@ function JoinOpen({ iv, w, onJoin }: { iv: StudentInterview; w: JoinWindow; onJo
 
 function Missed({ iv, w, onSupport, onBook }: { iv: StudentInterview; w: JoinWindow; onSupport: () => void; onBook: () => void }) {
   const closeT = w.closeIso ? fmtTime(w.closeIso) : null
+  // Who was missing decides what happened and what is owed (PRD 6.5); the two must never share one story.
+  const interviewerMissed = iv.status === 'INTERVIEWER_NO_SHOW'
+  // A session that STARTED and then ended early, decided by an admin (6.3): nobody "did not join" — the story is different.
+  const reviewed = Boolean(iv.reviewedAs)
   return (
     <>
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
-        <WhenCard iv={iv} pill="No show" />
-        <Card style={styles.dangerCard}>
-          <Text style={[text.metaSm, styles.dangerText]}>WHAT HAPPENED</Text>
-          <Text style={text.uiMd}>
-            {closeT
-              ? `Join stayed open until ${closeT} and nobody arrived. Your interviewer waited the full ${minutesPhrase(w.closesAfter!)}.`
-              : 'Join stayed open and nobody arrived. Your interviewer waited for you.'}
-          </Text>
-          <Text style={text.uiMd}>Your interview was spent. Nothing was refunded.</Text>
+        <WhenCard iv={iv} pill={reviewed ? 'Ended early' : interviewerMissed ? 'Interviewer did not join' : 'No show'} />
+        <Card style={interviewerMissed || reviewed ? styles.windowCard : styles.dangerCard}>
+          <Text style={[text.metaSm, interviewerMissed || reviewed ? styles.muted : styles.dangerText]}>WHAT HAPPENED</Text>
+          {reviewed ? (
+            <>
+              <Text style={text.uiMd}>
+                {interviewerMissed
+                  ? 'Your session started but ended early. After review, it was recorded as your interviewer leaving or ending it. This is not on you.'
+                  : 'Your session started but ended early. After review, it was recorded as you leaving before it could finish.'}
+              </Text>
+              <Text style={text.uiMd}>
+                {interviewerMissed
+                  ? 'You get a free reschedule, and it is placed ahead of the queue so you are matched sooner.'
+                  : 'No refund is due, but you get one free reschedule so you are not out of pocket.'}
+              </Text>
+            </>
+          ) : interviewerMissed ? (
+            <>
+              <Text style={text.uiMd}>{`You were there, but your interviewer did not join${closeT ? ` before ${closeT}` : ''}. This is not on you.`}</Text>
+              <Text style={text.uiMd}>You get a free reschedule, and it is placed ahead of the queue so you are matched sooner.</Text>
+            </>
+          ) : (
+            <>
+              <Text style={text.uiMd}>
+                {closeT && w.closesAfter != null
+                  ? `Join stayed open until ${closeT} and you did not join. The interview was called a no-show after ${minutesPhrase(w.closesAfter)}.`
+                  : 'Join stayed open and you did not join, so the interview was called a no-show.'}
+              </Text>
+              <Text style={text.uiMd}>No refund is due, but you get one free reschedule so you are not out of pocket.</Text>
+            </>
+          )}
         </Card>
-        <Text style={[text.uiXs, styles.muted]}>If your network or your phone failed you, say so — an admin can return the interview.</Text>
+        <Text style={[text.uiXs, styles.muted]}>
+          {interviewerMissed ? 'If something here looks wrong, an admin can review it.' : 'If your network or your phone failed you, say so — an admin can review it.'}
+        </Text>
       </ScrollView>
       <StickyFooter inset={false}>
-        <Button variant="primary" size="lg" full label="Ask admin to look at this" onPress={onSupport} />
-        <Button variant="outline" size="md" full label="Buy another interview" onPress={onBook} />
+        <Button variant="primary" size="lg" full label="Book your free reschedule" onPress={onBook} />
+        <Button variant="outline" size="md" full label="Ask admin to look at this" onPress={onSupport} />
       </StickyFooter>
     </>
   )
@@ -175,21 +203,42 @@ function Missed({ iv, w, onSupport, onBook }: { iv: StudentInterview; w: JoinWin
 
 function Terminal({ iv, onBook, onFeedback }: { iv: StudentInterview; onBook: () => void; onFeedback: () => void }) {
   const done = iv.status === 'COMPLETED'
+  // 6.3 — a session that ended below the completion threshold waits for an admin; the two things an admin can decide
+  // that land here are "still waiting" and "it was our platform" (recorded as CANCELLED).
+  const underReview = iv.status === 'INCOMPLETE'
+  const technical = iv.status === 'CANCELLED' && iv.reviewedAs === 'CANCELLED'
   const mark = statusMark(iv.status)
   return (
     <>
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
-        <WhenCard iv={iv} pill={mark.label} />
+        <WhenCard iv={iv} pill={technical ? 'Ended early' : mark.label} />
         {done && (
           <Card style={styles.windowCard}>
             <Text style={text.uiBaseSemi}>Your interview is done.</Text>
             <Text style={[text.uiMd, styles.muted]}>When your film is published it becomes your video resume. Your scorecard arrives separately.</Text>
           </Card>
         )}
+        {underReview && (
+          <Card style={styles.windowCard}>
+            <Text style={text.uiBaseSemi}>Under review</Text>
+            <Text style={[text.uiMd, styles.muted]}>The session ended before it finished, so it did not become a video resume. Our team is reviewing what happened.</Text>
+            <Text style={[text.uiMd, styles.muted]}>If it was not on you, a free re-interview is added to your account and you will be told here and in your notifications.</Text>
+          </Card>
+        )}
+        {technical && (
+          <Card style={styles.windowCard}>
+            <Text style={text.uiBaseSemi}>What happened</Text>
+            <Text style={[text.uiMd, styles.muted]}>Our video room or the network dropped your session. That is not on you.</Text>
+            <Text style={[text.uiMd, styles.muted]}>We have added a free re-interview to your account at no charge — book it whenever you are ready.</Text>
+          </Card>
+        )}
       </ScrollView>
       <StickyFooter inset={false}>
         {done && <Button variant="primary" size="lg" full label="See my scorecard" onPress={onFeedback} />}
-        <Button variant={done ? 'outline' : 'primary'} size={done ? 'md' : 'lg'} full label="Book another interview" onPress={onBook} />
+        {technical && <Button variant="primary" size="lg" full label="Book your free re-interview" onPress={onBook} />}
+        {!underReview && !technical && (
+          <Button variant={done ? 'outline' : 'primary'} size={done ? 'md' : 'lg'} full label="Book another interview" onPress={onBook} />
+        )}
       </StickyFooter>
     </>
   )
