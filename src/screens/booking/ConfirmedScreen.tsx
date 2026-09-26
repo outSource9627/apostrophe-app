@@ -1,9 +1,9 @@
 import React, { useState } from 'react'
-import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Linking, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../../lib/api'
-import { type StudentInterview } from '../../lib/api/interviews'
+import { getInterviewIcs, type StudentInterview } from '../../lib/api/interviews'
 import { minutesPhrase, useBookingRules } from '../../lib/interviews/rules'
 import { bookingRef, fmtShortDate, fmtTime } from '../../lib/interviews/slots'
 import { borderWidth, color, height, radius, space, spaceHalf, trackingNative } from '../../theme'
@@ -24,6 +24,22 @@ function calendarUrl(iv: StudentInterview, joinOpensMinutesBefore?: number): str
     details: `A live ${iv.durationMin}-minute interview with an Apostrophe interviewer. The join link opens ${joinOpensMinutesBefore != null ? `${minutesPhrase(joinOpensMinutesBefore)} before` : 'shortly before'}.`,
   })
   return `https://calendar.google.com/calendar/render?${p.toString()}`
+}
+
+/**
+ * SC-08 — the server's .ics (UTC times, stable UID, no interviewer identity),
+ * handed to the OS share sheet as the event text. The app has no file-system
+ * module, so this shares the calendar content rather than a saved .ics file; the
+ * booking confirmation EMAIL carries the real .ics attachment, which is the
+ * reliable way to import it. Fails quietly — Google Calendar above still works.
+ */
+async function shareIcs(id: string) {
+  try {
+    const ics = await getInterviewIcs(id)
+    await Share.share({ title: 'apostrophe-interview.ics', message: ics })
+  } catch {
+    // Nothing to show: the "Add to calendar" button beside it is the primary path.
+  }
 }
 
 /**
@@ -81,6 +97,7 @@ export function ConfirmedScreen({
           <StickyFooter>
             <Button variant="secondary" size="lg" full label="Run the device check now" onPress={() => onDeviceCheck(id)} />
             <Button variant="outline" size="block" full label="Add to calendar" onPress={() => Linking.openURL(calendarUrl(q.data!, rules?.joinOpensMinutesBefore))} />
+            <Button variant="outline" size="block" full label="Share calendar file (.ics)" onPress={() => void shareIcs(q.data!.id)} />
           </StickyFooter>
         </>
       ) : (

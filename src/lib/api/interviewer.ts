@@ -198,7 +198,7 @@ export interface InterviewerRoomDto {
 /** Records that the interviewer is in the room (the session starts once both are). Refused outside the join window. */
 export const getRoomCredentials = (id: string) => api.get<InterviewerRoomDto>(`/interviewers/me/interviews/${id}/room`)
 
-export type RoomEventKind = 'JOIN' | 'LEAVE' | 'RECONNECT' | 'HIGHLIGHT' | 'AUDIO_ONLY' | 'NETWORK'
+export type RoomEventKind = 'JOIN' | 'LEAVE' | 'RECONNECT' | 'HIGHLIGHT' | 'AUDIO_ONLY' | 'NETWORK' | 'MUTE' | 'UNMUTE' | 'CAMERA'
 export const recordRoomEvent = (id: string, kind: RoomEventKind, payload?: Record<string, unknown>) =>
   api.post<{ success: boolean; id: string; kind: string; at: string }>(`/interviewers/me/interviews/${id}/events`, payload ? { kind, payload } : { kind })
 

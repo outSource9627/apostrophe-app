@@ -1,7 +1,8 @@
-import React, { useEffect } from 'react'
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import React from 'react'
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Svg, { Ellipse, Path, Rect } from 'react-native-svg'
+import { RtcSurfaceView, RenderModeType } from 'react-native-agora'
 import { useRoom } from '../../lib/room/useRoom'
 import { LogoMark } from '../../components/Logo'
 import { borderWidth, color, height, radius, space, spaceHalf } from '../../theme'
@@ -14,13 +15,16 @@ import { Body, Button, Card, ErrorState, Meta, text } from '../../components/ui'
  * Recording is a radius-4 chip on a scrim ground with white REC + a crimson dot,
  * NOT a pressable pill, and a permanent truth line states neither party can stop
  * it. Only the interviewer ends the interview — the student gets LEAVE (the one
- * white-ground control), never End. The self-preview is an ink placeholder until
- * the Agora native module lands (see src/lib/room/useRoom.ts).
+ * white-ground control), never End. The full-screen self-preview is the REAL Agora
+ * camera track (RtcSurfaceView uid 0) with the framing guide drawn over it as an
+ * overlay — never composited into the published stream. The floating tile
+ * carries the interviewer's live video (portrait-cropped) once revealed.
  */
-export function RoomScreen({ id, onEnded }: { id: string; onEnded: () => void; onBack?: () => void }) {
+export function RoomScreen({ id, onEnded, onLeft, onReadiness, onBack }: {
+  id: string; onEnded: () => void; onLeft?: () => void; onReadiness?: () => void; onBack?: () => void
+}) {
   const insets = useSafeAreaInsets()
-  const room = useRoom(id, onEnded)
-  useEffect(() => { if (room.state === 'ended') onEnded() }, [room.state, onEnded])
+  const room = useRoom(id, { onLeft: onLeft ?? onEnded, onEnded, onReadinessRequired: onReadiness })
 
   const audioOnly = room.state === 'audio-only'
   const showGuide = !room.cameraOff && !audioOnly
@@ -29,12 +33,17 @@ export function RoomScreen({ id, onEnded }: { id: string; onEnded: () => void; o
   return (
     <View style={[styles.page, { paddingTop: insets.top }]}>
       <View style={styles.stage}>
-        <View style={styles.previewNote}>
-          <Ico size={height['avatar-lg'] + space.xs} stroke={color.textOnInkSubtle}>{room.cameraOff || audioOnly ? <><Path d="M3 3l18 18" /><Path d="M16 10.5V7a1 1 0 0 0-1-1H8" /><Path d="M4 6.5V17a1 1 0 0 0 1 1h10" /></> : <><Path d="m16 10 5-3v10l-5-3" /><Rect x={3} y={6} width={13} height={12} rx={2} /></>}</Ico>
-          <Meta style={{ color: color.textOnInkSubtle, marginTop: space.sm }}>{audioOnly ? 'Audio only' : room.cameraOff ? 'Your camera is off' : 'Your camera opens here'}</Meta>
-        </View>
+        {room.localReady && !room.cameraOff && !audioOnly && (
+          <RtcSurfaceView style={StyleSheet.absoluteFill} canvas={{ uid: 0, renderMode: RenderModeType.RenderModeHidden }} />
+        )}
+        {(!room.localReady || room.cameraOff || audioOnly) && (
+          <View style={styles.previewNote}>
+            <Ico size={height['avatar-lg'] + space.xs} stroke={color.textOnInkSubtle}>{room.cameraOff || audioOnly ? <><Path d="M3 3l18 18" /><Path d="M16 10.5V7a1 1 0 0 0-1-1H8" /><Path d="M4 6.5V17a1 1 0 0 0 1 1h10" /></> : <><Path d="m16 10 5-3v10l-5-3" /><Rect x={3} y={6} width={13} height={12} rx={2} /></>}</Ico>
+            <Meta style={{ color: color.textOnInkSubtle, marginTop: space.sm }}>{audioOnly ? 'Audio only · weak connection' : room.cameraOff ? 'Your camera is off' : 'Opening your camera…'}</Meta>
+          </View>
+        )}
         {showGuide && (
-          <Svg width="100%" height="100%" viewBox="0 0 90 160" preserveAspectRatio="none" style={StyleSheet.absoluteFill}>
+          <Svg width="100%" height="100%" viewBox="0 0 90 160" preserveAspectRatio="none" style={StyleSheet.absoluteFill} pointerEvents="none">
             <Ellipse cx={45} cy={58} rx={26} ry={34} fill="none" stroke={color.guideLine} strokeWidth={0.5} strokeDasharray="3 2.5" />
           </Svg>
         )}
@@ -44,7 +53,7 @@ export function RoomScreen({ id, onEnded }: { id: string; onEnded: () => void; o
             {room.recording && <View style={styles.recChip}><View style={styles.recDot} /><Text style={[text.metaPill, styles.recText]}>REC</Text></View>}
             {room.state === 'live' && <View style={styles.recChip}><Text style={[text.metaXl, styles.clock]}>{fmtElapsed(room.elapsedSec)}</Text></View>}
           </View>
-          <InterviewerTile name={room.interviewer?.name ?? null} />
+          <InterviewerTile name={room.interviewer?.name ?? null} photoUrl={room.interviewer?.photoUrl ?? null} remoteUid={room.remoteVideoOn && !audioOnly ? room.remoteUid : null} />
         </View>
 
         {room.state === 'waiting' && (
@@ -63,24 +72,29 @@ export function RoomScreen({ id, onEnded }: { id: string; onEnded: () => void; o
           <View style={styles.centre}>
             <Card raised style={styles.errorCard}>
               <ErrorState
-                title="Connection lost"
-                body="We could not reconnect in time. Nothing about your interview was lost."
+                title={ERROR_TITLE[room.error?.kind ?? 'other']}
+                body={room.error?.message ?? 'We could not reconnect in time. Nothing about your interview was lost.'}
                 action={
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    label="Leave"
-                    // The error state's small button is 40 tall; the slop brings its tap box to the 44 floor.
-                    hitSlop={(height.tap - height['control-xs']) / 2}
-                    onPress={room.leave}
-                  />
+                  <View style={{ gap: space.sm }}>
+                    {room.error?.kind !== 'ended' && room.error?.kind !== 'not-open' && (
+                      <Button variant="primary" size="sm" label={room.error?.kind === 'permissions' ? 'Try again' : 'Rejoin'} onPress={room.retry} />
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      label={room.error ? 'Back' : 'Leave'}
+                      // The error state's small button is 40 tall; the slop brings its tap box to the 44 floor.
+                      hitSlop={(height.tap - height['control-xs']) / 2}
+                      onPress={room.error ? (onBack ?? room.leave) : room.leave}
+                    />
+                  </View>
                 }
               />
             </Card>
           </View>
         )}
-        {room.state === 'live' && (room.minutesLeft === 5 || room.minutesLeft === 1) && (
-          <View style={styles.warnBand}><Meta style={{ color: color.warning }}>{`${room.minutesLeft} minute${room.minutesLeft === 1 ? '' : 's'} left`}</Meta></View>
+        {room.warning != null && (room.state === 'live' || room.state === 'audio-only') && (
+          <View style={styles.warnBand}><Meta style={{ color: color.warning }}>{`${room.warning} minute${room.warning === 1 ? '' : 's'} left`}</Meta></View>
         )}
 
         {/* Permanent recording truth line. */}
@@ -94,6 +108,9 @@ export function RoomScreen({ id, onEnded }: { id: string; onEnded: () => void; o
         </Ctl>
         <Ctl caption="Camera" lit={room.cameraOff} onPress={room.toggleCamera}>
           {room.cameraOff ? <><Path d="M3 3l18 18" /><Path d="M16 10.5V7a1 1 0 0 0-1-1H8" /><Path d="M4 6.5V17a1 1 0 0 0 1 1h10" /></> : <><Path d="m16 10 5-3v10l-5-3" /><Rect x={3} y={6} width={13} height={12} rx={2} /></>}
+        </Ctl>
+        <Ctl caption={room.speakerOn ? 'Speaker' : 'Earpiece'} lit={!room.speakerOn} onPress={room.toggleSpeaker}>
+          {room.speakerOn ? <><Path d="M11 5 6 9H3v6h3l5 4V5Z" /><Path d="M15.5 8.5a5 5 0 0 1 0 7" /><Path d="M18.5 6a9 9 0 0 1 0 12" /></> : <><Path d="M11 5 6 9H3v6h3l5 4V5Z" /></>}
         </Ctl>
         <View style={[styles.ctl, styles.ctlIdle]} accessibilityLabel="Network quality"><Quality quality={room.quality} /></View>
         <Pressable accessibilityRole="button" accessibilityLabel="Leave" onPress={room.leave} style={styles.leavePill}>
@@ -109,15 +126,33 @@ function Ico({ size = 20, stroke, children }: { size?: number; stroke: string; c
   return <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">{children}</Svg>
 }
 
-function InterviewerTile({ name }: { name: string | null }) {
+function InterviewerTile({ name, photoUrl, remoteUid }: { name: string | null; photoUrl: string | null; remoteUid: number | null }) {
   const initials = name?.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase()
   return (
     <View style={styles.tile}>
-      <View style={styles.plate}>{name ? <Text style={[text.uiSmSemi, styles.initials]}>{initials}</Text> : <LogoMark size={20} fill={color.ink} />}</View>
+      {remoteUid != null ? (
+        <View style={styles.tileVideo}>
+          <RtcSurfaceView style={StyleSheet.absoluteFill} zOrderMediaOverlay canvas={{ uid: remoteUid, renderMode: RenderModeType.RenderModeHidden }} />
+        </View>
+      ) : (
+        <View style={styles.plate}>
+          {photoUrl ? <Image source={{ uri: photoUrl }} style={styles.photo} accessibilityLabel={name ?? undefined} />
+            : name ? <Text style={[text.uiSmSemi, styles.initials]}>{initials}</Text> : <LogoMark size={20} fill={color.ink} />}
+        </View>
+      )}
       <Text style={[text.metaXs, styles.tileEyebrow]}>YOUR INTERVIEWER</Text>
       {!!name && <Text style={[text.uiXs, styles.tileName]} numberOfLines={1}>{name}</Text>}
     </View>
   )
+}
+
+const ERROR_TITLE: Record<string, string> = {
+  unconfigured: 'Video is not ready',
+  'not-open': 'The room is not open',
+  ended: 'This interview has ended',
+  permissions: 'Camera and microphone needed',
+  readiness: 'Device check needed',
+  other: 'Connection lost',
 }
 
 function Ctl({ caption, lit, onPress, children }: { caption: string; lit?: boolean; onPress?: () => void; children: React.ReactNode }) {
@@ -148,6 +183,8 @@ const styles = StyleSheet.create({
   recText: { color: color.dangerOnInk },
   clock: { color: color.textOnInk },
   tile: { width: height['room-tile-w'], alignItems: 'center', gap: space.xs, borderRadius: radius.panel, backgroundColor: color.inkRaised, borderWidth: borderWidth.thin, borderColor: color.onInkEdge, padding: space.sm },
+  tileVideo: { width: '100%', aspectRatio: 9 / 16, borderRadius: radius.sm, overflow: 'hidden', backgroundColor: color.onInkGround },
+  photo: { width: '100%', height: '100%', borderRadius: radius.pill },
   plate: { width: height.tap, height: height.tap, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', backgroundColor: color.onInkGround },
   initials: { color: color.textOnInk },
   tileEyebrow: { color: color.textOnInkSubtle },

@@ -10,6 +10,10 @@ export const ErrorCode = {
   FORBIDDEN: 'FORBIDDEN',
   NOT_FOUND: 'NOT_FOUND',
   CONFLICT: 'CONFLICT',
+  /** SC-13 — booking 409: nobody could be drawn for that block. */
+  NO_ELIGIBLE_INTERVIEWER: 'NO_ELIGIBLE_INTERVIEWER',
+  /** SC-05 — booking 409: the block was claimed while we tried. */
+  SLOT_TAKEN: 'SLOT_TAKEN',
   RATE_LIMITED: 'RATE_LIMITED',
   PAYMENT_REQUIRED: 'PAYMENT_REQUIRED',
   UNVERIFIED: 'UNVERIFIED',

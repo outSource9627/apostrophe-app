@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { BackHandler, Linking, Modal, Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg'
+import { RtcSurfaceView, RenderModeType } from 'react-native-agora'
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { borderWidth, color, height, opacity, radius, space, spaceHalf, trackingNative } from '../../theme'
@@ -16,8 +17,6 @@ import type { RootStackParamList } from '../../../App'
 type Tab = 'script' | 'notes' | 'resume'
 const pad = (n: number) => String(n).padStart(2, '0')
 const ms = (sec: number) => `${pad(Math.floor(Math.abs(sec) / 60))}:${pad(Math.abs(sec) % 60)}`
-/** The "N min left" band shows in the last five minutes, as the room always has (no admin setting exists for it). */
-const WARN_SEC = 300
 const NOTES_SAVE_MS = 1200
 
 /**
@@ -45,8 +44,8 @@ export function InterviewerRoomScreen() {
   const room = useInterviewerRoom(id)
   const config = useAppConfig()
 
-  const [mic, setMic] = useState(true)
-  const [cam, setCam] = useState(true)
+  const mic = !room.muted
+  const cam = !room.cameraOff
   const [tab, setTab] = useState<Tab>('script')
   const [open, setOpen] = useState(false)
   const [endOpen, setEndOpen] = useState(false)
@@ -105,7 +104,9 @@ export function InterviewerRoomScreen() {
   const live = room.state === 'live'
   const over = room.remainingSec < 0
   const timer = live ? (over ? `+${ms(room.remainingSec)}` : ms(room.remainingSec)) : ms(room.durationMin * 60)
-  const warn = live && room.remainingSec <= WARN_SEC
+  // The server's own warning list (room DTO `warnings`, minutes) — the largest is when the band first shows.
+  const warnSec = Math.max(...room.warnings) * 60
+  const warn = live && room.remainingSec <= warnSec
   const warnText = over ? 'Over time · wrap up' : room.remainingSec <= 60 ? '1 min left' : `${Math.ceil(room.remainingSec / 60)} min left`
   const notesMax = config?.interviewer?.notesMaxChars
 
@@ -137,13 +138,15 @@ export function InterviewerRoomScreen() {
         <Rect x="0" y="0" width="100%" height="100%" fill="url(#roomFootage)" />
       </Svg>
 
+      {room.localReady && room.remoteUid != null && room.remoteVideoOn && (
+        <RtcSurfaceView style={StyleSheet.absoluteFill} canvas={{ uid: room.remoteUid, renderMode: RenderModeType.RenderModeHidden }} />
+      )}
       <View style={[styles.stageNote, { top: insets.top + height.fab * 3 }]} pointerEvents="none">
-        <View style={styles.face}><Text style={[text.displaySm, styles.onInk]}>{initialsOf(student?.name)}</Text></View>
+        <View style={[styles.face, room.remoteVideoOn && styles.hidden]}><Text style={[text.displaySm, styles.onInk]}>{initialsOf(student?.name)}</Text></View>
         <Text style={[text.metaSm, styles.onInkSubtle, styles.mono]}>{`${(student?.name ?? 'CANDIDATE').toUpperCase()} · FULL-SCREEN 9:16`}</Text>
         {room.state === 'lobby' && <Text style={[text.uiSm, styles.onInkMuted, styles.center]}>{`Waiting for ${student?.name?.split(' ')[0] ?? 'the candidate'}. The session and recording start when you are both in.`}</Text>}
         {room.state === 'loading' && <Text style={[text.uiSm, styles.onInkMuted]}>Opening the room…</Text>}
         {!!room.videoNote && <Text style={[text.uiXs, styles.onInkSubtle, styles.center]}>{room.videoNote}</Text>}
-        <Text style={[text.uiXs, styles.onInkSubtle, styles.center]}>Video is not connected in this app build yet.</Text>
       </View>
 
       {/* Top: REC and the timer */}
@@ -161,24 +164,34 @@ export function InterviewerRoomScreen() {
         </View>
       )}
 
-      {/* Self tile */}
+      {/* Self tile — the real local track, 16:9 as published */}
       <View style={[styles.self, { top: insets.top + height.fab + space['2xl'] }]}>
-        <Svg style={StyleSheet.absoluteFill}>
-          <Defs>
-            <LinearGradient id="selfTile" x1="0" y1="0" x2="1" y2="1">
-              <Stop offset="0" stopColor={color.accentDeep} />
-              <Stop offset="1" stopColor={color.inkRaised} />
-            </LinearGradient>
-          </Defs>
-          <Rect x="0" y="0" width="100%" height="100%" fill="url(#selfTile)" />
-        </Svg>
+        {room.localReady && cam && (
+          <RtcSurfaceView style={StyleSheet.absoluteFill} zOrderMediaOverlay canvas={{ uid: 0, renderMode: RenderModeType.RenderModeHidden }} />
+        )}
         <View style={styles.selfLabel}><Text style={[text.uiXsSemi, styles.onInk]}>{cam ? 'You' : 'Camera off'}{mic ? '' : ' · muted'}</Text></View>
       </View>
 
+      {/* Link state — quality bars and the 90 s reconnect window */}
+      <View style={[styles.netBadge, { top: insets.top + space.sm + height.control + space.xs }]} accessibilityLabel={`Network ${room.quality}`}>
+        {[1, 2, 3].map((n) => {
+          const on = room.quality === 'good' ? 3 : room.quality === 'fair' ? 2 : 1
+          const c = room.quality === 'good' ? color.success : room.quality === 'fair' ? color.warning : color.danger
+          return <View key={n} style={{ width: space.xs, height: space.xs + n * space.xs, borderRadius: radius.sm, backgroundColor: c, opacity: n <= on ? 1 : 0.25 }} />
+        })}
+      </View>
+      {(room.link === 'reconnecting' || room.link === 'failed') && (
+        <View style={[styles.reconnect, { top: insets.top + space.sm + height.control * 2 + space.md }]}>
+          <Text style={[text.uiXsSemi, { color: room.link === 'failed' ? color.danger : color.warning }]}>
+            {room.link === 'failed' ? 'Connection lost · rejoin from the interview screen' : `Reconnecting · nothing is lost · ${room.reconnectSecLeft ?? 90}s`}
+          </Text>
+        </View>
+      )}
+
       {/* Controls */}
       <View style={[styles.controls, { top: insets.top + height.fab + space['2xl'] }]}>
-        <RoundControl label={mic ? 'MIC' : 'OFF'} a11y={mic ? 'Mute microphone' : 'Unmute microphone'} off={!mic} onPress={() => setMic((m) => !m)} />
-        <RoundControl label={cam ? 'CAM' : 'OFF'} a11y={cam ? 'Turn camera off' : 'Turn camera on'} off={!cam} onPress={() => setCam((c) => !c)} />
+        <RoundControl label={mic ? 'MIC' : 'OFF'} a11y={mic ? 'Mute microphone' : 'Unmute microphone'} off={!mic} onPress={room.toggleMic} />
+        <RoundControl label={cam ? 'CAM' : 'OFF'} a11y={cam ? 'Turn camera off' : 'Turn camera on'} off={!cam} onPress={room.toggleCamera} />
         {live ? (
           <RoundControl label="END" a11y="End the session" danger onPress={() => setEndOpen(true)} />
         ) : (
@@ -341,7 +354,10 @@ const styles = StyleSheet.create({
   recDot: { width: space.sm - 1, height: space.sm - 1, borderRadius: radius.pill, backgroundColor: color.dangerFill },
   rec: { color: color.dangerOnInk },
   warnBand: { position: 'absolute', alignSelf: 'center', paddingVertical: space.xs, paddingHorizontal: space.md, borderRadius: radius.pill, backgroundColor: color.warningSoft },
-  self: { position: 'absolute', right: spaceHalf['3.5'], width: height['profile-thumb-w'], aspectRatio: 3 / 4, borderRadius: radius.tile, overflow: 'hidden', borderWidth: borderWidth.thin, borderColor: color.onInkEdge, justifyContent: 'flex-end', padding: spaceHalf['1.5'] },
+  hidden: { opacity: 0 },
+  netBadge: { position: 'absolute', left: spaceHalf['3.5'], flexDirection: 'row', alignItems: 'flex-end', gap: space['2xs'] },
+  reconnect: { position: 'absolute', alignSelf: 'center', paddingVertical: space.xs, paddingHorizontal: space.md, borderRadius: radius.pill, backgroundColor: color.onInkGlass },
+  self: { position: 'absolute', right: spaceHalf['3.5'], width: height['profile-thumb-w'] * 1.4, aspectRatio: 16 / 9, borderRadius: radius.tile, overflow: 'hidden', borderWidth: borderWidth.thin, borderColor: color.onInkEdge, justifyContent: 'flex-end', padding: spaceHalf['1.5'] },
   selfLabel: { alignSelf: 'flex-start', paddingHorizontal: spaceHalf['1.5'], paddingVertical: space['2xs'], borderRadius: radius.sm, backgroundColor: color.onInkGlass },
   controls: { position: 'absolute', left: spaceHalf['3.5'], gap: space.sm },
   round: { width: height.control, height: height.control, borderRadius: radius.pill, backgroundColor: color.onInkPlay, alignItems: 'center', justifyContent: 'center' },

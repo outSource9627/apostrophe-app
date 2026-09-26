@@ -238,13 +238,21 @@ function Picker({
     } catch (e) {
       setBusy(false)
       if (!(e instanceof ApiClientError)) { setError('Could not book that slot. Check your connection.'); return }
-      if (e.code === 'CONFLICT' && selectedDay) {
+      // SC-05 / SC-13 — two different 409s, two different sentences. SLOT_TAKEN:
+      // somebody else got it while she deliberated. NO_ELIGIBLE_INTERVIEWER: no
+      // interviewer can take that block for her at all (it is not "taken").
+      // CONFLICT is what builds before the split sent for both.
+      const noneAvailable = e.code === 'NO_ELIGIBLE_INTERVIEWER'
+      if ((e.code === 'SLOT_TAKEN' || e.code === 'CONFLICT' || noneAvailable) && selectedDay) {
         const remaining = selectedDay.slots.filter((s) => s.slotStart !== slotIso)
         const nearest = nearestTo(slotIso, remaining)
         setGoneIso(slotIso); setNearestIso(nearest); setSlotIso(nearest)
+        const lead = noneAvailable
+          ? `No interviewer is available for ${istTime(slotIso)} any more.`
+          : `${istTime(slotIso)} was taken a moment ago.`
         setNote(nearest
-          ? `${istTime(slotIso)} was taken a moment ago. Your pick moved to ${istTime(nearest)}, the nearest block on this day.`
-          : `${istTime(slotIso)} was taken a moment ago. Pick another block or day.`)
+          ? `${lead} Your pick moved to ${istTime(nearest)}, the nearest block on this day.`
+          : `${lead} Pick another block or day.`)
         return
       }
       setError(e.message)

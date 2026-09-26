@@ -46,6 +46,7 @@ import { AccountScreen } from './src/screens/account/AccountScreen'
 import { DataRightsScreen } from './src/screens/account/DataRightsScreen'
 import { ReadinessScreen } from './src/screens/room/ReadinessScreen'
 import { RoomScreen } from './src/screens/room/RoomScreen'
+import { PreparationScreen } from './src/screens/room/PreparationScreen'
 import { EndedScreen } from './src/screens/room/EndedScreen'
 import { FeedbackScreen } from './src/screens/room/FeedbackScreen'
 import { TopUpScreen } from './src/screens/room/TopUpScreen'
@@ -130,6 +131,7 @@ export type RootStackParamList = {
   Reschedule: { id: string }
   Cancel: { id: string }
   Readiness: { id: string }
+  Preparation: { id: string }
   Room: { id: string }
   Ended: { id: string }
   Feedback: { id: string }
@@ -576,19 +578,23 @@ export default function App() {
 
             <Stack.Screen name="Readiness">
               {({ navigation, route }) => (
-                <ReadinessScreen id={route.params.id} onBack={() => navigation.goBack()} onJoin={() => navigation.navigate('Room', { id: route.params.id })} />
+                <ReadinessScreen id={route.params.id} onBack={() => navigation.goBack()} onJoin={() => navigation.navigate('Room', { id: route.params.id })} onPrepare={() => navigation.navigate('Preparation', { id: route.params.id })} />
               )}
+            </Stack.Screen>
+
+            <Stack.Screen name="Preparation">
+              {({ navigation, route }) => <PreparationScreen id={route.params.id} onBack={() => navigation.goBack()} />}
             </Stack.Screen>
 
             <Stack.Screen name="Room" options={{ gestureEnabled: false }}>
               {({ navigation, route }) => (
-                <RoomScreen id={route.params.id} onBack={() => navigation.goBack()} onEnded={() => navigation.replace('Ended', { id: route.params.id })} />
+                <RoomScreen id={route.params.id} onBack={() => navigation.goBack()} onEnded={() => navigation.replace('Ended', { id: route.params.id })} onLeft={() => navigation.replace('Ended', { id: route.params.id })} onReadiness={() => navigation.replace('Readiness', { id: route.params.id })} />
               )}
             </Stack.Screen>
 
             <Stack.Screen name="Ended">
               {({ navigation, route }) => (
-                <EndedScreen id={route.params.id} onBack={() => navigation.navigate('Interviews')} onBook={() => navigation.navigate('BookInterview')} />
+                <EndedScreen id={route.params.id} onRejoin={() => navigation.replace('Room', { id: route.params.id })} onBack={() => navigation.navigate('Interviews')} onBook={() => navigation.navigate('BookInterview')} />
               )}
             </Stack.Screen>
 

@@ -1,5 +1,5 @@
 import React from 'react'
-import { ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Image, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useQuery } from '@tanstack/react-query'
 import { getInterview } from '../../lib/api/interviews'
@@ -11,8 +11,8 @@ import { Banner, Body, Button, ScreenHeader, Skeleton, StickyFooter, text } from
  * publishes ITSELF with no approval step; feedback within 24 hours. No
  * refund/error/sorry language. COMPLETED → processing; INCOMPLETE → ended early.
  */
-export function EndedScreen({ id, onBack, onBook }: {
-  id: string; onBack: () => void; onBook: () => void
+export function EndedScreen({ id, onBack, onBook, onRejoin }: {
+  id: string; onBack: () => void; onBook: () => void; onRejoin?: () => void
 }) {
   const insets = useSafeAreaInsets()
   const q = useQuery({ queryKey: ['interview', id], queryFn: () => getInterview(id) })
@@ -23,6 +23,38 @@ export function EndedScreen({ id, onBack, onBook }: {
   if (q.isError) return frame(<View style={styles.centre}><Body tone="muted">Could not load your interview.</Body></View>)
 
   const incomplete = q.data!.status === 'INCOMPLETE'
+  // The student pressed Leave but the interviewer has not ended the session — it is still running.
+  const running = q.data!.status === 'IN_PROGRESS' || q.data!.status === 'BOOKED'
+  const iv = q.data!.interviewer
+  // SC-16 reveal: name (and, when the server sends them, photo and headline) only once the session started.
+  const reveal = iv?.name ? (
+    <View style={styles.reveal}>
+      {iv.photoUrl ? <Image source={{ uri: iv.photoUrl }} style={styles.revealPhoto} accessibilityLabel={iv.name} /> : null}
+      <View style={styles.stepText}>
+        <Text style={text.uiMdSemi}>{`Interviewed by ${iv.name}`}</Text>
+        {!!(iv.headline || iv.company) && <Text style={[text.uiSm, styles.muted]}>{[iv.headline, iv.company].filter(Boolean).join(' · ')}</Text>}
+      </View>
+    </View>
+  ) : null
+
+  if (running) {
+    return (
+      <View style={[styles.page, { paddingTop: insets.top }]}>
+        {bar}
+        <ScrollView contentContainerStyle={styles.body}>
+          <View style={styles.head}>
+            <Text style={text.displayLead}>You left the interview.</Text>
+            <Text style={[text.uiMd, styles.muted]}>It is still running — only your interviewer can end it. You can rejoin while it is in progress.</Text>
+          </View>
+          {reveal}
+        </ScrollView>
+        <StickyFooter>
+          {onRejoin && <Button variant="primary" size="lg" full label="Rejoin the interview" onPress={onRejoin} />}
+          <Button variant="outline" size="md" full label="Back to my interviews" onPress={onBack} />
+        </StickyFooter>
+      </View>
+    )
+  }
 
   return (
     <View style={[styles.page, { paddingTop: insets.top }]}>
@@ -41,6 +73,7 @@ export function EndedScreen({ id, onBack, onBook }: {
           )}
         </View>
 
+        {reveal}
         {incomplete ? (
           <Banner tone="warning">The session ended before it finished, so it did not become a video resume. Your paid interview still stands — book the rest of it whenever you are ready.</Banner>
         ) : (
@@ -88,5 +121,7 @@ const styles = StyleSheet.create({
   stepRule: { borderBottomWidth: borderWidth.thin, borderBottomColor: color.borderSoft },
   stepNum: { width: height.radio, height: height.radio, borderRadius: radius.pill, backgroundColor: color.accentSoft, alignItems: 'center', justifyContent: 'center' },
   stepNumText: { color: color.accentText },
+  reveal: { flexDirection: 'row', alignItems: 'center', gap: spaceHalf['3.5'] },
+  revealPhoto: { width: height.avatar, height: height.avatar, borderRadius: radius.pill },
   stepText: { flex: 1, gap: space['2xs'] },
 })

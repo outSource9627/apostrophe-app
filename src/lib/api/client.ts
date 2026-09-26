@@ -33,6 +33,25 @@ export class ApiClient {
   del = <T>(path: string, init: Omit<RequestInit_, 'method'> = {}) =>
     this.request<T>(path, { ...init, method: 'DELETE' })
 
+  /**
+   * GET a non-JSON body (the .ics). Same auth and single refresh-retry as
+   * `request`, but success is the raw text; failures are still the JSON
+   * envelope and throw ApiClientError.
+   */
+  async getText(path: string): Promise<string> {
+    let res = await this.send(path, { method: 'GET' })
+    if (res.status === 401) {
+      const refreshed = await this.refreshOnce()
+      if (!refreshed) {
+        this.opts.onSignedOut?.()
+        throw new ApiClientError(ErrorCode.UNAUTHENTICATED, 'Your session expired. Sign in again.', 401)
+      }
+      res = await this.send(path, { method: 'GET' })
+    }
+    if (res.ok) return res.text()
+    return this.unwrap<string>(res)
+  }
+
   async request<T>(path: string, init: RequestInit_ = {}): Promise<T> {
     const res = await this.send(path, init)
 
