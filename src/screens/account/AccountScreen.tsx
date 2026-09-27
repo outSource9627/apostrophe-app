@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useQuery } from '@tanstack/react-query'
 import { tokenStore } from '../../lib/api'
@@ -40,11 +40,25 @@ export function AccountScreen({
     setVerify('sending')
     try { await resendVerificationEmail(me.email); setVerify('sent') } catch { setVerify('idle') }
   }
-  async function onSignOut() {
-    setSigningOut(true)
-    try { await logout() } catch { /* best-effort; clear locally regardless */ }
-    await tokenStore.clear()
-    onSignedOut()
+
+  function onSignOut() {
+    Alert.alert(
+      'Sign Out',
+      'Are you sure you want to sign out?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Sign Out',
+          style: 'destructive',
+          onPress: async () => {
+            setSigningOut(true)
+            try { await logout() } catch { /* best-effort; clear locally regardless */ }
+            await tokenStore.clear()
+            onSignedOut()
+          },
+        },
+      ]
+    )
   }
 
   const yours = [
