@@ -5,7 +5,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import Svg, { Path } from 'react-native-svg'
 import { api, ApiClientError } from '../../lib/api'
 import { color, space, spaceHalf, radius, borderWidth, height, trackingNative } from '../../theme'
-import { Banner, Body, Button, Card, Chip, Meta, ProgressBar, ScreenHeader, Sheet, Skeleton, VerifiedSeal, text } from '../../components/ui'
+import {
+  Banner, Body, Button, Card, Chip, FilmThumb, Meta, ProgressBar, ScreenHeader, Sheet, Skeleton, StatusPill, UnverifiedMark, VerifiedSeal, text,
+} from '../../components/ui'
+import type { Tone } from '../../components/ui'
+import { getVideoResume, listSelfVideos, type SelfVideo, type VideoResume } from '../../lib/api/student'
+import { fmtDayMonthYear } from '../../lib/chat/format'
+import { clock } from '../../lib/employer/candidateFormat'
 import {
   PersonalStep, EducationStep, ExperienceStep, SkillsStep, PreferencesStep, DocumentsStep,
   type Config, type StepProps,
@@ -24,6 +30,12 @@ interface Profile {
   completion: { pct: number; canBook: boolean; missing: string[] }
 }
 interface Audience { hiddenFromFeed: boolean; published: boolean }
+/** What the film card is drawn from. The film's signed addresses are dropped on the way in, so none is held in the cache. */
+type Film = Pick<VideoResume, 'status' | 'interviewedAt' | 'publishedAt' | 'pipelinePending' | 'reason' | 'held'>
+const loadFilm = async (): Promise<Film> => {
+  const f = await getVideoResume()
+  return { status: f.status, interviewedAt: f.interviewedAt, publishedAt: f.publishedAt, pipelinePending: f.pipelinePending, reason: f.reason, held: f.held }
+}
 
 const STEP_BODIES: Record<StepKey, (p: StepProps) => React.ReactElement> = {
   personal: PersonalStep, education: EducationStep, experience: ExperienceStep,
@@ -49,6 +61,12 @@ function draftFor(step: StepKey, p: Profile): Record<string, unknown> {
  * page, each editable IN PLACE via a sheet (not a trip to a form), with the
  * verified video resume at the top. Mirrors the web ProfileViewClient; the
  * sheet reuses the same wizard step bodies so the two never drift.
+ *
+ * The film card is drawn from the FILM's own state (`GET /students/me/video-resume`),
+ * never from the audience flag: "not in the feed" is true of a film that is still
+ * being made, one that failed and one an admin took down, and none of those is
+ * "book an interview". Below the verified film sit the student's own videos, in a
+ * dashed frame marked Unverified, so the two can never be mistaken for one another.
  */
 export function ProfileViewScreen({ onBack, onBook, onVisibility, onVideos, onVideoResume }: {
   onBack: () => void; onBook: () => void; onVisibility: () => void; onVideos: () => void; onVideoResume: () => void
@@ -61,6 +79,9 @@ export function ProfileViewScreen({ onBack, onBook, onVisibility, onVideos, onVi
   const configQ = useQuery({ queryKey: ['config'], queryFn: () => api.get<Config>('/config') })
   const audienceQ = useQuery({ queryKey: ['audience'], queryFn: () => api.get<Audience>('/students/me/audience').catch(() => ({ hiddenFromFeed: false, published: false })) })
   const meQ = useQuery({ queryKey: ['me'], queryFn: () => api.get<{ name?: string; city?: string }>('/students/me') })
+  // Each has its own failure: the profile is still worth showing without them.
+  const filmQ = useQuery({ queryKey: ['video-resume', 'profile-view'], queryFn: loadFilm })
+  const videosQ = useQuery({ queryKey: ['videos'], queryFn: listSelfVideos })
 
   const frame = (child: React.ReactNode) => (
     <View style={[styles.page, { paddingTop: insets.top }]}><ScreenHeader onBack={onBack} />{child}</View>
@@ -85,23 +106,18 @@ export function ProfileViewScreen({ onBack, onBook, onVisibility, onVideos, onVi
           <Text style={text.displayMd}>This is what an employer sees.</Text>
         </View>
 
-        {published ? (
+        {filmQ.isPending ? (
+          <Card style={styles.card}><Skeleton lines={3} /></Card>
+        ) : filmQ.isError ? (
           <Card style={styles.card}>
             <Body weight="semibold" size="lg">Your video resume</Body>
-            <Body size="sm" tone="muted" style={{ marginTop: space.xs }}>The film from your interview. This is the only video employers see.</Body>
-            <View style={{ marginTop: space.md, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <VerifiedSeal date={p.publishedAt ? fmtDate(p.publishedAt) : undefined} />
-              <Button variant="outline" size="sm" label="Watch my film" onPress={onVideoResume} />
+            <Body size="sm" tone="muted" style={styles.filmLine}>Could not load your video resume.</Body>
+            <View style={styles.filmFoot}>
+              <Button variant="outline" size="sm" label="Try again" onPress={() => { filmQ.refetch() }} />
             </View>
           </Card>
         ) : (
-          <Card style={styles.wellCard}>
-            <Body weight="semibold" size="lg">Your video resume</Body>
-            <Body size="sm" tone="muted" style={{ marginTop: space.xs }}>The interview you book becomes your video resume — the one thing employers watch before they read a word.</Body>
-            <View style={{ marginTop: space.md, alignItems: 'flex-start' }}>
-              <Button variant="primary" size="md" label="Book an interview" onPress={onBook} />
-            </View>
-          </Card>
+          <FilmCard film={filmQ.data} onOpen={onVideoResume} onBook={onBook} />
         )}
 
         <Card style={styles.completion}>
@@ -179,6 +195,8 @@ export function ProfileViewScreen({ onBack, onBook, onVisibility, onVideos, onVi
             </>
           )}
         </Section>
+
+        <SelfVideosSection query={videosQ} onManage={onVideos} />
       </ScrollView>
 
       {editing ? (
@@ -193,6 +211,124 @@ export function ProfileViewScreen({ onBack, onBook, onVisibility, onVideos, onVi
           title={`Edit ${TITLES[editing]}`}
         />
       ) : null}
+    </View>
+  )
+}
+
+/**
+ * The video-resume card in whichever state the film is in — one card, the same anatomy in every state (the still, the
+ * title, a line, a mark, the way in), so only the still, the line and the mark say what is true. Every state but NONE
+ * opens the video-resume screen, which says the rest; NONE is the one state that books. Nothing here names a time: the
+ * API says when no render pipeline is working on the film yet, and a card for that must not say "soon".
+ */
+function FilmCard({ film, onOpen, onBook }: { film: Film; onOpen: () => void; onBook: () => void }) {
+  if (film.status === 'NONE') {
+    return (
+      <Card style={styles.wellCard}>
+        <Body weight="semibold" size="lg">Your video resume</Body>
+        <Body size="sm" tone="muted" style={styles.filmLine}>The interview you book becomes your video resume — the one thing employers watch before they read a word.</Body>
+        <View style={styles.bookRow}>
+          <Button variant="primary" size="md" label="Book an interview" onPress={onBook} />
+        </View>
+      </Card>
+    )
+  }
+  const { line, mark, action } = describeFilm(film)
+  return (
+    <Card style={styles.card}>
+      <View style={styles.filmTop}>
+        <FilmThumb status={film.status} />
+        <View style={styles.filmText}>
+          <Body weight="semibold" size="lg">Your video resume</Body>
+          <Body size="sm" tone="muted">{line}</Body>
+        </View>
+      </View>
+      <View style={styles.filmFoot}>
+        {mark}
+        <Button variant="outline" size="sm" label={action} onPress={onOpen} />
+      </View>
+    </Card>
+  )
+}
+
+function describeFilm(film: Film): { line: string; mark: React.ReactNode; action: string } {
+  switch (film.status) {
+    case 'PUBLISHED': {
+      // The seal carries the day of the INTERVIEW; `publishedAt` is set once and never moves, so it only stands in when there is no interview date.
+      const at = film.interviewedAt ?? film.publishedAt
+      return {
+        // IC-05: a top-up still owed keeps the film off the feed, and "Employers watch this first" would not be true.
+        line: film.held
+          ? 'Your video resume is not live yet. A top-up on your interview is outstanding — employers cannot see it until it is settled.'
+          : 'The film from your interview. Employers watch this first; any videos you add yourself appear below it, marked as not verified.',
+        mark: <VerifiedSeal date={at ? fmtDayMonthYear(at) : undefined} />,
+        action: 'Watch my film',
+      }
+    }
+    case 'FAILED':
+      return {
+        line: 'We could not make a film from your interview. Talk to support and we will look into it.',
+        mark: <StatusPill tone="danger" label="Could not be made" />,
+        action: 'See details',
+      }
+    case 'UNPUBLISHED':
+      return {
+        line: `Your film has been taken down, so employers cannot see it.${film.reason ? ` Reason: ${film.reason}` : ''}`,
+        mark: <StatusPill tone="danger" label="Taken down" />,
+        action: 'See details',
+      }
+    default:
+      // PROCESSING (NONE is drawn by the caller).
+      return {
+        line: film.pipelinePending
+          ? 'Your interview is done, but your film is not ready yet. We cannot say when it will be. It will appear here once it is.'
+          : 'Your interview is done and your film is being prepared. It will appear here when it is ready.',
+        mark: <StatusPill tone="warning" label="Processing" />,
+        action: 'See details',
+      }
+  }
+}
+
+const KIND_LABEL: Record<SelfVideo['kind'], string> = { INTRO: 'Introduction', PROJECT: 'A project', SKILL: 'A skill' }
+const SELF_STATUS: Record<SelfVideo['status'], { label: string; tone: Tone }> = {
+  APPROVED: { label: 'Live on your profile', tone: 'success' },
+  PENDING: { label: 'Waiting for review', tone: 'warning' },
+  REJECTED: { label: 'Not published', tone: 'danger' },
+}
+
+/**
+ * The student's own short videos, set apart from the verified film: dashed frame on the sunken ground, no seal, and the
+ * Unverified mark on every row — the same structural difference the video components draw (self-recorded is never mistaken
+ * for the interview). Read from `GET /students/me/videos`; adding, editing and removing happen on the videos screen.
+ */
+function SelfVideosSection({ query, onManage }: { query: { isPending: boolean; isError: boolean; data?: { videos: SelfVideo[] } }; onManage: () => void }) {
+  const videos = query.data?.videos ?? []
+  return (
+    <View style={styles.selfSection}>
+      <View style={styles.sectionHead}>
+        <Text style={[text.metaMd, styles.eyebrow]}>YOUR VIDEOS</Text>
+        <Pressable accessibilityRole="button" onPress={onManage} style={styles.editBtn} hitSlop={space.sm}>
+          <Text style={[text.uiSmSemi, styles.editText]}>Manage videos</Text>
+        </Pressable>
+      </View>
+      {query.isPending ? <Skeleton lines={2} /> : query.isError ? (
+        <Body size="sm" tone="subtle">Could not load your videos.</Body>
+      ) : videos.length === 0 ? (
+        <Body size="sm" tone="subtle">No videos yet.</Body>
+      ) : videos.map((v) => {
+        const st = SELF_STATUS[v.status]
+        const length = clock(v.durationSec)
+        return (
+          <View key={v.id} style={styles.selfRow}>
+            <Body size="sm" weight="semibold" numberOfLines={1}>{v.title || KIND_LABEL[v.kind]}</Body>
+            <Meta style={styles.subtle}>{[KIND_LABEL[v.kind], length].filter(Boolean).join(' · ').toUpperCase()}</Meta>
+            <View style={styles.selfMarks}>
+              <StatusPill tone={st.tone} label={st.label} />
+              <UnverifiedMark />
+            </View>
+          </View>
+        )
+      })}
     </View>
   )
 }
@@ -296,6 +432,16 @@ const styles = StyleSheet.create({
   // detail screen's `well` and the shared `CompletionCard`/`NextAction` make on
   // top of the shared `Card` surface.
   wellCard: { borderWidth: 0, backgroundColor: color.surfaceMuted, padding: space.lg },
+  filmLine: { marginTop: space.xs },
+  bookRow: { marginTop: space.md, alignItems: 'flex-start' },
+  filmTop: { flexDirection: 'row', gap: spaceHalf['3.5'], alignItems: 'flex-start' },
+  filmText: { flex: 1, minWidth: 0, gap: space.xs },
+  filmFoot: { marginTop: space.md, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: space.sm },
+  subtle: { color: color.textSubtle },
+  // The self-recorded frame: dashed on the sunken ground, the way the video components set it apart from the verified film.
+  selfSection: { gap: spaceHalf['2.5'], backgroundColor: color.surfaceMuted, borderWidth: borderWidth.thin, borderColor: color.borderStrong, borderStyle: 'dashed', borderRadius: radius.lg, padding: spaceHalf['3.5'] },
+  selfRow: { gap: space.xs, paddingTop: spaceHalf['2.5'], borderTopWidth: borderWidth.thin, borderTopColor: color.border },
+  selfMarks: { flexDirection: 'row', flexWrap: 'wrap', gap: space.xs },
   feedRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.lg },
   section: { gap: spaceHalf['2.5'], backgroundColor: color.surface, borderWidth: borderWidth.thin, borderColor: color.border, borderRadius: radius.lg, padding: spaceHalf['3.5'] },
   sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

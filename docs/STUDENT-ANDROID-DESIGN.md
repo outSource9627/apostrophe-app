@@ -145,3 +145,118 @@ not join is "not on you") instead of "Your interview was spent. Nothing was refu
   findings in Employer/Interviewer screens.
 - Interests unread badge, notification/unread counts on tabs, and the profile-wizard step content components
   (`wizardSteps.tsx`) keep their existing look beyond the shared chip/field restyle.
+
+## Round 4b — profile view, badge date, feedback state, notifications
+
+Backend already done (apostrophe-admin); nothing there or in apostrophe-user was edited. Same real-data rules as above:
+tokens only, no invented numbers, admin values from `/config`.
+
+- **Profile → film card (SP-01/SP-02).** `ProfileViewScreen` drew the film card from the AUDIENCE flag
+  (`published ? card : "Book an interview"`), so a film that was being made, had failed or was taken down told the
+  student to book, and so did any failed audience call. It now reads `getVideoResume()`: NONE keeps the "Book an
+  interview" card; PROCESSING / FAILED / UNPUBLISHED / PUBLISHED draw one card (`FilmThumb status=`, `StatusPill` or
+  the Verified seal, and a button to the `VideoResume` screen — "Watch my film" when published, "See details"
+  otherwise). While the film request is loading the card is a skeleton; if it fails the card says so with Try again —
+  it never falls back to a guess. The film's signed addresses are dropped on the way into the query cache (only status,
+  dates, `pipelinePending`, `reason` are kept), and no poster is drawn on the card (same as Home's card). The audience
+  query still drives the feed-visibility row below, as before.
+- **Copy fix (SP-04).** "…This is the only video employers see." became "The film from your interview. Employers
+  watch this first; any videos you add yourself appear below it, marked as not verified." (The same sentence on the video-resume screen is the other agent's file; a grep shows it is gone from `src`.)
+- **Your videos (SP-04).** New section under Documents from `listSelfVideos()` (query key `['videos']`, shared with
+  the videos screen so its add/edit/delete invalidations refresh this list): title (or the kind's name), kind · length
+  (`m:ss`), a status pill and the `UnverifiedMark` on every row, in the dashed / sunken frame the video components
+  use for self-recorded footage. "Manage videos" opens the existing videos screen; empty state "No videos yet.".
+  Status wording ("Live on your profile", "Waiting for review", "Not published") is a local copy of the videos
+  screen's — if one changes, change both. A rejection reason is not repeated here.
+- **Badge date.** The Verified seal now carries the INTERVIEW date (`interviewedAt ?? publishedAt`) on the profile
+  card and on `ApplyScreen`, which reads it from the video-resume response (its own query, dates only). If that call
+  fails the seal carries no date rather than the profile's `publishedAt` (set once, never moves). Both now use
+  `fmtDayMonthYear` (IST, "25 September 2026") like the video-resume screen — Apply used to print UTC "25 Sep 2026",
+  which could be the wrong day. Home's film card never drew a date, so nothing changed there. Apply's "not published"
+  gate still reads `profile.publishedAt` (unchanged; the server also refuses with `PROFILE_NOT_PUBLISHED`).
+- **Feedback state (SP-08).** `StudentInterview` gains `feedback?: 'READY' | 'AWAITING' | 'UNAVAILABLE'`. On a 404
+  from `/interviews/:id/feedback` the scorecard screen fetches the interview and reads that: AWAITING → "on its way"
+  with "…has up to N hours after the session to send it" where N is `scorecard.windowHours` from `/config` (the sentence
+  drops the number when absent — the hard-coded "within a day" is gone); UNAVAILABLE, or an interview that is not
+  COMPLETED → "Feedback will not be available for this interview." with Back to my interviews and no time or
+  notification promised; anything else (interview unreadable, or it says READY because the scorecard landed in
+  between) → "Could not load your feedback." with Try again. `InterviewDetail`'s "See my scorecard" shows only when
+  `feedback === 'READY'`; otherwise a quiet line ("Feedback on its way" / "No feedback for this interview") in the
+  "Your interview is done" card, whose sentence "Your scorecard arrives separately" was dropped (false for UNAVAILABLE).
+  The interviews list has no scorecard button, so its COMPLETED rows carry the same quiet line (none for READY).
+  A COMPLETED interview with NO `feedback` field (older backend) therefore shows neither button nor line.
+- **Home scorecard row (beyond the literal file scope, flagged).** Home mapped every 404 to "Scorecard on its way —
+  we'll notify you the moment it lands". `loadDashboard` now maps by the interview's `feedback` (`'unavailable'`), and
+  the row says "No scorecard / No feedback for this interview" (not tappable). ~10 lines in `lib/home/dashboard.ts` and
+  `HomeScreen.tsx`; revert if unwanted.
+- **Notifications.** `profile.video.approved | rejected | removed` open the `Videos` screen (before the generic
+  `interviewId` rule). Other routes unchanged.
+- **Dead code.** `components/employer/CandidateCard.tsx` was imported nowhere and invented "Immediate" for a null
+  availability; deleted. `CertificateRail.tsx` was used only by it and is now unused too (not deleted — not asked).
+  The employer/interviewer design docs still list `CandidateCard` as an unused file.
+- **Tests (new files).** `__tests__/profileViewFilm.test.tsx` — every film state (PROCESSING/FAILED/UNPUBLISHED never
+  offer booking, even when the audience call fails), the interview date on the seal, the new copy, the videos section;
+  `__tests__/feedbackState.test.tsx` — UNAVAILABLE / AWAITING (with and without `windowHours`) / READY / non-COMPLETED.
+  The notification routing has no test (`routeFor` is not exported).
+- **Not verified.** Nothing was run on a device or emulator. `tsc`, `theme:check` (no findings in touched files —
+  the remaining ones are older Employer/Interviewer/Room files) and the new jest suites pass; `npm run lint` shows no
+  new errors in touched files (its 10 errors are `ios/Pods` and `jest.setup.js`); `__tests__/App.test.tsx` still fails
+  on NitroModules, unrelated. The self-videos section and the film card were checked only in the test renderer, not
+  for layout on a narrow phone. `VideoResume.live` / `held` (from the other agent's types) are not used on the
+  profile card: a PUBLISHED film that is held off the feed still reads "Employers watch this first".
+
+## Round 4a — self-video management and interview videos
+
+Backend was already done (`apostrophe-admin`); this round is `src/lib/api/student.ts`, `VideosScreen`, `VideoResumeScreen`
+and jest (`__tests__/videos.test.tsx` new, `__tests__/videoResume.test.tsx` extended). No artboard exists for either
+screen, so everything is built from existing components and tokens (`Sheet`, `Banner`, `Field`/`Input`, `Chip`, `Button`,
+`StatusPill`, `UnverifiedMark`, `VideoThumb`, `Card`) — no new shared component, and `theme:check` has no findings in the
+files touched.
+
+- **API** (`student.ts`). `VideoResume` gains `live` and `held`; `getVideoResume({ interviewId? })`. New exports:
+  `InterviewVideoStatus`, `InterviewVideoRow`, `InterviewVideos`, `PrimaryInterviewResult`, `SelfVideo` (`SelfVideoKind`,
+  `SelfVideoStatus`), `SelfVideoEdit`, `SelfVideoInput`, and `getInterviewVideos`, `setPrimaryInterview`, `listSelfVideos`,
+  `editSelfVideo`, `deleteSelfVideo`, `addSelfVideo`. `getVideoResume` takes an options object, so it can no longer be
+  passed bare as a react-query `queryFn` (the context object is not its options type) — wrap it: `() => getVideoResume()`.
+- **Your videos — remove and edit.** Each row has **Edit** and **Delete** (accessible names carry title and kind).
+  Delete asks first ("Remove this video? This cannot be undone.") and shows the server's message if it fails; the row stays.
+  Edit opens a sheet with the title (max 80) and the three kinds. An approved clip shows, before saving, "Editing sends this
+  video back for review. Employers will not see it until it is approved again."; a rejected one shows the reason and the action
+  reads "Edit and resubmit"; a pending one is edited in place. After saving the screen reports the server's own reply
+  (`changed:false` → "Nothing changed."; `resubmitted` → "Saved. This video is back in review…"; otherwise "Saved.").
+- **Your videos — the rest.** At the cap the add card is replaced by "That is all N. Delete one to add another." (N from
+  `/config` `limits.selfVideoMaxCount`); with none, "No videos yet." Every row carries `UnverifiedMark` beside its dashed
+  thumbnail. A clip with a signed address plays (tap the thumbnail) in a full-screen ink modal with the native controls; on a
+  player error the list is read ONCE more for a fresh address and playback resumes where it stopped, a second error says so with
+  Try again. A clip with no address is not tappable. Copy: pending "We will tell you when it has been reviewed.", approved "Shown
+  on your full profile to employers, marked not verified.", and "Edited · back in review" when `editedAt` is set on a pending clip.
+- **Upload checks.** A picker duration that is 0, missing or not finite sends NO `durationSec` (the server reads the file; the
+  old code sent a made-up `1`); a known length over `selfVideoMaxSeconds` is refused before anything is uploaded. When
+  `/config` `uploads` is missing nothing is silently skipped or blocked: the card says the file type and size are checked at
+  upload, and the server refuses what it must.
+- **Video resume.** A published film that is not `live` says so above the player: held → "Your video resume is not live yet. A
+  top-up on your interview is outstanding — employers cannot see it until it is settled."; otherwise, when previewing a
+  non-primary one, "You are previewing a video that is not your primary one." The intro line now reads "The film from your
+  interview. Employers watch this first; any videos you add yourself appear below it, marked as not verified."
+- **Your interview videos** (2+ interviews). One card per interview: date, length, state pill (Primary / Ready / Being made /
+  Could not be made / Taken down / Archived), **Watch** (loads that interview's film into the same player; the link renewal
+  re-requests the same interview) and **Make primary** (only where the API says `selectable`; otherwise the API's `reason` is
+  shown). After Make primary the list and film are read again and the screen says "This is now your primary video.", plus, from
+  the reply, "Your profile stays off the feed until your top-up is settled." (`held`) and "A newer interview will not replace this
+  one until you choose it." (`pinned`; also shown whenever the list says `pinned`). A refused choice shows the API's 400 message inline.
+
+### Deviations and unverified (Round 4a)
+
+- **Title limit 80 is a constant in `VideosScreen`.** `/config` carries no title length; the server validates it and its message
+  is shown if it disagrees. Everything else numeric (count, seconds, size, types) is read from `/config`.
+- **Unverified mark sits beside the thumbnail, not on it.** The dashed thumbnail is 58 wide; the "Unverified" pill is wider.
+- **Status pill for an approved clip is "Approved"** (was "Live on your profile"): approved does not mean employers see it while the
+  profile is hidden or not published, so the pill no longer says live. The "Your interview" row now says "Leads your profile" only
+  when `live`, "Held back until your top-up is settled" when `held`, else "Not live on your profile yet"; its thumbnail now draws the
+  film's real state instead of always drawing footage.
+- **No poster for a self-video thumbnail** (the API sends no poster address), so the thumb is the dashed frame with a play mark.
+- Watch on the primary row re-reads the primary film rather than asking for it by id.
+- **Not run on a device.** Jest covers rendering, the API calls, copy and the renewal logic; playback, the signed-address renewal,
+  the full-screen player, the gallery picker, and the on-screen keyboard over the edit sheet (the shared `Sheet` is a plain modal, so
+  the field may sit under the keyboard on a small phone) have not been exercised on Android.
+- Jest reports a worker that did not exit gracefully after these suites (open timer); all tests pass.

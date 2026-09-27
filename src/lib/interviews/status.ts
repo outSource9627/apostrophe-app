@@ -1,4 +1,4 @@
-import type { InterviewStatus } from '../api/interviews'
+import type { FeedbackState, InterviewStatus } from '../api/interviews'
 import type { Tone } from '../../components/ui/status'
 
 /**
@@ -30,5 +30,22 @@ export function statusMark(status: InterviewStatus): StatusMark {
     case 'STUDENT_NO_SHOW':
     case 'INTERVIEWER_NO_SHOW':
       return { label: 'No show', tone: 'danger' }
+  }
+}
+
+/**
+ * The quiet line a COMPLETED interview carries while its scorecard is not there: still expected, or never coming.
+ * READY has none — the scorecard button says it — and neither does an interview that has no feedback state at all.
+ * Neither line names a time: the number of hours an interviewer has is the admin's, and the second line is the one
+ * that must never promise.
+ */
+export function feedbackNote(state?: FeedbackState): string | null {
+  switch (state) {
+    case 'AWAITING':
+      return 'Feedback on its way'
+    case 'UNAVAILABLE':
+      return 'No feedback for this interview'
+    default:
+      return null
   }
 }

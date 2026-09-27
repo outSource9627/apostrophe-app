@@ -93,6 +93,9 @@ export function NotificationsScreen({ onBack, onNavigate }: {
   )
 }
 
+/** The three notifications about a video the student uploaded themselves. */
+const SELF_VIDEO_KINDS = ['profile.video.approved', 'profile.video.rejected', 'profile.video.removed']
+
 function routeFor(n: NotificationRow): { screen: string; params?: Record<string, unknown> } {
   const meta = n.meta ?? {}
   const threadId = typeof meta.threadId === 'string' ? meta.threadId : null
@@ -100,6 +103,8 @@ function routeFor(n: NotificationRow): { screen: string; params?: Record<string,
   if (threadId) return { screen: 'Thread', params: { id: threadId } }
   // RC-11 / RC-12 / RC-13 — the film went live, was taken down, or could not be made: the film screen says which.
   if (n.kind.startsWith('interview.video.')) return { screen: 'VideoResume' }
+  // A video the student uploaded themselves was approved, not approved (with the reason), or taken down by an admin: the videos screen says which.
+  if (SELF_VIDEO_KINDS.includes(n.kind)) return { screen: 'Videos' }
   if (interviewId) return { screen: 'InterviewDetail', params: { id: interviewId } }
   switch (n.category) {
     case 'MESSAGE': return { screen: 'Chats' }

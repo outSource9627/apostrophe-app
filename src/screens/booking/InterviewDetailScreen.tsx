@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { type StudentInterview } from '../../lib/api/interviews'
 import { fmtShortDate, fmtTime } from '../../lib/interviews/slots'
-import { statusMark } from '../../lib/interviews/status'
+import { feedbackNote, statusMark } from '../../lib/interviews/status'
 import { minutesPhrase, useBookingRules, type BookingRules } from '../../lib/interviews/rules'
 import { useCountdown } from '../../lib/interviews/useCountdown'
 import { color, space, spaceHalf, radius, trackingNative } from '../../theme'
@@ -208,6 +208,9 @@ function Terminal({ iv, onBook, onFeedback }: { iv: StudentInterview; onBook: ()
   const underReview = iv.status === 'INCOMPLETE'
   const technical = iv.status === 'CANCELLED' && iv.reviewedAs === 'CANCELLED'
   const mark = statusMark(iv.status)
+  // SP-08 — the scorecard is offered only once it exists; while it is expected, or once it never will be, this says so in words.
+  const scorecardReady = done && iv.feedback === 'READY'
+  const note = done ? feedbackNote(iv.feedback) : null
   return (
     <>
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
@@ -215,7 +218,8 @@ function Terminal({ iv, onBook, onFeedback }: { iv: StudentInterview; onBook: ()
         {done && (
           <Card style={styles.windowCard}>
             <Text style={text.uiBaseSemi}>Your interview is done.</Text>
-            <Text style={[text.uiMd, styles.muted]}>When your film is published it becomes your video resume. Your scorecard arrives separately.</Text>
+            <Text style={[text.uiMd, styles.muted]}>When your film is published it becomes your video resume.</Text>
+            {!!note && <Text style={[text.uiSm, styles.muted]}>{note}</Text>}
           </Card>
         )}
         {underReview && (
@@ -234,10 +238,10 @@ function Terminal({ iv, onBook, onFeedback }: { iv: StudentInterview; onBook: ()
         )}
       </ScrollView>
       <StickyFooter inset={false}>
-        {done && <Button variant="primary" size="lg" full label="See my scorecard" onPress={onFeedback} />}
+        {scorecardReady && <Button variant="primary" size="lg" full label="See my scorecard" onPress={onFeedback} />}
         {technical && <Button variant="primary" size="lg" full label="Book your free re-interview" onPress={onBook} />}
         {!underReview && !technical && (
-          <Button variant={done ? 'outline' : 'primary'} size={done ? 'md' : 'lg'} full label="Book another interview" onPress={onBook} />
+          <Button variant={scorecardReady ? 'outline' : 'primary'} size={scorecardReady ? 'md' : 'lg'} full label="Book another interview" onPress={onBook} />
         )}
       </StickyFooter>
     </>
