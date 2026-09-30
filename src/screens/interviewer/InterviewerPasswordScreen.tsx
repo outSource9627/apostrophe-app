@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native'
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
@@ -52,12 +52,25 @@ export function InterviewerPasswordScreen() {
 
   const toSignIn = () => navigation.reset({ index: 0, routes: [{ name: 'Welcome' }, { name: 'InterviewerSignIn' }] })
 
-  async function signOut() {
-    setBusy(true)
-    await logout().catch(() => undefined)
-    await tokenStore.clear()
-    forget()
-    navigation.reset({ index: 0, routes: [{ name: 'Welcome' }] })
+  function signOut() {
+    Alert.alert(
+      'Sign Out',
+      'Are you sure you want to sign out?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Sign Out',
+          style: 'destructive',
+          onPress: async () => {
+            setBusy(true)
+            await logout().catch(() => undefined)
+            await tokenStore.clear()
+            forget()
+            navigation.reset({ index: 0, routes: [{ name: 'Welcome' }] })
+          },
+        },
+      ]
+    )
   }
 
   function checkNew(withCurrent: boolean): Errs {

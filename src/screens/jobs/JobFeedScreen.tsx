@@ -46,6 +46,11 @@ export function JobFeedScreen({ onBack, onOpen, onSaved, onApplied, onApply }: {
   const ty = useRef(new Animated.Value(0)).current
   const ty4 = useMemo(() => Animated.multiply(ty, 0.25), [ty])
   const { width } = useWindowDimensions()
+  // Gates fling() synchronously (a ref, not state) so a second tap/gesture that
+  // lands inside the ~220ms fly-off animation — before commitSwipe's async
+  // setBusy(true) would ever land — can't start a second competing animation
+  // and double-advance the deck or double-fire the swipe API call.
+  const flingInFlight = useRef(false)
 
   const fetchMore = useCallback(async (reset: boolean, applyFilters?: JobFilters) => {
     setLoading(true)
@@ -83,26 +88,41 @@ export function JobFeedScreen({ onBack, onOpen, onSaved, onApplied, onApply }: {
   const activeCount = activeFilterCount(filters)
 
   const commitSwipe = useCallback(async (card: JobCard, direction: 'RIGHT' | 'LEFT') => {
-    setBusy(true); setError(null)
-    try { await swipeJob(card.id, direction); setLast({ card, direction }) }
-    catch (e) { if (!(e instanceof ApiClientError && e.code === 'CONFLICT')) setError(e instanceof Error ? e.message : 'Could not save that.') }
-    finally { setBusy(false) }
+    setError(null)
+    try {
+      await swipeJob(card.id, direction)
+      setLast({ card, direction })
+    } catch (e) {
+      if (e instanceof ApiClientError && e.code === 'CONFLICT') {
+        // The server already has a swipe recorded for this job — nothing to roll back.
+      } else {
+        // The card already flew off screen optimistically; the API call that was
+        // supposed to record it failed, so put it back where it was rather than
+        // silently dropping the student's swipe.
+        setI((n) => Math.max(0, n - 1))
+        setError(e instanceof Error ? e.message : 'Could not save that.')
+      }
+    } finally { setBusy(false) }
   }, [])
 
   const fling = useCallback((direction: 'RIGHT' | 'LEFT') => {
-    if (!current || busy) {
+    if (flingInFlight.current) return
+    if (!current) {
       Animated.parallel([
         Animated.spring(tx, { toValue: 0, useNativeDriver: true }),
         Animated.spring(ty, { toValue: 0, useNativeDriver: true }),
       ]).start()
       return
     }
+    flingInFlight.current = true
+    setBusy(true)
     const card = current
     Animated.timing(tx, { toValue: (direction === 'RIGHT' ? 1 : -1) * width * 1.4, duration: 220, useNativeDriver: true }).start(() => {
+      flingInFlight.current = false
       setI((n) => n + 1)
       void commitSwipe(card, direction)
     })
-  }, [current, busy, tx, ty, width, commitSwipe])
+  }, [current, tx, ty, width, commitSwipe])
 
   // The next card is on top once React has drawn it; only then snap the values
   // home, so the old card never flashes back to the centre for a frame.

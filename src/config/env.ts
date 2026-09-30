@@ -11,16 +11,14 @@ import { Platform } from 'react-native'
  * Agora certificate, Razorpay secret, AWS keys — sab sirf server pe.
  */
 
-// --- core ------------------------------------------------------------ [P0]
-// Android emulator host ko `localhost` se nahi pahunch sakta; 10.0.2.2 uska
-// alias hai. Physical device pe apni machine ka LAN IP daalna (e.g. 192.168.1.5).
-const DEV_API = Platform.OS === 'android' ? 'http://10.0.2.2:3000' : 'http://localhost:3000'
+// Mac's LAN IP address for testing on physical phone (or emulator/simulator).
+// Ensure your phone and Mac are connected to the same Wi-Fi network.
+const DEV_HOST = '10.104.51.79'
+const DEV_API = `http://${DEV_HOST}:3000`
 
 export const API_BASE_URL = (__DEV__ ? DEV_API : 'https://api.apostrophe.work') + '/api/v1'
 export const SOCKET_URL = __DEV__
-  ? Platform.OS === 'android'
-    ? 'http://10.0.2.2:4001'
-    : 'http://localhost:4001'
+  ? `http://${DEV_HOST}:4001`
   : 'https://realtime.apostrophe.work'
 
 // --- payments -------------------------------------------------- [P2] TODO

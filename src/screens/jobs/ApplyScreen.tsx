@@ -8,7 +8,9 @@ import { applyToJob, type JobDetail } from '../../lib/api/jobs'
 import { getVideoResume } from '../../lib/api/student'
 import { fmtDayMonthYear } from '../../lib/chat/format'
 import { color, space } from '../../theme'
-import { Banner, Body, Button, Card, Eyebrow, Field, Input, ScreenHeader, Skeleton, StatusPill, StickyFooter, VerifiedSeal, text } from '../../components/ui'
+import { Banner, Body, Button, Card, Eyebrow, Field, Input, Meta, ScreenHeader, Skeleton, StatusPill, StickyFooter, VerifiedSeal, text } from '../../components/ui'
+
+const NOTE_MAX = 600
 
 interface Profile { publishedAt: string | null }
 type Phase = 'ready' | 'sending' | 'sent' | 'connected' | 'already' | 'unpublished' | 'closed'
@@ -118,8 +120,12 @@ export function ApplyScreen({ id, onBack, onApplications, onBook, onFeed }: {
             <VerifiedSeal date={sealAt ? fmtDayMonthYear(sealAt) : undefined} />
           </View>
         </Card>
-        <Field label="Add a note" helper="Optional — one or two lines to the employer.">
-          <Input value={message} onChangeText={(v) => setMessage(v.slice(0, 600))} placeholder="Why this role, in a sentence." multiline maxLength={600} />
+        <Field label="Add a note">
+          <Input value={message} onChangeText={(v) => setMessage(v.slice(0, NOTE_MAX))} placeholder="Why this role, in a sentence." multiline maxLength={NOTE_MAX} />
+          <View style={styles.noteRow}>
+            <Body size="xs" tone="subtle" style={styles.grow}>Optional — one or two lines to the employer.</Body>
+            <Meta style={styles.noteCount}>{message.length} / {NOTE_MAX}</Meta>
+          </View>
         </Field>
         {error ? <Banner tone="danger">{error}</Banner> : null}
       </ScrollView>
@@ -148,4 +154,7 @@ const styles = StyleSheet.create({
   gapTop: { marginTop: space.md },
   gapTopSm: { marginTop: space.sm },
   muted: { color: color.textMuted },
+  noteRow: { flexDirection: 'row', alignItems: 'baseline', gap: space.sm },
+  grow: { flex: 1 },
+  noteCount: { flexShrink: 0 },
 })

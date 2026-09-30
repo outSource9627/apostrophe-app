@@ -7,7 +7,7 @@ import {
   Body, Button, Card, Display, ErrorState, Eyebrow, Skeleton, StatusPill, text,
 } from '../../components/ui'
 import type { IconName } from '../../components/ui/Icon'
-import { DocumentStatusRow, DropZone, EmployerShell, Glyph } from '../../components/employer'
+import { DocumentStatusRow, DropZone, EmployerShell, Glyph, VerifiedEmployerBadge } from '../../components/employer'
 import { EmBadge, EmCard, EmMono, EmSteps, EmWell, type EmTone } from '../../components/employer/em'
 import { useEmployer } from '../../lib/employer/useEmployer'
 import { useEmployerConfig } from '../../lib/employer/useEmployerConfig'
@@ -75,7 +75,7 @@ export function EmployerStatusScreen({ onBack, onResubmit, onFeed }: EmployerSta
         footer={<Button variant="primary" size="lg" full label="Open the candidate feed" onPress={onFeed} />}
       >
         <View accessibilityLiveRegion="polite" style={styles.lead}>
-          <EmBadge label="Verified employer" tone="green" icon="shield" />
+          <VerifiedEmployerBadge />
           <Text style={text.displayHeading}>{`${state.company.name} is verified.`}</Text>
           <Text style={[text.uiMd, styles.muted]}>
             {`${approvedAt ? `Approved ${formatIstDate(approvedAt)}. ` : ''}Candidates see the badge on every Interest and in chat.`}
