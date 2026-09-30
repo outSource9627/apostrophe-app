@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { borderWidth, color, height, opacity, radius, space, spaceHalf, trackingNative } from '../../theme'
@@ -36,16 +36,29 @@ export function InterviewerAccountScreen() {
   const forget = useForgetInterviewer()
   const [signingOut, setSigningOut] = useState(false)
 
-  async function signOut() {
-    setSigningOut(true)
-    try {
-      await logout()
-    } catch {
-      /* best-effort; the phone is cleared regardless */
-    }
-    await tokenStore.clear()
-    forget()
-    navigation.reset({ index: 0, routes: [{ name: 'Welcome' }] })
+  function signOut() {
+    Alert.alert(
+      'Sign Out',
+      'Are you sure you want to sign out?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Sign Out',
+          style: 'destructive',
+          onPress: async () => {
+            setSigningOut(true)
+            try {
+              await logout()
+            } catch {
+              /* best-effort; the phone is cleared regardless */
+            }
+            await tokenStore.clear()
+            forget()
+            navigation.reset({ index: 0, routes: [{ name: 'Welcome' }] })
+          },
+        },
+      ]
+    )
   }
 
   const p = me?.profile

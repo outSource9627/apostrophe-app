@@ -13,8 +13,11 @@ export interface DashboardData {
   interviews: StudentInterview[]
   /** Null when the video resume's state could not be read; `filmStateOf` then infers it. */
   film: VideoResume | null
-  /** 'awaiting' is the 404 the scorecard screen also treats as a state; null is "could not tell". */
-  feedback: Feedback | 'awaiting' | null
+  /**
+   * The 404 the scorecard screen also treats as a state, told apart the way the interview tells it (SP-08):
+   * 'awaiting' is still expected, 'unavailable' will never come. Null is "could not tell".
+   */
+  feedback: Feedback | 'awaiting' | 'unavailable' | null
 }
 
 /** Which film card Home draws. The API reports the student's one video resume. */
@@ -64,7 +67,9 @@ export async function loadDashboard(): Promise<DashboardData> {
   const done = latestCompleted(interviews)
   const feedback = done
     ? await getFeedback(done.id).catch((e: unknown) =>
-        e instanceof ApiClientError && e.status === 404 ? ('awaiting' as const) : null,
+        e instanceof ApiClientError && e.status === 404
+          ? (done.feedback === 'UNAVAILABLE' ? ('unavailable' as const) : ('awaiting' as const))
+          : null,
       )
     : null
   return { audience, interviews, film, feedback }

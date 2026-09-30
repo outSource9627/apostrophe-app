@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query'
 import { color, opacity, space, spaceHalf } from '../../theme'
 import { Button, text } from '../../components/ui'
 import { Icon, type IconName } from '../../components/ui/Icon'
-import { EmployerShell } from '../../components/employer'
+import { EmployerShell, FeedExplainer, VerifiedEmployerBadge } from '../../components/employer'
 import { EmBadge, EmCard, EmMono, EmSteps, EmWell, type EmTone, type StepState } from '../../components/employer/em'
 import { fetchShortlist } from '../../lib/api/employerShortlist'
 import { fetchEmployerInterests, liveInterestOutcome } from '../../lib/api/employerInterests'
@@ -84,6 +84,9 @@ export function EmployerHomeScreen({ onDocuments, onStatus, onFeed }: EmployerHo
             <Text style={[text.uiMd, styles.secondary]}>{t}</Text>
           </View>
         ))}
+      </EmCard>
+      <EmCard>
+        <FeedExplainer />
       </EmCard>
     </EmployerShell>
   )
@@ -194,7 +197,7 @@ function VerifiedHome({ state, onFeed }: { state: EmployerState; onFeed?: () => 
   return (
     <>
       <EmCard style={styles.verified}>
-        <EmBadge label="Verified employer" tone="green" icon="shield" />
+        <VerifiedEmployerBadge />
         <Text style={text.displaySm}>{`${state.company.name} is a Verified Employer.`}</Text>
         {!!approvedAt && <EmMono tone="subtle">{`APPROVED ${formatIst(approvedAt).toUpperCase()}`}</EmMono>}
         <Button variant="primary" size="cta" full label="Open the candidate feed" onPress={onFeed ?? (() => navigation.navigate('EmployerFeed'))} />

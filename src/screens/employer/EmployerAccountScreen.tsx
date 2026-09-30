@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useQueryClient } from '@tanstack/react-query'
@@ -40,16 +40,29 @@ export function EmployerAccountScreen() {
     getMe().then(setMe).catch(() => {})
   }, [])
 
-  async function signOut() {
-    setSigningOut(true)
-    try {
-      await logout()
-    } catch {
-      /* best-effort; the session is cleared here regardless */
-    }
-    await tokenStore.clear()
-    queryClient.removeQueries({ queryKey: ['employer'] })
-    navigation.reset({ index: 0, routes: [{ name: 'Welcome' }] })
+  function signOut() {
+    Alert.alert(
+      'Sign Out',
+      'Are you sure you want to sign out?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Sign Out',
+          style: 'destructive',
+          onPress: async () => {
+            setSigningOut(true)
+            try {
+              await logout()
+            } catch {
+              /* best-effort; the session is cleared here regardless */
+            }
+            await tokenStore.clear()
+            queryClient.removeQueries({ queryKey: ['employer'] })
+            navigation.reset({ index: 0, routes: [{ name: 'Welcome' }] })
+          },
+        },
+      ]
+    )
   }
 
   async function support() {

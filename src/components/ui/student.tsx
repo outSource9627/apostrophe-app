@@ -1,5 +1,5 @@
 import React from 'react'
-import { Pressable, StyleSheet, Text, TextInput, View, type PressableProps, type ViewProps } from 'react-native'
+import { ActivityIndicator, Image, Pressable, StyleSheet, Text, TextInput, View, type PressableProps, type ViewProps } from 'react-native'
 import Svg, { Defs, LinearGradient, Path, RadialGradient, Rect, Stop } from 'react-native-svg'
 import { borderWidth, color, height, opacity, radius, space, spaceHalf, trackingNative } from '../../theme'
 import { LogoMark } from '../Logo'
@@ -224,26 +224,78 @@ export function InkButton({
   )
 }
 
+/** The states of the student's one film (`GET /students/me/video-resume`). */
+export type FilmThumbStatus = 'NONE' | 'PROCESSING' | 'PUBLISHED' | 'FAILED' | 'UNPUBLISHED'
+
 /**
- * The 9:16 still that stands for a published film: slate into ink with a play
- * mark. Drawn in SVG (no CSS gradient on RN); the real poster, when the app has
- * one to show, replaces it at the call site.
+ * A 9:16 still for the student's film, in whichever state it is.
+ *
+ * Only PUBLISHED is footage: slate into ink with a play mark (drawn in SVG, no CSS
+ * gradient on RN), and the real poster over it when the app has one. Every other state
+ * gets its own ground and glyph, so a dark rectangle with a play mark can only ever
+ * mean "there is footage behind this" — the same rule the web `FilmThumb` follows.
+ *
+ *   PROCESSING   paper-muted with a spinner: something is being made
+ *   FAILED       the rose well with a mark: nothing was made
+ *   UNPUBLISHED  paper-muted with the eye-off glyph: it exists and is withheld
+ *   NONE         the dashed placeholder, for a film that was never made
+ *
+ * `width` overrides the list-row size for a thumb that stands alone on a card.
  */
-export function FilmThumb() {
+export function FilmThumb({
+  status = 'PUBLISHED', posterUrl, width,
+}: { status?: FilmThumbStatus; posterUrl?: string | null; width?: number }) {
+  const size = width ? { width } : null
+
+  if (status === 'PUBLISHED') {
+    return (
+      <View style={[styles.thumb, size]}>
+        <Svg width="100%" height="100%" style={StyleSheet.absoluteFill}>
+          <Defs>
+            <LinearGradient id="filmThumb" x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0" stopColor={color.textSecondary} />
+              <Stop offset="1" stopColor={color.inkRaised} />
+            </LinearGradient>
+          </Defs>
+          <Rect x="0" y="0" width="100%" height="100%" fill="url(#filmThumb)" />
+        </Svg>
+        {!!posterUrl && <Image source={{ uri: posterUrl }} style={StyleSheet.absoluteFill} resizeMode="cover" />}
+        {/* Over a real still the mark needs a ground of its own; over the plain footage ground it is the bare triangle. */}
+        <View style={posterUrl ? styles.thumbPlayGlass : undefined}>
+          <Svg width={height['thumb-play']} height={height['thumb-play']} viewBox="0 0 10 10">
+            <Path d="M2.5 1.5L8.5 5L2.5 8.5Z" fill={color.textInverse} />
+          </Svg>
+        </View>
+      </View>
+    )
+  }
+
   return (
-    <View style={styles.thumb}>
-      <Svg width="100%" height="100%" style={StyleSheet.absoluteFill}>
-        <Defs>
-          <LinearGradient id="filmThumb" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor={color.textSecondary} />
-            <Stop offset="1" stopColor={color.inkRaised} />
-          </LinearGradient>
-        </Defs>
-        <Rect x="0" y="0" width="100%" height="100%" fill="url(#filmThumb)" />
-      </Svg>
-      <Svg width={height['thumb-play']} height={height['thumb-play']} viewBox="0 0 10 10">
-        <Path d="M2.5 1.5L8.5 5L2.5 8.5Z" fill={color.textInverse} />
-      </Svg>
+    <View
+      style={[
+        styles.thumb,
+        styles.thumbState,
+        status === 'FAILED' && styles.thumbFailed,
+        status === 'NONE' && styles.thumbNone,
+        size,
+      ]}
+    >
+      {status === 'PROCESSING' && <ActivityIndicator color={color.warning} />}
+      {status === 'FAILED' && <Text style={[text.displayXs, { color: color.danger }]}>!</Text>}
+      {status === 'UNPUBLISHED' && (
+        <Svg width={space.xl} height={space.xl} viewBox="0 0 24 24" fill="none" stroke={color.textSubtle} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
+          <Path d="M3 3l18 18" />
+          <Path d="M10.6 5.2A9.9 9.9 0 0 1 12 5c5 0 9 4.5 9 7a11 11 0 0 1-2.6 3.8" />
+          <Path d="M6.2 6.4C3.9 7.9 3 10.2 3 12c0 2.5 4 7 9 7a9.6 9.6 0 0 0 4.2-1" />
+          <Path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+        </Svg>
+      )}
+      {status === 'NONE' && (
+        <Svg width={space.xl} height={space.xl} viewBox="0 0 24 24" fill="none" stroke={color.borderStrong} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
+          <Rect x="2.5" y="6.5" width="13" height="11" rx="2.5" />
+          <Path d="m15.5 12 6-3.5v7Z" />
+        </Svg>
+      )}
     </View>
   )
 }
@@ -394,6 +446,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  // A play mark over a real still: the glass disc the web's poster state draws under it.
+  thumbPlayGlass: {
+    width: space['2xl'],
+    height: space['2xl'],
+    borderRadius: radius.pill,
+    backgroundColor: color.onInkGlass,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  thumbState: { backgroundColor: color.surfaceMuted, borderWidth: borderWidth.thin, borderColor: color.border },
+  thumbFailed: { backgroundColor: color.dangerSoft, borderColor: color.dangerBorder },
+  thumbNone: { borderStyle: 'dashed', borderColor: color.borderStrong },
   fab: {
     position: 'absolute',
     right: space.lg,

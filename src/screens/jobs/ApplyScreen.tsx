@@ -5,8 +5,12 @@ import { useQuery } from '@tanstack/react-query'
 import Svg, { Path } from 'react-native-svg'
 import { api, ApiClientError } from '../../lib/api'
 import { applyToJob, type JobDetail } from '../../lib/api/jobs'
+import { getVideoResume } from '../../lib/api/student'
+import { fmtDayMonthYear } from '../../lib/chat/format'
 import { color, space } from '../../theme'
-import { Banner, Body, Button, Card, Eyebrow, Field, Input, ScreenHeader, Skeleton, StatusPill, StickyFooter, VerifiedSeal, text } from '../../components/ui'
+import { Banner, Body, Button, Card, Eyebrow, Field, Input, Meta, ScreenHeader, Skeleton, StatusPill, StickyFooter, VerifiedSeal, text } from '../../components/ui'
+
+const NOTE_MAX = 600
 
 interface Profile { publishedAt: string | null }
 type Phase = 'ready' | 'sending' | 'sent' | 'connected' | 'already' | 'unpublished' | 'closed'
@@ -26,6 +30,12 @@ export function ApplyScreen({ id, onBack, onApplications, onBook, onFeed }: {
   const [error, setError] = useState<string | null>(null)
   const jobQ = useQuery<JobDetail>({ queryKey: ['job', id], queryFn: () => api.get<JobDetail>(`/students/me/jobs/${id}`) })
   const profQ = useQuery<Profile>({ queryKey: ['profile'], queryFn: () => api.get<Profile>('/students/me/profile') })
+  // The seal carries the day of the INTERVIEW. `profile.publishedAt` is set once and never moves, so it is the day the profile first
+  // went live, not the day this film was made. Only the two dates are kept: the film's signed address is not held in the cache.
+  const filmQ = useQuery({
+    queryKey: ['video-resume', 'apply-dates'],
+    queryFn: () => getVideoResume().then((f) => ({ interviewedAt: f.interviewedAt, publishedAt: f.publishedAt })),
+  })
 
   useEffect(() => {
     if (jobQ.data && profQ.data && phase === 'ready') {
@@ -40,7 +50,9 @@ export function ApplyScreen({ id, onBack, onApplications, onBook, onFeed }: {
     const closed = jobQ.error instanceof ApiClientError && jobQ.error.code === 'CONFLICT'
     return frame(<View style={{ padding: space.xl }}><Banner tone="warning">{closed ? 'Applications for this job have closed.' : 'This job is no longer available.'}</Banner></View>)
   }
-  const job = jobQ.data!, profile = profQ.data!
+  const job = jobQ.data!
+  // Never a date that is not the film's: when the film's dates cannot be read the seal carries none.
+  const sealAt = filmQ.data ? filmQ.data.interviewedAt ?? filmQ.data.publishedAt : null
 
   async function send() {
     setPhase('sending'); setError(null)
@@ -105,11 +117,15 @@ export function ApplyScreen({ id, onBack, onApplications, onBook, onFeed }: {
         <Card style={styles.videoCard}>
           <View style={{ gap: space.sm }}>
             <Body weight="medium">Your video resume</Body>
-            <VerifiedSeal date={profile.publishedAt ? fmtDate(profile.publishedAt) : undefined} />
+            <VerifiedSeal date={sealAt ? fmtDayMonthYear(sealAt) : undefined} />
           </View>
         </Card>
-        <Field label="Add a note" helper="Optional — one or two lines to the employer.">
-          <Input value={message} onChangeText={(v) => setMessage(v.slice(0, 600))} placeholder="Why this role, in a sentence." multiline maxLength={600} />
+        <Field label="Add a note">
+          <Input value={message} onChangeText={(v) => setMessage(v.slice(0, NOTE_MAX))} placeholder="Why this role, in a sentence." multiline maxLength={NOTE_MAX} />
+          <View style={styles.noteRow}>
+            <Body size="xs" tone="subtle" style={styles.grow}>Optional — one or two lines to the employer.</Body>
+            <Meta style={styles.noteCount}>{message.length} / {NOTE_MAX}</Meta>
+          </View>
         </Field>
         {error ? <Banner tone="danger">{error}</Banner> : null}
       </ScrollView>
@@ -128,7 +144,6 @@ function Fact({ t }: { t: string }) {
     </View>
   )
 }
-function fmtDate(iso: string) { const d = new Date(iso); const M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']; return `${d.getUTCDate()} ${M[d.getUTCMonth()]} ${d.getUTCFullYear()}` }
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.background },
@@ -139,4 +154,7 @@ const styles = StyleSheet.create({
   gapTop: { marginTop: space.md },
   gapTopSm: { marginTop: space.sm },
   muted: { color: color.textMuted },
+  noteRow: { flexDirection: 'row', alignItems: 'baseline', gap: space.sm },
+  grow: { flex: 1 },
+  noteCount: { flexShrink: 0 },
 })

@@ -17,6 +17,14 @@ export type InterviewStatus =
   | 'STUDENT_NO_SHOW'
   | 'INTERVIEWER_NO_SHOW'
 
+/**
+ * SP-08 — where the student's feedback on a COMPLETED interview stands. Absent for any other status.
+ *   READY        the interviewer submitted it; `GET /interviews/:id/feedback` returns it.
+ *   AWAITING     still inside the interviewer's submission window: it may yet arrive.
+ *   UNAVAILABLE  the window closed with nothing submitted. It will never arrive, so no screen may promise it.
+ */
+export type FeedbackState = 'READY' | 'AWAITING' | 'UNAVAILABLE'
+
 export interface StudentInterview {
   id: string
   slotStart: string
@@ -28,6 +36,14 @@ export interface StudentInterview {
   canCancel: boolean
   roomReady: boolean
   joinUrl?: string
+  /**
+   * 6.3 — what an admin decided about a session that ended below the completion threshold. Present once it has
+   * been reviewed (`status` then names the outcome), so a no-show out of a session that STARTED tells a different
+   * story from one where nobody joined. Never the admin's note.
+   */
+  reviewedAs?: 'COMPLETED' | 'STUDENT_NO_SHOW' | 'INTERVIEWER_NO_SHOW' | 'CANCELLED'
+  /** SP-08 — the state of the feedback on a COMPLETED interview; absent for every other status. */
+  feedback?: FeedbackState
   /** SC-16 — absent until the session starts; never a real name before then. */
   interviewer?: { name: string; photoUrl?: string | null; headline?: string | null; company?: string | null; bio?: string | null }
 }
@@ -121,7 +137,11 @@ export interface Feedback {
     improvements: string
   }
 }
-/** 404 'Your feedback is not ready yet.' is the AWAITING state (ST-33), not an error. */
+/**
+ * A 404 here is a state, not an error — but two different ones: 'Your feedback is not ready yet.' (AWAITING) and
+ * 'Feedback will not be available for this interview.' (UNAVAILABLE, never coming). Read which from the interview's
+ * `feedback`, not from the message.
+ */
 export const getFeedback = (id: string) => api.get<Feedback>(`/interviews/${id}/feedback`)
 
 // ── Readiness result, preparation, leave, student events (IR-06, SC-30/34) ───

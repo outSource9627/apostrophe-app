@@ -11,6 +11,7 @@ import { EmIconButton } from '../../components/employer/em'
 import { ApiClientError } from '../../lib/api'
 import { playCandidateRecording, type CandidateRecordingPlay } from '../../lib/api/employerFeed'
 import { clock, interviewDate, nameInitials, playhead } from '../../lib/employer/candidateFormat'
+import { useEmployer } from '../../lib/employer/useEmployer'
 import { useEmployerConfig } from '../../lib/employer/useEmployerConfig'
 import type { RootStackParamList } from '../../../App'
 
@@ -30,10 +31,14 @@ export function CandidateVideoScreen() {
   const { id, name, photoUrl, interviewAt } = route.params
   const insets = useSafeAreaInsets()
   const config = useEmployerConfig()
+  const { state } = useEmployer()
+  const known = state !== null
+  const verified = Boolean(state?.verified)
 
   const [recording, setRecording] = useState<CandidateRecordingPlay | null>(null)
   const [loading, setLoading] = useState(true)
   const [limitReached, setLimitReached] = useState(false)
+  const [blocked, setBlocked] = useState(false)
   const [failed, setFailed] = useState<string | null>(null)
   const [paused, setPaused] = useState(false)
   const [muted, setMuted] = useState(false)
@@ -46,10 +51,12 @@ export function CandidateVideoScreen() {
   const load = useCallback(async () => {
     setLoading(true)
     setFailed(null)
+    setBlocked(false)
     try {
       setRecording(await playCandidateRecording(id, 'LANDSCAPE'))
     } catch (e) {
-      if (e instanceof ApiClientError && (e.code === 'RATE_LIMITED' || e.meta?.reason === 'VIDEO_PLAY_LIMIT_REACHED')) setLimitReached(true)
+      if (e instanceof ApiClientError && e.isUnverified) setBlocked(true)
+      else if (e instanceof ApiClientError && (e.code === 'RATE_LIMITED' || e.meta?.reason === 'VIDEO_PLAY_LIMIT_REACHED')) setLimitReached(true)
       else setFailed(e instanceof Error ? e.message : 'The interview did not load.')
     } finally {
       setLoading(false)
@@ -57,8 +64,19 @@ export function CandidateVideoScreen() {
   }, [id])
 
   useEffect(() => {
+    // This screen is only reached through an already-gated one (Feed,
+    // Shortlist, Applicant detail), but a deep link or stale nav state could
+    // land here directly — wait for the shared employer state before either
+    // loading the recording or blocking, so a momentary "unknown" never reads
+    // as verified.
+    if (!known) return
+    if (!verified) {
+      setLoading(false)
+      setBlocked(true)
+      return
+    }
     load()
-  }, [load])
+  }, [known, verified, load])
 
   const total = time.total || recording?.durationSec || 0
   const pct = total > 0 ? Math.min(1, time.at / total) : 0
@@ -73,8 +91,16 @@ export function CandidateVideoScreen() {
   }
 
   let body: React.ReactNode
-  if (loading) {
+  if (!known || loading) {
     body = <ActivityIndicator color={color.textOnInkMuted} />
+  } else if (blocked) {
+    body = (
+      <View style={styles.state}>
+        <Icon name="lock" size={height.glyph + 2} tint={color.textOnInkMuted} />
+        <Text style={[text.displaySm, styles.onInk, styles.center]}>Verification required.</Text>
+        <Text style={[text.uiMd, styles.onInkMuted, styles.center]}>Full interviews open once your account is verified.</Text>
+      </View>
+    )
   } else if (limitReached) {
     const limit = recording?.quota?.limit ?? config.feedDailyVideoPlayLimit
     body = (
@@ -105,6 +131,9 @@ export function CandidateVideoScreen() {
             muted={muted}
             progressUpdateInterval={250}
             onLoad={(d) => {
+              // The link that just loaded works: a LATER lapse (links live 15 minutes, a full
+              // interview is longer) is a new lapse and gets its own renewal, not "stopped playing".
+              retried.current = false
               setTime({ at: resumeAt.current, total: d.duration })
               if (resumeAt.current) player.current?.seek(resumeAt.current)
             }}

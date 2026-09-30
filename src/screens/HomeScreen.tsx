@@ -48,14 +48,14 @@ const BEATS = [
  * paid, Home is the design's dashboard (Student App Android, M4).
  */
 export function HomeScreen({
-  onPay, onBook, onJoin, onReschedule, onFeedback, onSupport, onAccount,
+  onPay, onBook, onJoin, onReschedule, onFeedback, onVideoResume, onAccount,
 }: {
   onPay: () => void
   onBook: () => void
   onJoin: (id: string) => void
   onReschedule: (id: string) => void
   onFeedback: (id: string) => void
-  onSupport: () => void
+  onVideoResume: () => void
   onAccount: () => void
 }) {
   const insets = useSafeAreaInsets()
@@ -91,7 +91,7 @@ export function HomeScreen({
           onJoin={onJoin}
           onReschedule={onReschedule}
           onFeedback={onFeedback}
-          onSupport={onSupport}
+          onVideoResume={onVideoResume}
           onAccount={onAccount}
         />
       </View>
@@ -166,7 +166,7 @@ function useNow(everyMs = 60_000) {
 const creditLabel = (n: number) => `${n} ${n === 1 ? 'credit' : 'credits'}`
 
 function PaidHome({
-  me, initials, onBook, onJoin, onReschedule, onFeedback, onSupport, onAccount,
+  me, initials, onBook, onJoin, onReschedule, onFeedback, onVideoResume, onAccount,
 }: {
   me: Me
   initials: string
@@ -174,7 +174,7 @@ function PaidHome({
   onJoin: (id: string) => void
   onReschedule: (id: string) => void
   onFeedback: (id: string) => void
-  onSupport: () => void
+  onVideoResume: () => void
   onAccount: () => void
 }) {
   const now = useNow()
@@ -216,7 +216,7 @@ function PaidHome({
             onJoin={onJoin}
             onReschedule={onReschedule}
             onFeedback={onFeedback}
-            onSupport={onSupport}
+            onVideoResume={onVideoResume}
           />
         )}
       </ScrollView>
@@ -231,7 +231,7 @@ function PaidHome({
 }
 
 function Dashboard({
-  data, now, onBook, onJoin, onReschedule, onFeedback, onSupport,
+  data, now, onBook, onJoin, onReschedule, onFeedback, onVideoResume,
 }: {
   data: DashboardData
   now: number
@@ -239,7 +239,7 @@ function Dashboard({
   onJoin: (id: string) => void
   onReschedule: (id: string) => void
   onFeedback: (id: string) => void
-  onSupport: () => void
+  onVideoResume: () => void
 }) {
   const next = nextUpcoming(data.interviews, now)
   const done = latestCompleted(data.interviews)
@@ -249,7 +249,7 @@ function Dashboard({
     <>
       <VisibilityCard audience={data.audience} />
       <UpcomingCard iv={next} now={now} onBook={onBook} onJoin={onJoin} onReschedule={onReschedule} />
-      <FilmCard state={film} live={!data.audience.hiddenFromFeed} pending={data.film?.pipelinePending ?? false} onBook={onBook} onSupport={onSupport} />
+      <FilmCard state={film} live={!data.audience.hiddenFromFeed} held={data.film?.held ?? false} pending={data.film?.pipelinePending ?? false} onBook={onBook} onVideoResume={onVideoResume} />
       {data.feedback && done && (
         <ScorecardRow feedback={data.feedback} onPress={() => onFeedback(done.id)} />
       )}
@@ -372,17 +372,19 @@ const FILM_PILL: Record<FilmState, { tone: Tone; label: string }> = {
  * no data behind them and are not drawn.
  */
 function FilmCard({
-  state, live, pending, onBook, onSupport,
-}: { state: FilmState; live: boolean; pending: boolean; onBook: () => void; onSupport: () => void }) {
+  state, live, held, pending, onBook, onVideoResume,
+}: { state: FilmState; live: boolean; held: boolean; pending: boolean; onBook: () => void; onVideoResume: () => void }) {
   const pill = FILM_PILL[state]
   const line = {
-    published: live ? 'Live in employer feeds' : 'Hidden from employers',
+    // IC-05: a top-up still owed keeps a READY film off the feed, whatever the visibility switch says.
+    published: held ? 'Held back until your top-up is settled' : live ? 'Live in employer feeds' : 'Hidden from employers',
     processing: pending ? 'Not ready yet. We cannot say when it will be.' : 'Your interview is being prepared.',
     failed: 'We could not make a film from your interview.',
     unpublished: 'Your film has been taken down, so employers cannot see it.',
     none: 'The film from your interview is what employers watch before they read a word.',
   }[state]
-  const press = state === 'none' ? onBook : state === 'failed' || state === 'unpublished' ? onSupport : undefined
+  // Every state but 'none' has something to say on the video-resume screen (the film, why it is not ready, or why it is down).
+  const press = state === 'none' ? onBook : onVideoResume
 
   const inner = state === 'published' ? (
     <>
@@ -401,22 +403,24 @@ function FilmCard({
   )
 
   return (
-    <Pressable disabled={!press} onPress={press} accessibilityRole={press ? 'button' : undefined}>
+    <Pressable onPress={press} accessibilityRole="button">
       <Card style={styles.filmCard}>{inner}</Card>
     </Pressable>
   )
 }
 
-/** The newest scorecard, or the line that says it is on its way. */
+/** The newest scorecard, or the line that says it is on its way — or, once the interviewer's time has run out, that it is not coming. */
 function ScorecardRow({ feedback, onPress }: { feedback: NonNullable<DashboardData['feedback']>; onPress: () => void }) {
-  const ready = feedback !== 'awaiting'
+  const ready = feedback !== 'awaiting' && feedback !== 'unavailable'
   return (
     <Pressable disabled={!ready} onPress={onPress} accessibilityRole="button">
       <Card style={styles.filmCard}>
         <View style={styles.rowText}>
-          <StatusPill tone={ready ? 'accent' : 'neutral'} label={ready ? 'Scorecard' : 'Scorecard on its way'} />
+          <StatusPill tone={ready ? 'accent' : 'neutral'} label={ready ? 'Scorecard' : feedback === 'unavailable' ? 'No scorecard' : 'Scorecard on its way'} />
           <Body size="base" weight="semibold">
-            {ready ? `Overall ${feedback.scorecard.scores.overall} / 10` : 'We’ll notify you the moment it lands.'}
+            {ready
+              ? `Overall ${feedback.scorecard.scores.overall} / 10`
+              : feedback === 'unavailable' ? 'No feedback for this interview' : 'We’ll notify you the moment it lands.'}
           </Body>
         </View>
         {ready && <Text style={styles.chevron}>›</Text>}

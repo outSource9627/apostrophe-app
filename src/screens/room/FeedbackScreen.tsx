@@ -2,8 +2,9 @@ import React from 'react'
 import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useQuery } from '@tanstack/react-query'
-import { ApiClientError } from '../../lib/api'
-import { getFeedback, type Feedback } from '../../lib/api/interviews'
+import { api, ApiClientError } from '../../lib/api'
+import { getFeedback, getInterview, type Feedback } from '../../lib/api/interviews'
+import { hoursPhrase } from '../../lib/interviews/rules'
 import { fmtStampZone } from '../../lib/chat/format'
 import { color, space, spaceHalf, radius, trackingNative } from '../../theme'
 import { Body, Button, Card, ErrorState, Eyebrow, InkCard, ScoreRow, ScreenHeader, Skeleton, text } from '../../components/ui'
@@ -17,10 +18,18 @@ const SCORES: { key: keyof Feedback['scorecard']['scores']; label: string }[] = 
 ]
 
 /**
- * ST-33 — interview feedback. Awaiting most of its life (within 24h), then five
- * scores out of ten in the serif at the 40px step (tabular), strengths and
- * improvements IN FULL — no truncation — and a plain line that employers never
- * see any of this. No internal note, no recommendation.
+ * ST-33 / SP-08 — interview feedback. Five scores out of ten in the serif at the
+ * 40px step (tabular), strengths and improvements IN FULL — no truncation — and a
+ * plain line that employers never see any of this. No internal note, no
+ * recommendation.
+ *
+ * A 404 from the feedback call is a state, and there are two of them that read
+ * alike: the interviewer still has time (AWAITING — say it is on its way) and the
+ * interviewer's time ran out (UNAVAILABLE — it will never come, so say that and
+ * promise nothing). The server's message differs between them, but the screen
+ * reads the interview's own `feedback` field rather than matching on wording.
+ * How long an interviewer has is the admin's number (`scorecard.windowHours` in
+ * /config): when it is not there the sentence drops it.
  */
 export function FeedbackScreen({ id, onBack }: { id: string; onBack: () => void }) {
   const insets = useSafeAreaInsets()
@@ -29,7 +38,15 @@ export function FeedbackScreen({ id, onBack }: { id: string; onBack: () => void 
     queryFn: () => getFeedback(id),
     retry: (n, e) => !(e instanceof ApiClientError && e.status === 404) && n < 2,
   })
-  const awaiting = q.error instanceof ApiClientError && q.error.status === 404
+  const notFound = q.error instanceof ApiClientError && q.error.status === 404
+  // Only a 404 needs to know why: the interview says whether the feedback is still expected.
+  const ivQ = useQuery({ queryKey: ['interview', id], queryFn: () => getInterview(id), enabled: notFound })
+  const cfgQ = useQuery({
+    queryKey: ['config'],
+    queryFn: () => api.get<{ scorecard?: { windowHours?: number } }>('/config'),
+    enabled: notFound,
+  })
+  const windowHours = cfgQ.data?.scorecard?.windowHours
 
   const frame = (c: React.ReactNode, subtitle?: string) => (
     <View style={[styles.page, { paddingTop: insets.top }]}>
@@ -39,13 +56,43 @@ export function FeedbackScreen({ id, onBack }: { id: string; onBack: () => void 
   )
   if (q.isPending) return frame(<View style={styles.body}><Skeleton lines={4} /></View>)
 
-  if (awaiting) {
+  if (notFound) {
+    if (ivQ.isPending) return frame(<View style={styles.body}><Skeleton lines={4} /></View>)
+    const iv = ivQ.data
+    // Anything but a COMPLETED interview never has feedback; a COMPLETED one says which of the three it is.
+    const unavailable = iv ? iv.status !== 'COMPLETED' || iv.feedback === 'UNAVAILABLE' : false
+
+    if (iv?.feedback === 'AWAITING') {
+      return frame(
+        <View style={[styles.body, styles.centred]}>
+          <Eyebrow tone="accent">Feedback</Eyebrow>
+          <Text style={text.displayLead}>Your feedback is on its way.</Text>
+          <Body size="base" tone="muted">
+            {windowHours != null
+              ? `Your interviewer writes it up after the session and has up to ${hoursPhrase(windowHours)} after the session to send it — we’ll notify you the moment it does.`
+              : 'Your interviewer writes it up after the session — we’ll notify you the moment it does.'}
+          </Body>
+          <View style={styles.awaitAction}><Button variant="outline" size="md" label="Back to my interviews" onPress={onBack} /></View>
+        </View>,
+      )
+    }
+    if (unavailable) {
+      return frame(
+        <View style={[styles.body, styles.centred]}>
+          <Eyebrow>Feedback</Eyebrow>
+          <Text style={text.displayLead}>Feedback will not be available for this interview.</Text>
+          <View style={styles.awaitAction}><Button variant="outline" size="md" label="Back to my interviews" onPress={onBack} /></View>
+        </View>,
+      )
+    }
+    // The interview could not be read, or it says READY while the feedback call said not yet (it landed in between), or it carries no state.
     return frame(
-      <View style={[styles.body, styles.centred]}>
-        <Eyebrow tone="accent">Feedback</Eyebrow>
-        <Text style={text.displayLead}>Your feedback is on its way.</Text>
-        <Body size="base" tone="muted">Your interviewer writes it up after the session. It usually lands within a day of your interview — we&rsquo;ll notify you the moment it does.</Body>
-        <View style={styles.awaitAction}><Button variant="outline" size="md" label="Back to my interviews" onPress={onBack} /></View>
+      <View style={styles.centred}>
+        <ErrorState
+          title="Could not load your feedback."
+          body="Nothing was changed. Try again in a moment."
+          action={<Button variant="outline" size="md" label="Try again" onPress={() => { q.refetch(); ivQ.refetch() }} />}
+        />
       </View>,
     )
   }

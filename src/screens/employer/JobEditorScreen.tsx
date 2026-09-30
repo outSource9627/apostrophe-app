@@ -16,6 +16,7 @@ import {
   type EmployerJobDetail, type JobDraftInput,
 } from '../../lib/api/employerJobs'
 import { pickVideo } from '../../lib/api/uploads'
+import { useEmployer } from '../../lib/employer/useEmployer'
 import { VIDEO_CANCELLED, checkJobVideo, clock, endOfIstDay, hoursPhrase, uploadJobVideo, useJobConfig } from '../../lib/employer/jobs'
 import { employmentLabel } from '../../lib/jobs/format'
 import { label } from '../../lib/profile/labels'
@@ -62,6 +63,9 @@ export function JobEditorScreen() {
   const route = useRoute<RouteProp<RootStackParamList, 'JobEditor'>>()
   const jobId = route.params?.id
   const { moderationHours, video: rule } = useJobConfig()
+  const { state } = useEmployer()
+  const known = state !== null
+  const verified = Boolean(state?.verified)
 
   const [config, setConfig] = useState<AppConfig | null>(null)
   const [existing, setExisting] = useState<EmployerJobDetail | null>(null)
@@ -264,11 +268,13 @@ export function JobEditorScreen() {
   const back = () => (step === 2 ? setStep(1) : navigation.goBack())
   const barTitle = jobId ? 'Edit job post' : 'New job post'
 
-  if (loading || loadError || status === 'CLOSED') {
+  if (!known || loading || !verified || loadError || status === 'CLOSED') {
     return (
       <EmployerShell back={() => navigation.goBack()} title={barTitle}>
-        {loading ? (
+        {!known || loading ? (
           <ActivityIndicator color={color.textSubtle} style={styles.loading} />
+        ) : !verified ? (
+          <EmError title="Verification required." body="Posting a job opens once your account is verified." />
         ) : loadError ? (
           <EmError title="This post didn’t load." body={loadError} />
         ) : (

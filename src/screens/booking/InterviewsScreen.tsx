@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { type StudentInterview } from '../../lib/api/interviews'
 import { fmtShortDate, fmtTime, splitByTime } from '../../lib/interviews/slots'
-import { statusMark } from '../../lib/interviews/status'
+import { feedbackNote, statusMark } from '../../lib/interviews/status'
 import { borderWidth, color, height, radius, space, spaceHalf, trackingNative } from '../../theme'
 import { Button, Chip, EmptyState, ErrorState, Fab, Skeleton, StatusPill, TabTitle, text } from '../../components/ui'
 
@@ -94,6 +94,8 @@ export function InterviewsScreen({
 function Row({ iv, onOpen }: { iv: StudentInterview; onOpen: () => void }) {
   const mark = statusMark(iv.status)
   const [, dayNum, mon] = fmtShortDate(iv.slotStart).split(' ')
+  // SP-08 — a COMPLETED interview whose feedback is still expected, or never coming, says so quietly (the scorecard itself is on the detail screen, once it exists).
+  const note = iv.status === 'COMPLETED' ? feedbackNote(iv.feedback) : null
   const action = iv.roomReady ? 'Join interview' : iv.status === 'COMPLETED' ? 'View details' : iv.canReschedule || iv.canCancel ? 'Manage' : 'View details'
   return (
     <Pressable accessibilityRole="button" onPress={onOpen} style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
@@ -107,6 +109,7 @@ function Row({ iv, onOpen }: { iv: StudentInterview; onOpen: () => void }) {
           <StatusPill tone={mark.tone} label={mark.label} dot={mark.live} />
         </View>
         <Text style={[text.uiXs, styles.sub]}>{iv.durationMin} minutes · {iv.tier}{iv.interviewer ? ` · with ${iv.interviewer.name}` : ''}</Text>
+        {!!note && <Text style={[text.uiXs, styles.sub]}>{note}</Text>}
         <Text style={[text.uiSmSemi, styles.action]}>{action} →</Text>
       </View>
     </Pressable>

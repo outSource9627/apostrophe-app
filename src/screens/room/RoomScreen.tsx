@@ -1,5 +1,5 @@
 import React from 'react'
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Image, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Svg, { Ellipse, Path, Rect } from 'react-native-svg'
 import { RtcSurfaceView, RenderModeType } from 'react-native-agora'
@@ -17,13 +17,21 @@ import { Body, Button, Card, ErrorState, Meta, text } from '../../components/ui'
  * it. Only the interviewer ends the interview — the student gets LEAVE (the one
  * white-ground control), never End. The full-screen self-preview is the REAL Agora
  * camera track (RtcSurfaceView uid 0) with the framing guide drawn over it as an
- * overlay — never composited into the published stream. The floating tile
- * carries the interviewer's live video (portrait-cropped) once revealed.
+ * overlay — never composited into the published stream. On a phone the floating
+ * tile carries the interviewer's live video once revealed; on a tablet (IR-04) the
+ * student's portrait pane sits beside a real interviewer panel. The interviewer
+ * publishes 16:9 (IR-05), so their picture is drawn 16:9 and never cropped.
  */
+/** The width from which the room lays out for a tablet: portrait pane beside an interviewer panel (IR-04). */
+const TABLET_MIN_WIDTH = 600
+
 export function RoomScreen({ id, onEnded, onLeft, onReadiness, onBack }: {
   id: string; onEnded: () => void; onLeft?: () => void; onReadiness?: () => void; onBack?: () => void
 }) {
   const insets = useSafeAreaInsets()
+  const { width } = useWindowDimensions()
+  // IR-04 — from a tablet's width the interviewer is a panel beside the portrait pane, not a corner tile.
+  const wide = width >= TABLET_MIN_WIDTH
   const room = useRoom(id, { onLeft: onLeft ?? onEnded, onEnded, onReadinessRequired: onReadiness })
 
   const audioOnly = room.state === 'audio-only'
@@ -33,6 +41,8 @@ export function RoomScreen({ id, onEnded, onLeft, onReadiness, onBack }: {
   return (
     <View style={[styles.page, { paddingTop: insets.top }]}>
       <View style={styles.stage}>
+       <View style={wide ? styles.wideRow : StyleSheet.absoluteFill}>
+        <View style={wide ? styles.portraitPane : StyleSheet.absoluteFill}>
         {room.localReady && !room.cameraOff && !audioOnly && (
           <RtcSurfaceView style={StyleSheet.absoluteFill} canvas={{ uid: 0, renderMode: RenderModeType.RenderModeHidden }} />
         )}
@@ -47,13 +57,20 @@ export function RoomScreen({ id, onEnded, onLeft, onReadiness, onBack }: {
             <Ellipse cx={45} cy={58} rx={26} ry={34} fill="none" stroke={color.guideLine} strokeWidth={0.5} strokeDasharray="3 2.5" />
           </Svg>
         )}
+        </View>
+        {wide && (
+          <View style={styles.panelPane}>
+            <InterviewerTile panel name={room.interviewer?.name ?? null} photoUrl={room.interviewer?.photoUrl ?? null} remoteUid={room.remoteVideoOn && !audioOnly ? room.remoteUid : null} />
+          </View>
+        )}
+       </View>
 
         <View style={styles.topRow}>
           <View style={{ gap: space.sm }}>
             {room.recording && <View style={styles.recChip}><View style={styles.recDot} /><Text style={[text.metaPill, styles.recText]}>REC</Text></View>}
             {room.state === 'live' && <View style={styles.recChip}><Text style={[text.metaXl, styles.clock]}>{fmtElapsed(room.elapsedSec)}</Text></View>}
           </View>
-          <InterviewerTile name={room.interviewer?.name ?? null} photoUrl={room.interviewer?.photoUrl ?? null} remoteUid={room.remoteVideoOn && !audioOnly ? room.remoteUid : null} />
+          {!wide && <InterviewerTile name={room.interviewer?.name ?? null} photoUrl={room.interviewer?.photoUrl ?? null} remoteUid={room.remoteVideoOn && !audioOnly ? room.remoteUid : null} />}
         </View>
 
         {room.state === 'waiting' && (
@@ -126,10 +143,10 @@ function Ico({ size = 20, stroke, children }: { size?: number; stroke: string; c
   return <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">{children}</Svg>
 }
 
-function InterviewerTile({ name, photoUrl, remoteUid }: { name: string | null; photoUrl: string | null; remoteUid: number | null }) {
+function InterviewerTile({ name, photoUrl, remoteUid, panel = false }: { name: string | null; photoUrl: string | null; remoteUid: number | null; panel?: boolean }) {
   const initials = name?.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase()
   return (
-    <View style={styles.tile}>
+    <View style={panel ? styles.panelTile : styles.tile}>
       {remoteUid != null ? (
         <View style={styles.tileVideo}>
           <RtcSurfaceView style={StyleSheet.absoluteFill} zOrderMediaOverlay canvas={{ uid: remoteUid, renderMode: RenderModeType.RenderModeHidden }} />
@@ -183,7 +200,12 @@ const styles = StyleSheet.create({
   recText: { color: color.dangerOnInk },
   clock: { color: color.textOnInk },
   tile: { width: height['room-tile-w'], alignItems: 'center', gap: space.xs, borderRadius: radius.panel, backgroundColor: color.inkRaised, borderWidth: borderWidth.thin, borderColor: color.onInkEdge, padding: space.sm },
-  tileVideo: { width: '100%', aspectRatio: 9 / 16, borderRadius: radius.sm, overflow: 'hidden', backgroundColor: color.onInkGround },
+  // The interviewer publishes 16:9 (IR-05): draw it 16:9 so nothing is cropped away.
+  tileVideo: { width: '100%', aspectRatio: 16 / 9, borderRadius: radius.sm, overflow: 'hidden', backgroundColor: color.onInkGround },
+  panelTile: { width: '100%', alignItems: 'center', gap: space.xs, borderRadius: radius.panel, backgroundColor: color.inkRaised, borderWidth: borderWidth.thin, borderColor: color.onInkEdge, padding: space.sm },
+  wideRow: { position: 'absolute', top: height.tap + height.control, bottom: height['room-ctl'], left: 0, right: 0, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.xl, paddingHorizontal: space.xl },
+  portraitPane: { height: '100%', aspectRatio: 9 / 16, borderRadius: radius.panel, overflow: 'hidden', backgroundColor: color.inkRaised },
+  panelPane: { flex: 1, maxWidth: 520, justifyContent: 'center' },
   photo: { width: '100%', height: '100%', borderRadius: radius.pill },
   plate: { width: height.tap, height: height.tap, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', backgroundColor: color.onInkGround },
   initials: { color: color.textOnInk },
