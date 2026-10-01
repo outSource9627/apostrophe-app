@@ -1,5 +1,5 @@
 import React from 'react'
-import { ActivityIndicator, Image, Modal, Pressable, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, Image, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import Video from 'react-native-video'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { borderWidth, color, height, opacity, radius, space, spaceHalf, trackingNative } from '../../theme'
@@ -11,6 +11,7 @@ import {
 } from '../../lib/employer/candidateFormat'
 import { label } from '../../lib/profile/labels'
 import { EmBadge, EmIconButton, EmMono } from './em'
+import { FactTile, FilmStill, SectionBlock, SkillTags } from './studio'
 
 /**
  * The candidate profile's parts (Employer Android EM-09 and the feed's profile
@@ -229,6 +230,275 @@ export function ProfileSections({
   )
 }
 
+// ── Studio · the profile page (docs/employer-app-studio.html · 03, P1–P2) ────
+/*
+ * The Candidate profile page in the Studio direction: the three fact tiles, the
+ * video row, and the résumé sections (experience, education, skills, what they
+ * are looking for, documents and links), each a hairline-topped SectionBlock.
+ * The parts above are the feed sheet's and stay as they were.
+ *
+ * GET /employers/candidates/:id sends no salary, notice period, poster or
+ * stream of its own; those are read from the profile's preferences and, when
+ * the person is in the feed's deck, from their card. A section with nothing in
+ * it is not drawn.
+ */
+
+type Paise = { minPaise: number | null; maxPaise: number | null }
+
+/** The expectation: the detail's own, else the preferences', else the feed card's. */
+export function expectedSalaryOf(c: CandidateDetail, card?: CandidateCard | null): Paise | null {
+  if (c.expectedSalary) return c.expectedSalary
+  const p = c.preferences
+  if (p && (p.expectedSalaryMinPaise != null || p.expectedSalaryMaxPaise != null)) {
+    return { minPaise: p.expectedSalaryMinPaise ?? null, maxPaise: p.expectedSalaryMaxPaise ?? null }
+  }
+  return card?.expectedSalary ?? null
+}
+
+/** The notice period: the detail's, else the preferences', else the feed card's. */
+export const availabilityOf = (c: CandidateDetail, card?: CandidateCard | null) =>
+  c.availability ?? c.preferences?.availabilityToJoin ?? card?.availability ?? null
+
+/** '1.5 yrs', '1 yr', 'Fresher' — the tile's and the compact bar's short form. */
+export function experienceShort(years: number | null | undefined): string | null {
+  if (years == null) return null
+  if (years <= 0) return 'Fresher'
+  return `${years} ${years === 1 ? 'yr' : 'yrs'}`
+}
+
+/** 'Tier 2' from the server's 'T2'; any other value as it came. */
+export const tierName = (tier: string | null | undefined) => (tier ? (/^T\d$/.test(tier) ? `Tier ${tier.slice(1)}` : tier) : null)
+
+/** 'Graduation · Tier 2 · Pune' — the head's line, in the mockup's order. */
+export function personLine(c: { qualification?: string | null; tier?: string | null }, tail?: string | null): string {
+  return [c.qualification ? label(c.qualification) : null, tierName(c.tier), tail].filter(Boolean).join(' · ')
+}
+
+/** EXPECTED · JOINS · EXPERIENCE (P1). A fact the API did not send is left out. */
+export function ProfileFactTiles({
+  salary, availability, experienceYears,
+}: { salary: Paise | null; availability: string | null; experienceYears: number | null | undefined }) {
+  const facts: [string, string][] = []
+  const pay = salaryLine(salary)
+  if (pay) facts.push(['Expected', pay.replace(/ LPA$/, ' L')])
+  const joins = joinsLine(availability)
+  if (joins) facts.push(['Joins', joins])
+  const exp = experienceShort(experienceYears)
+  if (exp) facts.push(['Experience', exp])
+  if (!facts.length) return null
+  return (
+    <View style={styles.tiles}>
+      {facts.map(([k, v]) => <FactTile key={k} label={k} value={v} style={styles.tile} />)}
+    </View>
+  )
+}
+
+/**
+ * VIDEOS · N (P1): the verified interview first, then each self-uploaded clip,
+ * marked as such. Each still is the interview's poster or the photo — the API
+ * sends no frame of a self-uploaded clip.
+ */
+export function ProfileVideoRow({
+  name, poster, interview, videos, onPlayClip,
+}: {
+  name: string
+  poster?: string | null
+  /** The verified interview's tile; null when there is none. */
+  interview: { onPress: () => void; disabled?: boolean; durationSec?: number | null } | null
+  videos: CandidateDetail['videos']
+  onPlayClip?: (videoId: string) => void
+}) {
+  const clips = videos ?? []
+  const count = clips.length + (interview ? 1 : 0)
+  if (!count) return null
+  const interviewLen = clipLength(interview?.durationSec)
+  return (
+    <SectionBlock label={`Videos · ${count}`}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.videoScroll} contentContainerStyle={styles.videoRow}>
+        {!!interview && (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Play ${name}’s verified interview`}
+            accessibilityState={{ disabled: !!interview.disabled }}
+            disabled={interview.disabled}
+            onPress={interview.onPress}
+            style={({ pressed }) => [styles.video, pressed && styles.pressed, interview.disabled && styles.off]}
+          >
+            <FilmStill name="" poster={poster} width={VIDEO_W} height={VIDEO_H} corner={radius.md} play="sm" />
+            <Text style={text.uiXsSemi} numberOfLines={2}>{interviewLen ? `Interview · ${interviewLen}` : 'Interview'}</Text>
+            <EmBadge label="Verified" tone="green" small />
+          </Pressable>
+        )}
+        {clips.map((v) => {
+          const title = v.title || `Clip ${v.slot}`
+          const len = clipLength(v.durationSec)
+          return (
+            <Pressable
+              key={v.id}
+              accessibilityRole="button"
+              accessibilityLabel={`Play ${title}, self-uploaded, not verified`}
+              disabled={!onPlayClip}
+              onPress={() => onPlayClip?.(v.id)}
+              style={({ pressed }) => [styles.video, pressed && styles.pressed]}
+            >
+              <FilmStill name="" poster={poster} width={VIDEO_W} height={VIDEO_H} corner={radius.md} play="sm" />
+              <Text style={text.uiXsSemi} numberOfLines={2}>{len ? `${title} · ${len}` : title}</Text>
+              <EmBadge label="Self-uploaded" tone="amber" small />
+            </Pressable>
+          )
+        })}
+      </ScrollView>
+    </SectionBlock>
+  )
+}
+
+/** The scheme a portfolio link may have been saved without. */
+export const linkUrl = (url: string) => (/^[a-z][a-z0-9+.-]*:/i.test(url) ? url : `https://${url}`)
+const linkHost = (url: string) => url.replace(/^[a-z][a-z0-9+.-]*:\/\//i, '').replace(/^www\./i, '').split(/[/?#]/)[0]
+
+/**
+ * The résumé half of the page (P2): Experience as a timeline, Education,
+ * Skills, Looking for, and Documents · links. Experience says so when there is
+ * none, so a fresher's profile reads as finished; the others are left out.
+ */
+export function ProfileResume({
+  candidate, onOpenDocument, openingDoc, onOpenLink,
+}: {
+  candidate: CandidateDetail
+  onOpenDocument?: (docId: string) => void
+  /** The document whose link is being fetched. */
+  openingDoc?: string | null
+  onOpenLink?: (url: string) => void
+}) {
+  const experience = candidate.experience ?? []
+  const years = experienceShort(candidate.experienceYears)
+
+  const edu = candidate.education
+  const eduTitle = edu ? [edu.qualification ? label(edu.qualification) : null, edu.fieldOfStudy].filter(Boolean).join(' · ') : ''
+  const score = edu?.score != null
+    ? edu.scoreType === 'PERCENTAGE' ? `${edu.score}%` : edu.scoreType ? `${edu.score} ${label(edu.scoreType)}` : `Score ${edu.score}`
+    : null
+  const eduMeta = edu ? [edu.institution, edu.year ?? edu.yearOfCompletion, score].filter(Boolean).join(' · ') : ''
+
+  const prefs = candidate.preferences
+  const roles = [...new Set([...(prefs?.desiredRoles ?? []), ...(prefs?.targetRoles ?? [])])]
+  const types = [prefs?.employmentTypes?.length ? prefs.employmentTypes.map(label).join(', ') : null, prefs?.remote ? 'open to remote' : null]
+    .filter(Boolean)
+    .join(' · ')
+  const looking: [string, string][] = []
+  if (roles.length) looking.push(['Roles', roles.join(', ')])
+  if (prefs?.preferredLocations?.length) looking.push(['Locations', prefs.preferredLocations.join(', ')])
+  if (types) looking.push(['Type', types.charAt(0).toUpperCase() + types.slice(1)])
+  if (candidate.languages?.length) looking.push(['Languages', candidate.languages.join(', ')])
+
+  const documents = candidate.documents ?? []
+  const links = (candidate.portfolioLinks ?? []).filter((l) => !!l?.url)
+  const filesLabel = documents.length && links.length ? 'Documents · links' : documents.length ? 'Documents' : 'Links'
+
+  return (
+    <>
+      <SectionBlock label={years ? `Experience · ${years}` : 'Experience'}>
+        {experience.length > 0 ? (
+          experience.map((x, i) => {
+            const when = [monthYear(x.from), x.to ? monthYear(x.to) : 'Present'].filter(Boolean).join(' – ')
+            const meta = [x.company, when].filter(Boolean).join(' · ')
+            return (
+              <View key={`${x.title}-${i}`} style={styles.tlRow}>
+                <View style={styles.tlDot} />
+                <View style={styles.tlBody}>
+                  {!!x.title && <Text style={text.uiBaseSemi}>{x.title}</Text>}
+                  {!!meta && <Text style={[text.uiSm, styles.muted]}>{meta}</Text>}
+                  {!!x.description && <Text style={[text.uiSm, styles.secondary, styles.tlDesc]}>{x.description}</Text>}
+                </View>
+              </View>
+            )
+          })
+        ) : (
+          <Text style={[text.uiMd, styles.muted]}>No work experience listed.</Text>
+        )}
+      </SectionBlock>
+
+      {edu && (eduTitle || eduMeta) ? (
+        <SectionBlock label="Education">
+          <View style={styles.eduRow}>
+            <View style={styles.eduMark}><Icon name="grad" size={space.lg + borderWidth.thin} tint={color.accentText} /></View>
+            <View style={styles.grow}>
+              {!!eduTitle && <Text style={text.uiMdSemi}>{eduTitle}</Text>}
+              {!!eduMeta && <Text style={[text.uiSm, styles.muted]}>{eduMeta}</Text>}
+            </View>
+          </View>
+        </SectionBlock>
+      ) : null}
+
+      {candidate.skills?.length > 0 && (
+        <SectionBlock label="Skills">
+          <SkillTags skills={candidate.skills} max={8} />
+        </SectionBlock>
+      )}
+
+      {looking.length > 0 && (
+        <SectionBlock label="Looking for">
+          <View style={styles.looking}>
+            {looking.map(([k, v]) => (
+              <View key={k} style={styles.lookRow}>
+                <Text style={[text.uiMd, styles.muted, styles.lookKey]}>{k}</Text>
+                <Text style={[text.uiMdMedium, styles.secondary, styles.grow]}>{v}</Text>
+              </View>
+            ))}
+          </View>
+        </SectionBlock>
+      )}
+
+      {documents.length + links.length > 0 && (
+        <SectionBlock label={filesLabel}>
+          {documents.map((d) => {
+            const sub = [d.name, fileSize(d.sizeBytes)].filter(Boolean).join(' · ')
+            return (
+              <Pressable
+                key={d.id}
+                accessibilityRole="button"
+                accessibilityLabel={`Download ${d.name || label(d.kind)}`}
+                disabled={!onOpenDocument || openingDoc === d.id}
+                onPress={() => onOpenDocument?.(d.id)}
+                style={({ pressed }) => [styles.fileRow, pressed && styles.pressed]}
+              >
+                <View style={styles.fileTile}><Text style={[text.metaXs, styles.fileExt]}>{d.contentType?.includes('pdf') ? 'PDF' : 'DOC'}</Text></View>
+                <View style={styles.grow}>
+                  <Text style={text.uiSmMedium} numberOfLines={1}>{label(d.kind)}</Text>
+                  {!!sub && <Text style={[text.uiXs, styles.muted]} numberOfLines={1}>{sub}</Text>}
+                </View>
+                {openingDoc === d.id
+                  ? <ActivityIndicator color={color.textMuted} />
+                  : <Icon name="download" size={space.lg + borderWidth.thin} tint={color.textMuted} />}
+              </Pressable>
+            )
+          })}
+          {links.map((l, i) => (
+            <Pressable
+              key={`${l.url}-${i}`}
+              accessibilityRole="link"
+              accessibilityLabel={`Open ${l.label || linkHost(l.url)}`}
+              disabled={!onOpenLink}
+              onPress={() => onOpenLink?.(linkUrl(l.url))}
+              style={({ pressed }) => [styles.fileRow, pressed && styles.pressed]}
+            >
+              <View style={[styles.fileTile, styles.linkTile]}><Icon name="link" size={space.lg} tint={color.textSecondary} /></View>
+              <View style={styles.grow}>
+                <Text style={text.uiSmMedium} numberOfLines={1}>{l.label || linkHost(l.url)}</Text>
+                <Text style={[text.uiXs, styles.muted]} numberOfLines={1}>{l.url}</Text>
+              </View>
+            </Pressable>
+          ))}
+        </SectionBlock>
+      )}
+    </>
+  )
+}
+
+/** The video row's still: 106 × 70 (P1). */
+const VIDEO_W = height['video-thumb'] - spaceHalf['2.5']
+const VIDEO_H = height.fab + spaceHalf['3.5']
+
 /** A self-uploaded clip, full screen with the platform's controls. Marked unverified, as everywhere. */
 export function ClipPlayer({ url, title, onClose }: { url: string | null; title?: string; onClose: () => void }) {
   const insets = useSafeAreaInsets()
@@ -278,6 +548,34 @@ const styles = StyleSheet.create({
   doc: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: spaceHalf['2.5'], paddingHorizontal: space.md, borderRadius: radius.tile, backgroundColor: color.surfaceMuted, minHeight: height.tap },
   docTile: { width: spaceHalf['6'] + space.xs + 2, height: height['chip-lg'], borderRadius: radius.sm, backgroundColor: color.surface, borderWidth: borderWidth.thin, borderColor: color.border, alignItems: 'center', justifyContent: 'flex-end', paddingBottom: space.xs },
   docExt: { color: color.danger },
+
+  // Studio (P1–P2)
+  off: { opacity: opacity.disabled },
+  tiles: { flexDirection: 'row', gap: space.sm, paddingHorizontal: space.lg, paddingBottom: spaceHalf['3.5'] },
+  tile: { paddingHorizontal: spaceHalf['2.5'] },
+  videoScroll: { marginHorizontal: -space.xl },
+  videoRow: { gap: space.sm, paddingHorizontal: space.xl },
+  video: { width: VIDEO_W, gap: space.xs + borderWidth.thin },
+  tlRow: { flexDirection: 'row', alignItems: 'flex-start', gap: space.md },
+  tlDot: {
+    width: spaceHalf['2.5'] + borderWidth.thin,
+    height: spaceHalf['2.5'] + borderWidth.thin,
+    borderRadius: radius.pill,
+    borderWidth: borderWidth.medium + borderWidth.thin,
+    borderColor: color.accent,
+    marginTop: space.xs,
+  },
+  tlBody: { flex: 1, minWidth: 0, gap: space['2xs'] },
+  tlDesc: { marginTop: space['2xs'] },
+  eduRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  eduMark: { width: height['avatar-lg'], height: height['avatar-lg'], borderRadius: radius.tile, backgroundColor: color.accentSoft, alignItems: 'center', justifyContent: 'center' },
+  looking: { gap: spaceHalf['1.5'] },
+  lookRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spaceHalf['2.5'] },
+  lookKey: { width: space['4xl'] + space.xl },
+  fileRow: { flexDirection: 'row', alignItems: 'center', gap: spaceHalf['2.5'], paddingVertical: spaceHalf['2.5'], paddingHorizontal: space.md, borderRadius: radius.tile, borderWidth: borderWidth.thin, borderColor: color.border, backgroundColor: color.surface, minHeight: height.tap },
+  fileTile: { width: height.avatar, height: height['avatar-lg'], borderRadius: radius.sm, backgroundColor: color.dangerSoft, alignItems: 'center', justifyContent: 'center' },
+  fileExt: { color: color.danger },
+  linkTile: { backgroundColor: color.surfaceMuted },
 
   player: { flex: 1, backgroundColor: color.inkDeep, gap: space.md },
   playerTop: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingHorizontal: space.lg },

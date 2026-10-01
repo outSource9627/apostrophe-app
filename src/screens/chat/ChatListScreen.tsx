@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import React, { useEffect, useRef, useState } from 'react'
+import { Animated, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -8,14 +8,15 @@ import {
 } from '../../lib/api/chat'
 import { fmtClock, fmtDayMon, fmtRowStamp, originLabel } from '../../lib/chat/format'
 import { useChatSocketEvents } from '../../lib/chat/socket'
-import { color, height, space, spaceHalf, radius, borderWidth } from '../../theme'
-import { Banner, Body, Card, Divider, ErrorState, Eyebrow, Meta, Skeleton, TabTitle, text } from '../../components/ui'
+import { borderWidth, color, fontFamilyNative as FF, opacity, radius } from '../../theme'
+import { CompactBar, GroupLabel, LargeTitle, SkeletonRows, StateBlock, useCollapsingTitle } from '../../components/tab/kit'
 import { CounterpartyPlate } from './parts'
 
 const OPENS_HOURS_BEFORE = 24
 
 /**
- * ST-43 — the three thread kinds in one list, titled the way the server names its
+ * ST-43 — the three thread kinds in one list, as the signed-off mockup draws it
+ * (docs/interviews-profile-chat-final.html), titled the way the server names its
  * counterparty (the COMPANY for an employer, "Your Interviewer" while masked, the
  * real name once revealed, "Apostrophe Support"). A read-only interviewer thread
  * is NOT archived — it stays live. Unread is a mono chip, never a red dot or a
@@ -28,6 +29,7 @@ export function ChatListScreen({ onOpenThread }: {
   const insets = useSafeAreaInsets()
   const qc = useQueryClient()
   const [now] = useState(() => Date.now())
+  const title = useCollapsingTitle()
 
   const q = useQuery({
     queryKey: ['threads'],
@@ -47,45 +49,71 @@ export function ChatListScreen({ onOpenThread }: {
     onRead: () => qc.invalidateQueries({ queryKey: ['threads'] }),
   })
 
-  const bar = <TabTitle title="Chats" />
-  const frame = (c: React.ReactNode) => <View style={[styles.page, { paddingTop: insets.top }]}>{bar}{c}</View>
-  if (q.isPending) return frame(<Skeleton lines={4} />)
-  if (q.isError) return frame(<ErrorState title="Could not load your chats." />)
+  const strip = !connected ? <ReconnectingStrip /> : null
+  const frame = (c: React.ReactNode) => (
+    <View style={[s.page, { paddingTop: insets.top }]}>
+      {strip}
+      <LargeTitle title="Chats" />
+      {c}
+    </View>
+  )
+  if (q.isPending) return frame(<View style={s.pad}><SkeletonRows count={5} /></View>)
+  if (q.isError) return frame(<StateBlock icon="alert" title="Could not load your chats." body="Nothing has changed. Try again in a moment." action="Try again" onAction={() => { void q.refetch() }} />)
 
   const { live, archived, conns } = q.data!
   const unreadTotal = live.reduce((n, t) => n + t.unread, 0)
 
   return (
-    <View style={[styles.page, { paddingTop: insets.top }]}>
-      {bar}
-      <ScrollView contentContainerStyle={styles.body}>
-        {unreadTotal > 0 && <Text style={[text.metaMd, styles.unread]}>{`${unreadTotal} UNREAD`}</Text>}
-
-        {!connected && (
-          <Banner tone="warning">Reconnecting · a sent message will go out when you are back</Banner>
-        )}
+    <View style={[s.page, { paddingTop: insets.top }]}>
+      <CompactBar title="Chats" opacity={title.barOpacity} />
+      {strip}
+      <Animated.ScrollView onScroll={title.onScroll} scrollEventThrottle={16} showsVerticalScrollIndicator={false} contentContainerStyle={s.body}>
+        <LargeTitle title="Chats">
+          {unreadTotal > 0 && <Text style={s.unread}>{`${unreadTotal} UNREAD`}</Text>}
+        </LargeTitle>
 
         {live.length === 0 && archived.length === 0 ? (
-          <Card style={styles.emptyCard}>
-            <Text style={text.displayXs}>No chats yet.</Text>
-            <Body size="sm" tone="muted" style={{ marginTop: space.sm }}>A chat opens when you accept an Interest, and one opens with your interviewer the day before your interview. Support is always here.</Body>
-          </Card>
+          <View style={s.pad}>
+            <View style={s.emptyCard}>
+              <Text style={s.emptyTitle}>No chats yet.</Text>
+              <Text style={s.emptyBody}>A chat opens when you accept an Interest, and one opens with your interviewer the day before your interview. Support is always here.</Text>
+            </View>
+          </View>
         ) : (
-          <>
+          <View style={s.pad}>
             <View>{live.map((t, i) => <ThreadRow key={t.id} t={t} conn={t.connectionId ? conns.get(t.connectionId) : undefined} now={now} first={i === 0} muted={t.kind === 'STUDENT_INTERVIEWER' && t.state.readOnly && !t.state.open} onOpen={() => onOpenThread(t.id)} />)}</View>
             {archived.length > 0 && (
               <>
-                <View style={styles.archHead}>
-                  <Eyebrow>Archived</Eyebrow>
-                  <Divider style={styles.rule} />
-                  <Meta style={{ color: color.textSubtle }}>{String(archived.length)}</Meta>
+                <View style={s.archHead}>
+                  <GroupLabel>Archived</GroupLabel>
+                  <View style={s.rule} />
+                  <Text style={s.archCount}>{String(archived.length)}</Text>
                 </View>
                 <View>{archived.map((t, i) => <ThreadRow key={t.id} t={t} conn={t.connectionId ? conns.get(t.connectionId) : undefined} now={now} first={i === 0} muted onOpen={() => onOpenThread(t.id)} />)}</View>
               </>
             )}
-          </>
+          </View>
         )}
-      </ScrollView>
+      </Animated.ScrollView>
+    </View>
+  )
+}
+
+/** Shown above the title while the socket is down: nothing is lost, a sent message goes out on reconnect. */
+function ReconnectingStrip() {
+  const v = useRef(new Animated.Value(1)).current
+  useEffect(() => {
+    const a = Animated.loop(Animated.sequence([
+      Animated.timing(v, { toValue: 0.3, duration: 600, useNativeDriver: true }),
+      Animated.timing(v, { toValue: 1, duration: 600, useNativeDriver: true }),
+    ]))
+    a.start()
+    return () => a.stop()
+  }, [v])
+  return (
+    <View accessibilityRole="alert" style={s.strip}>
+      <Animated.View style={[s.stripDot, { opacity: v }]} />
+      <Text style={s.stripText}>Reconnecting · a sent message will go out when you are back</Text>
     </View>
   )
 }
@@ -116,35 +144,62 @@ function ThreadRow({ t, conn, now, first, muted, onOpen }: {
 }) {
   const unread = t.unread > 0
   return (
-    <Pressable onPress={onOpen} style={[styles.row, first ? null : styles.rowBorder]}>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${t.counterparty.name}${unread ? `, ${t.unread} unread` : ''}`}
+      onPress={onOpen}
+      style={({ pressed }) => [s.row, first ? null : s.rowBorder, pressed && s.pressed]}
+    >
       <CounterpartyPlate thread={t} size={48} />
-      <View style={{ flex: 1, minWidth: 0, gap: space['2xs'] }}>
-        <View style={styles.rowTop}>
-          <Text style={[text.uiLgSemi, styles.name, muted && styles.mutedText]} numberOfLines={1}>{t.counterparty.name}</Text>
-          {!!t.lastMessageAt && <Meta style={{ color: color.textSubtle }}>{fmtRowStamp(t.lastMessageAt, now)}</Meta>}
+      <View style={s.rowBody}>
+        <View style={s.rowTop}>
+          <Text style={[s.name, unread && s.nameUnread, muted && s.nameMuted]} numberOfLines={1}>{t.counterparty.name}</Text>
+          {!!t.lastMessageAt && <Text style={s.stamp}>{fmtRowStamp(t.lastMessageAt, now)}</Text>}
         </View>
-        <Meta style={{ color: color.textSubtle }}>{contextLine(t, conn, now)}</Meta>
-        <View style={styles.rowBottom}>
-          <Body size="sm" weight={unread ? 'medium' : 'regular'} tone={unread ? 'default' : 'muted'} numberOfLines={1} style={{ flex: 1 }}>{t.lastMessagePreview ?? ' '}</Body>
-          {unread && <View style={styles.chip}><Meta style={{ color: color.text }}>{String(t.unread)}</Meta></View>}
+        <Text style={s.ctx} numberOfLines={2}>{contextLine(t, conn, now).toUpperCase()}</Text>
+        <View style={s.rowBottom}>
+          <Text style={[s.preview, unread && s.previewUnread]} numberOfLines={1}>{t.lastMessagePreview ?? ' '}</Text>
+          {unread && <View style={s.chip}><Text style={s.chipText}>{String(t.unread)}</Text></View>}
         </View>
       </View>
     </Pressable>
   )
 }
 
-const styles = StyleSheet.create({
+const s = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.background },
-  body: { paddingHorizontal: space.lg, gap: space.md, paddingBottom: space.xl },
-  unread: { color: color.textMuted, paddingHorizontal: space.xs },
-  name: { flex: 1 },
-  mutedText: { color: color.textMuted },
-  emptyCard: { padding: space.lg },
-  archHead: { flexDirection: 'row', alignItems: 'center', gap: space.md, marginTop: space.xs },
-  rule: { flex: 1 },
-  row: { flexDirection: 'row', alignItems: 'flex-start', gap: space.md, paddingVertical: spaceHalf['3.5'] },
+  body: { paddingBottom: 130 },
+  pad: { paddingHorizontal: 20 },
+  pressed: { opacity: opacity.pressed },
+  unread: { fontFamily: FF.monoMedium, fontSize: 11, letterSpacing: 1.54, color: color.textMuted, marginTop: 8 },
+
+  strip: {
+    flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 9, paddingHorizontal: 20,
+    backgroundColor: color.warningSoft, borderBottomWidth: borderWidth.thin, borderBottomColor: color.warningEdge,
+  },
+  stripDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: color.warningFill },
+  stripText: { flex: 1, fontFamily: FF.monoMedium, fontSize: 11, letterSpacing: 0.66, textTransform: 'uppercase', color: color.warning },
+
+  emptyCard: { backgroundColor: color.surface, borderWidth: borderWidth.thin, borderColor: color.border, borderRadius: 18, padding: 16, marginTop: 6 },
+  emptyTitle: { fontFamily: FF.bodyBold, fontSize: 20, letterSpacing: -0.4, color: color.text },
+  emptyBody: { fontFamily: FF.body, fontSize: 15, lineHeight: 22, color: color.textMuted, marginTop: 8 },
+
+  archHead: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 16 },
+  rule: { flex: 1, height: borderWidth.thin, backgroundColor: color.border },
+  archCount: { fontFamily: FF.monoMedium, fontSize: 11, color: color.textSubtle },
+
+  row: { flexDirection: 'row', alignItems: 'flex-start', gap: 14, paddingVertical: 14, minHeight: 88 },
   rowBorder: { borderTopWidth: borderWidth.thin, borderTopColor: color.border },
-  rowTop: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: space.md },
-  rowBottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.md },
-  chip: { minWidth: height['count-chip'], height: space.xl, borderRadius: radius.pill, paddingHorizontal: space.sm, alignItems: 'center', justifyContent: 'center', backgroundColor: color.surfaceSunken },
+  rowBody: { flex: 1, minWidth: 0 },
+  rowTop: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 10 },
+  name: { flex: 1, fontFamily: FF.bodySemiBold, fontSize: 17, letterSpacing: -0.17, color: color.text },
+  nameUnread: { fontFamily: FF.bodyBold },
+  nameMuted: { color: color.textMuted },
+  stamp: { fontFamily: FF.monoMedium, fontSize: 11, color: color.textSubtle },
+  ctx: { fontFamily: FF.monoMedium, fontSize: 10.5, lineHeight: 15, letterSpacing: 0.63, color: color.textSubtle, marginTop: 3 },
+  rowBottom: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 5 },
+  preview: { flex: 1, fontFamily: FF.body, fontSize: 14.5, color: color.textMuted },
+  previewUnread: { fontFamily: FF.bodyMedium, color: color.text },
+  chip: { minWidth: 22, height: 22, borderRadius: radius.pill, paddingHorizontal: 7, backgroundColor: color.surfaceSunken, alignItems: 'center', justifyContent: 'center' },
+  chipText: { fontFamily: FF.monoMedium, fontSize: 11, color: color.text },
 })

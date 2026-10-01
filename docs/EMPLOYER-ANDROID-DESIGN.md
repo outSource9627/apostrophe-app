@@ -140,3 +140,100 @@ The full rows are in `docs/API.md`.
 - Rename of a saved search (the backend has no `PATCH` yet).
 - These files are no longer used but not deleted, because deleting is blocked: `components/employer/CandidateCard.tsx`, `CertificateRail.tsx`, `EmployerNav.tsx`, `FeedExplainer.tsx` and `DocumentStatusRow.tsx`. They are the only files `theme:check` still flags in `components/employer`.
 - `src/lib/api/interviewer.ts(305)` still has its old type error, which is outside this work.
+
+---
+
+# Studio rebuild (2026-10-01)
+
+The employer screens were rebuilt to the **Studio** direction the user chose for every screen. The approved mockup with specs is `docs/employer-app-studio.html`; the four-way comparison it came from is `docs/employer-app-mockups.html`.
+
+## Shared pieces
+- **`components/employer/studio.tsx`:** the Studio building blocks.
+  - Layout: `StudioGreeting`, `StudioCard`, `StudioLabel`, `SectionBlock`.
+  - Counts and progress: `CountCard`, `Meter`, `ExpiryBar`.
+  - People and media: `FilmStill`, `GlassPill`, `Face`, `Initials`.
+  - Content: `NoteWell`, `FactTile`, `SkillTags`.
+  - Controls: `IconSquare`, `StudioChip`, `ChipRow`, `SegTabs`.
+  - States and feedback: `StudioState`, `StudioToast`.
+- **`lib/employer/feedDeck.ts`:** one candidate deck, shared by Home and the Feed.
+  - The server charges a card each time it delivers one (`employerLimits.consumeQuota`) and does not de-duplicate. So Home's "Today's feed" films are the Feed's own first cards, and nothing is read twice.
+  - The deck resets on a new employer session, on a new IST day, and when the filters change.
+- **New icons:** `arrowU`, `chevU`, `grad`, `link`, `sort`, `arrowUR`.
+- **Bottom bar:** the employer Chats tab now shows the unread count as a number badge instead of a dot.
+
+## Screens
+| Screen | Frames | Files |
+|---|---|---|
+| Home | H1 verified (top), H2 scrolled (the title moves into the bar), H3 pending | `EmployerHomeScreen.tsx` |
+| Feed | F1 deck, F2/F3 swipes, F4 skip, F5 limit, F6 caught up, F7 filters | `EmployerFeedScreen.tsx`, `components/employer/feed.tsx`, `FeedFiltersModal.tsx` |
+| Profile | P1 top, P2 scrolled (compact sticky header), P3 Send Interest sheet | `CandidateProfileScreen.tsx`, `components/employer/profile.tsx`, `SendInterestModal.tsx` |
+| Shortlist | S1 cards with the note, S2 notes/tags/job sheet, S3 empty | `EmployerShortlistScreen.tsx`, `ShortlistEntryModal.tsx` |
+| Interests | I1 awaiting, I2 accepted, not-accepted tab | `EmployerInterestsScreen.tsx` |
+| Jobs | J1 list, J2 applicants | `EmployerJobsScreen.tsx`, `JobApplicationsScreen.tsx` |
+
+## Feed behaviour
+- **Swipe right / left:** unchanged — Shortlist, and Pass for `passHideDays`.
+- **Scroll down (drag the card up) skips** the candidate.
+  - The next card rises. No request is sent and nothing is saved; the toast's **Back** puts the card on top again.
+  - A skipped person is not excluded, so they can come back when the deck restarts.
+  - The card was already charged when it loaded, so a skip does not refund it.
+- **Axis lock:** the drag's axis is decided once, after 12 dp, so one drag never triggers two actions.
+- **Round controls:** Undo, Pass, Shortlist, Send Interest. Undo applies to a pass or shortlist only, not to a skip. Send Interest opens the sheet.
+- **Profile:** tapping the name or facts opens the **profile page** (P1) instead of the old sheet.
+  - Pass or Shortlist made there removes the card from the deck (`dropCard`) and goes back to the feed.
+  - `CandidateProfileSheet.tsx` is no longer used by the feed.
+- **Chips:** the first chip shows the live match count (`/employers/feed/match-count`, which costs nothing).
+
+## Deviations and API gaps
+- **Home:**
+  - A film tile opens the feed at its top card, not at that candidate.
+  - Activity rows open Notifications.
+  - "Today's feed" reads 4 cards on the first visit of the day, which spends 4 of the day's cards. The feed continues from them.
+- **Profile:**
+  - The detail API sends no film, poster, headline, salary, notice period or interview duration. These come from the deck card when the candidate is in the deck; otherwise only the photo is shown.
+  - "Full · 18:42" therefore shows no length.
+  - The person line reads "Graduation · Tier 2", because the API sends qualification types, not degree names.
+  - A profile read charged a card every time, so the next chevron made it easy to pay twice for someone the feed had already charged. **Fixed — see below.**
+- **Shortlist:**
+  - Rows carry no salary, joins or skills, and no tier or qualification today.
+  - There are no per-tag counts and no tags endpoint, so every page is still read up front.
+  - The card's small tag and job chips are under 44 dp.
+- **Interests:**
+  - The 48-hour amber window is a UI constant.
+  - Contact details show only when the connection returns `contact` (active connections only).
+  - Unread counts come from the first 50 threads.
+- **Jobs:**
+  - Applications return only the job id and title, so J2 also reads the job for its header.
+  - The reject sheet is copied from `ApplicantDetailScreen`, not shared.
+  - The "⋯" menu offers "Job post" and "Edit".
+- **Sizes:** where the mockup's value has no token, the nearest token is used. Pills are 24 instead of 22; some labels are 14 instead of 13 or 14.5.
+
+## Fixed after the rebuild (2026-10-01)
+- **Expired films no longer cost cards.**
+  - Before, the feed refreshed lapsed film links by reading a page of 15 cards again, and the server charged all 15.
+  - Backend (apostrophe-admin):
+    - `candidateFeed` now records every card it deals in a per-employer, per-IST-day Redis set.
+    - New `POST /employers/feed/media {ids}` (`server/domain/feed/media.ts`, documented in `docs/API.md`) re-signs film, poster and photo for those cards only, for free.
+    - Tests: 4 new in `tests/feed.test.ts` (47/47 pass); `employers` and `routeGuards` gate suites 353/353.
+  - App:
+    - `refreshDeckMedia` in `lib/employer/feedDeck.ts` calls the new endpoint.
+    - It is used by the feed card, and by the profile film, whose `onError` previously did nothing.
+  - No migration is needed; deploy the backend before (or with) the app.
+- **A profile view costs at most one card per candidate per day.**
+  - `candidateDetail` now claims the card in the same per-day "delivered" set the feed writes. It is free if the feed already dealt that card today, or the profile was already opened today — from the feed, the shortlist, Interests or a chat.
+  - It still costs one card for someone not dealt today.
+  - A dealt card's profile also opens after the day's cards are spent; before, it was refused.
+  - A refused charge removes the claim.
+  - Tests: 4 more in `tests/feed.test.ts` (51/51). The other suites that open profiles (`chat`, `feedFilters`, `selfVideoLifecycle`, `employers`, `routeGuards`, `eligibility`) pass. The 2 failures in `scorecard.test.ts` are in scorecard submission and the interviewer dashboard, not related to this change.
+- **Shortlist on a profile always goes back now** to wherever the profile was opened from (the feed, Interests, a chat), the same as Pass; to the feed if there is nothing behind it.
+- **Small buttons are semibold again.** `Body` (`components/ui/Type.tsx`) now honours every weight it has a style for:
+  - `sm` used to drop semibold, `xs` dropped medium and semibold, and `md`/`base` dropped medium.
+  - Every `Button size="sm"` label, and the 15 `Body` uses that asked for those weights, now get the weight they asked for. This applies to every persona.
+  - The Interests and Jobs workarounds (a bigger button squeezed down) were switched back to `size="sm"`.
+- **Not fixed, outside this scope:**
+  - The web feed (`apostrophe-user/app/employers/feed/FeedClient.tsx` `refreshStreams`) still re-reads a charged page; it can use the same endpoint.
+  - `__tests__/App.test.tsx` fails to load in Jest, because `react-native-vision-camera`'s NitroModules has no Jest mock. This is unrelated to these changes.
+
+## Not verified
+- None of this has run on a device or emulator; it needs your manual pass. The swipe, skip and back gestures in particular need a feel check on a real phone.
+- Checks run: `tsc` (0 errors), `eslint` (clean on the rebuilt files), `check-raw-design-values` (none in the rebuilt files), `jest` (6 of 7 suites, 64/64 tests; App.test cannot load, see above), and the Android production bundle (builds).

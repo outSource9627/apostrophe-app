@@ -4,10 +4,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import Svg, { Path } from 'react-native-svg'
 import { api, ApiClientError } from '../../lib/api'
-import { color, space, spaceHalf, radius, borderWidth, height, trackingNative } from '../../theme'
+import { color, space, borderWidth, fontFamilyNative as FF } from '../../theme'
 import {
-  Banner, Body, Button, Card, Chip, FilmThumb, Meta, ProgressBar, ScreenHeader, Sheet, Skeleton, StatusPill, UnverifiedMark, VerifiedSeal, text,
+  Banner, Button, FilmThumb, Sheet, StatusPill, UnverifiedMark, VerifiedSeal,
 } from '../../components/ui'
+import { Btn, DetailHeader, Panel, Skel, TextLink } from '../../components/tab/kit'
 import type { Tone } from '../../components/ui'
 import { getVideoResume, listSelfVideos, type SelfVideo, type VideoResume } from '../../lib/api/student'
 import { fmtDayMonthYear } from '../../lib/chat/format'
@@ -84,10 +85,12 @@ export function ProfileViewScreen({ onBack, onBook, onVisibility, onVideos, onVi
   const videosQ = useQuery({ queryKey: ['videos'], queryFn: listSelfVideos })
 
   const frame = (child: React.ReactNode) => (
-    <View style={[styles.page, { paddingTop: insets.top }]}><ScreenHeader onBack={onBack} />{child}</View>
+    <View style={[styles.page, { paddingTop: insets.top }]}><DetailHeader title="Profile" onBack={onBack} />{child}</View>
   )
-  if (profileQ.isPending || configQ.isPending) return frame(<View style={styles.body}><Skeleton lines={4} /></View>)
-  if (profileQ.isError) return frame(<View style={styles.centre}><Body tone="muted">Could not load your profile.</Body></View>)
+  if (profileQ.isPending || configQ.isPending) {
+    return frame(<View style={styles.loading}><Skel w="100%" h={24} /><Skel w="100%" h={120} /><Skel w="100%" h={80} /><Skel w="100%" h={160} /></View>)
+  }
+  if (profileQ.isError) return frame(<View style={styles.centre}><Text style={styles.errorText}>Could not load your profile.</Text></View>)
 
   const p = profileQ.data!, cfg = configQ.data!
   const published = audienceQ.data?.published ?? Boolean(p.publishedAt)
@@ -96,48 +99,45 @@ export function ProfileViewScreen({ onBack, onBook, onVisibility, onVideos, onVi
 
   return (
     <View style={[styles.page, { paddingTop: insets.top }]}>
-      <ScreenHeader
-        onBack={onBack}
-        right={<Pressable accessibilityRole="button" onPress={onVideos} hitSlop={space.sm} style={styles.headLink}><Body size="md" weight="semibold" tone="accent">Videos</Body></Pressable>}
-      />
+      <DetailHeader title="Profile" onBack={onBack} right={<TextLink label="Videos" onPress={onVideos} />} />
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
         <View style={styles.titleBlock}>
-          <Text style={[text.metaMd, styles.eyebrow]}>YOUR PROFILE</Text>
-          <Text style={text.displayMd}>This is what an employer sees.</Text>
+          <Text style={styles.eyebrow}>YOUR PROFILE</Text>
+          <Text style={styles.title}>This is what an employer sees.</Text>
         </View>
 
         {filmQ.isPending ? (
-          <Card style={styles.card}><Skeleton lines={3} /></Card>
+          <Panel style={styles.filmPanel}><Skel w="100%" h={16} /><Skel w="100%" h={16} /><Skel w="100%" h={16} /></Panel>
         ) : filmQ.isError ? (
-          <Card style={styles.card}>
-            <Body weight="semibold" size="lg">Your video resume</Body>
-            <Body size="sm" tone="muted" style={styles.filmLine}>Could not load your video resume.</Body>
-            <View style={styles.filmFoot}>
-              <Button variant="outline" size="sm" label="Try again" onPress={() => { filmQ.refetch() }} />
-            </View>
-          </Card>
+          <Panel>
+            <Text style={styles.filmTitle}>Your video resume</Text>
+            <Text style={styles.sub}>Could not load your video resume.</Text>
+            <View style={styles.leftBtn}><SmallBtn label="Try again" onPress={() => { filmQ.refetch() }} /></View>
+          </Panel>
         ) : (
           <FilmCard film={filmQ.data} onOpen={onVideoResume} onBook={onBook} />
         )}
 
-        <Card style={styles.completion}>
+        <Panel style={styles.completion}>
           <View style={styles.pctRow}>
-            <Text style={[text.meta2xl, styles.pct]}>{`${p.completion.pct}%`}</Text>
-            <Text style={[text.uiSm, styles.muted]}>{firstMissing ? `filled in · still empty: ${firstMissing}` : 'of your profile is filled in'}</Text>
+            <Text style={styles.pct}>{`${p.completion.pct}%`}</Text>
+            <Text style={styles.pctNote}>{firstMissing ? `filled in · still empty: ${firstMissing}` : 'of your profile is filled in'}</Text>
           </View>
-          <ProgressBar pct={p.completion.pct} tone="accent" thin />
-        </Card>
+          <View accessibilityRole="progressbar" accessibilityValue={{ now: Math.round(p.completion.pct), min: 0, max: 100 }} style={styles.bar}>
+            <View style={[styles.barFill, { width: `${Math.min(100, p.completion.pct)}%` }]} />
+          </View>
+        </Panel>
 
-        <Pressable onPress={onVisibility}>
-          <Card style={styles.feedRow}>
+        <Pressable accessibilityRole="button" onPress={onVisibility}>
+          <Panel style={styles.feedRow}>
             <View style={{ flex: 1 }}>
-              <Body weight="medium">{published && !hidden ? 'You are live in the employer feed' : 'Feed visibility'}</Body>
-              <Body size="xs" tone="subtle">
+              <Text style={styles.feedTitle}>{published && !hidden ? 'You are live in the employer feed' : 'Feed visibility'}</Text>
+              <Text style={styles.xs}>
                 {published ? (hidden ? 'You are hidden. Tap to manage.' : 'Employers can find you and send an Interest.') : 'Your video resume unlocks the feed. Tap to manage.'}
-              </Body>
+              </Text>
             </View>
             <Chevron />
-          </Card>
+          </Panel>
         </Pressable>
 
         <Section title="Basics" onEdit={() => setEditing('personal')}>
@@ -158,24 +158,25 @@ export function ProfileViewScreen({ onBack, onBook, onVisibility, onVideos, onVi
         </Section>
 
         <Section title="Experience" onEdit={() => setEditing('experience')}>
-          {p.experience.length === 0 ? <Body size="sm" tone="subtle">Nothing added yet.</Body> : p.experience.map((e, i) => (
-            <View key={e.id ?? i} style={{ gap: space['2xs'], marginBottom: space.md }}>
-              <Text style={text.uiBaseSemi}>{e.role ?? 'Role'}</Text>
-              <Body size="sm" tone="muted">{[e.company, dateRange(e.from, e.to)].filter(Boolean).join(' · ')}</Body>
-              {e.description ? <Body size="sm" tone="muted" style={{ marginTop: space['2xs'] }}>{e.description}</Body> : null}
+          {p.experience.length === 0 ? <Text style={styles.empty}>Nothing added yet.</Text> : p.experience.map((e, i) => (
+            <View key={e.id ?? i} style={[styles.xp, i === 0 && styles.xpFirst]}>
+              <Text style={styles.xpRole}>{e.role ?? 'Role'}</Text>
+              <Text style={styles.sub}>{[e.company, dateRange(e.from, e.to)].filter(Boolean).join(' · ')}</Text>
+              {e.description ? <Text style={styles.sub}>{e.description}</Text> : null}
             </View>
           ))}
         </Section>
 
         <Section title="Skills" onEdit={() => setEditing('skills')}>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
-            {p.skills.map((s, i) => (
-              <Chip
-                key={s.id ?? i}
-                label={s.status === 'PENDING_REVIEW' ? `${s.name}  ·  pending` : s.name}
-                add={s.status === 'PENDING_REVIEW'}
-              />
-            ))}
+          <View style={styles.skills}>
+            {p.skills.map((s, i) => {
+              const pending = s.status === 'PENDING_REVIEW'
+              return (
+                <View key={s.id ?? i} style={[styles.skill, pending && styles.skillPending]}>
+                  <Text style={[styles.skillText, pending && styles.skillTextPending]}>{pending ? `${s.name}  ·  pending` : s.name}</Text>
+                </View>
+              )
+            })}
           </View>
         </Section>
 
@@ -188,10 +189,10 @@ export function ProfileViewScreen({ onBack, onBook, onVisibility, onVideos, onVi
         </Section>
 
         <Section title="Documents" onEdit={() => setEditing('documents')}>
-          {p.documents.length === 0 && p.portfolioLinks.length === 0 ? <Body size="sm" tone="subtle">Nothing added yet.</Body> : (
+          {p.documents.length === 0 && p.portfolioLinks.length === 0 ? <Text style={styles.empty}>Nothing added yet.</Text> : (
             <>
               {p.documents.map((d) => <DocRow key={d.key} name={d.name ?? fileName(d.key)} kind={lbl(d.kind) ?? d.kind} />)}
-              {p.portfolioLinks.map((l) => <Body key={l} size="sm" style={{ color: color.info, marginTop: space.xs }}>{l}</Body>)}
+              {p.portfolioLinks.map((l) => <Text key={l} style={styles.link}>{l}</Text>)}
             </>
           )}
         </Section>
@@ -215,6 +216,15 @@ export function ProfileViewScreen({ onBack, onBook, onVisibility, onVideos, onVi
   )
 }
 
+/** The mockup's 40-high small button: outline, 14 bold. */
+function SmallBtn({ label, onPress }: { label: string; onPress: () => void }) {
+  return (
+    <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [styles.smallBtn, pressed && styles.pressed]}>
+      <Text style={styles.smallBtnText}>{label}</Text>
+    </Pressable>
+  )
+}
+
 /**
  * The video-resume card in whichever state the film is in — one card, the same anatomy in every state (the still, the
  * title, a line, a mark, the way in), so only the still, the line and the mark say what is true. Every state but NONE
@@ -224,30 +234,28 @@ export function ProfileViewScreen({ onBack, onBook, onVisibility, onVideos, onVi
 function FilmCard({ film, onOpen, onBook }: { film: Film; onOpen: () => void; onBook: () => void }) {
   if (film.status === 'NONE') {
     return (
-      <Card style={styles.wellCard}>
-        <Body weight="semibold" size="lg">Your video resume</Body>
-        <Body size="sm" tone="muted" style={styles.filmLine}>The interview you book becomes your video resume — the one thing employers watch before they read a word.</Body>
-        <View style={styles.bookRow}>
-          <Button variant="primary" size="md" label="Book an interview" onPress={onBook} />
-        </View>
-      </Card>
+      <Panel tone="muted" style={styles.wellPanel}>
+        <Text style={styles.filmTitle}>Your video resume</Text>
+        <Text style={styles.sub}>The interview you book becomes your video resume — the one thing employers watch before they read a word.</Text>
+        <View style={styles.leftBtn}><Btn label="Book an interview" onPress={onBook} /></View>
+      </Panel>
     )
   }
   const { line, mark, action } = describeFilm(film)
   return (
-    <Card style={styles.card}>
+    <Panel style={styles.filmPanel}>
       <View style={styles.filmTop}>
-        <FilmThumb status={film.status} />
+        <FilmThumb status={film.status} width={56} />
         <View style={styles.filmText}>
-          <Body weight="semibold" size="lg">Your video resume</Body>
-          <Body size="sm" tone="muted">{line}</Body>
+          <Text style={styles.filmTitle}>Your video resume</Text>
+          <Text style={styles.sub}>{line}</Text>
         </View>
       </View>
       <View style={styles.filmFoot}>
         {mark}
-        <Button variant="outline" size="sm" label={action} onPress={onOpen} />
+        <SmallBtn label={action} onPress={onOpen} />
       </View>
-    </Card>
+    </Panel>
   )
 }
 
@@ -306,22 +314,22 @@ function SelfVideosSection({ query, onManage }: { query: { isPending: boolean; i
   return (
     <View style={styles.selfSection}>
       <View style={styles.sectionHead}>
-        <Text style={[text.metaMd, styles.eyebrow]}>YOUR VIDEOS</Text>
+        <Text style={styles.eyebrow}>YOUR VIDEOS</Text>
         <Pressable accessibilityRole="button" onPress={onManage} style={styles.editBtn} hitSlop={space.sm}>
-          <Text style={[text.uiSmSemi, styles.editText]}>Manage videos</Text>
+          <Text style={styles.editText}>Manage videos</Text>
         </Pressable>
       </View>
-      {query.isPending ? <Skeleton lines={2} /> : query.isError ? (
-        <Body size="sm" tone="subtle">Could not load your videos.</Body>
+      {query.isPending ? <View style={{ gap: 10 }}><Skel w="100%" h={16} /><Skel w="100%" h={16} /></View> : query.isError ? (
+        <Text style={styles.empty}>Could not load your videos.</Text>
       ) : videos.length === 0 ? (
-        <Body size="sm" tone="subtle">No videos yet.</Body>
-      ) : videos.map((v) => {
+        <Text style={styles.empty}>No videos yet.</Text>
+      ) : videos.map((v, i) => {
         const st = SELF_STATUS[v.status]
         const length = clock(v.durationSec)
         return (
-          <View key={v.id} style={styles.selfRow}>
-            <Body size="sm" weight="semibold" numberOfLines={1}>{v.title || KIND_LABEL[v.kind]}</Body>
-            <Meta style={styles.subtle}>{[KIND_LABEL[v.kind], length].filter(Boolean).join(' · ').toUpperCase()}</Meta>
+          <View key={v.id} style={[styles.selfRow, i === 0 && styles.selfRowFirst]}>
+            <Text style={styles.selfTitle} numberOfLines={1}>{v.title || KIND_LABEL[v.kind]}</Text>
+            <Text style={styles.eyebrow}>{[KIND_LABEL[v.kind], length].filter(Boolean).join(' · ').toUpperCase()}</Text>
             <View style={styles.selfMarks}>
               <StatusPill tone={st.tone} label={st.label} />
               <UnverifiedMark />
@@ -363,23 +371,23 @@ function EditSheet({ step, profile, config, onClose, onSaved, Body: StepBody, in
 
 function Section({ title, onEdit, children }: { title: string; onEdit: () => void; children: React.ReactNode }) {
   return (
-    <View style={styles.section}>
+    <Panel style={styles.section}>
       <View style={styles.sectionHead}>
-        <Text style={[text.metaMd, styles.eyebrow]}>{title.toUpperCase()}</Text>
+        <Text style={styles.eyebrow}>{title.toUpperCase()}</Text>
         <Pressable accessibilityRole="button" onPress={onEdit} style={styles.editBtn} hitSlop={space.sm}>
-          <Text style={[text.uiSmSemi, styles.editText]}>Edit</Text>
+          <Text style={styles.editText}>Edit</Text>
         </Pressable>
       </View>
-      {children}
-    </View>
+      <View>{children}</View>
+    </Panel>
   )
 }
 
 function KV({ k, v }: { k: string; v?: string }) {
   return (
     <View style={styles.kv}>
-      <Meta style={{ color: color.textSubtle }}>{k.toUpperCase()}</Meta>
-      <Body size="sm" tone={v ? 'default' : 'subtle'}>{v ?? 'Not set yet'}</Body>
+      <Text style={styles.kvKey}>{k.toUpperCase()}</Text>
+      <Text style={[styles.kvVal, !v && styles.kvEmpty]}>{v ?? 'Not set yet'}</Text>
     </View>
   )
 }
@@ -388,8 +396,8 @@ function DocRow({ name, kind }: { name: string; kind: string }) {
     <View style={styles.doc}>
       <Svg width={18} height={18} viewBox="0 0 24 24" fill="none"><Path d="M14 3v5h5M7 3h8l5 5v11a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z" stroke={color.textMuted} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" /></Svg>
       <View style={{ flex: 1, minWidth: 0 }}>
-        <Body size="sm" numberOfLines={1}>{name}</Body>
-        <Meta style={{ color: color.textSubtle }}>{kind}</Meta>
+        <Text style={styles.docName} numberOfLines={1}>{name}</Text>
+        <Text style={styles.docKind}>{kind.toUpperCase()}</Text>
       </View>
     </View>
   )
@@ -415,37 +423,61 @@ function salary(min?: number, max?: number): string | undefined {
   return max == null ? l(min) : `${l(min).replace(' LPA', '')} – ${l(max)}`
 }
 
+const MONO_LABEL = { fontFamily: FF.monoMedium, fontSize: 11, letterSpacing: 0.88 } as const
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.background },
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  body: { paddingHorizontal: space.lg, paddingTop: space.xs, gap: spaceHalf['2.5'], paddingBottom: space.xl },
-  headLink: { height: height.tap, justifyContent: 'center', paddingRight: space.md },
-  titleBlock: { gap: space.xs, paddingHorizontal: space.xs, paddingBottom: space.xs },
-  eyebrow: { color: color.textMuted, letterSpacing: trackingNative.eyebrow },
-  muted: { color: color.textMuted },
-  completion: { paddingHorizontal: spaceHalf['3.5'], paddingVertical: space.md, gap: space.sm },
-  pctRow: { flexDirection: 'row', alignItems: 'baseline', gap: space.sm },
-  pct: { color: color.successFill },
-  editText: { color: color.accent },
-  card: { padding: space.lg },
-  // Sunken well, not the bordered Card default — the same override the booking
-  // detail screen's `well` and the shared `CompletionCard`/`NextAction` make on
-  // top of the shared `Card` surface.
-  wellCard: { borderWidth: 0, backgroundColor: color.surfaceMuted, padding: space.lg },
-  filmLine: { marginTop: space.xs },
-  bookRow: { marginTop: space.md, alignItems: 'flex-start' },
-  filmTop: { flexDirection: 'row', gap: spaceHalf['3.5'], alignItems: 'flex-start' },
-  filmText: { flex: 1, minWidth: 0, gap: space.xs },
-  filmFoot: { marginTop: space.md, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: space.sm },
-  subtle: { color: color.textSubtle },
+  errorText: { fontFamily: FF.body, fontSize: 15, color: color.textMuted },
+  loading: { paddingHorizontal: 20, paddingTop: 12, gap: 12 },
+  body: { paddingHorizontal: 20, paddingTop: 4, paddingBottom: 30, gap: 10 },
+  pressed: { opacity: 0.6 },
+  titleBlock: { gap: 4, paddingHorizontal: 4, paddingTop: 4, paddingBottom: 6 },
+  eyebrow: { ...MONO_LABEL, color: color.textMuted },
+  title: { fontFamily: FF.bodySemiBold, fontSize: 26, lineHeight: 30, letterSpacing: -0.78, color: color.text },
+  sub: { fontFamily: FF.body, fontSize: 14, lineHeight: 20, color: color.textMuted },
+  xs: { fontFamily: FF.body, fontSize: 12, lineHeight: 17, color: color.textSubtle, marginTop: 2 },
+  empty: { fontFamily: FF.body, fontSize: 14, lineHeight: 20, color: color.textSubtle },
+  link: { fontFamily: FF.body, fontSize: 14, color: color.accentText, marginTop: 8 },
+  completion: { paddingHorizontal: 14, paddingVertical: 14, gap: 10 },
+  pctRow: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
+  pct: { fontFamily: FF.monoMedium, fontSize: 28, letterSpacing: -0.84, color: color.successFill },
+  pctNote: { flex: 1, fontFamily: FF.body, fontSize: 13, color: color.textMuted },
+  bar: { height: 4, borderRadius: 3, backgroundColor: color.surfaceSunken, overflow: 'hidden' },
+  barFill: { height: '100%', borderRadius: 3, backgroundColor: color.successFill },
+  feedRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  feedTitle: { fontFamily: FF.bodyMedium, fontSize: 15, color: color.text },
+  filmPanel: { gap: 14 },
+  wellPanel: { gap: 10, borderColor: 'transparent' },
+  filmTitle: { fontFamily: FF.bodyBold, fontSize: 17, letterSpacing: -0.34, color: color.text },
+  leftBtn: { alignItems: 'flex-start' },
+  filmTop: { flexDirection: 'row', gap: 14, alignItems: 'flex-start' },
+  filmText: { flex: 1, minWidth: 0, gap: 4 },
+  filmFoot: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
+  smallBtn: { height: 40, minWidth: 44, paddingHorizontal: 16, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: color.surface, borderWidth: borderWidth.medium, borderColor: color.borderStrong },
+  smallBtnText: { fontFamily: FF.bodyBold, fontSize: 14, color: color.text },
   // The self-recorded frame: dashed on the sunken ground, the way the video components set it apart from the verified film.
-  selfSection: { gap: spaceHalf['2.5'], backgroundColor: color.surfaceMuted, borderWidth: borderWidth.thin, borderColor: color.borderStrong, borderStyle: 'dashed', borderRadius: radius.lg, padding: spaceHalf['3.5'] },
-  selfRow: { gap: space.xs, paddingTop: spaceHalf['2.5'], borderTopWidth: borderWidth.thin, borderTopColor: color.border },
-  selfMarks: { flexDirection: 'row', flexWrap: 'wrap', gap: space.xs },
-  feedRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.lg },
-  section: { gap: spaceHalf['2.5'], backgroundColor: color.surface, borderWidth: borderWidth.thin, borderColor: color.border, borderRadius: radius.lg, padding: spaceHalf['3.5'] },
-  sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  editBtn: { minHeight: height.chip, justifyContent: 'center' },
-  kv: { gap: space['2xs'], marginBottom: space.sm },
-  doc: { flexDirection: 'row', alignItems: 'center', gap: space.sm, borderRadius: radius.md, backgroundColor: color.surfaceMuted, padding: space.md, marginTop: space.xs },
+  selfSection: { gap: 10, backgroundColor: color.surfaceMuted, borderWidth: borderWidth.thin, borderColor: color.borderStrong, borderStyle: 'dashed', borderRadius: 20, padding: 16 },
+  selfRow: { gap: 4, paddingTop: 10, borderTopWidth: borderWidth.thin, borderTopColor: color.border },
+  selfRowFirst: { paddingTop: 0, borderTopWidth: 0 },
+  selfTitle: { fontFamily: FF.bodySemiBold, fontSize: 14, color: color.text },
+  selfMarks: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  section: { gap: 10 },
+  sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  editBtn: { minHeight: 32, justifyContent: 'center' },
+  editText: { fontFamily: FF.bodySemiBold, fontSize: 14, color: color.accent },
+  kv: { gap: 2, marginBottom: 12 },
+  kvKey: { ...MONO_LABEL, color: color.textSubtle },
+  kvVal: { fontFamily: FF.body, fontSize: 14, lineHeight: 20, color: color.text },
+  kvEmpty: { color: color.textSubtle },
+  xp: { gap: 3, paddingVertical: 14, borderTopWidth: borderWidth.thin, borderTopColor: color.border },
+  xpFirst: { paddingTop: 0, borderTopWidth: 0 },
+  xpRole: { fontFamily: FF.bodySemiBold, fontSize: 15, color: color.text },
+  skills: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  skill: { height: 32, borderRadius: 16, paddingHorizontal: 13, justifyContent: 'center', backgroundColor: color.surfaceMuted },
+  skillPending: { backgroundColor: 'transparent', borderWidth: borderWidth.thin, borderColor: color.borderStrong, borderStyle: 'dashed' },
+  skillText: { fontFamily: FF.bodyMedium, fontSize: 14, color: color.text },
+  skillTextPending: { color: color.textMuted },
+  doc: { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 10, backgroundColor: color.surfaceMuted, padding: 12, marginTop: 4 },
+  docName: { fontFamily: FF.body, fontSize: 14, color: color.text },
+  docKind: { ...MONO_LABEL, color: color.textSubtle },
 })

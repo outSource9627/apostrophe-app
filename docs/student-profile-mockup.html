@@ -1,0 +1,548 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apostrophe App – Student profile: editor and My profile, options A–D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FAFAFC; --surface:#fff; --muted:#F1F3F7; --sunken:#E6E8EE;
+    --text:#0B0F1A; --text2:#3A4256; --text3:#6B7385; --text4:#8A91A2;
+    --border:#E3E6ED; --border-strong:#C9CED9;
+    --accent:#5B3DF5; --accent-soft:#EFEBFF; --accent-wash:#F7F6FF; --accent-muted:#C4B8FF; --accent-bright:#7258FF; --accent-deep:#3B2A8F; --accent-edge:#DCD3FF;
+    --ink:#0B0F1A; --ink-raised:#151B2B;
+    --ok:#0E9F6E; --ok-text:#0B7A55; --ok-soft:#E6F7F0; --danger:#E5484D; --danger-text:#C22A30; --danger-soft:#FDECEC; --danger-edge:#F6C5C7; --warn:#935F00; --warn-soft:#FFF5E1; --warn-edge:#F5E2B8; --info-soft:#E8EFFF;
+    --r-md:14px; --r-lg:20px; --r-xl:28px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{font-family:'Geist',system-ui,sans-serif;background:#E9EAF2;color:var(--text);padding:40px 24px 90px}
+  button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+  input{font:inherit;color:inherit}
+  button:focus-visible,[tabindex]:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex:none}
+  .mono{font:500 11px 'Geist Mono',monospace;letter-spacing:.14em;text-transform:uppercase}
+
+  /* ---- chooser ---- */
+  .intro{max-width:1240px;margin:0 auto 28px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:26px 30px}
+  .intro h1{font-size:28px;letter-spacing:-.035em}
+  .intro p{font-size:15px;color:var(--text3);margin-top:8px;line-height:1.5;max-width:900px}
+  .chooser{display:flex;flex-wrap:wrap;gap:12px 28px;margin-top:20px;align-items:center}
+  .grp{display:flex;flex-wrap:wrap;gap:4px;background:var(--muted);border-radius:22px;padding:4px}
+  .grp button{padding:8px 14px;border-radius:99px;font-size:13.5px;font-weight:600;color:var(--text3);white-space:nowrap}
+  .grp button.on{background:var(--accent);color:#fff}
+  .glabel{font:500 11px 'Geist Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--text3);margin-right:2px}
+  .wrap{display:flex;flex-wrap:wrap;gap:40px 48px;justify-content:center;max-width:1800px;margin:0 auto}
+  .cell{width:390px}
+  .cap{margin-top:14px}.cap b{font-size:17px;letter-spacing:-.02em;display:block}.cap span{font-size:14px;color:var(--text3);line-height:1.45;display:block;margin-top:3px}
+
+  /* ---- phone ---- */
+  .phone{width:390px;height:812px;background:var(--bg);border-radius:44px;border:10px solid #0B0F1A;overflow:hidden;position:relative;display:flex;flex-direction:column}
+  .status{height:44px;display:flex;justify-content:space-between;align-items:center;padding:0 26px;font-size:14px;font-weight:600;position:absolute;top:0;left:0;right:0;z-index:40;pointer-events:none}
+  .status i{width:90px;height:24px;background:#0B0F1A;border-radius:14px;position:absolute;left:50%;top:8px;transform:translateX(-50%)}
+  .top{height:44px;flex:none}
+  .sc{flex:1;min-height:0;overflow-y:auto;scrollbar-width:none;position:relative}
+  .sc::-webkit-scrollbar{display:none}
+  .sc{grid-auto-rows:min-content}
+  .sc,.panel,.selfbox,.proof,.entry,.stack,.acc-body,.fld,.inkcard,.kv,.xp,.selfrow{grid-template-columns:minmax(0,1fr)}
+  .toast{position:absolute;left:14px;right:14px;bottom:100px;background:var(--ink);color:#fff;border-radius:var(--r-md);padding:13px 14px;z-index:60;font-size:14px;font-weight:600;transform:translateY(20px);opacity:0;pointer-events:none;transition:.25s}
+  .toast.on{transform:none;opacity:1}
+
+  /* ---- kit: DetailHeader, Panel, Btn, Pill, Chip ---- */
+  .dhead{display:flex;align-items:center;gap:12px;padding:8px 14px;flex:none}
+  .dhead .back{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--border);background:var(--surface);flex:none}
+  .dhead b{font-size:18px;font-weight:700;letter-spacing:-.02em;flex:1}
+  .hlink{font-size:15px;font-weight:600;color:var(--accent);min-height:44px;display:inline-flex;align-items:center;padding:0 4px}
+  .hlink.muted{color:var(--text3);font-weight:500}
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:16px;display:grid;gap:8px}
+  .panel.muted{background:var(--muted);border-color:transparent}
+  .panel.danger{background:var(--danger-soft);border-color:var(--danger-edge)}
+  .btn{height:46px;min-width:44px;border-radius:var(--r-md);font-weight:700;font-size:15px;padding:0 18px;display:inline-flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap}
+  .btn.pri{background:var(--accent);color:#fff}.btn.ink{background:var(--ink);color:#fff}.btn.out{border:1.5px solid var(--border-strong);background:var(--surface)}
+  .btn.dis{background:var(--muted);color:var(--text4)}.btn.full{width:100%}.btn.sm{height:40px;font-size:14px;padding:0 16px;border-radius:12px}
+  .btn.busy{opacity:.6}
+  .btn svg{width:18px}
+  .pill{font:500 10.5px 'Geist Mono',monospace;letter-spacing:.1em;text-transform:uppercase;border-radius:99px;padding:5px 10px;display:inline-block;white-space:nowrap}
+  .pill.ok{background:var(--ok-soft);color:var(--ok-text)}.pill.acc{background:var(--accent-soft);color:#4A2FE0}
+  .pill.warn{background:var(--warn-soft);color:var(--warn)}.pill.neutral{background:var(--muted);color:var(--text3)}
+  .pill.info{background:var(--info-soft);color:#1F4FD1}.pill.danger{background:var(--danger-soft);color:var(--danger-text)}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{height:32px;border-radius:99px;padding:0 13px;font-size:14px;font-weight:500;display:inline-flex;align-items:center;border:1px solid var(--border-strong);background:var(--surface);white-space:nowrap}
+  .chip.on{background:var(--text);color:#fff;border-color:var(--text)}
+  .chip.add{border-style:dashed;color:var(--text4)}
+  .tag{font:500 11px 'Geist Mono',monospace;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--border-strong);border-radius:6px;padding:4px 8px;color:var(--text2);display:inline-block}
+  .tag.pend{border-style:dashed;color:var(--text3)}
+  .skill{height:32px;border-radius:99px;padding:0 13px;font-size:14px;font-weight:500;display:inline-flex;align-items:center;background:var(--muted);color:var(--text)}
+  .skill.pend{background:transparent;border:1px dashed var(--border-strong);color:var(--text3)}
+  .banner{border-radius:12px;padding:12px 14px;font-size:14px;line-height:1.45}
+  .banner.danger{background:var(--danger-soft);color:var(--danger-text)}
+  .banner.info{background:var(--info-soft);color:#1F4FD1}
+  .banner b{display:block;font-size:14px}
+  .banner .ref{font:500 10.5px 'Geist Mono',monospace;letter-spacing:.1em;text-transform:uppercase;display:block;margin-top:4px;opacity:.85}
+  .eyebrow{font:500 11px 'Geist Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--text3)}
+  .eyebrow.acc{color:var(--accent)}
+  .h-disp{font-size:24px;font-weight:600;letter-spacing:-.023em;line-height:1.2}
+  .h-disp26{font-size:26px;font-weight:600;letter-spacing:-.03em;line-height:1.15}
+  .sub{font-size:14px;color:var(--text3);line-height:1.45}
+  .xs{font-size:12px;color:var(--text4);line-height:1.4}
+  .skel{background:linear-gradient(90deg,var(--muted) 0%,#E9ECF2 50%,var(--muted) 100%);background-size:200% 100%;animation:sh 1.3s infinite linear;border-radius:10px}
+  @keyframes sh{to{background-position:-200% 0}}
+  .center{display:grid;place-items:center;text-align:center;padding:60px 36px 0}
+  .center .ic{width:64px;height:64px;border-radius:20px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;margin-bottom:16px}
+  .center .ic svg{width:30px;height:30px}
+  .center b{font-size:22px;letter-spacing:-.03em;display:block}
+  .center p{font-size:15px;color:var(--text3);margin:8px 0 18px;line-height:1.5}
+  [data-act]{cursor:pointer}
+  .row{display:flex;align-items:center;gap:12px}.grow{flex:1;min-width:0}
+  .spread{display:flex;justify-content:space-between;align-items:center;gap:8px}
+
+  /* ---- fields ---- */
+  .stack{display:grid;gap:16px}
+  .fld{display:grid;gap:6px}
+  .fld>label{font-size:13px;font-weight:600;color:var(--text2);line-height:1.45}
+  .in{height:48px;border-radius:10px;border:1px solid var(--border-strong);background:var(--surface);padding:0 16px;font-size:15px;width:100%}
+  .in::placeholder{color:var(--text4)}
+  .in:focus{border:1.5px solid var(--accent);outline:0;padding:0 15.5px}
+  .in.bad{border-color:var(--danger);background:var(--danger-soft)}
+  .pair{display:flex;gap:12px}.pair>*{flex:1;min-width:0}
+  .fhelp{font-size:12px;color:var(--text4)}
+  .fhelp.bad{color:var(--danger-text)}
+  .file{display:flex;align-items:center;gap:12px;border-radius:10px;border:1px dashed var(--border-strong);background:var(--muted);padding:16px}
+  .file.bad{border-color:var(--danger);background:var(--danger-soft)}
+  .file i{width:40px;height:40px;border-radius:6px;background:var(--sunken);border:1px solid var(--border);flex:none}
+  .file b{font-size:14px;font-weight:500;display:block}
+  .file small{font:500 11px 'Geist Mono',monospace;text-transform:uppercase;color:var(--text4);display:block;margin-top:2px}
+  .proof{background:var(--muted);border-radius:18px;padding:16px;display:grid;gap:8px}
+  .entry{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:16px;display:grid;gap:12px}
+
+  /* ---- editor bits ---- */
+  .bars{display:flex;gap:6px;padding:4px 24px 0;flex:none}
+  .bars button{flex:1;height:22px;position:relative}
+  .bars button::after{content:"";position:absolute;left:0;right:0;top:9px;height:4px;border-radius:3px;background:var(--sunken)}
+  .bars button.done::after{background:var(--accent-muted)}.bars button.on::after{background:var(--accent)}
+  .gate{display:flex;justify-content:space-between;padding:6px 24px 0;flex:none}
+  .gate span{font:500 11px 'Geist Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--text4)}
+  .gate span+span{color:var(--text)}
+  .foot{background:var(--surface);border-top:1px solid var(--border);padding:12px 24px 18px;display:grid;gap:8px;flex:none}
+  .foot .rowb{display:flex;gap:12px;align-items:center}
+  .save{display:flex;align-items:center;gap:6px;font:500 11px 'Geist Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--text4)}
+  .save.queued{color:#1F4FD1}.save.err{color:var(--danger-text)}
+  .save u{width:8px;height:8px;border-radius:50%;background:var(--ok);display:none}
+  .save.ok u{display:block}
+  .stillneeded{margin-top:24px;border-radius:12px;background:var(--muted);padding:16px;display:grid;gap:8px}
+  .need{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:14px;line-height:1.45}
+  .badge{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font:600 13px 'Geist',sans-serif;flex:none;background:var(--muted);color:var(--text3)}
+  .badge.done{background:var(--ok-soft);color:var(--ok-text)}.badge.cur{background:var(--accent);color:#fff}.badge.req{background:var(--warn-soft);color:var(--warn)}
+  .badge svg{width:15px;stroke-width:2.6}
+  .bar{height:6px;border-radius:3px;background:var(--sunken);position:relative}
+  .bar i{display:block;height:100%;border-radius:3px;background:var(--ok)}
+  .bar u{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--text);border-radius:2px}
+  .tile{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent);flex:none}
+  .tile.ok{background:var(--ok-soft);color:var(--ok-text)}.tile.warn{background:var(--warn-soft);color:var(--warn)}.tile.mute{background:var(--muted);color:var(--text3)}
+  .acc-item{background:var(--surface);border:1px solid var(--border);border-radius:18px;overflow:hidden}
+  .acc-item.open{border-color:var(--accent-edge)}
+  .acc-head{display:flex;align-items:center;gap:12px;padding:14px 16px;width:100%;text-align:left;min-height:64px}
+  .acc-head b{font-size:16px;letter-spacing:-.015em;display:block}
+  .acc-body{padding:4px 16px 16px;display:grid;gap:16px;border-top:1px solid var(--border);padding-top:16px}
+  .chev{width:18px;color:var(--text4);transition:.2s}.open .chev{transform:rotate(180deg)}
+  .nav{display:flex;gap:8px;overflow-x:auto;padding:8px 20px;scrollbar-width:none;background:var(--bg);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10}
+  .nav::-webkit-scrollbar{display:none}
+  .nav button{height:34px;border-radius:99px;padding:0 13px;font-size:13.5px;font-weight:600;color:var(--text3);border:1px solid var(--border-strong);background:var(--surface);white-space:nowrap;display:inline-flex;align-items:center;gap:6px}
+  .nav button i{width:7px;height:7px;border-radius:50%;background:var(--sunken)}.nav button i.d{background:var(--ok)}.nav button i.r{background:var(--warn)}
+  .nav button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .sec{padding:22px 20px 24px;border-top:1px solid var(--border);scroll-margin-top:52px}
+  .sec:first-of-type{border-top:0}
+  .sec-h{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:14px}
+  .sec-h b{font-size:19px;font-weight:600;letter-spacing:-.025em}
+  .linkbtn{font-size:14px;font-weight:600;color:var(--accent);min-height:32px;padding:0 2px}
+  .hubcard{display:flex;align-items:center;gap:14px;padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:18px;width:100%;text-align:left}
+  .hubcard b{font-size:16px;letter-spacing:-.015em;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .hubcard .sub{margin-top:3px;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .scrim{position:absolute;inset:0;background:rgba(11,15,26,.45);z-index:50}
+  .sheet{position:absolute;left:0;right:0;bottom:0;max-height:88%;background:var(--surface);border-radius:28px 28px 0 0;z-index:55;display:flex;flex-direction:column}
+  .sheet .grab{width:40px;height:4px;border-radius:3px;background:var(--border-strong);margin:10px auto 0;flex:none}
+  .sheet .sh-h{display:flex;align-items:center;justify-content:space-between;padding:12px 20px 10px;flex:none}
+  .sheet .sh-h b{font-size:19px;font-weight:600;letter-spacing:-.025em}
+  .sheet .sh-b{padding:6px 20px 16px;overflow-y:auto;min-height:0;scrollbar-width:none}
+  .sheet .sh-b::-webkit-scrollbar{display:none}
+  .sheet .sh-f{padding:12px 20px 20px;display:grid;gap:8px;border-top:1px solid var(--border);flex:none}
+  .inkcard{background:var(--ink);color:#fff;border-radius:24px;padding:18px;display:grid;gap:14px}
+  .inkcard .bar{background:rgba(255,255,255,.18)}.inkcard .bar i{background:#5FD9A8}.inkcard .bar u{background:#fff}
+  .inkcard .mono{color:rgba(255,255,255,.65)}
+
+  /* ---- profile view bits ---- */
+  .kv{display:grid;gap:2px;margin-bottom:12px}.kv:last-child{margin-bottom:0}
+  .kv small{font:500 11px 'Geist Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--text4)}
+  .kv span{font-size:14px;line-height:1.45}.kv span.empty{color:var(--text4)}
+  .docrow{display:flex;align-items:center;gap:8px;border-radius:10px;background:var(--muted);padding:12px;margin-top:4px}
+  .docrow svg{width:18px;color:var(--text3)}
+  .docrow b{font-size:14px;font-weight:400;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .docrow small{font:500 11px 'Geist Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--text4);display:block}
+  .film{display:flex;gap:14px;align-items:flex-start}
+  .film .th{width:56px;aspect-ratio:9/16;border-radius:10px;background:linear-gradient(160deg,var(--accent-deep),var(--ink-raised));display:grid;place-items:center;flex:none;color:#fff}
+  .film .th svg{width:16px;fill:#fff;stroke:none}
+  .film .th.dimv{background:var(--muted)}.film .th.dimv svg{fill:var(--text4)}
+  .seal{display:inline-flex;align-items:center;gap:5px;background:var(--ok-soft);color:var(--ok-text);border-radius:99px;padding:5px 10px;font:500 10px 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+  .seal svg{width:12px;stroke:var(--ok);stroke-width:3}
+  .unv{display:inline-block;font:500 10px 'Geist Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--warn);background:var(--warn-soft);border-radius:99px;padding:5px 9px}
+  .selfbox{background:var(--muted);border:1px dashed var(--border-strong);border-radius:20px;padding:16px;display:grid;gap:10px}
+  .selfrow{display:grid;gap:4px;padding-top:10px;border-top:1px solid var(--border)}
+  .selfrow:first-of-type{border-top:0;padding-top:0}
+  .selfrow b{font-size:14px;font-weight:600}
+  .selfrow .m{display:flex;flex-wrap:wrap;gap:6px}
+  .player{width:100%;aspect-ratio:16/10;border-radius:24px;overflow:hidden;position:relative;background:linear-gradient(170deg,var(--accent-bright),var(--accent-deep) 55%,var(--ink-raised));color:#fff}
+  .player .play{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:60px;height:60px;border-radius:50%;background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.45);display:grid;place-items:center}
+  .player .play svg{width:24px;fill:#fff;stroke:none}
+  .player .seal{position:absolute;left:12px;top:12px;background:rgba(255,255,255,.95)}
+  .avatar{width:64px;height:64px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font:600 22px 'Geist',sans-serif;flex:none}
+  .seg{display:flex;background:var(--muted);border-radius:var(--r-md);padding:4px}
+  .seg button{flex:1;min-width:0;height:40px;border-radius:11px;font-size:13px;padding:0 2px;font-weight:600;color:var(--text3);white-space:nowrap}
+  .seg button.on{background:var(--surface);color:var(--accent);border:1px solid var(--border)}
+  .xp{display:grid;gap:3px;padding:14px 0;border-top:1px solid var(--border)}.xp:first-child{border-top:0;padding-top:0}
+  .xp b{font-size:15px;font-weight:600}
+  .doc-sec{margin:0 20px;padding:20px 0;border-top:1px solid var(--border)}
+  .doc-sec:first-child{border-top:0}
+  .doc-sec h3{font-size:17px;font-weight:700;letter-spacing:-.02em}
+  .ring{position:relative;width:96px;height:96px;flex:none}
+  .ring svg{width:96px;height:96px;transform:rotate(-90deg);stroke-width:8;stroke-linecap:round}
+  .ring b{position:absolute;inset:0;display:grid;place-items:center;font:500 22px 'Geist Mono',monospace;letter-spacing:-.02em}
+  .todo{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--border)}.todo:first-of-type{border-top:0}
+  .pitem{background:var(--surface);border:1px solid var(--border);border-radius:18px;overflow:hidden}
+  .pitem-h{display:flex;align-items:center;gap:12px;padding:14px 16px;width:100%;text-align:left;min-height:62px}
+  .pitem-h b{font-size:16px;letter-spacing:-.015em;display:block}
+  .pitem-b{padding:14px 16px 16px;border-top:1px solid var(--border)}
+  .pitem.open .chev{transform:rotate(180deg)}
+</style>
+</head>
+<body>
+<div class="intro">
+  <div class="mono" style="color:var(--accent)">Student profile · four options per screen</div>
+  <h1>Profile editor · My profile</h1>
+  <p>Every field, label, step, state and sentence comes from the app (<b>ProfileWizardScreen</b>, <b>wizardSteps</b>, <b>ProfileViewScreen</b>). Names, dates and numbers are placeholder values. Pick a screen, pick an option, or show all four side by side.</p>
+  <div class="chooser">
+    <div class="row"><span class="glabel">Screen</span><div class="grp" id="gScreen"></div></div>
+    <div class="row"><span class="glabel">Option</span><div class="grp" id="gOpt"></div></div>
+    <div class="row"><span class="glabel">View</span><div class="grp" id="gAll"></div></div>
+  </div>
+  <div class="chooser" id="gState"></div>
+</div>
+<div class="wrap" id="wrap"></div>
+
+<script>
+/* ======================== icons ======================== */
+const I={
+ back:'<svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>',
+ check:'<svg viewBox="0 0 24 24"><path d="M5 12l4 4 10-10"/></svg>',
+ chev:'<svg class="chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>',
+ chevr:'<svg viewBox="0 0 24 24" style="width:18px;color:var(--text4)"><path d="M9 6l6 6-6 6"/></svg>',
+ x:'<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+ alert:'<svg viewBox="0 0 24 24"><path d="M12 3l10 18H2zM12 10v5M12 18v.5"/></svg>',
+ play:'<svg viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z"/></svg>',
+ doc:'<svg viewBox="0 0 24 24"><path d="M14 3v5h5M7 3h8l5 5v11a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/></svg>',
+ user:'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>',
+ cap:'<svg viewBox="0 0 24 24"><path d="M2 9l10-5 10 5-10 5zM6 11.5V16c0 1.5 3 3 6 3s6-1.5 6-3v-4.5"/></svg>',
+ brief:'<svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V4h6v3M3 12h18"/></svg>',
+ spark:'<svg viewBox="0 0 24 24"><path d="M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2z"/></svg>',
+ pin:'<svg viewBox="0 0 24 24"><path d="M12 21s-7-6-7-11a7 7 0 0114 0c0 5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>',
+ clip:'<svg viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6zM14 3v4h4"/></svg>',
+ video:'<svg viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></svg>',
+};
+const status=()=>`<div class="status"><span>9:41</span><i></i><span>5G ▮▮▮</span></div>`;
+
+/* ======================== real data shapes, placeholder values ======================== */
+const GATE=80;
+const STEPS=[
+ {n:1,key:'personal',label:'Basics',opt:false,ic:'user'},
+ {n:2,key:'education',label:'Education',opt:false,ic:'cap'},
+ {n:3,key:'experience',label:'Experience',opt:true,ic:'brief'},
+ {n:4,key:'skills',label:'Skills',opt:false,ic:'spark'},
+ {n:5,key:'preferences',label:'Preferences',opt:false,ic:'pin'},
+ {n:6,key:'documents',label:'Documents',opt:true,ic:'clip'},
+];
+const P={ name:'Student Name', city:'City A', dob:'2003-05-14', dobLong:'14 May 2003', gender:'Prefer not to say', langs:['Language A','Language B'],
+ edu:{qual:'Graduation',inst:'College or university',field:'Commerce',year:'2023',scoreType:'CGPA',score:'7.4',doc:false},
+ exp:[{role:'Role',company:'Company A',range:'Jun 2022 — Aug 2022',desc:'Short description of the work.'}],
+ skills:[['Skill A',0],['Skill B',0],['Skill C',1]],
+ prefs:{roles:['Role A'],locs:['City A'],types:['Full time','Internship'],avail:'Within 30 days',sal:'₹6 – 9 LPA'},
+ docs:[{name:'resume.pdf',kind:'Résumé'}],links:['https://example.com'],
+ pct:72, missing:['Qualification document','Portfolio links'] };
+const EMPTY={ name:'Student Name', city:null, dob:null, gender:null, langs:[], edu:{}, exp:[], skills:[], prefs:{}, docs:[], links:[], pct:12, missing:['Date of birth'] };
+
+/* ======================== state ======================== */
+const S={screen:'ed',opt:'A',all:false,
+ ed:{state:'typing',step:2,open:2,sheet:null,sec:1},
+ pv:{state:'typical',film:'PUBLISHED',tab:'about',open:'education'}};
+const h=location.hash.slice(1);
+if(h){try{const o=JSON.parse(decodeURIComponent(h));Object.assign(S,o,{ed:Object.assign(S.ed,o.ed||{}),pv:Object.assign(S.pv,o.pv||{})})}catch(e){}}
+
+/* ======================== shared bits ======================== */
+const pill=(t,tone)=>`<span class="pill ${tone}">${t}</span>`;
+const dhead=(title,right)=>`<div class="dhead"><button class="back" data-act="toast:Goes back" aria-label="Back">${I.back}</button><b>${title}</b>${right||''}</div>`;
+const skel=(n,h)=>Array.from({length:n},()=>`<div class="skel" style="height:${h}px"></div>`).join('');
+const errBlock=()=>`<div class="center"><div class="ic">${I.alert}</div><b>Could not load your profile.</b><p>Check your connection and try again.</p><button class="btn out sm" data-act="retry">Try again</button></div>`;
+const fld=(l,inner,help,bad)=>`<div class="fld"><label>${l}</label>${inner}${help?`<div class="fhelp ${bad?'bad':''}">${help}</div>`:''}</div>`;
+const inp=(v,ph,bad)=>`<input class="in ${bad?'bad':''}" value="${v||''}" placeholder="${ph||''}" data-type>`;
+const chip=(l,cls)=>`<span class="chip ${cls||''}" data-chip="${cls==='add'?'add':'sel'}">${l}</span>`;
+const offline=()=>S.ed.state==='offline';
+const errState=()=>S.ed.state==='error';
+
+/* ---- step bodies: the six real wizard steps ---- */
+function stepBody(n,o){o=o||{};const bad=errState();
+ if(n===1)return `<div class="stack">
+  ${fld('Date of birth',inp(bad?'2003-5-14':'2003-05-14','YYYY-MM-DD',bad))}
+  ${fld('City',inp('City A','Where you are based'))}
+  ${fld('Gender',`<div class="chips" data-single>${['Male','Female','Other','Prefer not to say'].map(g=>chip(g,g==='Prefer not to say'?'on':'')).join('')}</div>`)}
+  ${fld('Languages you speak',`<div class="chips">${chip('Language A  ✕','on')}${chip('Language B  ✕','on')}</div><div class="chips">${chip('Language C','add')}${chip('Language D','add')}${chip('Language E','add')}</div>`,'Tap a suggestion to add.')}
+ </div>`;
+ if(n===2)return `<div class="stack">
+  ${fld('Institution',inp('College or university','College or university'))}
+  ${fld('Field of study',inp('Commerce','e.g. Commerce'))}
+  <div class="pair">${fld('Year',inp('2023','2023'))}${fld('Score',inp('7.4','7.4'))}</div>
+  ${fld('Score type',`<div class="chips" data-single>${chip('Percentage')}${chip('CGPA','on')}</div>`)}
+  <div class="proof"><div class="spread"><span class="eyebrow">Proof of qualification</span>${pill('required','warn')}</div>
+   <div class="sub">Your interviewer checks this against what you enter. Never shown to employers. PDF, JPG or PNG up to 10 MB.</div>
+   <div class="file ${bad?'bad':''}" data-act="toast:File picker is not wired yet"><i></i><div class="grow"><b>Choose a file</b></div></div></div>
+ </div>`;
+ if(n===3)return `<div class="stack">
+  <div class="sub">Internships and part-time work count. This step is optional.</div>
+  <div class="entry">${fld('Company',inp('Company A','Where you worked'))}${fld('Role',inp('Role','What you did'))}<div><span class="chip" data-act="toast:Removes this role">Remove</span></div></div>
+  <div>${chip('Add another role','add')}</div></div>`;
+ if(n===4){const sk=bad?['Skill A  ✕','Skill B  ✕']:['Skill A  ✕','Skill B  ✕','Skill C  ·  pending'];const c=bad?2:3;
+  return `<div class="stack">
+  ${fld('Your skills',`<div class="chips">${sk.map(s=>chip(s,'on')).join('')}</div><div class="chips">${chip('Skill D','add')}${chip('Skill E','add')}${chip('Skill F','add')}</div>`,'At least 3.')}
+  <div class="sub" style="${c<3?'':'color:var(--text)'}">${c} of 3${c<3?' · '+(3-c)+' to go':' · minimum met'}</div>
+  ${bad?'':`<div class="banner info">Skill C is not in our list yet, so it is on your profile already and queued for review. It counts towards your 3 either way.</div>`}</div>`;}
+ if(n===5)return `<div class="stack">
+  ${fld('Roles you want',`<div class="chips">${chip('Role A  ✕','on')}</div>${inp('','Type a role, press return')}`,'Tap to add.')}
+  ${fld('Preferred locations',`<div class="chips">${chip('City A  ✕','on')}</div><div class="chips">${chip('City B','add')}${chip('City C','add')}${chip('City D','add')}</div>`)}
+  <div class="pair">${fld('Expected salary (min, LPA)',inp('6','6'))}${fld('Max, LPA',inp('9','9'))}</div>
+  ${fld('Kind of work',`<div class="chips">${['Full time','Part time','Internship','Contract','Remote','Hybrid'].map(t=>chip(t,t==='Full time'||t==='Internship'?'on':'')).join('')}</div>`)}
+  ${fld('When you can join',`<div class="chips" data-single>${['Immediately','Within 15 days','Within 30 days','Within 60 days'].map(t=>chip(t,t==='Within 30 days'?'on':'')).join('')}</div>`)}
+ </div>`;
+ return `<div class="stack">
+  <div class="sub">Your résumé and any supporting files. Private, reachable only through a signed link. This step is optional.</div>
+  <div class="proof"><span class="eyebrow">Résumé</span><div class="sub">PDF, DOC or DOCX.</div><div class="file" data-act="toast:File picker is not wired yet"><i></i><div class="grow"><b>Choose a file</b></div></div></div>
+  ${fld('Portfolio links',`<div class="chips">${chip('https://example.com  ✕','on')}</div>${inp('','https://… , press return')}`,'A site, a repo, a reel.')}
+ </div>`;
+}
+const stillNeeded=()=>`<div class="stillneeded"><span class="eyebrow acc">Still needed</span>
+  <div class="need"><span>Qualification document</span>${pill('required','warn')}</div>
+  <div class="sub" style="margin-top:4px">Still to fill in: Qualification document · Portfolio links</div></div>`;
+const saveRow=()=>{const s=S.ed.state;
+ const m={typing:['SAVES AS YOU TYPE',''],saving:['SAVING…',''],saved:['SAVED · 10:42 AM','ok'],offline:['QUEUED · 2 · WILL SYNC','queued'],error:['NOT SAVED','err']}[s]||['SAVES AS YOU TYPE',''];
+ return `<div class="save ${m[1]}" data-save><u></u><span>${m[0]}</span></div>`};
+const banners=()=>{let o='';
+ if(offline())o+=`<div class="banner info" style="margin-bottom:16px"><b>Offline</b>What you type is saved on this phone and syncs the moment you are back. Keep going — nothing is lost.<span class="ref">Queued · 2 changes</span></div>`;
+ if(errState())o+=`<div class="banner danger" style="margin-bottom:16px">Could not save. Try again.</div>`;
+ return o};
+const stepState=n=>{ // done | req | cur | empty (derived from the sample completion)
+ if(n===2)return 'req'; if(n===6)return 'opt'; return 'done'};
+const stepPill=n=>({done:pill('Done','ok'),req:pill('Required','warn'),opt:pill('Optional','neutral')}[stepState(n)]);
+const stepSummary=n=>[ 'City A · Prefer not to say · 2 languages','College or university · Commerce · 2023','Role · Company A','Skill A · Skill B · Skill C (pending)','Role A · City A · ₹6 – 9 LPA','Résumé not added · 1 portfolio link'][n-1];
+
+/* ---- editor: loading / failed ---- */
+function edLoading(){return `${dhead('Profile')}<div class="sc" style="padding:20px"><div style="display:grid;gap:14px">${skel(1,22)}${skel(1,36)}${skel(4,56)}</div></div>`}
+function edFailed(){return `${dhead('Profile')}<div class="sc">${errBlock()}</div>`}
+const edGuard=()=>S.ed.state==='loading'?edLoading():S.ed.state==='failed'?edFailed():null;
+
+/* ======================== EDITOR A — Stepper ======================== */
+function edA(){const g=edGuard();if(g)return g;const n=S.ed.step,cur=STEPS[n-1],toGo=GATE-S.pv.pct0;
+ return `${dhead('Profile','<button class="hlink muted" data-act="toast:Saved and exited">Save &amp; exit</button>')}
+ <div class="bars">${STEPS.map(s=>`<button class="${s.n<n?'done':''} ${s.n===n?'on':''}" data-act="step:${s.n}" aria-label="Step ${s.n} ${s.label}"></button>`).join('')}</div>
+ <div class="gate"><span>${offline()?'72% as of last save':'Now 72%'}</span><span>Book at ${GATE}% · ${GATE-72}% to go</span></div>
+ <div class="sc" style="padding:18px 24px 28px">
+  <div class="eyebrow acc">Step ${n} of 6${cur.opt?' · Optional':''}</div>
+  <div class="h-disp" style="margin:6px 0 16px">${cur.label}</div>
+  ${banners()}${stepBody(n)}${n===6||n===2?stillNeeded():''}
+ </div>
+ <div class="foot">${saveRow()}<div class="rowb">${n>1?`<button class="btn out" data-act="step:${n-1}" style="height:52px">Back</button>`:''}<button class="btn ink full" style="flex:1;height:52px" data-act="${n===6?'toast:Opens the finish screen':'step:'+(n+1)}">${n===6?'Finish':'Continue'}</button></div></div>`}
+
+/* ======================== EDITOR B — Accordion ======================== */
+function edB(){const g=edGuard();if(g)return g;const o=S.ed.open;
+ return `${dhead('Profile','<button class="hlink muted" data-act="toast:Saved and exited">Save &amp; exit</button>')}
+ <div class="sc" style="padding:6px 20px 28px">
+  <div class="panel" style="gap:10px;margin-bottom:14px"><div class="spread"><span class="eyebrow">Profile ${offline()?'· as of last save':''}</span><span class="mono" style="color:var(--text)">${S.ed.state==='offline'?'72%':'72%'}</span></div>
+   <div class="bar"><i style="width:72%"></i><u style="left:80%"></u></div>
+   <div class="spread"><span class="mono" style="color:var(--text4)">Now 72%</span><span class="mono">Book at ${GATE}% · ${GATE-72}% to go</span></div></div>
+  ${banners()}
+  <div style="display:grid;gap:10px">${STEPS.map(s=>{const open=o===s.n;
+   return `<div class="acc-item ${open?'open':''}"><button class="acc-head" data-act="open:${s.n}" aria-expanded="${open}">
+     <span class="badge ${stepState(s.n)==='done'?'done':stepState(s.n)==='req'?'req':''}">${stepState(s.n)==='done'?I.check:s.n}</span>
+     <span class="grow"><b>${s.label}</b>${open?'':`<span class="sub" style="font-size:13px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${stepSummary(s.n)}</span>`}</span>${stepPill(s.n)}${I.chev}</button>
+    ${open?`<div class="acc-body">${stepBody(s.n)}<div class="spread"><div class="save ${saveCls()}" data-save><u></u><span>${saveTxt()}</span></div><button class="btn pri sm ${S.ed.state==='saving'?'busy':''}" data-act="${s.n<6?'open:'+(s.n+1):'toast:Opens the finish screen'}">${s.n===6?'Finish':'Save step'}</button></div></div>`:''}</div>`}).join('')}</div>
+  ${stillNeeded()}
+ </div>`}
+const saveTxt=()=>({typing:'SAVES AS YOU TYPE',saving:'SAVING…',saved:'SAVED · 10:42 AM',offline:'QUEUED · WILL SYNC',error:'NOT SAVED'}[S.ed.state]||'SAVES AS YOU TYPE');
+const saveCls=()=>({saved:'ok',offline:'queued',error:'err'}[S.ed.state]||'');
+
+/* ======================== EDITOR C — Single scroll + ring ======================== */
+function ring(pct,gate){const r=38,c=2*Math.PI*r,a=gate/100*2*Math.PI,x2=48+Math.cos(a)*46,y2=48+Math.sin(a)*46,x1=48+Math.cos(a)*32,y1=48+Math.sin(a)*32;
+ return `<div class="ring"><svg viewBox="0 0 96 96"><circle cx="48" cy="48" r="${r}" stroke="var(--sunken)"/><circle cx="48" cy="48" r="${r}" stroke="var(--ok)" stroke-dasharray="${c*pct/100} ${c}"/><line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="var(--text)" stroke-width="2.5"/></svg><b>${pct}%</b></div>`}
+function edC(){const g=edGuard();if(g)return g;
+ return `${dhead('Profile','<button class="hlink muted" data-act="toast:Saved and exited">Save &amp; exit</button>')}
+ <div class="sc" id="scC">
+  <div style="padding:6px 20px 16px"><div class="row" style="gap:18px">${ring(72,GATE)}<div class="grow"><div class="mono" style="color:var(--text)">Book at ${GATE}% · ${GATE-72}% to go</div><div class="sub" style="margin-top:6px">${offline()?'72% as of last save.':'Everything saves as you type.'} Still to fill in: Qualification document · Portfolio links</div></div></div>${banners()?'<div style="margin-top:14px">'+banners().replace('margin-bottom:16px','margin-bottom:0')+'</div>':''}</div>
+  <div class="nav" id="navC">${STEPS.map(s=>`<button class="${S.ed.sec===s.n?'on':''}" data-act="nav:${s.n}"><i class="${stepState(s.n)==='done'?'d':stepState(s.n)==='req'?'r':''}"></i>${s.label}</button>`).join('')}</div>
+  ${STEPS.map(s=>`<section class="sec" id="secC${s.n}"><div class="sec-h"><div><div class="eyebrow ${s.opt?'':'acc'}">Step ${s.n} of 6${s.opt?' · Optional':''}</div><b>${s.label}</b></div><div style="text-align:right"><button class="linkbtn" data-act="toast:Saved ${s.label}">Save</button><div class="save ${s.n===S.ed.step?saveCls():'ok'}" style="justify-content:flex-end" data-save><u></u><span>${s.n===S.ed.step?saveTxt():'SAVED · 10:42 AM'}</span></div></div></div>${stepBody(s.n)}</section>`).join('')}
+  <div style="padding:0 20px 24px">${stillNeeded().replace('margin-top:24px','')}</div>
+ </div>
+ <div class="foot"><div class="spread">${saveRow()}<span class="mono" style="color:var(--text)">${GATE-72}% to go</span></div><button class="btn ink full" style="height:52px" data-act="toast:Opens the finish screen">Finish</button></div>`}
+
+/* ======================== EDITOR D — Card per section + sheet ======================== */
+function edD(){const g=edGuard();if(g)return g;const sh=S.ed.sheet;
+ const base=`${dhead('Profile','<button class="hlink muted" data-act="toast:Saved and exited">Save &amp; exit</button>')}
+ <div class="sc" style="padding:6px 20px 28px;display:grid;gap:12px;align-content:start">
+  <div class="inkcard"><div class="spread" style="align-items:flex-end"><div><div class="mono">Profile</div><div style="font:500 36px 'Geist Mono',monospace;letter-spacing:-.03em;margin-top:2px">72%</div></div><span class="pill" style="background:rgba(255,255,255,.12);color:#fff">Book at ${GATE}%</span></div>
+   <div class="bar"><i style="width:72%"></i><u style="left:80%"></u></div>
+   <div style="font-size:14px;color:rgba(255,255,255,.75);line-height:1.45">${GATE-72}% to go. Still to fill in: Qualification document · Portfolio links</div></div>
+  ${banners()}
+  ${STEPS.map(s=>`<button class="hubcard" data-act="sheet:${s.n}"><span class="tile ${stepState(s.n)==='done'?'ok':stepState(s.n)==='req'?'warn':'mute'}">${I[s.ic]}</span><span class="grow"><b>${s.label}${stepPill(s.n)}</b><div class="sub">${stepSummary(s.n)}</div></span>${I.chevr}</button>`).join('')}
+ </div>
+ <div class="foot"><div class="spread">${saveRow()}</div><button class="btn ink full" style="height:52px" data-act="toast:Opens the finish screen">Finish</button></div>`;
+ if(!sh)return base;const s=STEPS[sh-1];
+ return base+`<div class="scrim" data-act="close"></div><div class="sheet"><div class="grab"></div>
+  <div class="sh-h"><div><div class="eyebrow ${s.opt?'':'acc'}">Step ${s.n} of 6${s.opt?' · Optional':''}</div><b>${s.label}</b></div><button class="back" style="width:40px;height:40px;border-radius:50%;border:1px solid var(--border);display:grid;place-items:center" data-act="close" aria-label="Close">${I.x}</button></div>
+  <div class="sh-b">${banners()}${stepBody(s.n)}</div>
+  <div class="sh-f">${saveRow()}<button class="btn pri full" data-act="close-save">Save</button><button class="btn out full" data-act="close">Cancel</button></div></div>`}
+
+/* ======================== PROFILE VIEW — shared parts ======================== */
+const D=()=>S.pv.state==='sparse'?EMPTY:P;
+const kv=(k,v)=>`<div class="kv"><small>${k}</small><span class="${v?'':'empty'}">${v||'Not set yet'}</span></div>`;
+const docrow=(n,k)=>`<div class="docrow">${I.doc}<div class="grow"><b>${n}</b><small>${k}</small></div></div>`;
+const edit=(k)=>`<button class="linkbtn" data-act="toast:Opens Edit ${k}">Edit</button>`;
+const sealT=`<span class="seal"><svg viewBox="0 0 24 24"><path d="M5 12l4 4 10-10"/></svg>Verified · 14 Sep 2026</span>`;
+function filmDesc(f){return {
+ PUBLISHED:{line:'The film from your interview. Employers watch this first; any videos you add yourself appear below it, marked as not verified.',mark:sealT,act:'Watch my film'},
+ HELD:{line:'Your video resume is not live yet. A top-up on your interview is outstanding — employers cannot see it until it is settled.',mark:sealT,act:'Watch my film'},
+ PROCESSING:{line:'Your interview is done and your film is being prepared. It will appear here when it is ready.',mark:pill('Processing','warn'),act:'See details'},
+ FAILED:{line:'We could not make a film from your interview. Talk to support and we will look into it.',mark:pill('Could not be made','danger'),act:'See details'},
+ UNPUBLISHED:{line:'Your film has been taken down, so employers cannot see it. Reason: Reason given by the reviewer.',mark:pill('Taken down','danger'),act:'See details'}}[f]}
+function filmCard(){const f=S.pv.film;
+ if(f==='LOADING')return `<div class="panel" style="padding:16px">${skel(1,16)}<div style="height:6px"></div>${skel(1,16)}<div style="height:6px"></div>${skel(1,16)}</div>`;
+ if(f==='ERROR')return `<div class="panel"><b style="font-size:17px">Your video resume</b><div class="sub">Could not load your video resume.</div><div><button class="btn out sm" data-act="toast:Retrying">Try again</button></div></div>`;
+ if(f==='NONE')return `<div class="panel muted" style="gap:10px"><b style="font-size:17px">Your video resume</b><div class="sub">The interview you book becomes your video resume — the one thing employers watch before they read a word.</div><div><button class="btn pri" data-act="toast:Opens booking">Book an interview</button></div></div>`;
+ const d=filmDesc(f);
+ return `<div class="panel" style="gap:14px"><div class="film"><div class="th ${f==='PROCESSING'||f==='FAILED'||f==='UNPUBLISHED'?'dimv':''}">${I.play}</div><div class="grow" style="display:grid;gap:4px"><b style="font-size:17px">Your video resume</b><div class="sub">${d.line}</div></div></div>
+  <div class="spread">${d.mark}<button class="btn out sm" data-act="toast:Opens video resume">${d.act}</button></div></div>`}
+function feedRow(){const live=S.pv.state!=='sparse';return `<button class="panel" data-act="toast:Opens Feed visibility" style="display:flex;align-items:center;gap:12px;width:100%;text-align:left"><div class="grow"><b style="font-size:15px;font-weight:500;display:block">${live?'You are live in the employer feed':'Feed visibility'}</b><div class="xs" style="margin-top:2px">${live?'Employers can find you and send an Interest.':'Your video resume unlocks the feed. Tap to manage.'}</div></div>${I.chevr}</button>`}
+function completion(){const d=D(),f=d.missing[0];return `<div class="panel" style="gap:10px;padding:14px 14px"><div style="display:flex;align-items:baseline;gap:8px"><span style="font:500 28px 'Geist Mono',monospace;letter-spacing:-.03em;color:var(--ok)">${d.pct}%</span><span style="font-size:13px;color:var(--text3)">${f?'filled in · still empty: '+f:'of your profile is filled in'}</span></div><div class="bar" style="height:4px"><i style="width:${d.pct}%"></i></div></div>`}
+function selfVideos(){const sparse=S.pv.state==='sparse';
+ return `<div class="selfbox"><div class="spread"><span class="eyebrow">Your videos</span>${edit('').replace('Edit','Manage videos').replace('Opens Edit ','Opens Manage videos')}</div>
+ ${sparse?'<div class="sub" style="color:var(--text4)">No videos yet.</div>':`
+ <div class="selfrow"><b>Introduction</b><span class="eyebrow">Introduction · 0:45</span><div class="m">${pill('Live on your profile','ok')}<span class="unv">Unverified</span></div></div>
+ <div class="selfrow"><b>A project</b><span class="eyebrow">A project · 1:10</span><div class="m">${pill('Waiting for review','warn')}<span class="unv">Unverified</span></div></div>`}</div>`}
+const secBody={
+ personal:()=>{const d=D();return kv('Name',d.name)+kv('City',d.city)+kv('Date of birth',d.dobLong)+kv('Gender',d.gender)+kv('Languages',d.langs.length?d.langs.join(', '):null)},
+ education:()=>{const e=D().edu;return kv('Qualification',e.qual)+kv('Institution',e.inst)+kv('Field of study',e.field)+kv('Year of completion',e.year)+kv('Score'+(e.scoreType?` (${e.scoreType})`:''),e.score)+(e.doc?docrow('qualification.pdf','qualification document'):'')},
+ experience:()=>{const x=D().exp;return x.length?x.map(e=>`<div class="xp"><b>${e.role}</b><span class="sub">${e.company} · ${e.range}</span><span class="sub">${e.desc}</span></div>`).join(''):'<div class="sub" style="color:var(--text4)">Nothing added yet.</div>'},
+ skills:()=>{const s=D().skills;return s.length?`<div class="chips">${s.map(k=>`<span class="skill ${k[1]?'pend':''}">${k[0]}${k[1]?'  ·  pending':''}</span>`).join('')}</div>`:'<div class="sub" style="color:var(--text4)">Not set yet</div>'},
+ preferences:()=>{const p=D().prefs;const j=a=>a&&a.length?a.join(', '):null;return kv('Roles you want',j(p.roles))+kv('Where you would work',j(p.locs))+kv('Kind of work',j(p.types))+kv('When you can join',p.avail)+kv('Expected salary',p.sal)},
+ documents:()=>{const d=D();return !d.docs.length&&!d.links.length?'<div class="sub" style="color:var(--text4)">Nothing added yet.</div>':d.docs.map(x=>docrow(x.name,x.kind)).join('')+d.links.map(l=>`<div style="font-size:14px;color:#4A2FE0;margin-top:8px">${l}</div>`).join('')}
+};
+const SECS=[['personal','Basics'],['education','Education'],['experience','Experience'],['skills','Skills'],['preferences','Preferences'],['documents','Documents']];
+const secSummary=k=>{const d=D();return {personal:d.city?`${d.city} · ${d.gender} · ${d.langs.length} languages`:'Not set yet',education:d.edu.inst?`${d.edu.inst} · ${d.edu.field} · ${d.edu.year}`:'Not set yet',experience:d.exp.length?`${d.exp[0].role} · ${d.exp[0].company}`:'Nothing added yet.',skills:d.skills.length?d.skills.map(s=>s[0]).join(' · '):'Not set yet',preferences:d.prefs.roles?`${d.prefs.roles[0]} · ${d.prefs.locs[0]} · ${d.prefs.sal}`:'Not set yet',documents:d.docs.length||d.links.length?`${d.docs.length} file · ${d.links.length} link`:'Nothing added yet.'}[k]};
+const pvHead=(right)=>dhead('Profile','<button class="hlink" data-act="toast:Opens Videos">Videos</button>');
+const pvTitle=()=>`<div style="padding:4px 4px 6px;display:grid;gap:4px"><span class="eyebrow">Your profile</span><span class="h-disp26">This is what an employer sees.</span></div>`;
+function pvGuard(){const st=S.pv.state;
+ if(st==='loading')return `${dhead('Profile')}<div class="sc" style="padding:12px 20px;display:grid;gap:12px;align-content:start">${skel(1,24)}${skel(1,120)}${skel(1,80)}${skel(1,160)}</div>`;
+ if(st==='error')return `${dhead('Profile')}<div class="sc" style="display:grid;place-items:center"><div class="sub" style="font-size:15px">Could not load your profile.</div></div>`;return null}
+
+/* ======================== PROFILE A — stacked panels ======================== */
+function pvA(){const g=pvGuard();if(g)return g;
+ return `${pvHead()}<div class="sc" style="padding:4px 20px 30px;display:grid;gap:10px;align-content:start">${pvTitle()}${filmCard()}${completion()}${feedRow()}
+ ${SECS.map(([k,t])=>`<div class="panel" style="gap:10px;padding:16px"><div class="spread"><span class="eyebrow">${t}</span>${edit(t)}</div><div>${secBody[k]()}</div></div>`).join('')}${selfVideos()}</div>`}
+
+/* ======================== PROFILE B — identity hero + tabs ======================== */
+function pvB(){const g=pvGuard();if(g)return g;const d=D(),t=S.pv.tab,sparse=S.pv.state==='sparse';
+ const tabs=[['about','About'],['work','Experience'],['prefs','Preferences'],['files','Documents']];
+ const body={about:`<div class="panel" style="gap:10px"><div class="spread"><span class="eyebrow">Basics</span>${edit('Basics')}</div>${secBody.personal()}</div>
+   <div class="panel" style="gap:10px"><div class="spread"><span class="eyebrow">Education</span>${edit('Education')}</div>${secBody.education()}</div>
+   <div class="panel" style="gap:10px"><div class="spread"><span class="eyebrow">Skills</span>${edit('Skills')}</div>${secBody.skills()}</div>`,
+  work:`<div class="panel" style="gap:10px"><div class="spread"><span class="eyebrow">Experience</span>${edit('Experience')}</div>${secBody.experience()}</div>`,
+  prefs:`<div class="panel" style="gap:10px"><div class="spread"><span class="eyebrow">Preferences</span>${edit('Preferences')}</div>${secBody.preferences()}</div>`,
+  files:`<div class="panel" style="gap:10px"><div class="spread"><span class="eyebrow">Documents</span>${edit('Documents')}</div>${secBody.documents()}</div>${selfVideos()}`}[t];
+ return `${pvHead()}<div class="sc" style="padding:4px 20px 30px;display:grid;gap:12px;align-content:start">
+  <div class="row" style="gap:14px;padding:4px 4px 0"><div class="avatar">SN</div><div class="grow"><div class="h-disp">${d.name}</div><div class="sub">${d.city||'City not set yet'}</div></div></div>
+  <div style="display:flex;gap:8px;align-items:center"><span class="mono" style="color:var(--ok-text)">${d.pct}%</span><div class="bar grow" style="height:4px"><i style="width:${d.pct}%"></i></div><span class="mono" style="color:var(--text4)">filled in</span></div>
+  ${filmCard()}${feedRow()}
+  <div class="seg">${tabs.map(([k,l])=>`<button class="${t===k?'on':''}" data-act="pvtab:${k}">${l}</button>`).join('')}</div>
+  ${body}</div>`}
+
+/* ======================== PROFILE C — résumé document ======================== */
+function pvC(){const g=pvGuard();if(g)return g;const d=D();
+ return `${pvHead()}<div class="sc" style="padding-bottom:30px">
+  <div style="padding:6px 24px 4px"><span class="eyebrow">Your profile</span><div class="h-disp26" style="margin-top:4px">This is what an employer sees.</div>
+   <div class="row" style="margin-top:14px;gap:10px"><span style="font:500 15px 'Geist Mono',monospace;color:var(--ok)">${d.pct}%</span><span style="font-size:13px;color:var(--text3)">${d.missing[0]?'filled in · still empty: '+d.missing[0]:'of your profile is filled in'}</span></div></div>
+  <div class="doc-sec" style="border-top:0;padding-top:14px">${filmCard()}</div>
+  ${SECS.map(([k,t])=>`<div class="doc-sec"><div class="spread" style="margin-bottom:12px"><h3>${t}</h3>${edit(t)}</div>${secBody[k]()}</div>`).join('')}
+  <div class="doc-sec">${selfVideos()}</div>
+  <div class="doc-sec">${feedRow()}</div></div>`}
+
+/* ======================== PROFILE D — completion-led + collapsible rows ======================== */
+function pvD(){const g=pvGuard();if(g)return g;const d=D(),o=S.pv.open;
+ return `${pvHead()}<div class="sc" style="padding:4px 20px 30px;display:grid;gap:12px;align-content:start">${pvTitle()}
+  <div class="panel" style="gap:14px"><div class="row" style="gap:18px">${ring(d.pct,GATE)}<div class="grow"><div class="mono" style="color:var(--text)">Book at ${GATE}% · ${Math.max(0,GATE-d.pct)}% to go</div><div class="sub" style="margin-top:6px">${d.missing.length?'Still to fill in:':'Nothing left to fill in.'}</div></div></div>
+   ${d.missing.length?`<div>${d.missing.map(m=>`<div class="todo"><span class="grow" style="font-size:14px">${m}</span><button class="btn out sm" data-act="toast:Opens ${m}">Add</button></div>`).join('')}</div>`:''}</div>
+  ${filmCard()}${feedRow()}
+  ${SECS.map(([k,t])=>{const op=o===k;return `<div class="pitem ${op?'open':''}"><button class="pitem-h" data-act="pvopen:${k}" aria-expanded="${op}"><span class="grow"><b>${t}</b>${op?'':`<span class="sub" style="font-size:13px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${secSummary(k).includes('Not set')||secSummary(k).includes('Nothing')?'color:var(--text4)':''}">${secSummary(k)}</span>`}</span>${I.chev}</button>${op?`<div class="pitem-b"><div class="spread" style="margin-bottom:10px"><span class="eyebrow">${t}</span>${edit(t)}</div>${secBody[k]()}</div>`:''}</div>`}).join('')}
+  ${selfVideos()}</div>`}
+S.pv.pct0=72;
+
+/* ======================== chrome ======================== */
+const NAMES={
+ ed:{A:['Stepper','One step at a time, six progress bars, per-step autosave, Back / Continue footer — the shipped pattern, tightened.'],
+     B:['Accordion','All six steps on one page; each folds open to its fields with its own Save step, status pill and one-line summary.'],
+     C:['One scroll + ring','A progress ring with the 80% gate tick, sticky jump chips, every step on a single page with a Save link in each heading.'],
+     D:['Hub + sheet','A card per step showing what is filled in. Tap one to edit it in a bottom sheet with Save and Cancel, like My profile.']},
+ pv:{A:['Stacked panels','The shipped order: film, completion, feed row, then one bordered panel per section with Edit.'],
+     B:['Identity hero + tabs','Name and city lead, the film follows, then About / Experience / Preferences / Documents behind a segmented control.'],
+     C:['Résumé document','No boxes: a single readable column with hairline rules, the way a printed résumé reads; Edit stays on each heading.'],
+     D:['Checklist-led','The ring and the missing items come first with an Add button each; sections collapse to one summary line and open in place.']}};
+const renderers={ed:{A:edA,B:edB,C:edC,D:edD},pv:{A:pvA,B:pvB,C:pvC,D:pvD}};
+function cell(opt){return `<div class="cell" data-opt="${opt}"><div class="phone" id="ph${opt}">${status()}<div class="top"></div>${renderers[S.screen][opt]()}<div class="toast"></div></div><div class="cap"><b>Option ${opt} · ${NAMES[S.screen][opt][0]}</b><span>${NAMES[S.screen][opt][1]}</span></div></div>`}
+function render(){
+ const opts=S.all?['A','B','C','D']:[S.opt];
+ const keep={};document.querySelectorAll('.phone .sc').forEach(e=>{keep[e.closest('.phone').id]=e.scrollTop});
+ document.getElementById('wrap').innerHTML=opts.map(cell).join('');
+ document.querySelectorAll('.phone .sc').forEach(e=>{const t=keep[e.closest('.phone').id];if(t)e.scrollTop=t});
+ chrome()}
+const sw=(id,list,get,set)=>{const el=document.getElementById(id);el.innerHTML=list.map(o=>`<button class="${o[0]===get()?'on':''}" data-s="${o[0]}">${o[1]}</button>`).join('');el.querySelectorAll('button').forEach(b=>b.onclick=()=>{set(b.dataset.s);render()})};
+function chrome(){
+ sw('gScreen',[['ed','Profile editor'],['pv','My profile']],()=>S.screen,v=>S.screen=v);
+ sw('gOpt',['A','B','C','D'].map(x=>[x,'Option '+x]),()=>S.opt,v=>{S.opt=v;S.all=false});
+ sw('gAll',[['one','One phone'],['all','Side by side']],()=>S.all?'all':'one',v=>S.all=v==='all');
+ const st=document.getElementById('gState');
+ if(S.screen==='ed'){st.innerHTML='<span class="glabel">State</span><div class="grp" id="gS1"></div>';
+  sw('gS1',[['typing','Typing'],['saving','Saving'],['saved','Saved'],['offline','Offline'],['error','Validation error'],['loading','Loading'],['failed','Load failed']],()=>S.ed.state,v=>S.ed.state=v);
+  st.insertAdjacentHTML('beforeend','<span class="glabel">Step</span><div class="grp" id="gS2"></div>');
+  sw('gS2',STEPS.map(s=>[String(s.n),s.n+' '+s.label]),()=>String(S.ed.step),v=>{S.ed.step=+v;S.ed.open=+v;S.ed.sec=+v});
+ }else{st.innerHTML='<span class="glabel">Profile</span><div class="grp" id="gS1"></div><span class="glabel">Video resume</span><div class="grp" id="gS2"></div>';
+  sw('gS1',[['typical','Filled in'],['sparse','Mostly empty'],['loading','Loading'],['error','Load failed']],()=>S.pv.state,v=>S.pv.state=v);
+  sw('gS2',[['PUBLISHED','Published'],['HELD','Held'],['PROCESSING','Processing'],['FAILED','Failed'],['UNPUBLISHED','Taken down'],['NONE','None'],['LOADING','Loading'],['ERROR','Error']],()=>S.pv.film,v=>S.pv.film=v)}}
+
+/* ======================== interaction ======================== */
+let tt;const toast=(ph,m)=>{const t=ph.querySelector('.toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),1700)};
+const markSave=ph=>{ph.querySelectorAll('[data-save]').forEach(e=>{e.className='save';e.lastElementChild.textContent='SAVING…'});clearTimeout(markSave.t);markSave.t=setTimeout(()=>{ph.querySelectorAll('[data-save]').forEach(e=>{e.className='save ok';e.lastElementChild.textContent='SAVED · 10:42 AM'})},1200)};
+document.addEventListener('input',e=>{if(e.target.matches('[data-type]')){e.target.classList.remove('bad');markSave(e.target.closest('.phone'))}});
+document.addEventListener('click',e=>{const ph=e.target.closest('.phone');if(!ph)return;
+ const c=e.target.closest('[data-chip]');
+ if(c){if(c.dataset.chip==='add'){c.dataset.chip='sel';c.classList.remove('add');c.classList.add('on');c.textContent+='  ✕'}
+  else{const single=c.parentElement.hasAttribute('data-single');if(single)c.parentElement.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));c.classList.toggle('on',single?true:!c.classList.contains('on'))}
+  markSave(ph);return}
+ const a=e.target.closest('[data-act]');if(!a)return;const x=a.dataset.act,k=S.ed;
+ if(x.startsWith('toast:'))return toast(ph,x.slice(6));
+ if(x==='retry'){return toast(ph,'Trying again')}
+ if(x.startsWith('step:')){k.step=+x.slice(5);k.open=k.step;k.sec=k.step;S.ed.state=S.ed.state==='error'?'typing':S.ed.state;return render()}
+ if(x.startsWith('open:')){const n=+x.slice(5);k.open=k.open===n&&!x.includes('!')?(a.classList.contains('acc-head')?0:n):n;k.step=n;return render()}
+ if(x.startsWith('sheet:')){k.sheet=+x.slice(6);return render()}
+ if(x==='close'){k.sheet=null;return render()}
+ if(x==='close-save'){k.sheet=null;k.state='saved';render();return toast(document.querySelector('.phone'),'Saved')}
+ if(x.startsWith('nav:')){const n=+x.slice(4);k.sec=n;ph.querySelectorAll('.nav button').forEach((b,i)=>b.classList.toggle('on',i===n-1));const t=ph.querySelector('#secC'+n),sc=ph.querySelector('.sc');if(t)sc.scrollTo({top:t.offsetTop-52,behavior:'smooth'});return}
+ if(x.startsWith('pvtab:')){S.pv.tab=x.slice(6);return render()}
+ if(x.startsWith('pvopen:')){const kk=x.slice(7);S.pv.open=S.pv.open===kk?null:kk;return render()}
+});
+render();
+</script>
+</body>
+</html>

@@ -3,8 +3,11 @@ import { Image, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useQuery } from '@tanstack/react-query'
 import { getInterview } from '../../lib/api/interviews'
-import { borderWidth, color, height, radius, space, spaceHalf, trackingNative } from '../../theme'
-import { Banner, Body, Button, ScreenHeader, Skeleton, StickyFooter, text } from '../../components/ui'
+import { borderWidth, color, fontFamilyNative as FF } from '../../theme'
+import { Banner } from '../../components/ui'
+import { Icon } from '../../components/ui/Icon'
+import { Btn, Skel, StateBlock } from '../../components/tab/kit'
+import { Disc, Eyebrow, FlowFooter, FlowHeader, Lead, Sub } from '../../components/tab/flow'
 
 /**
  * ST-31 — interview ended. The video is being prepared (up to an hour) and
@@ -24,10 +27,10 @@ export function EndedScreen({ id, onBack, onDetail, onRejoin }: {
     if (reviewed) onDetail()
   }, [reviewed, onDetail])
 
-  const bar = <ScreenHeader onBack={onBack} />
+  const bar = <FlowHeader onBack={onBack} />
   const frame = (c: React.ReactNode) => <View style={[styles.page, { paddingTop: insets.top }]}>{bar}{c}</View>
-  if (q.isPending || reviewed) return frame(<View style={styles.body}><Skeleton lines={3} /></View>)
-  if (q.isError) return frame(<View style={styles.centre}><Body tone="muted">Could not load your interview.</Body></View>)
+  if (q.isPending || reviewed) return frame(<View style={styles.body}><Skel w={56} h={56} round /><Skel w="70%" h={28} /><Skel w="100%" h={90} /></View>)
+  if (q.isError) return frame(<StateBlock icon="alert" title="Could not load your interview." />)
 
   const incomplete = q.data!.status === 'INCOMPLETE'
   // The student pressed Leave but the interviewer has not ended the session — it is still running.
@@ -38,8 +41,8 @@ export function EndedScreen({ id, onBack, onDetail, onRejoin }: {
     <View style={styles.reveal}>
       {iv.photoUrl ? <Image source={{ uri: iv.photoUrl }} style={styles.revealPhoto} accessibilityLabel={iv.name} /> : null}
       <View style={styles.stepText}>
-        <Text style={text.uiMdSemi}>{`Interviewed by ${iv.name}`}</Text>
-        {!!(iv.headline || iv.company) && <Text style={[text.uiSm, styles.muted]}>{[iv.headline, iv.company].filter(Boolean).join(' · ')}</Text>}
+        <Text style={styles.t15s}>{`Interviewed by ${iv.name}`}</Text>
+        {!!(iv.headline || iv.company) && <Text style={styles.small}>{[iv.headline, iv.company].filter(Boolean).join(' · ')}</Text>}
       </View>
     </View>
   ) : null
@@ -50,15 +53,15 @@ export function EndedScreen({ id, onBack, onDetail, onRejoin }: {
         {bar}
         <ScrollView contentContainerStyle={styles.body}>
           <View style={styles.head}>
-            <Text style={text.displayLead}>You left the interview.</Text>
-            <Text style={[text.uiMd, styles.muted]}>It is still running — only your interviewer can end it. You can rejoin while it is in progress.</Text>
+            <Lead>You left the interview.</Lead>
+            <Sub>It is still running — only your interviewer can end it. You can rejoin while it is in progress.</Sub>
           </View>
           {reveal}
         </ScrollView>
-        <StickyFooter>
-          {onRejoin && <Button variant="primary" size="lg" full label="Rejoin the interview" onPress={onRejoin} />}
-          <Button variant="outline" size="md" full label="Back to my interviews" onPress={onBack} />
-        </StickyFooter>
+        <FlowFooter>
+          {onRejoin && <Btn label="Rejoin the interview" onPress={onRejoin} />}
+          <Btn variant="outline" label="Back to my interviews" onPress={onBack} />
+        </FlowFooter>
       </View>
     )
   }
@@ -67,16 +70,18 @@ export function EndedScreen({ id, onBack, onDetail, onRejoin }: {
     <View style={[styles.page, { paddingTop: insets.top }]}>
       {bar}
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
-        <View style={[styles.disc, incomplete ? styles.discWarn : styles.discOk]}>
-          <Text style={[text.displayLead, { color: incomplete ? color.warning : color.successFill }]}>{incomplete ? '!' : '✓'}</Text>
-        </View>
+        <Disc tone={incomplete ? 'warn' : 'ok'}>
+          {incomplete
+            ? <Text style={styles.bang}>!</Text>
+            : <Icon name="check" size={26} tint={color.successFill} weight={2.2} />}
+        </Disc>
         <View style={styles.head}>
-          <Text style={[text.metaMd, styles.eyebrow, { color: incomplete ? color.warning : color.success }]}>
+          <Eyebrow tone={incomplete ? 'warn' : 'ok'}>
             {incomplete ? 'INTERVIEW ENDED EARLY' : 'THAT IS A WRAP'}
-          </Text>
-          <Text style={text.displayLead}>{incomplete ? 'Your interview is under review.' : 'Your video is being made.'}</Text>
+          </Eyebrow>
+          <Lead>{incomplete ? 'Your interview is under review.' : 'Your video is being made.'}</Lead>
           {!incomplete && (
-            <Text style={[text.uiMd, styles.muted]}>It joins the employer feed on its own — there is no approval step to wait for.</Text>
+            <Sub>It joins the employer feed on its own — there is no approval step to wait for.</Sub>
           )}
         </View>
 
@@ -85,7 +90,7 @@ export function EndedScreen({ id, onBack, onDetail, onRejoin }: {
           <Banner tone="warning">The session ended before it finished, so it did not become a video resume. Our team is reviewing what happened. If it was not on you, a free re-interview is added to your account and you will be told here and in your notifications.</Banner>
         ) : (
           <View>
-            <Text style={[text.uiBaseSemi, styles.listHead]}>What happens next</Text>
+            <Text style={styles.listHead}>What happens next</Text>
             <Step n="1" label="Now" body="Your interview is being edited into your 9:16 video resume." />
             <Step n="2" label="Next" body="It publishes itself and starts appearing to employers." />
             <Step n="3" label="Within a day" body="Your feedback — five scores, strengths and improvements — lands here." last />
@@ -93,9 +98,9 @@ export function EndedScreen({ id, onBack, onDetail, onRejoin }: {
         )}
       </ScrollView>
 
-      <StickyFooter>
-        <Button variant={incomplete ? 'outline' : 'secondary'} size={incomplete ? 'md' : 'lg'} full label="Back to my interviews" onPress={onBack} />
-      </StickyFooter>
+      <FlowFooter>
+        <Btn variant={incomplete ? 'outline' : 'ink'} label="Back to my interviews" onPress={onBack} />
+      </FlowFooter>
     </View>
   )
 }
@@ -103,10 +108,10 @@ export function EndedScreen({ id, onBack, onDetail, onRejoin }: {
 function Step({ n, label, body, last }: { n: string; label: string; body: string; last?: boolean }) {
   return (
     <View style={[styles.step, !last && styles.stepRule]}>
-      <View style={styles.stepNum}><Text style={[text.metaMd, styles.stepNumText]}>{n}</Text></View>
+      <View style={styles.stepNum}><Text style={styles.stepNumText}>{n}</Text></View>
       <View style={styles.stepText}>
-        <Text style={text.uiMdSemi}>{label}</Text>
-        <Text style={[text.uiSm, styles.muted]}>{body}</Text>
+        <Text style={styles.t15s}>{label}</Text>
+        <Text style={styles.small}>{body}</Text>
       </View>
     </View>
   )
@@ -114,20 +119,17 @@ function Step({ n, label, body, last }: { n: string; label: string; body: string
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.background },
-  centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  body: { paddingHorizontal: spaceHalf['6'], gap: space.xl, paddingBottom: space.xl },
-  disc: { width: height.fab, height: height.fab, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
-  discOk: { backgroundColor: color.successSoft },
-  discWarn: { backgroundColor: color.warningSoft },
-  head: { gap: space.sm },
-  eyebrow: { letterSpacing: trackingNative.eyebrow },
-  muted: { color: color.textMuted },
-  listHead: { marginBottom: spaceHalf['1.5'] },
-  step: { flexDirection: 'row', gap: spaceHalf['3.5'], paddingVertical: space.md },
-  stepRule: { borderBottomWidth: borderWidth.thin, borderBottomColor: color.borderSoft },
-  stepNum: { width: height.radio, height: height.radio, borderRadius: radius.pill, backgroundColor: color.accentSoft, alignItems: 'center', justifyContent: 'center' },
-  stepNumText: { color: color.accentText },
-  reveal: { flexDirection: 'row', alignItems: 'center', gap: spaceHalf['3.5'] },
-  revealPhoto: { width: height.avatar, height: height.avatar, borderRadius: radius.pill },
-  stepText: { flex: 1, gap: space['2xs'] },
+  body: { paddingHorizontal: 20, paddingTop: 4, gap: 20, paddingBottom: 28 },
+  bang: { fontFamily: FF.bodyBold, fontSize: 26, color: color.warning },
+  head: { gap: 8 },
+  t15s: { fontFamily: FF.bodySemiBold, fontSize: 15, color: color.text },
+  small: { fontFamily: FF.body, fontSize: 13, lineHeight: 19, color: color.textMuted },
+  listHead: { fontFamily: FF.bodySemiBold, fontSize: 15, color: color.text, marginBottom: 6 },
+  step: { flexDirection: 'row', gap: 14, paddingVertical: 12 },
+  stepRule: { borderBottomWidth: borderWidth.thin, borderBottomColor: color.border },
+  stepNum: { width: 28, height: 28, borderRadius: 14, backgroundColor: color.accentSoft, alignItems: 'center', justifyContent: 'center' },
+  stepNumText: { fontFamily: FF.monoMedium, fontSize: 11, color: color.accentText },
+  reveal: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  revealPhoto: { width: 44, height: 44, borderRadius: 22 },
+  stepText: { flex: 1, gap: 2 },
 })

@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apostrophe App – Student job detail & apply flow (4 options)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FAFAFC; --surface:#fff; --muted:#F1F3F7; --sunken:#E6E8EE;
+    --text:#0B0F1A; --text2:#3A4256; --text3:#6B7385; --text4:#8A91A2;
+    --border:#E3E6ED; --border-strong:#C9CED9;
+    --accent:#5B3DF5; --accent-soft:#EFEBFF; --accent-wash:#F7F6FF; --accent-muted:#C4B8FF; --accent-bright:#7258FF; --accent-deep:#3B2A8F; --accent-edge:#DCD3FF;
+    --ink:#0B0F1A; --ink-raised:#151B2B;
+    --ok:#0E9F6E; --ok-text:#0B7A55; --ok-soft:#E6F7F0; --danger:#E5484D; --danger-text:#C22A30; --danger-soft:#FDECEC; --warn:#935F00; --warn-soft:#FFF5E1; --warn-edge:#F5E2B8; --info-soft:#E8EFFF;
+    --r-md:14px; --r-lg:20px; --r-xl:28px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{font-family:'Geist',system-ui,sans-serif;background:#E9EAF2;color:var(--text);padding:40px 24px 90px}
+  button,textarea{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+  button:focus-visible,[tabindex]:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex:none}
+  .mono{font:500 11px 'Geist Mono',monospace;letter-spacing:.14em;text-transform:uppercase}
+  .intro{max-width:1100px;margin:0 auto 24px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:26px 30px}
+  .intro h1{font-size:28px;letter-spacing:-.035em}
+  .intro p{font-size:15px;color:var(--text3);margin-top:8px;line-height:1.5;max-width:860px}
+  .opts{display:flex;flex-wrap:wrap;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:6px;max-width:1100px;margin:0 auto 18px}
+  .opts button{flex:1;min-width:200px;padding:12px 14px;border-radius:14px;text-align:left;color:var(--text3)}
+  .opts button b{display:block;font-size:15.5px;letter-spacing:-.015em;color:var(--text)}
+  .opts button span{display:block;font-size:13px;margin-top:2px;line-height:1.35}
+  .opts button.on{background:var(--accent)}.opts button.on b,.opts button.on span{color:#fff}
+  .stage{max-width:1100px;margin:0 auto;display:flex;flex-wrap:wrap;gap:40px;justify-content:center;align-items:flex-start}
+  .cell{width:390px}
+  .states{display:flex;flex-wrap:wrap;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:22px;padding:4px;margin-bottom:14px}
+  .states button{padding:7px 11px;border-radius:99px;font-size:13px;font-weight:600;color:var(--text3);white-space:nowrap}
+  .states button.on{background:var(--accent);color:#fff}
+  .states .gap{width:100%;height:0}
+  .side{width:420px;max-width:100%}
+  .side h3{font-size:20px;letter-spacing:-.03em}
+  .side p,.side li{font-size:14.5px;color:var(--text2);line-height:1.55}
+  .side ul{margin:10px 0 0 18px;display:grid;gap:5px}
+  .side .box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px 20px;margin-bottom:12px}
+  .side .tg{display:inline-block;margin:10px 6px 0 0}
+
+  .phone{width:390px;height:812px;background:var(--bg);border-radius:44px;border:10px solid #0B0F1A;overflow:hidden;position:relative}
+  .status{height:44px;display:flex;justify-content:space-between;align-items:center;padding:0 26px;font-size:14px;font-weight:600;position:absolute;top:0;left:0;right:0;z-index:80;pointer-events:none}
+  .status i{width:90px;height:24px;background:#0B0F1A;border-radius:14px;position:absolute;left:50%;top:8px;transform:translateX(-50%)}
+  .scroll{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none;padding-top:44px}
+  .scroll::-webkit-scrollbar{display:none}
+
+  .pill{font:500 10.5px 'Geist Mono',monospace;letter-spacing:.1em;text-transform:uppercase;border-radius:99px;padding:5px 10px;display:inline-block;white-space:nowrap}
+  .pill.ok{background:var(--ok-soft);color:var(--ok-text)}.pill.acc{background:var(--accent-soft);color:#4A2FE0}
+  .pill.warn{background:var(--warn-soft);color:var(--warn)}.pill.neutral{background:var(--muted);color:var(--text3)}
+  .pill.info{background:var(--info-soft);color:#1F4FD1}.pill.danger{background:var(--danger-soft);color:var(--danger-text)}
+  .rowc{display:flex;align-items:center;gap:12px}.grow{flex:1;min-width:0}
+  .sub{font-size:14px;color:var(--text3);line-height:1.4}
+  .btn{height:46px;min-width:44px;border-radius:var(--r-md);font-weight:700;font-size:15px;padding:0 18px;display:inline-flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap}
+  .btn.pri{background:var(--accent);color:#fff}.btn.ink{background:var(--ink);color:#fff}.btn.out{border:1.5px solid var(--border-strong);background:var(--surface)}
+  .btn.dis{background:var(--muted);color:var(--text4);cursor:default}.btn.full{width:100%}.btn.quiet{color:var(--text2)}.btn.busy{opacity:.6}
+  .btn svg{width:18px}
+  .iconbtn{width:46px;height:46px;border-radius:var(--r-md);border:1.5px solid var(--border);display:grid;place-items:center;color:var(--text3);flex:none;background:var(--surface)}
+  .iconbtn.on{color:var(--accent);background:var(--accent-soft);border-color:var(--accent-edge)}
+  .iconbtn.on svg{fill:currentColor}
+  .seg{display:flex;background:var(--muted);border-radius:var(--r-md);padding:4px}
+  .seg button{flex:1;height:40px;border-radius:11px;font-size:14.5px;font-weight:600;color:var(--text3)}
+  .seg button.on{background:var(--surface);color:var(--accent);border:1px solid var(--border)}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px}
+  .logo{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;color:#fff;font-weight:800;font-size:17px;flex:none}
+  .skel{background:linear-gradient(90deg,var(--muted) 0%,#E9ECF2 50%,var(--muted) 100%);background-size:200% 100%;animation:sh 1.3s infinite linear;border-radius:18px}
+  @keyframes sh{to{background-position:-200% 0}}
+  [data-act]{cursor:pointer}
+  .toast{position:absolute;left:14px;right:14px;bottom:100px;background:var(--ink);color:#fff;border-radius:var(--r-md);padding:13px 14px;z-index:90;font-size:14px;font-weight:600;transform:translateY(20px);opacity:0;pointer-events:none;transition:.25s}
+  .toast.on{transform:none;opacity:1}
+
+  /* DetailHeader (kit): 44 circle, 18/700 title */
+  .dh{display:flex;align-items:center;gap:12px;padding:8px 14px}
+  .dh .back{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--border);background:var(--surface);flex:none}
+  .dh b{font-size:18px;letter-spacing:-.02em;flex:1}
+  .dh.fix{position:absolute;top:44px;left:0;right:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--border)}
+  .dh.clear{background:transparent}
+
+  .eyebrow{font:500 11px 'Geist Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--text3)}
+  .eyebrow.acc{color:var(--accent)}
+  .h1{font-size:28px;font-weight:800;letter-spacing:-.04em;line-height:1.08}
+  .h2{font-size:22px;font-weight:700;letter-spacing:-.03em;line-height:1.15}
+  .pay{font-size:20px;font-weight:700;letter-spacing:-.02em}
+  .dl{font-size:13px;font-weight:600;color:var(--text3);background:var(--muted);border-radius:99px;padding:5px 11px;white-space:nowrap;display:inline-block}
+  .dl.soon{background:var(--warn-soft);color:var(--warn)}.dl.closed{background:var(--sunken);color:var(--text3)}
+  .vtag{justify-self:start;width:fit-content;display:inline-flex;align-items:center;gap:4px;font:500 10px 'Geist Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);background:var(--accent-soft);border-radius:99px;padding:4px 8px}
+  .vtag svg{width:11px;fill:currentColor;stroke:none}
+  .tag{font:500 11px 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase;background:var(--muted);color:var(--text2);border-radius:99px;padding:6px 11px}
+  .tags{display:flex;flex-wrap:wrap;gap:8px}
+  .sec{display:grid;gap:7px}
+  .sec .prose{font-size:15.5px;line-height:1.55;color:var(--text2)}
+  .bul{display:flex;gap:10px;font-size:15.5px;line-height:1.5;color:var(--text)}.bul i{font-style:normal;color:var(--accent)}
+  .fact{background:var(--muted);border-radius:var(--r-md);padding:10px 14px;display:grid;gap:3px}
+  .fact small{font:500 10.5px 'Geist Mono',monospace;letter-spacing:.1em;color:var(--text3);text-transform:uppercase}
+  .fact b{font-size:15.5px;font-weight:600;letter-spacing:-.01em}
+  .facts2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .notice{display:flex;gap:10px;align-items:flex-start;border-radius:var(--r-md);padding:12px 14px;font-size:14px;line-height:1.45}
+  .notice.warn{background:var(--warn-soft);color:var(--warn)}.notice.plain{background:var(--muted);color:var(--text2)}.notice.ok{background:var(--ok-soft);color:var(--ok-text)}.notice.danger{background:var(--danger-soft);color:var(--danger-text)}
+  .notice svg{width:18px;margin-top:1px}
+  .quote{border-left:3px solid var(--border-strong);padding:2px 0 2px 12px;font-size:14.5px;line-height:1.5;color:var(--text2)}
+  .quote small{display:block;font:500 10.5px 'Geist Mono',monospace;letter-spacing:.1em;color:var(--text4);margin-bottom:4px;text-transform:uppercase}
+  .pipe{display:flex;align-items:center}
+  .pipe i{width:14px;height:14px;border-radius:50%;background:var(--sunken);flex:none}.pipe i.on{background:var(--accent)}.pipe i.cur{box-shadow:0 0 0 4px var(--accent-soft)}
+  .pipe u{flex:1;height:3px;background:var(--sunken);border-radius:3px;margin:0 -1px}.pipe u.on{background:var(--accent)}
+  .foot{position:absolute;left:0;right:0;bottom:0;z-index:30;background:var(--surface);border-top:1px solid var(--border);padding:12px 20px 18px;display:grid;gap:8px}
+  .film{aspect-ratio:9/16;border-radius:20px;overflow:hidden;position:relative;background:linear-gradient(170deg,var(--accent-bright),var(--accent-deep) 55%,var(--ink-raised));color:#fff;flex:none}
+  .film .play{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.45);display:grid;place-items:center}
+  .film .play svg{width:20px;fill:#fff;stroke:none}
+  .film .len{position:absolute;left:10px;bottom:10px;font:500 10.5px 'Geist Mono',monospace}
+  .seal{display:inline-flex;align-items:center;gap:6px;background:var(--ok-soft);color:var(--ok-text);border-radius:99px;padding:5px 11px 5px 8px;font:500 10.5px 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase}
+  .seal svg{width:12px;stroke:var(--ok);stroke-width:3}
+  .scrim{position:absolute;inset:0;background:rgba(11,15,26,.45);z-index:50}
+  .sheet{position:absolute;left:0;right:0;bottom:0;z-index:60;background:var(--surface);border-radius:28px 28px 0 0;padding:10px 20px 20px;display:grid;gap:16px;max-height:88%;overflow-y:auto;scrollbar-width:none;animation:up .25s ease-out}
+  .sheet::-webkit-scrollbar{display:none}
+  @keyframes up{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+  .grab{width:40px;height:4px;border-radius:4px;background:var(--border-strong);margin:0 auto 4px}
+  .chk{display:flex;gap:10px;font-size:14.5px;line-height:1.45;color:var(--text)}.chk svg{width:16px;stroke:var(--ok);stroke-width:2.4;margin-top:2px}
+  .note{width:100%;min-height:84px;border:1.5px solid var(--border-strong);border-radius:var(--r-md);padding:12px 14px;font-size:15px;line-height:1.45;background:var(--surface);resize:none;cursor:text;display:block}
+  .note:focus{border-color:var(--accent);outline:0}
+  .noterow{display:flex;gap:10px;align-items:baseline;margin-top:6px;font-size:13px;color:var(--text4)}
+  .noterow span:last-child{font:500 11px 'Geist Mono',monospace;margin-left:auto}
+  .lbl{font-size:14px;font-weight:600;margin-bottom:6px;display:block}
+  .done{display:grid;gap:10px;justify-items:start}
+  .ring{width:64px;height:64px;border-radius:50%;background:var(--ok-soft);display:grid;place-items:center;color:var(--ok)}
+  .ring svg{width:30px;stroke-width:2.4}
+  .center{display:flex;flex-direction:column;justify-content:center;min-height:100%;padding:90px 24px 40px;gap:12px}
+</style>
+</head>
+<body>
+<div class="intro">
+  <div class="mono" style="color:var(--accent)">Student app · Job detail + apply flow</div>
+  <h1>Job detail &amp; applying — four options</h1>
+  <p>Pick an option, then switch the job's state under it. Every field and sentence is from the current screens (JobDetailScreen, ApplyScreen, jobParts) and the JobDetail type; names, dates and numbers are sample values. Tap Apply to walk the full flow: confirm → send → Applied / Connected.</p>
+</div>
+<div class="opts" id="opts"></div>
+<div class="stage">
+  <div class="cell"><div class="states" id="states"></div><div class="phone" id="ph"></div></div>
+  <div class="side" id="side"></div>
+</div>
+
+<script>
+const I={
+ back:'<svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>',
+ alert:'<svg viewBox="0 0 24 24"><path d="M12 3l10 18H2zM12 10v5M12 18v.5"/></svg>',
+ play:'<svg viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z"/></svg>',
+ check:'<svg viewBox="0 0 24 24"><path d="M5 12l4 4 10-10"/></svg>',
+ heart:'<svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 017-2.5A4 4 0 0119 10c0 5.6-7 10-7 10z"/></svg>',
+ x:'<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+ chat:'<svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg>',
+ video:'<svg viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></svg>'
+};
+const COL=['#5B3DF5','#0E9F6E','#E0366B','#2F6BFF','#C77D00','#6B7385','#0B7A55','#3B2A8F'];
+const NOTE_MAX=600;
+
+/* ---- the job: JobDetail-shaped, sample values only ---- */
+const J={title:'Job title',co:'Company A',logo:'CA',industry:'Industry',size:'51–200',office:'City',
+ loc:'Bengaluru',remote:false,type:'Full-time',exp:'1–3 years',pay:'₹12 – 18 LPA',
+ category:'Category',dept:'Department',vac:3,minQual:'Minimum qualification',join:'Joining preference',
+ desc:'Sample description of the role, in plain text, as the employer wrote it. Two or three sentences long.',
+ resp:['Sample responsibility one.','Sample responsibility two.','Sample responsibility three.'],
+ req:['Sample requirement one.','Sample requirement two.','Sample requirement three.'],
+ ben:['Sample benefit one.','Sample benefit two.'],
+ skills:['Skill one','Skill two','Skill three','Skill four'],
+ film:'0:42',appliedOn:'30 Sep'};
+const ST={ /* label, deadline text, deadline kind, saved, application, extra */
+ open:{l:'Open',dl:'Closes 20 Oct'},
+ soon:{l:'Closing soon',dl:'Closes 3 Oct',dlk:'soon'},
+ saved:{l:'Saved',dl:'Closes 20 Oct',saved:true},
+ unpub:{l:'No video resume yet',dl:'Closes 20 Oct',unpub:true},
+ applied:{l:'Applied',dl:'Closes 20 Oct',app:'APPLIED'},
+ viewed:{l:'Viewed',dl:'Closes 20 Oct',app:'VIEWED'},
+ short:{l:'Shortlisted',dl:'Closes 20 Oct',app:'SHORTLISTED'},
+ conn:{l:'Connected',dl:'Closes 20 Oct',app:'CONNECTED'},
+ rej:{l:'Not selected',dl:'Closes 20 Oct',app:'REJECTED'},
+ closed:{l:'Closed',dl:'Closed',dlk:'closed',closed:true},
+ err:{l:'Error',err:true},
+ load:{l:'Loading',load:true}
+};
+const MARK={APPLIED:['Applied','neutral'],VIEWED:['Viewed','info'],SHORTLISTED:['Shortlisted','acc'],CONNECTED:['Connected','ok'],REJECTED:['Not selected','neutral']};
+const STEPS=['APPLIED','VIEWED','SHORTLISTED','CONNECTED'];
+
+/* ---- app state ---- */
+const S={opt:'A',st:'open',film:true,flow:'detail',note:'',sendFail:false,saved:null,tab:0,sentStatus:null,busy:false};
+const ph=document.getElementById('ph');
+const cur=()=>{const b=ST[S.st];const o={...b};
+  if(S.saved!==null&&!o.app)o.saved=S.saved;
+  if(S.sentStatus){o.app=S.sentStatus;o.unpub=false}
+  return o};
+const logoBg=c=>c.closed&&!c.app?'#A6ACBA':COL[0];
+const dlChip=c=>c.dl?`<span class="dl ${c.dlk||''}">${c.dl}</span>`:'';
+const mark=a=>`<span class="pill ${MARK[a][1]}">${MARK[a][0]}</span>`;
+const vt=()=>S.film?`<span class="vtag">${I.play}Video</span>`:'';
+const status=()=>`<div class="status"><span>9:41</span><i></i><span>5G ▮▮▮</span></div>`;
+const bullets=(t,a,cls)=>`<div class="sec"><div class="eyebrow">${t}</div>${a.map(x=>`<div class="bul"><i>—</i><span>${x}</span></div>`).join('')}</div>`;
+const prose=(t,b)=>`<div class="sec"><div class="eyebrow">${t}</div><div class="prose">${b}</div></div>`;
+const skills=()=>`<div class="sec"><div class="eyebrow">Skills</div><div class="tags">${J.skills.map(s=>`<span class="tag">${s}</span>`).join('')}</div></div>`;
+const companyLine=`${J.industry} · ${J.size} people · ${J.office}`;
+const where=()=>J.remote?'Remote':J.loc;
+const dh=(title,right,cls='')=>`<div class="dh ${cls}"><button class="back" data-act="back" aria-label="Back">${I.back}</button><b>${title}</b>${right||''}</div>`;
+const heart=c=>`<button class="iconbtn ${c.saved?'on':''}" style="width:44px;height:44px;border-radius:50%" data-act="save" aria-label="${c.saved?'Saved':'Save'}">${I.heart}</button>`;
+const film=(w)=>`<div class="film" style="width:${w}px" data-act="toast:Plays the job's film"><div class="play">${I.play}</div><span class="len">${J.film}</span></div>`;
+const seal=()=>`<span class="seal">${I.check}Verified · 24 Sep 2026</span>`;
+const skelBlock=()=>`<div style="padding:12px 20px;display:grid;gap:12px"><div class="skel" style="height:34px;width:80%"></div><div class="skel" style="height:18px;width:45%"></div><div class="skel" style="height:90px"></div><div class="skel" style="height:90px"></div><div class="skel" style="height:140px"></div></div>`;
+const errBlock=()=>`<div style="padding:12px 20px"><div class="notice warn">${I.alert}<span>This job is no longer available.</span></div></div>`;
+const progress=a=>{const r=a==='REJECTED'?0:STEPS.indexOf(a)+1;return `<div class="pipe" role="img" aria-label="${MARK[a][0]}">${STEPS.map((_,i)=>`<i class="${i<r?'on':''} ${i===r-1?'cur':''}"></i>${i<3?`<u class="${i<r-1?'on':''}"></u>`:''}`).join('')}</div>`};
+const appliedBlock=(c,bare)=>{const a=c.app,m=MARK[a];
+  return `<div class="${bare?'':'card'}" style="display:grid;gap:12px;${bare?'':'background:var(--muted);border-color:transparent'}">
+  <div class="rowc">${mark(a)}<span class="sub grow" style="font-size:13.5px">Applied ${J.appliedOn}</span><button class="btn quiet" style="height:36px;padding:0 4px;color:var(--accent)" data-act="toast:Opens Applications">Track it</button></div>
+  ${a==='REJECTED'?`<div class="quote"><small>Their note</small>Sample: thank you for applying. We moved ahead with another candidate.</div>`:progress(a)}
+  ${a==='CONNECTED'?`<button class="btn ink full" data-act="toast:Opens the chat">${I.chat}Open chat</button>`:''}</div>`};
+const closedNote=`<div class="sub" style="text-align:center;font-size:13px">Applications for this job have closed.</div>`;
+
+/* ---- footers ---- */
+function applyLabel(){return 'Apply with video resume'}
+function footer(c,o={}){
+  if(c.app)return o.noAppliedFooter?'':`<div class="foot"><button class="btn out full" data-act="toast:Opens Applications">Track your applications</button></div>`;
+  if(c.closed)return `<div class="foot"><button class="btn dis full" disabled>Apply</button>${closedNote}</div>`;
+  const save=o.noSave?'':`<button class="btn out" style="width:30%" data-act="save">${c.saved?'Saved':'Save'}</button>`;
+  return `<div class="foot"><div class="rowc">${save}<button class="btn pri grow" data-act="apply">${applyLabel()}</button></div></div>`}
+
+/* ---- apply content shared by every option ---- */
+const receives=(name)=>`<div style="display:grid;gap:9px"><div class="eyebrow">What ${name} receives</div>
+  <div class="chk">${I.check}<span>Your full profile — education, experience, skills and preferences.</span></div>
+  <div class="chk">${I.check}<span>Your verified video resume, from your interview.</span></div></div>`;
+const videoCard=()=>`<div class="card" style="display:flex;gap:14px;align-items:center;padding:14px"><div class="film" style="width:54px;border-radius:12px"><div class="play" style="width:28px;height:28px;border-width:1px"><svg viewBox="0 0 24 24" style="width:12px"><path d="M8 5.5v13l11-6.5z"/></svg></div></div><div style="display:grid;gap:8px"><b style="font-size:15.5px;font-weight:600">Your video resume</b>${seal()}</div></div>`;
+const noteField=()=>`<div><label class="lbl" for="note">Add a note</label><textarea class="note" id="note" maxlength="${NOTE_MAX}" placeholder="Why this role, in a sentence.">${S.note}</textarea><div class="noterow"><span>Optional — one or two lines to the employer.</span><span id="cnt">${S.note.length} / ${NOTE_MAX}</span></div></div>`;
+const failBanner=()=>S.sendFail&&S.err?`<div class="notice danger">${I.alert}<span>Could not send your application. Try again.</span></div>`:'';
+const sendBtn=()=>`<button class="btn pri full ${S.busy?'busy':''}" data-act="send">${S.busy?'Sending…':'Send application'}</button>`;
+const sentCopy=(connected)=>({pill:connected?['Connected','ok']:['Applied','ok'],h:connected?'You are connected.':'Your application is in.',b:connected?`${J.co} had already shortlisted you — a chat is open.`:`${J.co} has your profile and verified video resume. You will hear at every step.`});
+const unpubCopy=()=>`<div class="eyebrow">Before you can apply</div><div class="h2">Your video resume isn’t ready yet.</div><p class="sub" style="font-size:15px;line-height:1.5">Employers see your verified interview with every application — so applying opens once your film is published.</p><button class="btn pri full" data-act="toast:Opens Book an interview" style="margin-top:8px">Book an interview</button>`;
+const sentActions=(connected,full)=>`<div style="display:grid;gap:8px;width:100%;margin-top:6px"><button class="btn pri full" data-act="finish:track">Track your applications</button><button class="btn quiet full" data-act="finish:feed">Back to the feed</button></div>`;
+function sentBlock(){const k=sentCopy(S.conn);return `<div class="done"><div class="ring">${I.check}</div><span class="pill ${k.pill[1]}">${k.pill[0]}</span><div class="h2">${k.h}</div><p class="sub" style="font-size:15px;line-height:1.5">${k.b}</p>${sentActions()}</div>`}
+
+/* ============================================================
+   OPTION A — Hero + sticky apply bar + bottom sheet
+   ============================================================ */
+function detailA(c){
+  if(c.load)return `${dh('Job')}${skelBlock()}`;
+  if(c.err)return `${dh('Job')}${errBlock()}`;
+  return `<div class="scroll" style="padding-bottom:120px;background:var(--bg)">
+   <div style="background:var(--accent-wash);border-bottom:1px solid var(--accent-edge);padding-bottom:20px">
+    ${dh('Job',heart(c),'clear')}
+    <div style="padding:8px 20px 0;display:grid;gap:14px">
+     <div class="rowc" style="align-items:flex-start"><div class="logo" style="width:56px;height:56px;border-radius:16px;font-size:19px;background:${logoBg(c)}">${J.logo}</div><div class="grow" style="padding-top:2px"><div style="font-size:15px;color:var(--text2);font-weight:600">${J.co}</div><div class="sub" style="font-size:13.5px">${companyLine}</div></div></div>
+     <div class="h1">${J.title}</div>
+     <div class="rowc" style="justify-content:space-between"><span class="pay">${J.pay}</span>${dlChip(c)}</div>
+     <div class="tags"><span class="tag" style="background:var(--surface);border:1px solid var(--border)">${where()}</span><span class="tag" style="background:var(--surface);border:1px solid var(--border)">${J.type}</span><span class="tag" style="background:var(--surface);border:1px solid var(--border)">${J.exp}</span>${S.film?`<span class="vtag" style="padding:6px 11px">${I.play}Video</span>`:''}</div>
+    </div></div>
+   <div style="padding:20px;display:grid;gap:22px">
+    ${c.app?appliedBlock(c):''}
+    ${S.film?`<div class="rowc" style="gap:14px;align-items:center">${film(86)}<div style="display:grid;gap:4px"><b style="font-size:16px;letter-spacing:-.01em">Watch the film</b><span class="sub">${J.film} · from ${J.co}</span></div></div>`:''}
+    ${prose('The role',J.desc)}
+    ${bullets('What you’ll do',J.resp)}
+    ${bullets('What they’re looking for',J.req)}
+    ${bullets('What you get',J.ben)}
+    ${skills()}
+    ${prose('About '+J.co,companyLine)}
+   </div></div>${footer(c)}`}
+function applyA(c){
+  const body=S.flow==='sent'?sentBlock():(c.unpub?`<div style="display:grid;gap:12px">${unpubCopy()}</div>`:`
+   <div class="rowc" style="align-items:flex-start"><div class="grow" style="display:grid;gap:3px"><div class="eyebrow acc">Applying to</div><div class="h2">${J.title}</div><div class="sub" style="font-size:15px">${J.co}</div></div><button class="iconbtn" style="width:40px;height:40px;border-radius:50%;border-width:1px" data-act="close" aria-label="Close">${I.x}</button></div>
+   ${receives(J.co)}${videoCard()}${noteField()}${failBanner()}${sendBtn()}`);
+  return `<div class="scrim" data-act="${S.flow==='sent'?'noop':'close'}"></div><div class="sheet"><div class="grab"></div>${body}</div>`}
+
+/* ============================================================
+   OPTION B — Tabbed sections, sticky tabs, full-screen apply
+   ============================================================ */
+function detailB(c){
+  if(c.load)return `${dh('Job')}${skelBlock()}`;
+  if(c.err)return `${dh('Job')}${errBlock()}`;
+  const tabs=['The role','Looking for','Company'];
+  const t=[
+   `<div style="display:grid;gap:22px">${S.film?`<div class="card" style="display:flex;gap:14px;align-items:center;padding:12px">${film(60)}<div class="grow"><b style="font-size:15.5px">Watch the film</b><div class="sub" style="font-size:13.5px;margin-top:2px">${J.film}</div></div><span class="iconbtn" style="border-radius:50%;width:40px;height:40px">${I.play}</span></div>`:''}${prose('The role',J.desc)}${bullets('What you’ll do',J.resp)}</div>`,
+   `<div style="display:grid;gap:22px">${bullets('What they’re looking for',J.req)}${skills()}<div class="facts2"><div class="fact"><small>Min. qualification</small><b>${J.minQual}</b></div><div class="fact"><small>Experience</small><b>${J.exp}</b></div></div></div>`,
+   `<div style="display:grid;gap:22px">${bullets('What you get',J.ben)}${prose('About '+J.co,companyLine)}<div class="facts2"><div class="fact"><small>Joining</small><b>${J.join}</b></div><div class="fact"><small>Vacancies</small><b>${J.vac}</b></div></div></div>`];
+  return `<div class="scroll" style="padding-bottom:120px">
+   ${dh('Job',null)}
+   <div style="padding:6px 20px 0;display:grid;gap:12px">
+    <div class="rowc"><div class="logo" style="background:${logoBg(c)}">${J.logo}</div><div class="grow"><div style="font-size:15px;font-weight:600">${J.co}</div><div class="sub" style="font-size:13.5px">${J.industry} · ${where()}</div></div>${c.app?mark(c.app):vt()}</div>
+    <div class="h1" style="font-size:26px">${J.title}</div>
+    <div class="rowc" style="justify-content:space-between"><span class="pay">${J.pay}</span>${dlChip(c)}</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--border);border-radius:var(--r-lg);background:var(--surface)">
+     ${[['Location',where()],['Type',J.type],['Experience',J.exp]].map((f,i)=>`<div style="padding:11px 12px;${i<2?'border-right:1px solid var(--border)':''}"><small class="eyebrow" style="font-size:10px;letter-spacing:.1em">${f[0]}</small><b style="display:block;font-size:14.5px;margin-top:4px;letter-spacing:-.01em">${f[1]}</b></div>`).join('')}</div>
+    ${c.app?appliedBlock(c):''}
+   </div>
+   <div style="position:sticky;top:-1px;z-index:10;background:var(--bg);padding:14px 20px 12px"><div class="seg">${tabs.map((x,i)=>`<button class="${i===S.tab?'on':''}" data-act="tab:${i}">${x}</button>`).join('')}</div></div>
+   <div style="padding:6px 20px 0">${t[S.tab]}</div></div>${footer(c)}`}
+function applyB(c){
+  const inner=S.flow==='sent'?`<div class="center">${sentBlock()}</div>`:(c.unpub?`<div class="center">${unpubCopy()}</div>`:`
+   <div style="padding:6px 20px 120px;display:grid;gap:22px">
+    <div class="rowc"><div class="logo" style="background:${logoBg(c)}">${J.logo}</div><div class="grow" style="display:grid;gap:3px"><div class="eyebrow acc">Applying to</div><div style="font-size:19px;font-weight:700;letter-spacing:-.025em;line-height:1.15">${J.title}</div><div class="sub">${J.co}</div></div></div>
+    ${receives(J.co)}${videoCard()}${noteField()}${failBanner()}</div>
+   <div class="foot">${sendBtn()}</div>`);
+  return `<div class="scroll" style="background:var(--bg);z-index:70">${dh(S.flow==='sent'?'Applied':'Apply',null).replace('data-act="back"','data-act="close"')}${inner}</div>`}
+
+/* ============================================================
+   OPTION C — Editorial scroll, ruled facts table, inline footer panel
+   ============================================================ */
+function detailC(c){
+  if(c.load)return `${dh('Job')}${skelBlock()}`;
+  if(c.err)return `${dh('Job')}${errBlock()}`;
+  const rows=[['Location',where()],['Type',J.type],['Experience',J.exp],['Deadline',c.dl||'—'],['Vacancies',J.vac],['Min. qualification',J.minQual],['Joining',J.join],['Department',J.dept]];
+  return `<div class="dh fix" id="cbar" style="top:44px;opacity:0;transition:.15s"><button class="back" data-act="back" aria-label="Back">${I.back}</button><b style="font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${J.title}</b>${heart(c)}</div>
+  <div class="scroll" id="cscroll" style="padding-bottom:${S.cOpen?'420':'120'}px">
+   ${dh('Job',heart(c))}
+   <div style="padding:10px 24px 0;display:grid;gap:14px">
+    <div class="eyebrow acc">${J.co} · ${J.category}</div>
+    <div class="h1" style="font-size:34px;letter-spacing:-.045em;line-height:1.02">${J.title}</div>
+    <div class="rowc" style="gap:10px;flex-wrap:wrap"><span class="pay" style="font-size:22px">${J.pay}</span>${c.app?mark(c.app):vt()}</div>
+    ${c.dl?`<div class="rowc" style="gap:8px">${dlChip(c)}</div>`:''}
+   </div>
+   <div style="margin:22px 24px 0;border-top:1.5px solid var(--text)">
+    ${rows.map(r=>`<div class="rowc" style="justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--border)"><span class="eyebrow" style="font-size:10.5px">${r[0]}</span><b style="font-size:15px;font-weight:600;text-align:right">${r[1]}</b></div>`).join('')}</div>
+   <div style="padding:26px 24px;display:grid;gap:26px">
+    ${c.app?appliedBlock(c):''}
+    ${S.film?`<div class="rowc" style="gap:16px;align-items:flex-end">${film(120)}<div style="display:grid;gap:6px;padding-bottom:4px"><span class="eyebrow">The film</span><span class="h2" style="font-size:19px">Watch it first.</span><span class="sub">${J.film}</span></div></div>`:''}
+    ${prose('The role',J.desc)}
+    ${bullets('What you’ll do',J.resp)}
+    ${bullets('What they’re looking for',J.req)}
+    ${bullets('What you get',J.ben)}
+    ${skills()}
+    ${prose('About '+J.co,companyLine)}
+   </div></div>${footerC(c)}`}
+function footerC(c){
+  if(S.flow==='detail'||S.flow==='close')return footer(c,{noSave:true});
+  /* inline expanding panel instead of a modal: stays attached to the page */
+  if(S.flow==='sent'){const k=sentCopy(S.conn);return `<div class="foot" style="border-radius:24px 24px 0 0;gap:12px;padding-top:18px"><div class="rowc"><div class="ring" style="width:44px;height:44px"><svg viewBox="0 0 24 24" style="width:22px"><path d="M5 12l4 4 10-10"/></svg></div><div class="grow"><b style="font-size:17px;letter-spacing:-.02em">${k.h}</b></div><span class="pill ${k.pill[1]}">${k.pill[0]}</span></div><p class="sub" style="font-size:14.5px;line-height:1.5">${k.b}</p>${sentActions()}</div>`}
+  if(c.unpub)return `<div class="foot" style="border-radius:24px 24px 0 0;gap:10px;padding-top:18px">${unpubCopy()}<button class="btn quiet full" data-act="close">Not now</button></div>`;
+  return `<div class="foot" style="border-radius:24px 24px 0 0;gap:14px;padding-top:16px">
+   <div class="rowc"><div class="grow eyebrow acc">Applying to · ${J.co}</div><button class="iconbtn" style="width:34px;height:34px;border-radius:50%;border-width:1px" data-act="close" aria-label="Close">${I.x}</button></div>
+   <div class="rowc" style="gap:10px;flex-wrap:wrap">${seal()}<span class="sub" style="font-size:13.5px">Profile + verified video resume</span></div>
+   <div>${`<textarea class="note" id="note" maxlength="${NOTE_MAX}" placeholder="Add a note — why this role, in a sentence." style="min-height:64px">${S.note}</textarea><div class="noterow"><span>Optional — one or two lines to the employer.</span><span id="cnt">${S.note.length} / ${NOTE_MAX}</span></div>`}</div>
+   ${failBanner()}${sendBtn()}</div>`}
+function applyC(){return ''}
+
+/* ============================================================
+   OPTION D — Card stack with sticky summary, modal apply review
+   ============================================================ */
+function detailD(c){
+  if(c.load)return `${dh('Job')}${skelBlock()}`;
+  if(c.err)return `${dh('Job')}${errBlock()}`;
+  return `<div class="scroll" style="padding-bottom:120px;background:var(--muted)">
+   <div style="background:var(--bg)">${dh('Job',null)}</div>
+   <div style="position:sticky;top:0;z-index:15;padding:10px 14px;background:var(--muted)">
+    <div class="card" style="display:grid;gap:12px;padding:14px">
+     <div class="rowc"><div class="logo" style="background:${logoBg(c)}">${J.logo}</div><div class="grow"><div style="font-size:18px;font-weight:700;letter-spacing:-.025em;line-height:1.2">${J.title}</div><div class="sub" style="font-size:14px;margin-top:2px">${J.co} · ${where()} · ${J.type}</div></div>${heart(c)}</div>
+     <div class="rowc" style="justify-content:space-between"><span class="pay" style="font-size:18px">${J.pay}</span>${c.app?mark(c.app):dlChip(c)}</div>
+    </div></div>
+   <div style="padding:0 14px;display:grid;gap:10px">
+    ${c.app?`<div class="card">${appliedBlock(c,true)}</div>`:''}
+    ${S.film?`<div class="card" style="display:flex;gap:14px;align-items:center;padding:14px">${film(72)}<div class="grow" style="display:grid;gap:6px"><span class="eyebrow">Film · ${J.film}</span><b style="font-size:16px;letter-spacing:-.01em">From ${J.co}</b>${vt()}</div></div>`:''}
+    <div class="facts2" style="gap:8px">${[['Location',where()],['Type',J.type],['Experience',J.exp],['Deadline',c.dl||'—']].map(f=>`<div class="fact" style="background:var(--surface);border:1px solid var(--border)"><small>${f[0]}</small><b>${f[1]}</b></div>`).join('')}</div>
+    <div class="card">${prose('The role',J.desc)}</div>
+    <div class="card">${bullets('What you’ll do',J.resp)}</div>
+    <div class="card">${bullets('What they’re looking for',J.req)}</div>
+    <div class="card">${bullets('What you get',J.ben)}</div>
+    <div class="card">${skills()}</div>
+    <div class="card">${prose('About '+J.co,companyLine)}</div>
+   </div></div>${footer(c,{noSave:true})}`}
+function applyD(c){
+  if(S.flow==='sent'){const k=sentCopy(S.conn);return `<div class="scroll" style="z-index:70;background:var(--bg)"><div class="center" style="align-items:center;text-align:center;gap:14px"><div class="ring" style="width:84px;height:84px;background:var(--ok);color:#fff"><svg viewBox="0 0 24 24" style="width:40px;stroke:#fff"><path d="M5 12l4 4 10-10"/></svg></div><span class="pill ${k.pill[1]}">${k.pill[0]}</span><div class="h2" style="font-size:26px">${k.h}</div><p class="sub" style="font-size:15px;line-height:1.5">${k.b}</p>
+   <div class="card" style="width:100%;text-align:left;display:flex;gap:12px;align-items:center;padding:12px"><div class="logo" style="width:40px;height:40px;font-size:14px;border-radius:12px;background:var(--accent)">${J.logo}</div><div class="grow"><b style="font-size:15px">${J.title}</b><div class="sub" style="font-size:13px">${J.co} · Applied ${J.appliedOn}</div></div></div>
+   ${sentActions()}</div></div>`}
+  const body=c.unpub?`<div style="display:grid;gap:12px">${unpubCopy()}</div>`:`
+   <div class="eyebrow acc">Review &amp; send</div>
+   <div class="card" style="display:flex;gap:12px;align-items:center;padding:12px;background:var(--muted);border-color:transparent"><div class="logo" style="width:44px;height:44px;font-size:15px;background:${logoBg(c)}">${J.logo}</div><div class="grow"><div class="eyebrow" style="font-size:10px">Applying to</div><b style="font-size:16px;letter-spacing:-.02em">${J.title}</b><div class="sub" style="font-size:13.5px">${J.co}</div></div></div>
+   <div class="card" style="padding:14px;display:grid;gap:11px"><div class="eyebrow">What ${J.co} receives</div>
+    <div class="rowc" style="align-items:flex-start"><div class="chk grow"><svg viewBox="0 0 24 24"><path d="M5 12l4 4 10-10"/></svg><span>Your full profile — education, experience, skills and preferences.</span></div></div>
+    <div class="rowc" style="align-items:flex-start;border-top:1px solid var(--border);padding-top:11px"><div class="chk grow"><svg viewBox="0 0 24 24"><path d="M5 12l4 4 10-10"/></svg><span>Your verified video resume, from your interview.</span></div></div>
+    <div>${seal()}</div></div>
+   ${noteField()}${failBanner()}`;
+  const sticky=c.unpub?'':`<div style="margin:0 -20px -20px;padding:12px 20px 20px;border-top:1px solid var(--border);display:grid;gap:8px;background:var(--surface);position:sticky;bottom:-20px">${sendBtn()}<button class="btn quiet full" style="height:40px" data-act="close">Cancel</button></div>`;
+  return `<div class="scrim" data-act="close"></div><div class="sheet" style="max-height:92%;border-radius:24px 24px 0 0"><div class="grab"></div>${body}${sticky}</div>`}
+
+const OPTS={
+ A:{n:'A · Hero + sheet',d:'Tinted hero, sticky apply bar, bottom-sheet confirm',detail:detailA,apply:applyA,
+  why:['Hero block carries company logo tile, title, pay and deadline above the fold, so the decision facts are seen before any scrolling.','Save lives in the header heart; the sticky bar is Save + Apply with video resume, exactly the current footer.','Apply opens a bottom sheet over the post: receives checklist, verified-seal video card, optional note with 600 counter, Send application. The sheet becomes the success state.','Closest to the current screen, so lowest build risk.']},
+ B:{n:'B · Tabs',d:'Summary header, sticky tabs: Role / Looking for / Company',detail:detailB,apply:applyB,
+  why:['Long posts are split into three tabs so no one scrolls a wall of text; the summary + 3-cell facts strip stay at the top.','The Applied status block sits in the summary so it is always visible, whichever tab is open.','Apply is a full pushed screen (as ApplyScreen today) with a fixed Send bar; Applied and Connected are full-screen, centred states.','Surfaces fields the post carries but the screen does not show today: min. qualification, joining preference, vacancies.']},
+ C:{n:'C · Editorial',d:'One long read with a ruled facts table; apply expands inline',detail:detailC,apply:applyC,
+  why:['Large type headline, a ruled key/value table (location, type, experience, deadline, vacancies, qualification, joining, department), then the prose sections in the app’s dash-bullet style.','A compact title bar fades in on scroll with the Save heart; the footer is a single Apply with video resume.','Apply is not a modal: the footer itself expands upward with the seal, note and Send, so the post stays visible behind it. After sending, the panel turns into the Applied / Connected message.','Uses job category and department, available in the data but not drawn today.']},
+ D:{n:'D · Card stack',d:'Sticky summary card over stacked section cards',detail:detailD,apply:applyD,
+  why:['Summary card (logo, title, company · place · type, pay, deadline chip, Save heart) stays pinned while section cards slide under it, on a muted ground.','Once applied, the pinned card swaps the deadline for the status pill and a status card with progress appears first.','Apply opens a tall Review &amp; send sheet: job recap, receives card with seal, note, and a pinned Send / Cancel bar.','Success is a full-screen celebration with the application recapped, then Track your applications.']}
+};
+
+/* ---- rendering ---- */
+S.cOpen=false;
+function render(){
+  const c=cur();const o=OPTS[S.opt];
+  S.cOpen=S.opt==='C'&&S.flow==='apply';
+  let html=status();
+  const showApply=S.flow==='apply'||S.flow==='sent';
+  html+=o.detail(c);
+  if(showApply&&S.opt!=='C')html+=o.apply(c);
+  ph.innerHTML=html+'<div class="toast"></div>';
+  const nt=ph.querySelector('#note');if(nt)nt.oninput=()=>{S.note=nt.value;ph.querySelector('#cnt').textContent=S.note.length+' / '+NOTE_MAX};
+  const cs=ph.querySelector('#cscroll');if(cs){cs.onscroll=()=>{const b=ph.querySelector('#cbar');if(b)b.style.opacity=cs.scrollTop>90?1:0};
+    if(S.cOpen)cs.scrollTop=cs.scrollTop}
+}
+let tt;const toast=m=>{const t=ph.querySelector('.toast');if(!t)return;t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),1700)};
+function reset(){S.flow='detail';S.note='';S.sentStatus=null;S.saved=null;S.busy=false;S.err=false;S.conn=false}
+ph.addEventListener('click',e=>{const a=e.target.closest('[data-act]');if(!a)return;const x=a.dataset.act,c=cur();
+ if(x==='noop')return;
+ if(x==='save'){S.saved=!c.saved;render();return toast(S.saved?'Saved':'Removed from saved')}
+ if(x==='apply'){S.flow='apply';S.err=false;render();return}
+ if(x==='close'){S.flow='detail';render();return}
+ if(x==='back')return toast('Back to the previous screen');
+ if(x.startsWith('tab:')){S.tab=+x.slice(4);render();return}
+ if(x==='send'){if(S.busy)return;S.busy=true;S.err=false;render();
+  setTimeout(()=>{S.busy=false;
+   if(S.sendFail){S.err=true;render();return}
+   S.conn=!!S.connectedNext;S.sentStatus=S.conn?'CONNECTED':'APPLIED';S.flow='sent';render()},800);return}
+ if(x==='finish:track'){S.flow='detail';render();return toast('Opens Applications')}
+ if(x==='finish:feed'){S.flow='detail';render();return toast('Opens the feed')}
+ if(x.startsWith('toast:'))toast(x.slice(6))});
+
+/* ---- chooser + state bar ---- */
+const optsEl=document.getElementById('opts'),statesEl=document.getElementById('states'),side=document.getElementById('side');
+function renderChrome(){
+  optsEl.innerHTML=Object.keys(OPTS).map(k=>`<button class="${k===S.opt?'on':''}" data-o="${k}"><b>${OPTS[k].n}</b><span>${OPTS[k].d}</span></button>`).join('');
+  optsEl.querySelectorAll('button').forEach(b=>b.onclick=()=>{S.opt=b.dataset.o;S.flow='detail';S.tab=0;location.hash=S.opt+'-'+S.st;renderChrome();render()});
+  const keys=Object.keys(ST);
+  statesEl.innerHTML=keys.map(k=>`<button class="${k===S.st?'on':''}" data-s="${k}">${ST[k].l}</button>`).join('')+
+   `<span class="gap"></span><button class="${S.film?'on':''}" data-t="film">Has film</button><button class="${S.sendFail?'on':''}" data-t="fail">Send fails</button><button class="${S.connectedNext?'on':''}" data-t="conn">Already shortlisted by them</button>`;
+  statesEl.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{S.st=b.dataset.s;reset();location.hash=S.opt+'-'+S.st;renderChrome();render()});
+  statesEl.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{const t=b.dataset.t;if(t==='film')S.film=!S.film;if(t==='fail')S.sendFail=!S.sendFail;if(t==='conn')S.connectedNext=!S.connectedNext;renderChrome();render()});
+  const o=OPTS[S.opt];
+  side.innerHTML=`<div class="box"><div class="eyebrow acc">Option ${S.opt}</div><h3 style="margin-top:6px">${o.n.split(' · ')[1]}</h3><ul>${o.why.map(w=>`<li>${w}</li>`).join('')}</ul></div>
+  <div class="box"><h3 style="font-size:17px">Real content shown</h3><p style="margin-top:6px">Title, company, pay (salaryRange), location (+Remote), type, experience, deadline (“Closes 20 Oct” / “Closed”), film, the role, what you’ll do, what they’re looking for, what you get, skills, About company (industry · size people · office), save, application status + applied date + rejection note.</p>
+   <span class="tag tg">Saved</span><span class="tag tg">Applied · Viewed · Shortlisted · Connected · Not selected</span><span class="tag tg">Closed</span><span class="tag tg">Deadline soon</span><span class="tag tg">Video resume not published</span><span class="tag tg">No longer available</span></div>
+  <div class="box"><h3 style="font-size:17px">Try this</h3><p style="margin-top:6px">Choose Open, tap Apply with video resume, type a note, Send. Toggle “Send fails” first to see the error banner; toggle “Already shortlisted by them” to end on Connected. “No video resume yet” shows the refusal that routes to Book an interview.</p></div>`;
+}
+const h=location.hash.replace('#','').split('-');if(OPTS[h[0]])S.opt=h[0];if(ST[h[1]])S.st=h[1];
+if(h[2]==='apply'){S.flow='apply'}if(h[2]==='sent'){S.flow='sent';S.sentStatus='APPLIED'}
+if(h[2]==='scroll'){setTimeout(()=>{const s=ph.querySelector('.scroll');if(s)s.scrollTop=+h[3]||300},50)}
+renderChrome();render();
+</script>
+</body>
+</html>

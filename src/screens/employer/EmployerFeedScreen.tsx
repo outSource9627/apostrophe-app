@@ -1,86 +1,101 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { Animated, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
-import { PanGestureHandler, State, type PanGestureHandlerStateChangeEvent } from 'react-native-gesture-handler'
+import { Animated, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
+import {
+  PanGestureHandler, State, type PanGestureHandlerGestureEvent, type PanGestureHandlerStateChangeEvent,
+} from 'react-native-gesture-handler'
 import { useIsFocused, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { borderWidth, color, height, radius, space, spaceHalf } from '../../theme'
+import { useQuery } from '@tanstack/react-query'
+import { borderWidth, color, height, opacity, radius, space, spaceHalf } from '../../theme'
 import { Button, text } from '../../components/ui'
 import { Icon } from '../../components/ui/Icon'
 import { EmployerShell } from '../../components/employer'
-import { EmEmpty, EmError } from '../../components/employer/em'
-import {
-  FEED_HOW, FeedChips, FeedControls, FeedFilmCard, FeedLockCard, FeedStamp, FeedToast, FeedTop,
-} from '../../components/employer/feed'
+import { DeckCard, FEED_HOW, FeedChips, FeedControls, FeedLockCard, FeedStamp, FeedTop } from '../../components/employer/feed'
+import { StudioCard, StudioLabel, StudioState, StudioToast } from '../../components/employer/studio'
 import { ApiClientError } from '../../lib/api'
 import {
-  clearFeedFilters, fetchCandidateFeed, fetchFeedFilters, fetchLastSwipe, fetchMatchCount, postSwipe, saveFeedFilters,
-  undoLastSwipe, type CandidateCard, type CandidateFilters, type CandidateMatchCount, type QuotaView,
+  clearFeedFilters, fetchFeedFilters, fetchLastSwipe, fetchMatchCount, listSavedSearches, postSwipe,
+  saveFeedFilters, undoLastSwipe, type CandidateCard, type CandidateFilters, type CandidateMatchCount,
 } from '../../lib/api/employerFeed'
+import { fetchEmployerInterests, liveInterestOutcome } from '../../lib/api/employerInterests'
+import { fetchShortlist } from '../../lib/api/employerShortlist'
 import { useEmployer } from '../../lib/employer/useEmployer'
 import { useEmployerConfig } from '../../lib/employer/useEmployerConfig'
+import {
+  advanceDeck, ensureDeck, loadDeck, markCardLimit, patchCards, refreshDeckMedia, resetDeck, restoreCard, useFeedDeck,
+} from '../../lib/employer/feedDeck'
 import { filterChips, filterCount, normalize, rowLabel, withoutChip, withoutRow } from '../../lib/employer/feedFilters'
 import { FeedFiltersSheet } from './FeedFiltersModal'
 import { SavedSearchesSheet } from './SavedSearchesModal'
-import { CandidateProfileSheet } from './CandidateProfileSheet'
+import { SendInterestSheet } from './SendInterestModal'
 import type { RootStackParamList } from '../../../App'
 
 const PAGE = 15
-/** A committed drag, or a quick flick past a smaller distance. */
+/** A committed drag, or a quick flick past a smaller distance — sideways as today, and upward for a skip. */
 const COMMIT_X = 120
 const FLICK_X = 40
+const COMMIT_Y = 110
+const FLICK_Y = 40
 const FLICK_V = 800
+/** Which way a drag goes is decided once, after this much movement — one drag never does two things. */
+const AXIS_LOCK = 12
 const TOAST_MS = 4000
+const SOON_MS = 48 * 60 * 60 * 1000
 
 type Direction = 'RIGHT' | 'LEFT'
 type LastSwipe = { card: CandidateCard | null; name: string; direction: Direction }
+type Toast = { kind: 'swipe'; message: string } | { kind: 'skip'; message: string; card: CandidateCard }
+
+/** '6 h 12 min' until the reset, from the quota's resetAt. */
+function untilReset(resetAt: string | undefined, now: number) {
+  if (!resetAt) return null
+  const mins = Math.max(0, Math.round((new Date(resetAt).getTime() - now) / 60000))
+  const h = Math.floor(mins / 60)
+  return h > 0 ? `${h} h ${mins % 60} min` : `${mins} min`
+}
 
 /**
- * EM-08 · the candidate feed (Employer Android). Drag the card right to
- * shortlist (private), left to pass; the round buttons do the same. The next
- * card grows into place as the top one leaves, a short drag springs back, and
- * the stamps fade in with the drag. A tap on the caption, or the info button,
- * opens the profile sheet; Full opens the full interview.
+ * The candidate feed (docs/employer-app-studio.html · F0–F7).
  *
- * Numbers are the server's: the position is the feed's own quota, how long a
- * pass hides someone is `passHideDays`, and the filters are the set persisted
- * on the account (GET/PUT /employers/feed/filters) — the same on the web.
+ * Gestures (one card, four of them; the axis is chosen once per drag):
+ * - swipe right → Shortlist, privately (as before);
+ * - swipe left → Pass, hidden for `passHideDays` (as before);
+ * - scroll down — drag the card UP — → Skip: the next card rises, NOTHING is
+ *   sent or saved, and the toast's Back returns the card. A skipped person is
+ *   not excluded, so they can come back when the deck restarts; the card was
+ *   already counted in the day's allowance when it loaded (the server charges
+ *   on delivery), so a skip does not give it back;
+ * - tap the name or facts → the profile page; tap the film → sound.
  *
- * States: pending verification (EM-08b, a static drawing, nothing fetched),
- * loading (EM-08c), caught up (EM-08d), an error (EM-08e), the day's cards
- * spent (EM-08f).
+ * The deck is shared with Home (lib/employer/feedDeck): Home's “Today’s feed”
+ * films are this deck's first cards, so nothing is read — or charged — twice.
+ *
+ * States: pending (a locked drawing, nothing fetched), loading, caught up (with
+ * the narrowest filter to clear), an error, the day's cards spent.
  */
 export function EmployerFeedScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
   const focused = useIsFocused()
-  const { width } = useWindowDimensions()
+  const { width, height: screenH } = useWindowDimensions()
   const { state } = useEmployer()
   const config = useEmployerConfig()
   const passDays = config.passHideDays
   const known = state !== null
   const verified = Boolean(state?.verified)
+  const deck = useFeedDeck()
 
   const [filters, setFilters] = useState<CandidateFilters>({})
   const [filtersReady, setFiltersReady] = useState(false)
-  const [items, setItems] = useState<CandidateCard[]>([])
-  const [i, setI] = useState(0)
-  const cursor = useRef<string | null>(null)
-  const [more, setMore] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [cardLimit, setCardLimit] = useState(false)
-  const [gated, setGated] = useState(false)
-  const [quota, setQuota] = useState<QuotaView | null>(null)
+  const [matches, setMatches] = useState<CandidateMatchCount | null>(null)
   const [busy, setBusy] = useState(false)
   const [last, setLast] = useState<LastSwipe | null>(null)
-  const [toast, setToast] = useState<string | null>(null)
+  const [toast, setToast] = useState<Toast | null>(null)
   const [muted, setMuted] = useState(true)
-  const [profileOpen, setProfileOpen] = useState(false)
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [savedOpen, setSavedOpen] = useState(false)
+  const [interestOpen, setInterestOpen] = useState(false)
   const [saveDraft, setSaveDraft] = useState<CandidateFilters | null>(null)
-  const [relax, setRelax] = useState<CandidateMatchCount['narrowest']>(null)
-  const request = useRef(0)
-  const refreshedAt = useRef(0)
+  const [now, setNow] = useState(() => Date.now())
 
   // The persisted filters, and the swipe the server would undo (so Undo works after a reload).
   useEffect(() => {
@@ -98,41 +113,27 @@ export function EmployerFeedScreen() {
     }
   }, [verified])
 
-  /** One page of the deck. Not verified, or the day's cards spent, is a state — not an error. */
-  const load = useCallback(async (reset: boolean) => {
-    const mine = ++request.current
-    setLoading(true)
-    setError(null)
-    try {
-      const res = await fetchCandidateFeed({ cursor: reset ? undefined : cursor.current ?? undefined, limit: PAGE })
-      if (mine !== request.current) return
-      const list = res.items ?? res.cards ?? []
-      setItems((prev) => (reset ? list : [...prev, ...list.filter((c) => !prev.some((p) => p.id === c.id))]))
-      if (reset) setI(0)
-      cursor.current = res.nextCursor ?? null
-      setMore(Boolean(res.nextCursor))
-      if (res.quota) setQuota(res.quota)
-      setCardLimit(false)
-    } catch (e) {
-      if (mine !== request.current) return
-      if (e instanceof ApiClientError && e.isUnverified) setGated(true)
-      else if (e instanceof ApiClientError && (e.code === 'RATE_LIMITED' || e.meta?.reason === 'CARD_LIMIT_REACHED')) setCardLimit(true)
-      else setError(e instanceof Error ? e.message : 'Could not load the candidate feed.')
-    } finally {
-      if (mine === request.current) setLoading(false)
-    }
-  }, [])
-
+  // The first page — unless Home already read it.
   useEffect(() => {
-    if (verified && filtersReady) load(true)
-  }, [verified, filtersReady, load])
+    if (verified && filtersReady) ensureDeck(PAGE)
+  }, [verified, filtersReady])
 
+  // How many match the filters (free, no card charged).
+  useEffect(() => {
+    if (!verified || !filtersReady) return
+    let alive = true
+    fetchMatchCount(normalize(filters)).then((r) => alive && setMatches(r)).catch(() => alive && setMatches(null))
+    return () => {
+      alive = false
+    }
+  }, [verified, filtersReady, filters])
+
+  const { items, i } = deck
   // Keep a few cards ahead.
   useEffect(() => {
-    if (!loading && more && !cardLimit && items.length - i <= 3) load(false)
-  }, [i, items.length, more, loading, cardLimit, load])
+    if (!deck.loading && deck.more && !deck.cardLimit && items.length - i <= 3) loadDeck(false, PAGE)
+  }, [i, items.length, deck.more, deck.loading, deck.cardLimit])
 
-  // The toast says what happened, then gets out of the controls' way; Undo stays on the round button.
   useEffect(() => {
     if (!toast) return
     const t = setTimeout(() => setToast(null), TOAST_MS)
@@ -141,66 +142,68 @@ export function EmployerFeedScreen() {
 
   const current = items[i]
   const next = items[i + 1] ?? null
-  const caughtUp = verified && filtersReady && !loading && !current && !error && !cardLimit
+  const third = items[i + 2] ?? null
+  const caughtUp = verified && filtersReady && !deck.loading && deck.started && !current && !deck.error && !deck.cardLimit
 
-  // On "caught up", ask which one filter is holding the deck back (free).
   useEffect(() => {
-    if (!caughtUp || filterCount(filters) === 0) {
-      setRelax(null)
-      return
-    }
-    let alive = true
-    fetchMatchCount(normalize(filters)).then((r) => alive && setRelax(r.narrowest)).catch(() => {})
-    return () => {
-      alive = false
-    }
-  }, [caughtUp, filters])
+    if (deck.cardLimit) setNow(Date.now())
+  }, [deck.cardLimit])
 
   async function applyFilters(nextFilters: CandidateFilters) {
     const n = normalize(nextFilters)
     setFiltersOpen(false)
     setSavedOpen(false)
     setFilters(n)
-    setItems([])
-    cursor.current = null
+    resetDeck()
     try {
       const v = filterCount(n) === 0 ? await clearFeedFilters() : await saveFeedFilters(n)
       setFilters(v.filters ?? {})
     } catch {
       /* the deck still reloads under what the server holds */
     }
-    load(true)
+    loadDeck(true, PAGE)
   }
 
-  // ── the swipe ──────────────────────────────────────────────────────────────
-  const tx = useRef(new Animated.Value(0)).current
-  const ty = useRef(new Animated.Value(0)).current
-  const ty4 = useMemo(() => Animated.multiply(ty, 0.25), [ty])
+  // ── the gesture ────────────────────────────────────────────────────────────
+  const gx = useRef(new Animated.Value(0)).current
+  const gy = useRef(new Animated.Value(0)).current
+  const lockX = useRef(new Animated.Value(1)).current
+  const lockY = useRef(new Animated.Value(1)).current
+  const axis = useRef<'x' | 'y' | null>(null)
+  const tx = useMemo(() => Animated.multiply(gx, lockX), [gx, lockX])
+  const ty = useMemo(() => Animated.multiply(gy, lockY), [gy, lockY])
+
+  const unlock = useCallback(() => {
+    axis.current = null
+    lockX.setValue(1)
+    lockY.setValue(1)
+  }, [lockX, lockY])
 
   const springBack = useCallback(() => {
     Animated.parallel([
-      Animated.spring(tx, { toValue: 0, friction: 6, useNativeDriver: true }),
-      Animated.spring(ty, { toValue: 0, friction: 6, useNativeDriver: true }),
-    ]).start()
-  }, [tx, ty])
+      Animated.spring(gx, { toValue: 0, friction: 7, useNativeDriver: true }),
+      Animated.spring(gy, { toValue: 0, friction: 7, useNativeDriver: true }),
+    ]).start(unlock)
+  }, [gx, gy, unlock])
 
   const commit = useCallback(async (card: CandidateCard, direction: Direction) => {
     try {
       await postSwipe(card.id, direction)
       setLast({ card, name: card.name, direction })
-      setToast(
-        direction === 'RIGHT'
+      setToast({
+        kind: 'swipe',
+        message: direction === 'RIGHT'
           ? `Shortlisted ${card.name} · private`
           : `Passed on ${card.name}${passDays ? ` · hidden for ${passDays} days` : ''}`,
-      )
+      })
     } catch (e) {
       // The card comes back and the swipe can be made again.
-      setItems((prev) => (prev.some((c) => c.id === card.id) ? prev : [...prev.slice(0, i), card, ...prev.slice(i)]))
-      if (e instanceof ApiClientError && e.code === 'RATE_LIMITED') setCardLimit(true)
+      restoreCard(card)
+      if (e instanceof ApiClientError && e.code === 'RATE_LIMITED') markCardLimit()
     } finally {
       setBusy(false)
     }
-  }, [passDays, i])
+  }, [passDays])
 
   const fling = useCallback((direction: Direction) => {
     if (!current || busy) {
@@ -209,47 +212,66 @@ export function EmployerFeedScreen() {
     }
     const card = current
     setBusy(true)
-    setProfileOpen(false)
-    Animated.timing(tx, { toValue: (direction === 'RIGHT' ? 1 : -1) * width * 1.4, duration: 220, useNativeDriver: true }).start(() => {
-      setI((n) => n + 1)
+    lockY.setValue(0)
+    Animated.timing(gx, { toValue: (direction === 'RIGHT' ? 1 : -1) * width * 1.4, duration: 220, useNativeDriver: true }).start(() => {
+      advanceDeck()
       commit(card, direction)
     })
-  }, [current, busy, springBack, tx, width, commit])
+  }, [current, busy, springBack, gx, lockY, width, commit])
+
+  /** Skip: nothing is sent, nothing is saved; Back puts the card on top again. */
+  const skip = useCallback(() => {
+    if (!current || busy) {
+      springBack()
+      return
+    }
+    const card = current
+    lockX.setValue(0)
+    Animated.timing(gy, { toValue: -screenH, duration: 240, useNativeDriver: true }).start(() => {
+      advanceDeck()
+      setToast({ kind: 'skip', card, message: `Skipped ${card.name.split(/\s+/)[0]} — may show up again later` })
+    })
+  }, [current, busy, springBack, gy, lockX, screenH])
 
   // The next card is on top once React has drawn it; only then snap the values home.
   useLayoutEffect(() => {
-    tx.setValue(0)
-    ty.setValue(0)
-  }, [i, current?.id, tx, ty])
+    gx.setValue(0)
+    gy.setValue(0)
+    unlock()
+  }, [i, current?.id, gx, gy, unlock])
 
   const onGestureEvent = useMemo(
-    () => Animated.event([{ nativeEvent: { translationX: tx, translationY: ty } }], { useNativeDriver: true }),
-    [tx, ty],
+    () => Animated.event([{ nativeEvent: { translationX: gx, translationY: gy } }], {
+      useNativeDriver: true,
+      listener: (e: PanGestureHandlerGestureEvent) => {
+        if (axis.current) return
+        const { translationX: x, translationY: y } = e.nativeEvent
+        if (Math.abs(x) < AXIS_LOCK && Math.abs(y) < AXIS_LOCK) return
+        axis.current = Math.abs(x) >= Math.abs(y) ? 'x' : 'y'
+        lockX.setValue(axis.current === 'x' ? 1 : 0)
+        lockY.setValue(axis.current === 'y' ? 1 : 0)
+      },
+    }),
+    [gx, gy, lockX, lockY],
   )
   const onHandlerStateChange = useCallback((e: PanGestureHandlerStateChangeEvent) => {
-    const { state: s, translationX, velocityX } = e.nativeEvent
+    const { state: s, translationX, translationY, velocityX, velocityY } = e.nativeEvent
     if (s !== State.END && s !== State.CANCELLED && s !== State.FAILED) return
-    if (translationX > COMMIT_X || (translationX > FLICK_X && velocityX > FLICK_V)) fling('RIGHT')
-    else if (translationX < -COMMIT_X || (translationX < -FLICK_X && velocityX < -FLICK_V)) fling('LEFT')
+    const a = axis.current
+    if (a === 'y' && s === State.END && (translationY < -COMMIT_Y || (translationY < -FLICK_Y && velocityY < -FLICK_V))) skip()
+    else if (a === 'x' && s === State.END && (translationX > COMMIT_X || (translationX > FLICK_X && velocityX > FLICK_V))) fling('RIGHT')
+    else if (a === 'x' && s === State.END && (translationX < -COMMIT_X || (translationX < -FLICK_X && velocityX < -FLICK_V))) fling('LEFT')
     else springBack()
-  }, [fling, springBack])
+  }, [fling, skip, springBack])
 
   const undo = useCallback(async () => {
     if (!last || busy) return
     setBusy(true)
     try {
       const r = await undoLastSwipe()
-      if (r.undone && last.card) {
-        const back = last.card
-        setItems((prev) => {
-          const copy = prev.filter((c) => c.id !== back.id)
-          copy.splice(i, 0, back)
-          return copy
-        })
-      } else if (r.undone) {
-        // Undone from an earlier visit: the card is not in hand, so read the deck again.
-        load(true)
-      }
+      if (r.undone && last.card) restoreCard(last.card)
+      // Undone from an earlier visit: the card is not in hand, so read the deck again.
+      else if (r.undone) loadDeck(true, PAGE)
       setLast(null)
       setToast(null)
     } catch {
@@ -257,129 +279,133 @@ export function EmployerFeedScreen() {
     } finally {
       setBusy(false)
     }
-  }, [last, busy, i, load])
+  }, [last, busy])
 
-  /** A signed film address lapsed: one page read again for fresh ones, at most every half minute. */
-  const refreshStreams = useCallback(() => {
-    if (Date.now() - refreshedAt.current < 30_000) return
-    refreshedAt.current = Date.now()
-    fetchCandidateFeed({ limit: PAGE })
-      .then((res) => {
-        const fresh = new Map((res.items ?? res.cards ?? []).map((c) => [c.id, c]))
-        setItems((prev) => prev.map((c) => (fresh.has(c.id) ? { ...c, streamUrl: fresh.get(c.id)!.streamUrl, posterUrl: fresh.get(c.id)!.posterUrl } : c)))
-      })
-      .catch(() => {})
+  const back = useCallback((card: CandidateCard) => {
+    restoreCard(card)
+    setToast(null)
   }, [])
 
-  const rotate = tx.interpolate({ inputRange: [-300, 0, 300], outputRange: ['-6deg', '0deg', '6deg'] })
+  /** A signed film address lapsed: re-sign the cards in hand, free (lib/employer/feedDeck · refreshDeckMedia). */
+  const refreshStreams = useCallback(() => {
+    refreshDeckMedia()
+  }, [])
+
+  const rotate = tx.interpolate({ inputRange: [-300, 0, 300], outputRange: ['-7deg', '0deg', '7deg'] })
   const shortOpacity = tx.interpolate({ inputRange: [FLICK_X, COMMIT_X + 20], outputRange: [0, 1], extrapolate: 'clamp' })
   const passOpacity = tx.interpolate({ inputRange: [-(COMMIT_X + 20), -FLICK_X], outputRange: [1, 0], extrapolate: 'clamp' })
-  // The next card grows into place as the top one is dragged away.
-  const nextScale = tx.interpolate({ inputRange: [-160, 0, 160], outputRange: [1, 0.95, 1], extrapolate: 'clamp' })
-  const nextLift = tx.interpolate({ inputRange: [-160, 0, 160], outputRange: [0, space.md, 0], extrapolate: 'clamp' })
+  const skipOpacity = ty.interpolate({ inputRange: [-(COMMIT_Y + 20), -FLICK_Y], outputRange: [1, 0], extrapolate: 'clamp' })
+  // The next card grows into place as the top one leaves, sideways or upward.
+  const grow = Animated.add(
+    tx.interpolate({ inputRange: [-160, 0, 160], outputRange: [1, 0, 1], extrapolate: 'clamp' }),
+    ty.interpolate({ inputRange: [-200, 0], outputRange: [1, 0], extrapolate: 'clamp' }),
+  )
+  const nextScale = grow.interpolate({ inputRange: [0, 1], outputRange: [0.95, 1], extrapolate: 'clamp' })
+  const nextLift = grow.interpolate({ inputRange: [0, 1], outputRange: [space.md, 0], extrapolate: 'clamp' })
 
-  const pending = known && (!verified || gated)
+  const pending = known && (!verified || deck.gated)
   const chips = filterChips(filters)
+  const quota = deck.quota
   const seen = quota ? Math.min(quota.limit, Math.max(0, quota.used - Math.max(0, items.length - (i + 1)))) : null
-  const position = pending ? 'PREVIEW' : quota ? `${current ? Math.max(1, seen ?? 0) : quota.used} OF ${quota.limit} TODAY` : ' '
+  const position = quota && current ? `${Math.max(1, seen ?? 0)} / ${quota.limit}` : null
   const openFull = () =>
     current?.hasVideo &&
     navigation.navigate('CandidateVideo', { id: current.id, name: current.name, photoUrl: current.photoUrl, interviewAt: current.verifiedInterview?.at })
+  const openProfile = () => current && navigation.navigate('CandidateProfile', { id: current.id })
 
   let stage: React.ReactNode
-  if (!known || (verified && (!filtersReady || (loading && items.length === 0 && !error && !cardLimit)))) {
+  const waiting = !known || (verified && !deck.gated && (!filtersReady || ((!deck.started || deck.loading) && items.length <= i && !deck.error && !deck.cardLimit)))
+  if (waiting) {
     stage = <View style={styles.skeleton} accessibilityLabel="Loading candidates" />
   } else if (pending) {
     stage = <FeedLockCard />
-  } else if (cardLimit) {
-    const cards = quota?.limit ?? config.feedDailyCardLimit
-    const videos = config.feedDailyVideoPlayLimit
+  } else if (deck.cardLimit) {
+    stage = <LimitState limit={quota?.limit ?? config.feedDailyCardLimit} videos={config.feedDailyVideoPlayLimit} reset={untilReset(quota?.resetAt, now)} />
+  } else if (deck.error && items.length <= i) {
     stage = (
       <View style={styles.center}>
-        <EmEmpty
-          icon="clock"
-          title={cards ? `That’s ${cards} today.` : 'That’s today’s cards.'}
-          body={`To protect candidates, each account sees ${cards ? `${cards} cards` : 'a set number of cards'}${videos ? ` and ${videos} full videos` : ''} a day. Resets at midnight IST.`}
-          action={<Button variant="secondary" size="pair" label="Open shortlist" onPress={() => navigation.navigate('EmployerShortlist')} />}
-        />
-      </View>
-    )
-  } else if (error && items.length === 0) {
-    stage = (
-      <View style={styles.center}>
-        <EmError
-          title="Couldn’t load candidates."
-          body="Your filters, shortlist and last swipe are safe."
-          action={<Button variant="secondary" size="pair" icon="refresh" label="Try again" onPress={() => { load(true) }} />}
-        />
+        <StudioState icon="alert" tone="danger" title="Couldn’t load candidates." body="Your filters, shortlist and last swipe are safe.">
+          <Button variant="secondary" size="pair" icon="refresh" label="Try again" onPress={() => { loadDeck(true, PAGE) }} />
+        </StudioState>
       </View>
     )
   } else if (current) {
     stage = (
       <>
+        {third && (
+          <View style={[styles.layer, styles.third]} pointerEvents="none">
+            <View style={styles.ghost} />
+          </View>
+        )}
         {next && (
-          <Animated.View style={[styles.layer, { transform: [{ scale: nextScale }, { translateY: nextLift }] }]} pointerEvents="none">
-            <FeedFilmCard card={next} active={false} muted />
+          <Animated.View style={[styles.layer, { transform: [{ translateY: nextLift }, { scale: nextScale }] }]} pointerEvents="none">
+            <DeckCard card={next} active={false} muted />
           </Animated.View>
         )}
-        <PanGestureHandler onGestureEvent={onGestureEvent} onHandlerStateChange={onHandlerStateChange} activeOffsetX={[-10, 10]}>
-          <Animated.View key={current.id} style={[styles.layer, { transform: [{ translateX: tx }, { translateY: ty4 }, { rotate }] }]}>
-            <FeedFilmCard
+        <PanGestureHandler onGestureEvent={onGestureEvent} onHandlerStateChange={onHandlerStateChange} activeOffsetX={[-10, 10]} activeOffsetY={[-10, 10]}>
+          <Animated.View
+            key={current.id}
+            style={[styles.layer, { transform: [{ translateX: tx }, { translateY: ty }, { rotate }] }]}
+            accessibilityActions={[{ name: 'skip', label: 'Skip this candidate' }]}
+            onAccessibilityAction={(ev) => ev.nativeEvent.actionName === 'skip' && skip()}
+          >
+            <DeckCard
               card={current}
-              active={focused && !profileOpen && !filtersOpen && !savedOpen}
+              active={focused && !filtersOpen && !savedOpen && !interestOpen}
               muted={muted}
+              position={position}
               onToggleMute={() => setMuted((m) => !m)}
               onOpenFull={openFull}
-              onOpenProfile={() => setProfileOpen(true)}
+              onOpenProfile={openProfile}
               onStreamFail={refreshStreams}
-            >
-              <Animated.View style={[styles.stamp, styles.stampLeft, { opacity: shortOpacity }]} pointerEvents="none">
-                <FeedStamp kind="shortlist" />
-              </Animated.View>
-              <Animated.View style={[styles.stamp, styles.stampRight, { opacity: passOpacity }]} pointerEvents="none">
-                <FeedStamp kind="pass" passDays={passDays} />
-              </Animated.View>
-            </FeedFilmCard>
+              stamps={
+                <>
+                  <Animated.View style={[styles.stamp, styles.stampLeft, { opacity: shortOpacity }]} pointerEvents="none">
+                    <FeedStamp kind="shortlist" />
+                  </Animated.View>
+                  <Animated.View style={[styles.stamp, styles.stampRight, { opacity: passOpacity }]} pointerEvents="none">
+                    <FeedStamp kind="pass" passDays={passDays} />
+                  </Animated.View>
+                  <Animated.View style={[styles.skipStamp, { opacity: skipOpacity }]} pointerEvents="none">
+                    <FeedStamp kind="skip" />
+                  </Animated.View>
+                </>
+              }
+            />
           </Animated.View>
         </PanGestureHandler>
       </>
     )
-  } else {
+  } else if (caughtUp) {
     stage = (
-      <View style={styles.caught}>
-        <View style={styles.caughtMark}><Icon name="check" size={space['2xl'] - 6} tint={color.success} weight={2.4} /></View>
-        <Text style={[text.displaySm, styles.centerText]}>You’re caught up.</Text>
-        <Text style={[text.uiMd, styles.muted, styles.centerText]}>
-          Every candidate matching these filters is done. New interviews publish daily.
-        </Text>
-        <Button variant="secondary" size="pair" label="Widen filters" onPress={() => setFiltersOpen(true)} />
-        {!!relax && relax.matchesWithout > 0 && (
-          <Button
-            variant="text"
-            size="sm"
-            label={`Clear ${rowLabel(relax.key).toLowerCase()} to see ${relax.matchesWithout}`}
-            onPress={() => { applyFilters(withoutRow(filters, relax.key)) }}
-          />
-        )}
-      </View>
+      <CaughtUp
+        narrowest={matches?.narrowest ?? null}
+        hasFilters={filterCount(filters) > 0}
+        onWiden={() => setFiltersOpen(true)}
+        onClearNarrowest={(key) => { applyFilters(withoutRow(filters, key)) }}
+        onSaved={() => {
+          setSaveDraft(null)
+          setSavedOpen(true)
+        }}
+      />
     )
+  } else {
+    stage = <View style={styles.skeleton} accessibilityLabel="Loading candidates" />
   }
 
   return (
     <EmployerShell bar={false} scroll={false}>
       <FeedTop
-        position={position}
         filterCount={filterCount(filters)}
-        companyName={state?.company.name}
         locked={pending}
         onSaved={() => {
           setSaveDraft(null)
           setSavedOpen(true)
         }}
         onFilters={() => setFiltersOpen(true)}
-        onAccount={() => navigation.navigate('EmployerAccount')}
       />
       <FeedChips
+        matches={pending || !filtersReady ? null : matches?.matches ?? null}
         chips={chips}
         locked={pending || !filtersReady}
         onRemove={(key) => { applyFilters(withoutChip(filters, key)) }}
@@ -397,31 +423,42 @@ export function EmployerFeedScreen() {
             </View>
           ))}
         </View>
-      ) : (current || (loading && items.length === 0)) && !cardLimit ? (
+      ) : (current || (deck.loading && items.length <= i)) && !deck.cardLimit ? (
         <FeedControls
           canUndo={!!last}
           disabled={busy || !current}
           onUndo={() => { undo() }}
           onPass={() => fling('LEFT')}
           onShortlist={() => fling('RIGHT')}
-          onProfile={() => setProfileOpen(true)}
+          onInterest={() => setInterestOpen(true)}
         />
       ) : (
         <View style={styles.ctlSpacer} />
       )}
 
-      {!!toast && <FeedToast message={toast} disabled={busy} onUndo={() => { undo() }} />}
+      {!!toast && (
+        <StudioToast
+          style={styles.toast}
+          message={toast.message}
+          icon={toast.kind === 'skip' ? 'arrowU' : undefined}
+          action={toast.kind === 'skip' ? 'Back' : 'Undo'}
+          disabled={busy}
+          onAction={() => {
+            if (toast.kind === 'skip') back(toast.card)
+            else undo()
+          }}
+        />
+      )}
 
       {current && (
-        <CandidateProfileSheet
-          open={profileOpen}
-          card={current}
-          passDays={passDays}
-          onClose={() => setProfileOpen(false)}
-          onPass={() => fling('LEFT')}
-          onShortlist={() => fling('RIGHT')}
-          onOpenFull={openFull}
-          onInterestSent={(id) => setItems((prev) => prev.map((c) => (c.id === id ? { ...c, interest: 'SENT' } : c)))}
+        <SendInterestSheet
+          open={interestOpen}
+          candidate={{
+            id: current.id, name: current.name, photoUrl: current.photoUrl, tier: current.tier,
+            qualification: current.qualification, city: current.city, verified: current.verifiedInterview?.verified,
+          }}
+          onClose={() => setInterestOpen(false)}
+          onSent={() => patchCards((c) => (c.id === current.id ? { ...c, interest: 'SENT' } : c))}
         />
       )}
 
@@ -447,23 +484,126 @@ export function EmployerFeedScreen() {
   )
 }
 
+/** F5 · the day's cards are spent: today's copy, the time to reset, and two places to go meanwhile. */
+function LimitState({ limit, videos, reset }: { limit?: number; videos?: number; reset: string | null }) {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
+  const [now] = useState(() => Date.now())
+  const interests = useQuery({ queryKey: ['employer', 'interests', 'sent'], queryFn: () => fetchEmployerInterests({ outcome: 'SENT', perPage: 50 }) })
+  const shortlist = useQuery({ queryKey: ['employer', 'shortlist', 'recent'], queryFn: () => fetchShortlist({ perPage: 50, sort: 'ADDED' }) })
+  const live = interests.data ? interests.data.rows.filter((r) => liveInterestOutcome(r) === 'SENT') : []
+  const awaiting = interests.data ? (interests.data.total > interests.data.rows.length ? interests.data.total : live.length) : null
+  const expiring = live.filter((r) => {
+    const left = new Date(r.expiresAt).getTime() - now
+    return left > 0 && left <= SOON_MS
+  }).length
+  const shortTotal = shortlist.data ? shortlist.data.totalAll ?? shortlist.data.total : null
+  const rows = [
+    awaiting !== null && awaiting > 0 && {
+      icon: 'heart' as const, title: `${awaiting} ${awaiting === 1 ? 'Interest' : 'Interests'} awaiting reply`,
+      sub: expiring > 0 ? `${expiring} expire within 48 h` : null, to: 'EmployerInterests' as const,
+    },
+    shortTotal !== null && shortTotal > 0 && { icon: 'bookmark' as const, title: `${shortTotal} in your shortlist`, sub: null, to: 'EmployerShortlist' as const },
+  ].filter(Boolean) as { icon: 'heart' | 'bookmark'; title: string; sub: string | null; to: 'EmployerInterests' | 'EmployerShortlist' }[]
+
+  return (
+    <View style={styles.limit}>
+      <StudioState
+        icon="clock"
+        title={limit ? `That’s ${limit} today.` : 'That’s today’s cards.'}
+        body={`To protect candidates, each account sees ${limit ? `${limit} cards` : 'a set number of cards'}${videos ? ` and ${videos} full videos` : ''} a day. Resets at midnight IST.`}
+      >
+        {!!reset && (
+          <View style={styles.resetPill}>
+            <Icon name="clock" size={space.md} tint={color.textSecondary} weight={2.2} />
+            <Text style={[text.metaSm, styles.secondary]}>{`RESETS IN ${reset.toUpperCase()}`}</Text>
+          </View>
+        )}
+        <Button variant="secondary" size="pair" label="Open shortlist" onPress={() => navigation.navigate('EmployerShortlist')} />
+      </StudioState>
+      {rows.length > 0 && (
+        <StudioCard style={styles.waitCard}>
+          <StudioLabel style={styles.waitHead}>While you wait</StudioLabel>
+          {rows.map((r) => (
+            <Pressable key={r.to} accessibilityRole="button" onPress={() => navigation.navigate(r.to)} style={({ pressed }) => [styles.waitRow, pressed && styles.pressed]}>
+              <View style={styles.waitMark}><Icon name={r.icon} size={space.lg + 1} tint={color.accentText} /></View>
+              <View style={styles.grow}>
+                <Text style={text.uiMdSemi}>{r.title}</Text>
+                {!!r.sub && <Text style={[text.uiXs, styles.muted]}>{r.sub}</Text>}
+              </View>
+              <Icon name="chevR" size={space.lg} tint={color.textSubtle} />
+            </Pressable>
+          ))}
+        </StudioCard>
+      )}
+    </View>
+  )
+}
+
+/** F6 · no one is left for these filters. */
+function CaughtUp({
+  narrowest, hasFilters, onWiden, onClearNarrowest, onSaved,
+}: {
+  narrowest: CandidateMatchCount['narrowest']
+  hasFilters: boolean
+  onWiden: () => void
+  onClearNarrowest: (key: NonNullable<CandidateMatchCount['narrowest']>['key']) => void
+  onSaved: () => void
+}) {
+  const saved = useQuery({ queryKey: ['employer', 'saved-searches'], queryFn: listSavedSearches })
+  const count = saved.data?.length ?? 0
+  return (
+    <View style={styles.limit}>
+      <StudioState icon="check" tone="success" title="You’re caught up." body="Every candidate matching these filters is done. New interviews publish daily.">
+        <Button variant="secondary" size="pair" icon="sliders" label="Widen filters" onPress={onWiden} />
+        {hasFilters && !!narrowest && narrowest.matchesWithout > 0 && (
+          <Button
+            variant="text"
+            size="sm"
+            label={`Clear ${rowLabel(narrowest.key).toLowerCase()} to see ${narrowest.matchesWithout}`}
+            onPress={() => onClearNarrowest(narrowest.key)}
+          />
+        )}
+      </StudioState>
+      {count > 0 && (
+        <Pressable accessibilityRole="button" onPress={onSaved} style={({ pressed }) => [styles.savedRow, pressed && styles.pressed]}>
+          <Icon name="bookmark" size={space.lg + 2} tint={color.accentText} />
+          <Text style={[text.uiMd, styles.grow]}>Try a saved search</Text>
+          <Text style={[text.metaSm, styles.muted]}>{`${count} SAVED`}</Text>
+          <Icon name="chevR" size={space.lg} tint={color.accentText} />
+        </Pressable>
+      )}
+    </View>
+  )
+}
+
 const styles = StyleSheet.create({
+  grow: { flex: 1, minWidth: 0 },
+  pressed: { opacity: opacity.pressed },
   muted: { color: color.textMuted },
   secondary: { color: color.textSecondary },
-  centerText: { textAlign: 'center' },
-  stack: { flex: 1, marginHorizontal: space.lg },
+  stack: { flex: 1, marginHorizontal: spaceHalf['3.5'], marginTop: space.xs },
   layer: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
+  third: { transform: [{ translateY: space.xl + space.xs }, { scale: 0.9 }] },
+  ghost: { flex: 1, borderRadius: radius.deck, backgroundColor: color.surface, borderWidth: borderWidth.thin, borderColor: color.border },
   skeleton: { flex: 1, borderRadius: radius.deck, backgroundColor: color.surfaceSunken },
   center: { flex: 1, justifyContent: 'center' },
-  stamp: { position: 'absolute', top: height.fab + space.xs },
-  stampLeft: { left: spaceHalf['4.5'] + space.xs },
-  stampRight: { right: spaceHalf['4.5'] + space.xs },
-  caught: {
-    flex: 1, borderRadius: radius.deck, backgroundColor: color.surface, borderWidth: borderWidth.thin, borderColor: color.border,
-    alignItems: 'center', justifyContent: 'center', gap: space.md, padding: space['2xl'],
-  },
-  caughtMark: { width: height.fab, height: height.fab, borderRadius: radius.pill, backgroundColor: color.successSoft, alignItems: 'center', justifyContent: 'center' },
+  stamp: { position: 'absolute', top: height.fab },
+  stampLeft: { left: spaceHalf['4.5'] },
+  stampRight: { right: spaceHalf['4.5'] },
+  skipStamp: { position: 'absolute', bottom: height.fab + space.xl, left: 0, right: 0, alignItems: 'center' },
   how: { paddingHorizontal: space.lg, paddingTop: space.md, paddingBottom: spaceHalf['2.5'], gap: spaceHalf['1.5'] },
   howRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   ctlSpacer: { height: space.lg },
+  toast: { position: 'absolute', left: space.lg, right: space.lg, bottom: space.sm },
+
+  limit: { flex: 1, justifyContent: 'center', gap: space['2xl'] },
+  resetPill: { flexDirection: 'row', alignItems: 'center', gap: spaceHalf['1.5'], height: space.xl + spaceHalf['1.5'], paddingHorizontal: spaceHalf['2.5'], borderRadius: radius.pill, backgroundColor: color.surfaceMuted },
+  waitCard: { paddingVertical: spaceHalf['1.5'], paddingHorizontal: 0, gap: 0 },
+  waitHead: { paddingHorizontal: spaceHalf['3.5'], paddingTop: spaceHalf['2.5'], paddingBottom: spaceHalf['1.5'] },
+  waitRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: spaceHalf['2.5'] + 1, paddingHorizontal: spaceHalf['3.5'], borderTopWidth: borderWidth.thin, borderTopColor: color.borderSoft },
+  waitMark: { width: height['avatar-lg'], height: height['avatar-lg'], borderRadius: radius.md + 1, backgroundColor: color.accentSoft, alignItems: 'center', justifyContent: 'center' },
+  savedRow: {
+    flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: spaceHalf['3.5'] - 1, paddingHorizontal: spaceHalf['3.5'],
+    borderRadius: radius.lg, backgroundColor: color.accentWash, borderWidth: borderWidth.thin, borderColor: color.accentEdge,
+  },
 })

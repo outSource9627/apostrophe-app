@@ -11,15 +11,12 @@ import { Platform } from 'react-native'
  * Agora certificate, Razorpay secret, AWS keys — sab sirf server pe.
  */
 
-// Mac's LAN IP address for testing on physical phone (or emulator/simulator).
-// Ensure your phone and Mac are connected to the same Wi-Fi network.
-const DEV_HOST = '10.104.51.79'
+// 10.0.2.2 points to host Mac from the Android emulator, localhost for iOS simulator.
+const DEV_HOST = Platform.OS === 'android' ? '10.0.2.2' : 'localhost'
 const DEV_API = `http://${DEV_HOST}:3000`
 
-export const API_BASE_URL = (__DEV__ ? DEV_API : 'https://api.apostrophe.work') + '/api/v1'
-export const SOCKET_URL = __DEV__
-  ? `http://${DEV_HOST}:4001`
-  : 'https://realtime.apostrophe.work'
+export const API_BASE_URL = DEV_API + '/api/v1'
+export const SOCKET_URL = `http://${DEV_HOST}:4001`
 
 // --- payments -------------------------------------------------- [P2] TODO
 // Razorpay key id public hai. Secret NAHI.

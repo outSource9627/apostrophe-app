@@ -1,10 +1,11 @@
-import React, { useState } from 'react'
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
+import React, { useEffect, useRef, useState } from 'react'
+import { Animated, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import Svg, { Circle, Path, Rect } from 'react-native-svg'
-import { color, space, spaceHalf, radius, borderWidth, height, trackingNative } from '../../theme'
+import { color, space, spaceHalf, radius, borderWidth, height, trackingNative, fontFamilyNative as FF } from '../../theme'
 import { text } from '../../components/ui/typography'
-import { Body, Eyebrow, Meta } from '../../components/ui/Type'
-import { Button, Chip, Divider, IconButton, Sheet, StatusPill } from '../../components/ui'
+import { Body, Meta } from '../../components/ui/Type'
+import { Chip, Sheet, StatusPill } from '../../components/ui'
+import { Btn } from '../../components/tab/kit'
 import { LogoMark } from '../../components/Logo'
 import type { MessageDto, ReportReason, ThreadDto } from '../../lib/api/chat'
 import { attachmentMeta, fmtClock, fmtReceipt, interestClock, monogram, type ClockReading } from '../../lib/chat/format'
@@ -69,21 +70,16 @@ export function CounterpartyPlate({ thread, size = 44 }: { thread: Pick<ThreadDt
 
 // ── transcript pieces ────────────────────────────────────────────────────────
 export function DayDivider({ label }: { label: string }) {
-  return (
-    <View style={styles.dividerRow}>
-      <Divider style={styles.rule} />
-      <Meta style={{ color: color.textSubtle }}>{label}</Meta>
-      <Divider style={styles.rule} />
-    </View>
-  )
+  return <Text style={styles.day}>{label.toUpperCase()}</Text>
 }
 
+/** A quiet pill in the transcript: "This chat opened for your interview", "Your session started · …". */
 export function SystemLine({ text, time, media }: { text: string; time?: string; media?: React.ReactNode }) {
   return (
     <View style={styles.systemLine}>
       {media}
-      <Meta style={{ color: color.textMuted, textAlign: 'center' }}>{text}</Meta>
-      {!!time && <Meta style={{ color: color.textSubtle }}>{time}</Meta>}
+      <Text style={styles.systemText}>{text}</Text>
+      {!!time && <Text style={styles.systemTime}>{time}</Text>}
     </View>
   )
 }
@@ -113,8 +109,8 @@ function Spinner() {
 export function Bubble({ msg, now }: { msg: MessageDto; now: number }) {
   const mine = msg.mine
   const corner = mine
-    ? { borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, borderBottomRightRadius: radius.sm, borderBottomLeftRadius: radius.lg }
-    : { borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, borderBottomRightRadius: radius.lg, borderBottomLeftRadius: radius.sm }
+    ? { borderTopLeftRadius: 18, borderTopRightRadius: 18, borderBottomRightRadius: 4, borderBottomLeftRadius: 18 }
+    : { borderTopLeftRadius: 18, borderTopRightRadius: 18, borderBottomRightRadius: 18, borderBottomLeftRadius: 4 }
   const delivery: DeliveryState | null = !mine ? null : msg.readAt ? 'read' : msg.deliveredAt ? 'delivered' : 'sent'
 
   return (
@@ -123,7 +119,7 @@ export function Bubble({ msg, now }: { msg: MessageDto; now: number }) {
         <AttachmentBubble msg={msg} mine={mine} corner={corner} />
       ) : (
         <View style={[styles.bubble, corner, mine ? styles.bubbleMine : styles.bubbleTheirs]}>
-          <Body size="base" style={{ color: mine ? color.textInverse : color.text }}>{msg.body}</Body>
+          <Text style={[styles.bubbleText, { color: mine ? color.textInverse : color.text }]}>{msg.body}</Text>
         </View>
       )}
       {mine
@@ -155,22 +151,34 @@ function AttachmentBubble({ msg, mine, corner }: { msg: MessageDto; mine: boolea
   )
 }
 
-/** The three resting dots. No "is typing" sentence, no presence — there is none. */
+/** Three dots that bounce while the other side types. No "is typing" sentence, no presence — there is none. */
 export function TypingDots() {
+  const vals = useRef([0, 1, 2].map(() => new Animated.Value(0))).current
+  useEffect(() => {
+    const loops = vals.map((v, i) => Animated.loop(Animated.sequence([
+      Animated.delay(i * 150),
+      Animated.timing(v, { toValue: 1, duration: 280, useNativeDriver: true }),
+      Animated.timing(v, { toValue: 0, duration: 280, useNativeDriver: true }),
+      Animated.delay(450 - i * 150),
+    ])))
+    loops.forEach((l) => l.start())
+    return () => loops.forEach((l) => l.stop())
+  }, [vals])
   return (
-    <View style={[styles.bubble, styles.bubbleTheirs, styles.typing, { borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, borderBottomRightRadius: radius.lg, borderBottomLeftRadius: radius.sm }]}>
-      <View style={[styles.dot, { backgroundColor: color.border }]} />
-      <View style={[styles.dot, { backgroundColor: color.borderStrong }]} />
-      <View style={[styles.dot, { backgroundColor: color.textSubtle }]} />
+    <View accessibilityLabel="Typing" style={[styles.bubble, styles.bubbleTheirs, styles.typing, { borderTopLeftRadius: 18, borderTopRightRadius: 18, borderBottomRightRadius: 18, borderBottomLeftRadius: 4 }]}>
+      {vals.map((v, i) => (
+        <Animated.View key={i} style={[styles.dot, { transform: [{ translateY: v.interpolate({ inputRange: [0, 1], outputRange: [0, -4] }) }] }]} />
+      ))}
     </View>
   )
 }
 
+/** Above the transcript while the socket is down: nothing is lost, a sent message goes out on reconnect. */
 export function ReconnectingStrip() {
   return (
-    <View style={styles.reconnect}>
+    <View accessibilityRole="alert" style={styles.reconnect}>
       <OfflineWifi />
-      <Meta style={{ color: color.warning }}>Reconnecting · nothing is lost</Meta>
+      <Text style={styles.reconnectText}>Reconnecting · nothing is lost</Text>
     </View>
   )
 }
@@ -179,24 +187,24 @@ export function ReconnectingStrip() {
 export function ReadOnlyFoot({ title, body }: { title: string; body: string }) {
   return (
     <View style={styles.readOnlyFoot}>
-      <Body size="sm" weight="semibold" style={{ color: color.text }}>{title}</Body>
-      <Body size="xs" tone="muted" style={{ marginTop: space.xs }}>{body}</Body>
+      <Text style={styles.readTitle}>{title}</Text>
+      <Text style={styles.readBody}>{body}</Text>
     </View>
   )
 }
 
-/** The standing mono line under a masked interviewer header, explained positively. */
+/** The standing note under a masked interviewer header, explained positively. */
 export function MaskInfoLine() {
   return (
     <View style={styles.maskInfo}>
-      <Meta style={{ color: color.info }}>Assigned anonymously so nobody can pick or avoid one · named when your session starts</Meta>
-      <Body size="xs" style={{ color: color.text, marginTop: space.sm }}>Every student gets the interviewer they would have got anyway. We do not send their name or photo to your phone before the session, so nobody can pick or avoid one.</Body>
+      <Text style={styles.maskTitle}>Assigned anonymously so nobody can pick or avoid one · named when your session starts</Text>
+      <Text style={styles.maskBody}>Every student gets the interviewer they would have got anyway. We do not send their name or photo to your phone before the session, so nobody can pick or avoid one.</Text>
     </View>
   )
 }
 
 export function ClosesLine({ text }: { text: string }) {
-  return <View style={{ paddingHorizontal: space.xl, paddingTop: space.xs, paddingBottom: space.sm }}><Meta style={{ color: color.textSubtle }}>{text}</Meta></View>
+  return <View style={{ paddingHorizontal: space.xl, paddingTop: 6, paddingBottom: 8 }}><Text style={styles.closes}>{text}</Text></View>
 }
 
 // ── the composer ──────────────────────────────────────────────────────────
@@ -211,7 +219,7 @@ export function Composer({ value, busy, error, onChange, onSend }: {
   const canSend = value.trim().length > 0 && !busy
   return (
     <View style={styles.composer}>
-      {!!error && <Body size="xs" style={{ color: color.danger, marginBottom: space.sm }}>{error}</Body>}
+      {!!error && <Text style={styles.composerError}>{error}</Text>}
       <View style={styles.composerRow}>
         <TextInput
           value={value}
@@ -221,9 +229,16 @@ export function Composer({ value, busy, error, onChange, onSend }: {
           multiline
           style={styles.input}
         />
-        <IconButton tone="accent" label="Send" disabled={!canSend} onPress={onSend} style={{ opacity: canSend ? 1 : 0.4 }}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Send"
+          accessibilityState={{ disabled: !canSend }}
+          disabled={!canSend}
+          onPress={onSend}
+          style={[styles.send, { opacity: canSend ? 1 : 0.4 }]}
+        >
           <Stroke size={20} stroke={color.textInverse}><Path d="M4 12h15" /><Path d="m13 6 6 6-6 6" /></Stroke>
-        </IconButton>
+        </Pressable>
       </View>
     </View>
   )
@@ -238,10 +253,10 @@ export function BlockSheet({ open, name, busy, onConfirm, onClose }: { open: boo
         <Consequence label="Permanently" body={`${name} never sees your profile in the feed again, and cannot send you an Interest.`} />
         <Consequence label="Not undoable" body="Not from here. Support can, and will ask why." />
       </View>
-      <Body size="xs" tone="muted" style={{ marginTop: space.md }}>{name} is not told. A block and a withdrawal look the same from the other side.</Body>
-      <View style={{ marginTop: space.lg, gap: space.sm }}>
-        <Button variant="destructive" size="block" full busy={busy} label={`Block ${name}`} onPress={onConfirm} />
-        <Button variant="quiet" size="block" full label="Keep the connection" onPress={onClose} />
+      <Text style={styles.blockNote}>{name} is not told. A block and a withdrawal look the same from the other side.</Text>
+      <View style={styles.sheetButtons}>
+        <Btn variant="destructive" busy={busy} label={`Block ${name}`} onPress={onConfirm} />
+        <Btn variant="quiet" label="Keep the connection" onPress={onClose} />
       </View>
     </Sheet>
   )
@@ -249,8 +264,8 @@ export function BlockSheet({ open, name, busy, onConfirm, onClose }: { open: boo
 function Consequence({ label, body }: { label: string; body: string }) {
   return (
     <View style={styles.consequence}>
-      <View style={styles.sysLabel}><Eyebrow>{label}</Eyebrow></View>
-      <Body size="sm" style={{ flex: 1, color: color.text }}>{body}</Body>
+      <Text style={styles.consLabel}>{label.toUpperCase()}</Text>
+      <Text style={styles.consBody}>{body}</Text>
     </View>
   )
 }
@@ -262,12 +277,30 @@ export function MenuSheet({ open, name, canBlock, isInterviewer, onClose, onRepo
 }) {
   return (
     <Sheet open={open} onClose={onClose}>
-      <View style={{ marginTop: space.sm }}>
-        <Pressable onPress={onReport} style={styles.menuItem}><Stroke size={16} stroke={color.textMuted}><Path d="M5 21V4" /><Path d="M5 5h11l-2 3.5L16 12H5" /></Stroke><Body size="sm" style={{ color: color.text }}>Report this chat</Body></Pressable>
-        {isInterviewer && <Pressable onPress={onSupport} style={styles.menuItem}><Stroke size={16} stroke={color.textMuted}><Circle cx={12} cy={12} r={9} /><Circle cx={12} cy={12} r={3.6} /></Stroke><Body size="sm" style={{ color: color.text }}>Message support</Body></Pressable>}
-        {canBlock && <Pressable onPress={onBlock} style={styles.menuItem}><Stroke size={16} stroke={color.danger}><Circle cx={12} cy={12} r={9} /><Path d="m5.6 5.6 12.8 12.8" /></Stroke><Body size="sm" style={{ color: color.danger }}>{`Block ${name}`}</Body></Pressable>}
+      <View style={styles.menuCard}>
+        <MenuItem onPress={onReport} label="Report this chat" tint={color.textSecondary} bg={color.surfaceMuted}>
+          <Stroke size={18} stroke={color.textSecondary}><Path d="M5 21V4" /><Path d="M5 5h11l-2 3.5L16 12H5" /></Stroke>
+        </MenuItem>
+        {isInterviewer && (
+          <MenuItem onPress={onSupport} label="Message support" tint={color.textSecondary} bg={color.surfaceMuted}>
+            <Stroke size={18} stroke={color.textSecondary}><Circle cx={12} cy={12} r={9} /><Circle cx={12} cy={12} r={3.6} /></Stroke>
+          </MenuItem>
+        )}
+        {canBlock && (
+          <MenuItem onPress={onBlock} label={`Block ${name}`} tint={color.danger} bg={color.dangerSoft} last>
+            <Stroke size={18} stroke={color.danger}><Circle cx={12} cy={12} r={9} /><Path d="m5.6 5.6 12.8 12.8" /></Stroke>
+          </MenuItem>
+        )}
       </View>
     </Sheet>
+  )
+}
+function MenuItem({ label, tint, bg, last, onPress, children }: { label: string; tint: string; bg: string; last?: boolean; onPress: () => void; children: React.ReactNode }) {
+  return (
+    <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [styles.menuItem, !last && styles.menuRule, pressed && { backgroundColor: color.surfaceMuted }]}>
+      <View style={[styles.menuIcon, { backgroundColor: bg }]}>{children}</View>
+      <Text style={[styles.menuLabel, { color: tint === color.danger ? color.danger : color.text }]}>{label}</Text>
+    </Pressable>
   )
 }
 
@@ -288,14 +321,14 @@ export function ReportSheet({ open, name, onClose, onSubmit }: {
   const [note, setNote] = useState('')
   return (
     <Sheet open={open} onClose={onClose} title={`Report ${name}`}>
-      <Body size="sm" tone="muted" style={{ marginTop: space.sm }}>The conversation is frozen as evidence. {name} is not told you reported it.</Body>
+      <Text style={styles.reportNote}>The conversation is frozen as evidence. {name} is not told you reported it.</Text>
       <View style={styles.reasonWrap}>
         {REPORT_REASONS.map((r) => <Chip key={r.value} label={r.label} selected={reason === r.value} onPress={() => setReason(r.value)} />)}
       </View>
       <TextInput value={note} onChangeText={setNote} placeholder="Anything you want to add (optional)" placeholderTextColor={color.textSubtle} multiline style={styles.noteInput} />
-      <View style={{ marginTop: space.lg, gap: space.sm }}>
-        <Button variant="primary" size="block" full disabled={!reason} label="Send report" onPress={() => reason && onSubmit(reason, note)} />
-        <Button variant="quiet" size="block" full label="Cancel" onPress={onClose} />
+      <View style={styles.sheetButtons}>
+        <Btn disabled={!reason} label="Send report" onPress={() => reason && onSubmit(reason, note)} />
+        <Btn variant="quiet" label="Cancel" onPress={onClose} />
       </View>
     </Sheet>
   )
@@ -339,11 +372,15 @@ const styles = StyleSheet.create({
   clockPillText: { ...text.metaMd, letterSpacing: trackingNative.meta },
   clockTrack: { height: height['step-bar'] - 1, borderRadius: radius.pill, backgroundColor: color.surfaceSunken, overflow: 'hidden' },
   rule: { flex: 1 },
-  systemLine: { alignItems: 'center', gap: space.xs, paddingVertical: space.xs },
+  day: { fontFamily: FF.monoMedium, fontSize: 10.5, letterSpacing: 1.26, color: color.textSubtle, textAlign: 'center', marginVertical: 4 },
+  systemLine: { flexDirection: 'row', alignItems: 'center', alignSelf: 'center', gap: 10, backgroundColor: color.surfaceMuted, borderRadius: radius.pill, paddingVertical: 8, paddingHorizontal: 14 },
+  systemText: { flexShrink: 1, fontFamily: FF.body, fontSize: 13, color: color.textMuted, textAlign: 'center' },
+  systemTime: { fontFamily: FF.monoMedium, fontSize: 10.5, color: color.textSubtle },
   deliveryRow: { flexDirection: 'row', alignItems: 'center', gap: space.xs, paddingRight: space.xs },
   spinner: { width: space.md, height: space.md, borderRadius: radius.pill, borderWidth: borderWidth.accent, borderColor: color.borderStrong, borderTopColor: color.textSubtle },
   bubbleWrap: { gap: space.xs },
-  bubble: { maxWidth: height['bubble-max'], paddingHorizontal: spaceHalf['3.5'], paddingVertical: spaceHalf['2.5'] },
+  bubble: { maxWidth: '82%', paddingHorizontal: 13, paddingVertical: 10 },
+  bubbleText: { fontFamily: FF.body, fontSize: 15, lineHeight: 21 },
   imageBubble: { width: height['bubble-image-w'], padding: space.xs, gap: space.xs },
   sysLabel: { width: height['label-col'], paddingTop: space['2xs'] },
   monogram: { color: color.textMuted, letterSpacing: trackingNative.meta },
@@ -351,17 +388,34 @@ const styles = StyleSheet.create({
   bubbleTheirs: { backgroundColor: color.surface, borderWidth: borderWidth.thin, borderColor: color.border },
   docBubble: { maxWidth: height['bubble-max'], flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingHorizontal: spaceHalf['3.5'], paddingVertical: spaceHalf['2.5'] },
   imageBox: { height: height['bubble-image-h'], alignItems: 'center', justifyContent: 'center', borderRadius: radius.md, backgroundColor: color.surfaceSunken, borderWidth: borderWidth.thin, borderColor: color.borderStrong },
-  typing: { flexDirection: 'row', alignItems: 'center', gap: space.xs, paddingVertical: spaceHalf['3.5'] },
-  dot: { width: space.xs, height: space.xs, borderRadius: radius.pill },
-  reconnect: { flexDirection: 'row', alignItems: 'center', gap: space.sm, backgroundColor: color.warningSoft, paddingHorizontal: space.xl, paddingVertical: space.sm },
-  readOnlyFoot: { borderTopWidth: borderWidth.thin, borderTopColor: color.border, backgroundColor: color.surfaceSunken, paddingHorizontal: space.xl, paddingTop: space.lg, paddingBottom: space.xl },
-  maskInfo: { backgroundColor: color.infoSoft, paddingHorizontal: space.xl, paddingVertical: space.md },
-  composer: { borderTopWidth: borderWidth.thin, borderTopColor: color.border, backgroundColor: color.surface, paddingHorizontal: space.md, paddingVertical: spaceHalf['2.5'] },
-  composerRow: { flexDirection: 'row', alignItems: 'flex-end', gap: space.sm },
-  input: { flex: 1, minHeight: height.tap, maxHeight: height['composer-max'], borderRadius: radius.pill, borderWidth: borderWidth.thin, borderColor: color.borderStrong, backgroundColor: color.surface, paddingHorizontal: space.lg, paddingVertical: space.sm + space['2xs'], ...text.uiBase, color: color.text },
-  consequences: { marginTop: space.lg, backgroundColor: color.surfaceMuted, borderRadius: radius.md, padding: spaceHalf['3.5'], gap: space.md },
-  consequence: { flexDirection: 'row', gap: space.md },
-  menuItem: { flexDirection: 'row', alignItems: 'center', gap: space.md, height: height.tap, paddingHorizontal: space.sm },
+  typing: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 14 },
+  dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: color.textSubtle },
+  reconnect: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: color.warningSoft, borderBottomWidth: borderWidth.thin, borderBottomColor: color.warningEdge, paddingHorizontal: 20, paddingVertical: 9 },
+  reconnectText: { fontFamily: FF.monoMedium, fontSize: 11, letterSpacing: 0.66, textTransform: 'uppercase', color: color.warning },
+  readOnlyFoot: { borderTopWidth: borderWidth.thin, borderTopColor: color.border, backgroundColor: color.surface, paddingHorizontal: 20, paddingTop: 14, paddingBottom: 20 },
+  readTitle: { fontFamily: FF.bodySemiBold, fontSize: 15, color: color.text },
+  readBody: { fontFamily: FF.body, fontSize: 13.5, lineHeight: 19, color: color.textMuted, marginTop: 3 },
+  maskInfo: { backgroundColor: color.infoSoft, borderRadius: 14, marginHorizontal: 16, marginTop: 10, paddingHorizontal: 14, paddingVertical: 11 },
+  maskTitle: { fontFamily: FF.monoMedium, fontSize: 10.5, letterSpacing: 0.63, textTransform: 'uppercase', color: color.info },
+  maskBody: { fontFamily: FF.body, fontSize: 13.5, lineHeight: 19, color: color.info, marginTop: 4 },
+  closes: { fontFamily: FF.monoMedium, fontSize: 10.5, letterSpacing: 0.63, textTransform: 'uppercase', color: color.textSubtle },
+  composer: { borderTopWidth: borderWidth.thin, borderTopColor: color.border, backgroundColor: color.surface, paddingHorizontal: 14, paddingTop: 10, paddingBottom: 10 },
+  composerRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 10 },
+  composerError: { fontFamily: FF.body, fontSize: 13, color: color.danger, marginBottom: 8 },
+  send: { width: 46, height: 46, borderRadius: 23, backgroundColor: color.accent, alignItems: 'center', justifyContent: 'center' },
+  input: { flex: 1, minHeight: 46, maxHeight: height['composer-max'], borderRadius: 23, borderWidth: borderWidth.medium, borderColor: color.border, backgroundColor: color.surface, paddingHorizontal: 16, paddingVertical: 11, fontFamily: FF.body, fontSize: 15, color: color.text },
+  consequences: { marginTop: 14, gap: 8 },
+  consequence: { backgroundColor: color.surface, borderWidth: borderWidth.thin, borderColor: color.border, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 14, gap: 3 },
+  consLabel: { fontFamily: FF.monoMedium, fontSize: 10.5, letterSpacing: 1.05, color: color.textMuted },
+  consBody: { fontFamily: FF.body, fontSize: 14.5, lineHeight: 21, color: color.text },
+  blockNote: { fontFamily: FF.body, fontSize: 13.5, lineHeight: 19, color: color.textMuted, marginTop: 12 },
+  sheetButtons: { marginTop: 16, gap: 8 },
+  reportNote: { fontFamily: FF.body, fontSize: 14.5, lineHeight: 21, color: color.textMuted, marginTop: 8 },
+  menuCard: { marginTop: 8, backgroundColor: color.surface, borderWidth: borderWidth.thin, borderColor: color.border, borderRadius: 14, overflow: 'hidden' },
+  menuItem: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 56, paddingHorizontal: 16 },
+  menuRule: { borderBottomWidth: borderWidth.thin, borderBottomColor: color.border },
+  menuIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  menuLabel: { fontFamily: FF.bodySemiBold, fontSize: 15.5 },
   reasonWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: space.md },
-  noteInput: { marginTop: space.md, minHeight: height['note-field'], borderRadius: radius.md, borderWidth: borderWidth.thin, borderColor: color.borderStrong, backgroundColor: color.surface, paddingHorizontal: space.md, paddingVertical: space.sm, ...text.uiSm, color: color.text, textAlignVertical: 'top' },
+  noteInput: { marginTop: 12, minHeight: 80, borderRadius: 14, borderWidth: borderWidth.medium, borderColor: color.border, backgroundColor: color.surface, paddingHorizontal: 14, paddingVertical: 12, fontFamily: FF.body, fontSize: 15, color: color.text, textAlignVertical: 'top' },
 })

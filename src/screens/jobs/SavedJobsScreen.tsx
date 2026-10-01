@@ -5,14 +5,21 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { getSaved, removeSaved, type SavedRow } from '../../lib/api/jobs'
 import { deadlineLine, employmentLabel, locationLine, salaryRange } from '../../lib/jobs/format'
-import { borderWidth, color, height, opacity, radius, space, spaceHalf, trackingNative } from '../../theme'
-import { Button, Card, EmptyState, ErrorState, JobsHeader, Skeleton, StatusPill, text } from '../../components/ui'
+import { borderWidth, color, fontFamilyNative as FF, opacity, radius } from '../../theme'
+import { Icon } from '../../components/ui/Icon'
+import { Btn, JobsTabs, Skel, StateBlock } from '../../components/tab/kit'
 
 /**
- * ST-38 — everything swiped right; where applying usually begins. Deadline on
- * every row, Apply (while open) and Remove; a closed saved post keeps its row
- * and Remove, only Apply goes.
+ * ST-38 — everything swiped right; where applying usually begins, as the
+ * refined mockup draws it (docs/saved-applications-video-final.html): a logo
+ * tile, one place line, pay in bold, a deadline chip, one big Apply and a small
+ * remove. A closed saved post keeps its row (dimmed, its button says Closed);
+ * an applied one says Applied. Apply is solid ink — every open row can show it.
  */
+const PALETTE = [color.accent, color.successFill, '#E0366B', '#2F6BFF', '#C77D00', color.accentDeep]
+const DAY = 86_400_000
+const initialsOf = (name: string) => name.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase()
+
 export function SavedJobsScreen({ onOpen, onApply, onFeed, onApplied }: {
   onBack?: () => void; onOpen: (jobId: string) => void; onApply: (jobId: string) => void; onFeed: () => void; onApplied?: () => void
 }) {
@@ -20,78 +27,100 @@ export function SavedJobsScreen({ onOpen, onApply, onFeed, onApplied }: {
   const qc = useQueryClient()
   const q = useQuery({ queryKey: ['saved'], queryFn: () => getSaved() })
   const remove = useMutation({ mutationFn: (rowId: string) => removeSaved(rowId), onSuccess: () => qc.invalidateQueries({ queryKey: ['saved'] }) })
+  const now = Date.now()
 
-  const frame = (c: React.ReactNode) => (
+  const tabs = (count?: number) => <JobsTabs active="Saved" counts={{ Saved: count }} onFeed={onFeed} onApplied={onApplied} />
+  const frame = (c: React.ReactNode, count?: number) => (
     <View style={[styles.page, { paddingTop: insets.top }]}>
-      <JobsHeader active="Saved" onFeed={onFeed} onApplied={onApplied} />
+      {tabs(count)}
       {c}
     </View>
   )
-  if (q.isPending) return frame(<View style={styles.body}><Skeleton lines={3} /></View>)
-  if (q.isError) return frame(<View style={styles.centre}><ErrorState title="Could not load your saved jobs." body="Nothing was changed. Pull down to try again." /></View>)
+  if (q.isPending) {
+    return frame(
+      <View style={styles.body}>
+        {[0, 1, 2].map((i) => <Skel key={i} w="100%" h={150} />)}
+      </View>,
+    )
+  }
+  if (q.isError) {
+    return frame(<StateBlock icon="alert" title="Could not load your saved jobs." body="Nothing was changed. Pull down to try again." action="Try again" onAction={() => { void q.refetch() }} />)
+  }
 
   const rows = q.data!.rows
-  if (rows.length === 0) return frame(
-    <View style={styles.centre}>
-      <EmptyState
-        title="Nothing saved yet."
-        body="Swipe right on the feed to keep a job here. Applying starts from this list."
-        action={<Button variant="primary" size="md" label="Open the feed" onPress={onFeed} />}
-      />
-    </View>,
-  )
-
-  const renderRow = ({ item: r }: { item: SavedRow }) => {
-    const salary = salaryRange(r.salary)
-    const deadline = deadlineLine(r.applicationDeadline)
-    const applied = r.applicationStatus != null
-    const meta = [locationLine(r.location, r.remote), employmentLabel(r.employmentType), salary, deadline].filter(Boolean).join('  ·  ').toUpperCase()
-    return (
-      <Card key={r.id} style={[styles.cardInner, !r.open && !applied && styles.closed]}>
-        <Pressable onPress={() => onOpen(r.jobId)} style={styles.cardTop}>
-          <View style={styles.cardTitle}>
-            <Text style={text.uiLgSemi}>{r.title}</Text>
-            <Text style={[text.uiSm, styles.muted]}>{r.company.name}</Text>
-          </View>
-          {applied ? <StatusPill tone="neutral" label="Applied" /> : !r.open ? <StatusPill tone="neutral" label="Closed" /> : null}
-        </Pressable>
-        <Text style={[text.metaMd, styles.meta]}>{meta}</Text>
-        <View style={styles.rowFoot}>
-          <Pressable accessibilityRole="button" onPress={() => remove.mutate(r.id)} style={styles.remove}>
-            <Text style={[text.uiSmSemi, styles.muted]}>Remove</Text>
-          </Pressable>
-          {applied ? null : (
-            <View style={styles.grow}>
-              {/* Ink, not accent: every open row can show Apply at once, and the accent is the one action on a screen. */}
-              <Button
-                variant="secondary"
-                size="sm"
-                full
-                label="Apply"
-                disabled={!r.open}
-                reason={r.open ? undefined : 'Applications for this job have closed.'}
-                onPress={() => onApply(r.jobId)}
-              />
-            </View>
-          )}
-        </View>
-      </Card>
+  if (rows.length === 0) {
+    return frame(
+      <StateBlock icon="heart" title="Nothing saved yet." body="Swipe right on the feed to keep a job here. Applying starts from this list." action="Open the feed" onAction={onFeed} />,
+      0,
     )
   }
 
-  return frame(
-    <FlatList
-      data={rows}
-      keyExtractor={(r) => r.id}
-      renderItem={renderRow}
-      contentContainerStyle={styles.body}
-      ItemSeparatorComponent={Gap}
-      showsVerticalScrollIndicator={false}
-      initialNumToRender={8}
-      windowSize={7}
-      removeClippedSubviews
-      refreshControl={<RefreshControl refreshing={q.isRefetching} onRefresh={() => q.refetch().then(() => undefined)} tintColor={color.textSubtle} />}
-    />,
+  const renderRow = ({ item: r, index }: { item: SavedRow; index: number }) => {
+    const salary = salaryRange(r.salary)
+    const deadline = deadlineLine(r.applicationDeadline)
+    const applied = r.applicationStatus != null
+    const closed = !r.open && !applied
+    const closesAt = r.applicationDeadline ? new Date(r.applicationDeadline).getTime() : null
+    const soon = !closed && closesAt != null && closesAt > now && closesAt - now <= 7 * DAY
+    const where = [r.company.name, locationLine(r.location, r.remote), employmentLabel(r.employmentType)].filter(Boolean).join(' · ')
+    return (
+      <View style={[styles.card, closed && styles.cardClosed]}>
+        <Pressable accessibilityRole="button" onPress={() => onOpen(r.jobId)} style={styles.top}>
+          <View style={[styles.logo, { backgroundColor: closed ? color.textSubtle : PALETTE[index % PALETTE.length] }]}>
+            <Text style={styles.logoText}>{initialsOf(r.company.name)}</Text>
+          </View>
+          <View style={styles.grow}>
+            <Text style={[styles.title, closed && styles.muted]}>{r.title}</Text>
+            {r.hasVideo && <View style={styles.videoTag}><Icon name="play" size={11} tint={color.accent} fill={color.accent} /><Text style={styles.videoTagText}>VIDEO</Text></View>}
+            <Text style={styles.where} numberOfLines={2}>{where}</Text>
+          </View>
+        </Pressable>
+
+        <View style={styles.payRow}>
+          <Text style={[styles.pay, closed && styles.muted]}>{salary ?? ' '}</Text>
+          {!!deadline && (
+            <View style={[styles.chip, soon && styles.chipSoon]}>
+              <Text style={[styles.chipText, soon && styles.chipTextSoon]}>{deadline}</Text>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.actions}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Remove from saved"
+            disabled={remove.isPending}
+            onPress={() => remove.mutate(r.id)}
+            style={({ pressed }) => [styles.removeBtn, pressed && styles.pressed]}
+          >
+            <Icon name="x" size={20} tint={color.textMuted} />
+          </Pressable>
+          {applied ? (
+            <View style={styles.appliedPill}><Text style={styles.appliedText}>APPLIED</Text></View>
+          ) : (
+            <Btn variant="ink" disabled={!r.open} label={r.open ? 'Apply' : 'Closed'} onPress={() => onApply(r.jobId)} style={styles.grow} />
+          )}
+        </View>
+      </View>
+    )
+  }
+
+  return (
+    <View style={[styles.page, { paddingTop: insets.top }]}>
+      <FlatList
+        data={rows}
+        keyExtractor={(r) => r.id}
+        renderItem={renderRow}
+        ListHeaderComponent={tabs(rows.length)}
+        contentContainerStyle={styles.list}
+        ItemSeparatorComponent={Gap}
+        showsVerticalScrollIndicator={false}
+        initialNumToRender={8}
+        windowSize={7}
+        removeClippedSubviews
+        refreshControl={<RefreshControl refreshing={q.isRefetching} onRefresh={() => q.refetch().then(() => undefined)} tintColor={color.textSubtle} />}
+      />
+    </View>
   )
 }
 
@@ -99,16 +128,38 @@ const Gap = () => <View style={styles.gap} />
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.background },
-  centre: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.xl },
-  body: { paddingHorizontal: space.lg, paddingTop: space.lg, paddingBottom: space.xl },
-  gap: { height: spaceHalf['2.5'] },
-  cardInner: { paddingHorizontal: space.lg, paddingVertical: spaceHalf['3.5'], gap: spaceHalf['2.5'] },
-  closed: { opacity: opacity.disabled },
-  cardTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: spaceHalf['2.5'] },
-  cardTitle: { flex: 1, gap: space['2xs'] + 1 },
+  body: { paddingHorizontal: 20, paddingTop: 16, gap: 10 },
+  list: { paddingBottom: 130 },
+  gap: { height: 10 },
+  grow: { flex: 1, minWidth: 0 },
+  pressed: { opacity: opacity.pressed },
+  card: {
+    marginHorizontal: 20, padding: 16, gap: 14, borderRadius: 20,
+    backgroundColor: color.surface, borderWidth: borderWidth.thin, borderColor: color.border,
+  },
+  cardClosed: { backgroundColor: color.surfaceMuted, borderColor: 'transparent' },
+  top: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  logo: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  logoText: { fontFamily: FF.bodyBold, fontSize: 17, color: color.textInverse },
+  title: { fontFamily: FF.bodyBold, fontSize: 18, lineHeight: 22, letterSpacing: -0.45, color: color.text },
   muted: { color: color.textMuted },
-  meta: { color: color.textSubtle, letterSpacing: trackingNative.meta },
-  grow: { flex: 1 },
-  rowFoot: { flexDirection: 'row', alignItems: 'flex-start', gap: space.sm },
-  remove: { height: height['control-xs'], paddingHorizontal: spaceHalf['3.5'], borderRadius: radius.pill, borderWidth: borderWidth.thin, borderColor: color.border, alignItems: 'center', justifyContent: 'center' },
+  videoTag: {
+    flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', marginTop: 4,
+    backgroundColor: color.accentSoft, borderRadius: radius.pill, paddingVertical: 3, paddingHorizontal: 8,
+  },
+  videoTagText: { fontFamily: FF.monoMedium, fontSize: 10, letterSpacing: 0.8, color: color.accent },
+  where: { fontFamily: FF.body, fontSize: 14, lineHeight: 19, color: color.textMuted, marginTop: 3 },
+  payRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  pay: { flex: 1, fontFamily: FF.bodyBold, fontSize: 16, letterSpacing: -0.16, color: color.text },
+  chip: { backgroundColor: color.surfaceMuted, borderRadius: radius.pill, paddingVertical: 5, paddingHorizontal: 11 },
+  chipSoon: { backgroundColor: color.warningSoft },
+  chipText: { fontFamily: FF.bodySemiBold, fontSize: 13, color: color.textMuted },
+  chipTextSoon: { color: color.warning },
+  actions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  removeBtn: {
+    width: 46, height: 46, borderRadius: 14, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: color.surface, borderWidth: borderWidth.medium, borderColor: color.border,
+  },
+  appliedPill: { flex: 1, height: 46, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: color.surfaceMuted },
+  appliedText: { fontFamily: FF.monoMedium, fontSize: 11, letterSpacing: 1.1, color: color.textMuted },
 })

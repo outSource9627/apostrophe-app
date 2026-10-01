@@ -1,7 +1,8 @@
 import React from 'react'
 import { StyleSheet, View } from 'react-native'
-import { color, space } from '../../theme'
-import { Banner, Body, Card, Chip, Eyebrow, Field, FileField, Input, StatusPill } from '../../components/ui'
+import { space } from '../../theme'
+import { Banner, Body, Chip, Eyebrow, Field, FileField, Input, StatusPill } from '../../components/ui'
+import { Panel } from '../../components/tab/kit'
 
 /**
  * The six step bodies of the profile wizard — the app half of the web step
@@ -133,7 +134,7 @@ export function EducationStep({ draft, patch, config }: StepProps) {
           ))}
         </View>
       </Field>
-      <Card style={styles.proof}>
+      <Panel tone="muted" style={styles.proof}>
         <View style={styles.proofHead}>
           <Eyebrow>Proof of qualification</Eyebrow>
           <StatusPill tone="warning" label="required" />
@@ -145,7 +146,7 @@ export function EducationStep({ draft, patch, config }: StepProps) {
           state={draft.documentKey ? 'uploaded' : 'idle'}
           onPress={() => patch({ __pickDoc: Date.now() })}
         />
-      </Card>
+      </Panel>
     </View>
   )
 }
@@ -158,11 +159,11 @@ export function ExperienceStep({ draft, patch }: StepProps) {
     <View style={styles.stack}>
       <Body size="sm" tone="muted">Internships and part-time work count. This step is optional.</Body>
       {entries.map((e, i) => (
-        <Card key={i} style={styles.entry}>
+        <Panel key={i} style={styles.entry}>
           <Field label="Company"><Input value={String(e.company ?? '')} onChangeText={(v) => setEntry(i, { company: v })} placeholder="Where you worked" /></Field>
           <Field label="Role"><Input value={String(e.role ?? '')} onChangeText={(v) => setEntry(i, { role: v })} placeholder="What you did" /></Field>
           <Chip label="Remove" onPress={() => patch({ experience: entries.filter((_, n) => n !== i) })} />
-        </Card>
+        </Panel>
       ))}
       <Chip label="Add another role" add onPress={() => patch({ experience: [...entries, {}] })} />
     </View>
@@ -252,11 +253,11 @@ export function DocumentsStep({ draft, patch }: StepProps) {
   return (
     <View style={styles.stack}>
       <Body size="sm" tone="muted">Your résumé and any supporting files. Private, reachable only through a signed link. This step is optional.</Body>
-      <Card style={styles.proof}>
+      <Panel tone="muted" style={styles.proof}>
         <Eyebrow>Résumé</Eyebrow>
         <Body size="sm" tone="muted">PDF, DOC or DOCX.</Body>
         <FileField onPress={() => patch({ __pickResume: Date.now() })} />
-      </Card>
+      </Panel>
       <Field label="Portfolio links" helper="A site, a repo, a reel.">
         <ChipRow values={links} onRemove={(i) => patch({ portfolioLinks: links.filter((_, n) => n !== i) })} />
         <Input value="" onSubmitEditing={(e) => { const v = e.nativeEvent.text.trim(); if (v) patch({ portfolioLinks: [...links, v] }) }} placeholder="https://… , press return" autoCapitalize="none" />
@@ -270,7 +271,8 @@ const styles = StyleSheet.create({
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   pair: { flexDirection: 'row', gap: space.md },
   pairItem: { flex: 1 },
-  proof: { gap: space.sm, padding: space.lg, backgroundColor: color.surfaceMuted },
+  // The mockup's proof panel: muted ground, 18 radius, no visible border.
+  proof: { gap: 8, borderColor: 'transparent' },
   proofHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  entry: { gap: space.md, padding: space.lg },
+  entry: { gap: 12 },
 })

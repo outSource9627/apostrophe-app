@@ -3,9 +3,10 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useQueryClient } from '@tanstack/react-query'
 import { getPaymentStatus } from '../../lib/api/payments'
-import { borderWidth, color, height, radius, space } from '../../theme'
+import { borderWidth, color, fontFamilyNative as FF } from '../../theme'
 import { openSupport } from '../../lib/support'
-import { Body, Button, Eyebrow, Meta, ScreenHeader, StickyFooter, text } from '../../components/ui'
+import { Btn } from '../../components/tab/kit'
+import { Disc, Eyebrow, FlowFooter, FlowHeader, Lead, Sub } from '../../components/tab/flow'
 
 /**
  * ST-08 — the wait while the webhook settles. The money is safe and the account
@@ -59,32 +60,30 @@ export function ConfirmingScreen({
 
   return (
     <View style={[styles.page, { paddingTop: insets.top }]}>
-      <ScreenHeader />
+      <FlowHeader />
       <View style={styles.body}>
         {pending ? (
-          <View style={[styles.disc, styles.discWarn]}><Text style={[text.displayLead, styles.warn]}>!</Text></View>
+          <Disc tone="warn"><Text style={styles.bang}>!</Text></Disc>
         ) : (
-          <View style={styles.disc}><ActivityIndicator color={color.accent} /></View>
+          <Disc tone="accent"><ActivityIndicator color={color.accent} /></Disc>
         )}
-        <Eyebrow tone="accent">{pending ? 'Still working' : 'Payment submitted'}</Eyebrow>
-        <Text style={[text.displayLead, styles.title]}>
-          {pending ? 'This is taking a little longer.' : 'Confirming with your bank.'}
-        </Text>
-        <Body tone="muted" style={styles.copy}>
+        <Eyebrow tone={pending ? 'warn' : 'accent'}>{pending ? 'Still working' : 'Payment submitted'}</Eyebrow>
+        <Lead>{pending ? 'This is taking a little longer.' : 'Confirming with your bank.'}</Lead>
+        <Sub>
           {pending
             ? 'Your money is not lost. The confirmation is just slow to reach us — keep waiting here, or email support with the reference below and we will settle it.'
             : 'Your money is safe and your account is being set up. This usually takes a few seconds.'}
-        </Body>
+        </Sub>
         <View style={styles.refRow}>
-          <Meta style={{ color: color.textSubtle }}>Reference · {payRef}</Meta>
-          {!pending && <Meta style={{ color: color.textSubtle }}>{`Checking · ${mmss}`}</Meta>}
+          <Text style={styles.ref}>Reference · {payRef}</Text>
+          {!pending && <Text style={styles.ref}>{`Checking · ${mmss}`}</Text>}
         </View>
       </View>
       {pending && (
-        <StickyFooter>
-          <Button variant="primary" size="lg" full label="Keep waiting" onPress={() => { setPending(false); setElapsed(0); setRound((r) => r + 1) }} />
-          <Button variant="outline" size="md" full label="Email support" onPress={() => { void openSupport(`Payment ${payRef}`) }} />
-        </StickyFooter>
+        <FlowFooter>
+          <Btn label="Keep waiting" onPress={() => { setPending(false); setElapsed(0); setRound((r) => r + 1) }} />
+          <Btn variant="outline" label="Email support" onPress={() => { void openSupport(`Payment ${payRef}`) }} />
+        </FlowFooter>
       )}
     </View>
   )
@@ -92,11 +91,8 @@ export function ConfirmingScreen({
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.background },
-  body: { flex: 1, padding: space.xl, justifyContent: 'center' },
-  refRow: { marginTop: space.xl, borderTopWidth: borderWidth.thin, borderTopColor: color.border, paddingTop: space.md, flexDirection: 'row', justifyContent: 'space-between' },
-  disc: { width: height.fab, height: height.fab, borderRadius: radius.pill, backgroundColor: color.accentSoft, alignItems: 'center', justifyContent: 'center', marginBottom: space.lg },
-  discWarn: { backgroundColor: color.warningSoft },
-  warn: { color: color.warning },
-  title: { marginTop: space.sm },
-  copy: { marginTop: space.md },
+  body: { flex: 1, paddingHorizontal: 20, paddingTop: 60, gap: 14 },
+  bang: { fontFamily: FF.bodyBold, fontSize: 26, color: color.warning },
+  refRow: { marginTop: 10, borderTopWidth: borderWidth.thin, borderTopColor: color.border, paddingTop: 12, flexDirection: 'row', justifyContent: 'space-between' },
+  ref: { fontFamily: FF.monoMedium, fontSize: 11, letterSpacing: 0.66, color: color.textSubtle },
 })

@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useQuery } from '@tanstack/react-query'
 import { api, ApiClientError } from '../lib/api'
-import { color, space, spaceHalf, radius, borderWidth, height, trackingNative } from '../theme'
-import { Banner, Body, Button, ErrorState, Eyebrow, Figure, Meta, ProgressBar, ScreenHeader, StatusDot, StatusPill, StepBars, text } from '../components/ui'
+import { color, space, spaceHalf, borderWidth, fontFamilyNative as FF } from '../theme'
+import { Banner, Body, Button, Eyebrow, Figure, Meta, ProgressBar, ScreenHeader, StatusPill, text } from '../components/ui'
+import { Btn, DetailHeader, Skel, StateBlock } from '../components/tab/kit'
 import { useOnline } from '../lib/useOnline'
 import { clockTime, dequeue, enqueue, peek, readQueue, type StepKey } from '../lib/profile/queue'
 import {
@@ -143,30 +144,26 @@ export function ProfileWizardScreen({ onExit, onBook }: { onExit: () => void; on
 
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current) }, [])
 
-  if (profileQ.isPending || configQ.isPending || !stepKey || !profile) {
-    return <View style={[styles.page, styles.centre, { paddingTop: insets.top }]}><ActivityIndicator color={color.textSubtle} /></View>
-  }
-
   if (profileQ.isError || configQ.isError) {
     return (
       <View style={[styles.page, { paddingTop: insets.top }]}>
-        <ScreenHeader onBack={onExit} />
-        <View style={styles.centre}>
-          <ErrorState
-            title="Could not load your profile."
-            body="Check your connection and try again."
-            action={
-              <Button
-                variant="outline"
-                size="sm"
-                label="Try again"
-                // The error state's small button is 40 tall; the slop brings its tap box to the 44 floor.
-                hitSlop={(height.tap - height['control-xs']) / 2}
-                onPress={() => { profileQ.refetch(); configQ.refetch() }}
-              />
-            }
-          />
-        </View>
+        <DetailHeader title="Profile" onBack={onExit} />
+        <StateBlock
+          icon="alert"
+          title="Could not load your profile."
+          body="Check your connection and try again."
+          action="Try again"
+          onAction={() => { profileQ.refetch(); configQ.refetch() }}
+        />
+      </View>
+    )
+  }
+
+  if (profileQ.isPending || configQ.isPending || !stepKey || !profile) {
+    return (
+      <View style={[styles.page, { paddingTop: insets.top }]}>
+        <DetailHeader title="Profile" onBack={onExit} />
+        <View style={styles.loading}><Skel w="100%" h={22} /><Skel w="100%" h={36} /><Skel w="100%" h={56} /><Skel w="100%" h={56} /><Skel w="100%" h={56} /><Skel w="100%" h={56} /></View>
       </View>
     )
   }
@@ -206,57 +203,59 @@ export function ProfileWizardScreen({ onExit, onBook }: { onExit: () => void; on
 
   return (
     <View style={[styles.page, { paddingTop: insets.top }]}>
-      <ScreenHeader
+      <DetailHeader
+        title="Profile"
         onBack={onExit}
         right={
-          <Pressable accessibilityRole="button" onPress={onExit} hitSlop={space.sm} style={styles.saveExit}>
-            <Body size="md" weight="medium" tone="muted">Save &amp; exit</Body>
+          <Pressable accessibilityRole="button" onPress={onExit} hitSlop={8} style={styles.saveExit}>
+            <Text style={styles.saveExitText}>Save &amp; exit</Text>
           </Pressable>
         }
       />
-      <StepBars total={steps.length} current={current.step} />
-
-      {!online && (
-        <View style={styles.offlineWrap}>
-          <Banner
-            tone="info"
-            title="Offline"
-            reference={queued > 0 ? `Queued · ${queued} ${queued === 1 ? 'change' : 'changes'}` : undefined}
-          >
-            What you type is saved on this phone and syncs the moment you are back. Keep going — nothing is lost.
-          </Banner>
-        </View>
-      )}
+      <View style={styles.bars}>
+        {steps.map((st) => (
+          <View key={st.step} style={styles.barHit}>
+            <View style={[styles.bar, st.step < current.step && styles.barDone, st.step === current.step && styles.barOn]} />
+          </View>
+        ))}
+      </View>
 
       <View style={styles.gate}>
-        <View style={styles.gateLabels}>
-          <Meta style={{ color: color.textSubtle }}>{online ? `NOW ${comp.pct}%` : `${comp.pct}% AS OF ${savedAt ? clockTime(savedAt).toUpperCase() : 'LAST SAVE'}`}</Meta>
-          <Meta style={{ color: color.text }}>{comp.canBook ? `PAST ${gate}%` : `BOOK AT ${gate}% · ${toGo}% TO GO`}</Meta>
-        </View>
+        <Text style={styles.gateText}>{online ? `NOW ${comp.pct}%` : `${comp.pct}% AS OF ${savedAt ? clockTime(savedAt).toUpperCase() : 'LAST SAVE'}`}</Text>
+        <Text style={[styles.gateText, { color: color.text }]}>{comp.canBook ? `PAST ${gate}%` : `BOOK AT ${gate}% · ${toGo}% TO GO`}</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-        <Text style={[text.metaMd, styles.stepEyebrow]}>
+        <Text style={styles.stepEyebrow}>
           {`STEP ${current.step} OF ${steps.length}${OPTIONAL.has(stepKey) ? ' · OPTIONAL' : ''}`}
         </Text>
-        <Text style={[text.displayHeading, styles.stepTitle]}>{current.label}</Text>
-        {banner ? <View style={{ marginBottom: space.lg }}><Banner tone={banner.tone}>{banner.text}</Banner></View> : null}
+        <Text style={styles.stepTitle}>{current.label}</Text>
+        {!online && (
+          <View style={styles.bannerGap}>
+            <Banner
+              tone="info"
+              title="Offline"
+              reference={queued > 0 ? `Queued · ${queued} ${queued === 1 ? 'change' : 'changes'}` : undefined}
+            >
+              What you type is saved on this phone and syncs the moment you are back. Keep going — nothing is lost.
+            </Banner>
+          </View>
+        )}
+        {banner ? <View style={styles.bannerGap}><Banner tone={banner.tone}>{banner.text}</Banner></View> : null}
         <Body_ draft={draft} patch={patch} config={configQ.data as Config} profile={profile} />
         <StillNeeded comp={comp} />
       </ScrollView>
 
-      <View style={[styles.footer, { paddingBottom: insets.bottom + space.lg }]}>
+      <View style={[styles.footer, { paddingBottom: insets.bottom + 18 }]}>
         <View style={styles.savedRow}>
-          {saving === 'saved' && <StatusDot tone="success" />}
-          <Meta style={{ color: saving === 'queued' ? color.info : color.textSubtle }}>
+          {saving === 'saved' && <View style={styles.savedDot} />}
+          <Text style={[styles.saveText, saving === 'queued' && { color: color.info }]}>
             {saving === 'saving' ? 'SAVING…' : saving === 'saved' ? `SAVED${savedAt ? ` · ${clockTime(savedAt).toUpperCase()}` : ''}` : saving === 'queued' ? `QUEUED${queued > 1 ? ` · ${queued}` : ''} · WILL SYNC` : 'SAVES AS YOU TYPE'}
-          </Meta>
+          </Text>
         </View>
         <View style={styles.footRow}>
-          {current.step > 1 && <Button variant="outline" size="lg" label="Back" onPress={() => goTo(steps.find((s) => s.step === current.step - 1)!.key as StepKey, profile)} />}
-          <View style={{ flex: 1 }}>
-            <Button variant="secondary" size="lg" full busy={busy} label={isLast ? 'Finish' : 'Continue'} onPress={next} />
-          </View>
+          {current.step > 1 && <Btn variant="outline" label="Back" style={styles.footBtn} onPress={() => goTo(steps.find((s) => s.step === current.step - 1)!.key as StepKey, profile)} />}
+          <Btn variant="ink" label={isLast ? 'Finish' : 'Continue'} busy={busy} style={styles.footBtnGrow} onPress={next} />
         </View>
       </View>
     </View>
@@ -267,14 +266,14 @@ function StillNeeded({ comp }: { comp: Completion }) {
   if (comp.blockers.length === 0 && comp.missing.length === 0) return null
   return (
     <View style={styles.needed}>
-      <Eyebrow tone={comp.canBook ? undefined : 'accent'}>{comp.canBook ? 'Ready to book' : 'Still needed'}</Eyebrow>
+      <Text style={styles.stepEyebrow}>{comp.canBook ? 'READY TO BOOK' : 'STILL NEEDED'}</Text>
       {comp.blockers.map((b) => (
         <View key={b} style={styles.neededRow}>
-          <Body size="sm" style={{ flex: 1 }}>{b}</Body>
+          <Text style={styles.neededText}>{b}</Text>
           <StatusPill tone="warning" label="required" />
         </View>
       ))}
-      {comp.missing.length > 0 && <Body size="sm" tone="muted" style={{ marginTop: space.xs }}>Still to fill in: {comp.missing.join(' · ')}</Body>}
+      {comp.missing.length > 0 && <Text style={styles.neededSub}>Still to fill in: {comp.missing.join(' · ')}</Text>}
     </View>
   )
 }
@@ -285,11 +284,11 @@ function DoneView({ insets, comp, gate, onBook, onBack }: { insets: { top: numbe
   return (
     <View style={[styles.page, { paddingTop: insets.top }]}>
       <ScreenHeader title="Profile" onBack={onBack} />
-      <ScrollView contentContainerStyle={styles.scroll}>
+      <ScrollView contentContainerStyle={styles.doneScroll}>
         {comp.canBook ? (
           <>
             <Eyebrow tone="accent">Profile complete</Eyebrow>
-            <Text style={[text.displayHeading, styles.stepTitle]}>Now for the interview.</Text>
+            <Text style={[text.displayHeading, styles.doneTitle]}>Now for the interview.</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md, marginTop: space.lg }}>
               <Figure value={`${comp.pct}%`} />
               <StatusPill tone="success" label="ready to book" />
@@ -300,7 +299,7 @@ function DoneView({ insets, comp, gate, onBook, onBack }: { insets: { top: numbe
         ) : (
           <>
             <Eyebrow tone="accent">Almost there</Eyebrow>
-            <Text style={[text.displayHeading, styles.stepTitle]}>{comp.pct}% of the way.</Text>
+            <Text style={[text.displayHeading, styles.doneTitle]}>{comp.pct}% of the way.</Text>
             <View style={{ marginTop: space.lg }}>
               <ProgressBar pct={comp.pct} gate={gate} />
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: space.sm }}>
@@ -345,20 +344,37 @@ function DoneView({ insets, comp, gate, onBook, onBack }: { insets: { top: numbe
   )
 }
 
+const MONO = { fontFamily: FF.monoMedium, fontSize: 11 } as const
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.background },
-  centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  offlineWrap: { paddingHorizontal: space.xl, paddingTop: space.md },
-  gate: { paddingHorizontal: spaceHalf['6'], paddingTop: space.sm },
-  saveExit: { height: height.tap, justifyContent: 'center', paddingRight: space.md },
-  stepEyebrow: { color: color.accent, letterSpacing: trackingNative.eyebrow },
-  stepTitle: { marginTop: space.xs + space['2xs'], marginBottom: space.lg },
-  gateLabels: { flexDirection: 'row', justifyContent: 'space-between' },
-  scroll: { paddingHorizontal: spaceHalf['6'], paddingTop: spaceHalf['6'], paddingBottom: space['4xl'] },
-  needed: { marginTop: space['2xl'], borderRadius: radius.tile, backgroundColor: color.surfaceMuted, padding: space.lg, gap: space.sm },
-  neededRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.md },
+  loading: { padding: 20, gap: 14 },
+  saveExit: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 4 },
+  saveExitText: { fontFamily: FF.bodyMedium, fontSize: 15, color: color.textMuted },
+  bars: { flexDirection: 'row', gap: 6, paddingHorizontal: 24, paddingTop: 4 },
+  barHit: { flex: 1, height: 22, justifyContent: 'center' },
+  bar: { height: 4, borderRadius: 3, backgroundColor: color.surfaceSunken },
+  barDone: { backgroundColor: color.accentMuted },
+  barOn: { backgroundColor: color.accent },
+  gate: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 24, paddingTop: 6 },
+  gateText: { ...MONO, letterSpacing: 1.54, color: color.textSubtle },
+  stepEyebrow: { ...MONO, letterSpacing: 0.88, color: color.accent },
+  stepTitle: { fontFamily: FF.bodySemiBold, fontSize: 24, lineHeight: 29, letterSpacing: -0.55, color: color.text, marginTop: 6, marginBottom: 16 },
+  bannerGap: { marginBottom: 16 },
+  scroll: { paddingHorizontal: 24, paddingTop: 18, paddingBottom: 28 },
+  needed: { marginTop: 24, borderRadius: 12, backgroundColor: color.surfaceMuted, padding: 16, gap: 8 },
+  neededRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  neededText: { flex: 1, fontFamily: FF.body, fontSize: 14, lineHeight: 20, color: color.text },
+  neededSub: { fontFamily: FF.body, fontSize: 14, lineHeight: 20, color: color.textMuted, marginTop: 4 },
   doneSection: { paddingVertical: space.md, borderTopWidth: borderWidth.thin, borderTopColor: color.border },
-  footer: { backgroundColor: color.surface, borderTopWidth: borderWidth.thin, borderTopColor: color.border, paddingHorizontal: spaceHalf['6'], paddingTop: spaceHalf['3.5'], gap: space.sm },
-  savedRow: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
-  footRow: { flexDirection: 'row', gap: space.md, alignItems: 'center' },
+  footer: { backgroundColor: color.surface, borderTopWidth: borderWidth.thin, borderTopColor: color.border, paddingHorizontal: 24, paddingTop: 12, gap: 8 },
+  savedRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  savedDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: color.successFill },
+  saveText: { ...MONO, letterSpacing: 1.54, color: color.textSubtle },
+  footRow: { flexDirection: 'row', gap: 12, alignItems: 'center' },
+  footBtn: { height: 52 },
+  footBtnGrow: { height: 52, flex: 1 },
+  // DoneView (the finish screen) keeps its own layout.
+  centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  doneTitle: { marginTop: space.xs + space['2xs'], marginBottom: space.lg },
+  doneScroll: { paddingHorizontal: spaceHalf['6'], paddingTop: spaceHalf['6'], paddingBottom: space['4xl'] },
 })

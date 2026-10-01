@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { ScrollView, StyleSheet, View } from 'react-native'
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Linking } from 'react-native'
@@ -8,8 +8,10 @@ import {
   type DataExportRow, type DeletionRequest, type Me,
 } from '../../lib/api/account'
 import { fmtISODate, fmtStampFull } from '../../lib/chat/format'
-import { color, height, space } from '../../theme'
-import { Body, Button, Card, Display, Eyebrow, Meta, Sheet, StatusDot, StatusPill, Skeleton, ScreenHeader, ErrorState } from '../../components/ui'
+import { borderWidth, color, fontFamilyNative as FF } from '../../theme'
+import { Sheet, StatusPill } from '../../components/ui'
+import { Icon } from '../../components/ui/Icon'
+import { Btn, DetailHeader, Skel, StateBlock } from '../../components/tab/kit'
 
 const fmtDate = (iso: string) => fmtStampFull(iso).replace(/,.*$/, '')
 const fmtSize = (b?: number) => (b ? (b >= 1024 * 1024 ? `${(b / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`) : '')
@@ -18,7 +20,8 @@ const fmtSize = (b?: number) => (b ? (b >= 1024 * 1024 ? `${(b / 1024 / 1024).to
  * ST-50 — two distinct offers. Export is a BACKGROUND job (no spinner resolving in
  * place). Deletion states the mixed outcome HONESTLY with NO green tick on a
  * pending deletion, NO typed-DELETE ceremony, NO retention offer. No crimson
- * anywhere on this board.
+ * anywhere on this board. Option A of docs/student-receipts-privacy-mockup.html:
+ * one page, Export then Delete, the explanation first and the control beneath it.
  */
 export function DataRightsScreen({ onBack }: { onBack: () => void }) {
   const insets = useSafeAreaInsets()
@@ -37,10 +40,10 @@ export function DataRightsScreen({ onBack }: { onBack: () => void }) {
   const deleteMut = useMutation({ mutationFn: (confirm: string) => requestDeletion(confirm), onSettled: () => { setConfirmOpen(false); invalidate() } })
   const cancelMut = useMutation({ mutationFn: () => cancelDeletion(), onSettled: invalidate })
 
-  const bar = <ScreenHeader title="Your data" subtitle="Export a copy, or delete your account" onBack={onBack} />
+  const bar = <DetailHeader title="Your data" onBack={onBack} />
   const frame = (c: React.ReactNode) => <View style={[styles.page, { paddingTop: insets.top }]}>{bar}{c}</View>
-  if (q.isPending) return frame(<View style={styles.loading}><Skeleton lines={3} /></View>)
-  if (q.isError) return frame(<View style={styles.centre}><ErrorState title="Could not load your data settings." body="Nothing was changed. Try again in a moment." /></View>)
+  if (q.isPending) return frame(<View style={styles.loading}><Skel w="100%" h={96} /><Skel w="100%" h={96} /><Skel w="100%" h={96} /></View>)
+  if (q.isError) return frame(<StateBlock icon="alert" title="Could not load your data settings." body="Nothing was changed. Try again in a moment." />)
 
   const { me, exports, deletion } = q.data!
   const pendingExport = exports.find((e) => e.status === 'PENDING')
@@ -54,85 +57,108 @@ export function DataRightsScreen({ onBack }: { onBack: () => void }) {
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
 
         {/* Export */}
-        <View style={{ gap: space.md }}>
-          <Eyebrow>Export</Eyebrow>
+        <View style={styles.section}>
+          <Text style={styles.eyebrow}>Export</Text>
           {pendingExport ? (
-            <Card style={styles.cardPad}>
-              <StatusPill tone="neutral" label="PREPARING" />
-              <Body size="sm" tone="muted" style={{ marginTop: space.sm }}>We&rsquo;re building your file. We&rsquo;ll email you when it&rsquo;s ready — you don&rsquo;t need to keep this open.</Body>
-            </Card>
+            <View style={styles.card}>
+              <View style={styles.pillRow}><StatusPill tone="neutral" label="PREPARING" /></View>
+              <Text style={[styles.p, styles.gapTop]}>We&rsquo;re building your file. We&rsquo;ll email you when it&rsquo;s ready — you don&rsquo;t need to keep this open.</Text>
+            </View>
           ) : readyExport ? (
-            <Card style={styles.cardPad}>
-              <StatusPill tone="info" label="READY" />
-              <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: space.sm, marginTop: space.sm }}>
-                <Meta style={{ color: color.text }}>{`apostrophe-export-${fmtISODate(readyExport.readyAt ?? readyExport.requestedAt)}.zip`}</Meta>
-                <Meta style={{ color: color.textSubtle }}>{fmtSize(readyExport.sizeBytes)}</Meta>
+            <View style={styles.card}>
+              <View style={styles.pillRow}><StatusPill tone="info" label="READY" /></View>
+              <View style={styles.fileRow}>
+                <Text style={styles.fileName}>{`apostrophe-export-${fmtISODate(readyExport.readyAt ?? readyExport.requestedAt)}.zip`}</Text>
+                <Text style={styles.meta}>{fmtSize(readyExport.sizeBytes)}</Text>
               </View>
-              <View style={{ marginTop: space.sm, alignSelf: 'flex-start' }}>
-                <Button variant="secondary" size="md" disabled={!readyExport.url} label="Download" onPress={() => readyExport.url && Linking.openURL(readyExport.url)} />
-              </View>
-              {!!readyExport.url && <Meta style={{ color: color.textSubtle, marginTop: space.sm }}>This link is short-lived — request a fresh export if it stops working.</Meta>}
-            </Card>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Download"
+                accessibilityState={{ disabled: !readyExport.url }}
+                disabled={!readyExport.url}
+                onPress={() => readyExport.url && Linking.openURL(readyExport.url)}
+                style={({ pressed }) => [styles.dl, !readyExport.url && styles.dlOff, pressed && styles.pressed]}
+              >
+                <Icon name="download" size={18} tint={readyExport.url ? color.text : color.textSubtle} />
+                <Text style={[styles.dlText, !readyExport.url && styles.dlTextOff]}>Download</Text>
+              </Pressable>
+              {!!readyExport.url && <Text style={[styles.meta, styles.gapTop]}>This link is short-lived — request a fresh export if it stops working.</Text>}
+            </View>
           ) : (
-            <Card style={styles.cardPad}>
-              <Display level="xs">Take a copy with you.</Display>
-              <Body size="sm" tone="muted" style={{ marginTop: space.sm }}>We build the file in the background and email you a link when it&rsquo;s ready. It&rsquo;s JSON you can open anywhere, plus the documents you uploaded.</Body>
-              <View style={{ marginTop: space.md }}><Button variant="secondary" size="block" full busy={exportMut.isPending} label="Request my export" onPress={() => exportMut.mutate()} /></View>
-              <Meta style={{ color: color.textSubtle, marginTop: space.sm }}>Usually ready within 24 hours</Meta>
-            </Card>
+            <View style={styles.card}>
+              <Text style={styles.h}>Take a copy with you.</Text>
+              <Text style={[styles.p, styles.gapTop]}>We build the file in the background and email you a link when it&rsquo;s ready. It&rsquo;s JSON you can open anywhere, plus the documents you uploaded.</Text>
+              <Btn variant="outline" busy={exportMut.isPending} label="Request my export" onPress={() => exportMut.mutate()} style={styles.gapTopLg} />
+              <Text style={[styles.meta, styles.gapTop]}>Usually ready within 24 hours</Text>
+            </View>
           )}
         </View>
 
         {/* Delete */}
-        <View style={{ gap: space.md }}>
-          <Eyebrow>Delete my account</Eyebrow>
+        <View style={styles.section}>
+          <Text style={styles.eyebrow}>Delete my account</Text>
           {pendingDeletion ? (
             <PendingDeletion request={pendingDeletion} busy={cancelMut.isPending} onCancel={() => cancelMut.mutate()} />
           ) : (
-            <Card style={[styles.cardPad, { gap: space.md }]}>
-              <Display level="xs">Deleting is permanent. We finish it within thirty days.</Display>
+            <View style={[styles.card, styles.gap14]}>
+              <Text style={[styles.h, styles.hDel]}>Deleting is permanent. We finish it within thirty days.</Text>
               <Split label="Immediately" body="Your profile leaves every employer feed. Nobody new can find you." />
               <Split label="Within thirty days" body="Both recordings are purged — the raw interview and the edited video resume." />
               <Split label="Kept by law" body="Payment and invoice records stay for as long as Indian tax law requires. Your name, email and mobile are replaced with a reference number inside them." />
-              <Button variant="destructive" size="block" full label="Delete my account" onPress={() => setConfirmOpen(true)} />
-              <Meta style={{ color: color.textSubtle }}>We&rsquo;ll ask you to confirm once. You can cancel any time in the next thirty days.</Meta>
-            </Card>
+              <DestrBtn label="Delete my account" onPress={() => setConfirmOpen(true)} />
+              <Text style={styles.meta}>We&rsquo;ll ask you to confirm once. You can cancel any time in the next thirty days.</Text>
+            </View>
           )}
         </View>
       </ScrollView>
 
       <Sheet open={confirmOpen} onClose={() => setConfirmOpen(false)} title="Delete my account?">
-        <Body size="sm" tone="muted" style={{ marginTop: space.sm }}>Your profile leaves every feed now, and both recordings are purged within thirty days. You can cancel any time in the next thirty days.</Body>
-        <View style={{ marginTop: space.lg, gap: space.sm }}>
-          <Button variant="destructive" size="block" full busy={busy} label="Delete my account"
+        <Text style={[styles.pDark, styles.gapTop]}>Your profile leaves every feed now, and both recordings are purged within thirty days. You can cancel any time in the next thirty days.</Text>
+        <View style={styles.sheetActions}>
+          <DestrBtn label="Delete my account" busy={busy}
             onPress={() => { const c = me.email ?? me.mobile ?? me.name; if (c) deleteMut.mutate(c) }} />
-          <Button variant="quiet" size="block" full label="Keep my account" onPress={() => setConfirmOpen(false)} />
+          <Btn variant="quiet" label="Keep my account" onPress={() => setConfirmOpen(false)} />
         </View>
       </Sheet>
     </View>
   )
 }
 
+/** Option A's destructive button: white, a danger hairline and danger text. */
+function DestrBtn({ label, onPress, busy }: { label: string; onPress: () => void; busy?: boolean }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ disabled: !!busy, busy: !!busy }}
+      disabled={busy}
+      onPress={onPress}
+      style={({ pressed }) => [styles.destr, (pressed || busy) && styles.pressed]}
+    >
+      <Text style={styles.destrText}>{label}</Text>
+    </Pressable>
+  )
+}
+
 function PendingDeletion({ request, busy, onCancel }: { request: DeletionRequest; busy: boolean; onCancel: () => void }) {
   return (
-    <View style={{ gap: space.lg }}>
-      <Card style={styles.pendingCardPad}>
-        <StatusPill tone="warning" label="DELETION PENDING" />
-        <Display level="xs" style={{ marginTop: space.sm }}>{`We’re deleting your account by ${fmtDate(request.dueAt)}.`}</Display>
-        <Meta style={{ color: color.textSubtle, marginTop: space.xs }}>{`Requested ${fmtStampFull(request.requestedAt)}`}</Meta>
-      </Card>
-      <View style={{ gap: space.sm }}>
-        <Eyebrow>Done</Eyebrow>
+    <View style={styles.gap18}>
+      <View style={styles.pendCard}>
+        <View style={styles.pillRow}><StatusPill tone="warning" label="DELETION PENDING" /></View>
+        <Text style={[styles.h, styles.hPend]}>{`We’re deleting your account by ${fmtDate(request.dueAt)}.`}</Text>
+        <Text style={[styles.meta, styles.gapTop6]}>{`Requested ${fmtStampFull(request.requestedAt)}`}</Text>
+      </View>
+      <View style={styles.listGroup}>
+        <Text style={styles.eyebrow}>Done</Text>
         <MixedItem done text={`Your profile left every employer feed on ${fmtStampFull(request.requestedAt)}.`} />
         <MixedItem done text="Your open chats are archived." />
       </View>
-      <View style={{ gap: space.sm }}>
-        <Eyebrow>Still to happen</Eyebrow>
+      <View style={styles.listGroup}>
+        <Text style={styles.eyebrow}>Still to happen</Text>
         <MixedItem text={`Both recordings are purged by ${fmtDate(request.dueAt)}.`} />
         <MixedItem text="Payment records are kept, with your name, email and mobile replaced." />
       </View>
-      <Button variant="outline" size="block" full busy={busy} label="Cancel this request" onPress={onCancel} />
-      <Meta style={{ color: color.textSubtle }}>{`Cancel before ${fmtDate(request.dueAt)} and nothing is lost.`}</Meta>
+      <Btn variant="outline" busy={busy} label="Cancel this request" onPress={onCancel} />
+      <Text style={styles.meta}>{`Cancel before ${fmtDate(request.dueAt)} and nothing is lost.`}</Text>
     </View>
   )
 }
@@ -140,8 +166,8 @@ function PendingDeletion({ request, busy, onCancel }: { request: DeletionRequest
 function MixedItem({ done, text }: { done?: boolean; text: string }) {
   return (
     <View style={styles.mixed}>
-      <StatusDot tone={done ? 'success' : 'neutral'} style={styles.mixedDot} />
-      <Body size="sm" style={{ flex: 1, color: color.text }}>{text}</Body>
+      <View style={[styles.dot, done && styles.dotDone]} />
+      <Text style={styles.mixedText}>{text}</Text>
     </View>
   )
 }
@@ -149,20 +175,54 @@ function MixedItem({ done, text }: { done?: boolean; text: string }) {
 function Split({ label, body }: { label: string; body: string }) {
   return (
     <View style={styles.split}>
-      <View style={{ width: height['label-col-lg'], paddingTop: space['2xs'] }}><Eyebrow>{label}</Eyebrow></View>
-      <Body size="sm" style={{ flex: 1, color: color.text }}>{body}</Body>
+      <Text style={styles.splitLabel}>{label}</Text>
+      <Text style={styles.splitBody}>{body}</Text>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.background },
-  centre: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.xl },
-  loading: { padding: space.xl },
-  body: { paddingHorizontal: space.lg, paddingTop: space.xs, gap: space.xl, paddingBottom: space.xl },
-  cardPad: { padding: space.lg },
-  pendingCardPad: { backgroundColor: color.dangerSoft, borderColor: color.dangerBorder, padding: space.lg },
-  mixed: { flexDirection: 'row', alignItems: 'flex-start', gap: space.sm },
-  mixedDot: { marginTop: space['2xs'] },
-  split: { flexDirection: 'row', gap: space.md },
+  loading: { paddingHorizontal: 20, paddingTop: 8, gap: 14 },
+  body: { paddingHorizontal: 20, paddingTop: 8, gap: 24, paddingBottom: 28 },
+  section: { gap: 12 },
+  eyebrow: { fontFamily: FF.monoMedium, fontSize: 11, letterSpacing: 1.54, textTransform: 'uppercase', color: color.textMuted },
+  card: { backgroundColor: color.surface, borderWidth: borderWidth.thin, borderColor: color.border, borderRadius: 20, padding: 16 },
+  pillRow: { flexDirection: 'row' },
+  h: { fontFamily: FF.bodyBold, fontSize: 22, lineHeight: 25, letterSpacing: -0.66, color: color.text },
+  hDel: { fontSize: 20, lineHeight: 23, letterSpacing: -0.6 },
+  hPend: { fontSize: 20, lineHeight: 23, letterSpacing: -0.6, marginTop: 10 },
+  p: { fontFamily: FF.body, fontSize: 14, lineHeight: 21, color: color.textMuted },
+  pDark: { fontFamily: FF.body, fontSize: 14.5, lineHeight: 22, color: color.text },
+  meta: { fontFamily: FF.monoMedium, fontSize: 11.5, letterSpacing: 0.46, color: color.textSubtle },
+  gapTop: { marginTop: 10 },
+  gapTop6: { marginTop: 6 },
+  gap14: { gap: 14 },
+  gap18: { gap: 18 },
+  gapTopLg: { marginTop: 14 },
+  fileRow: { flexDirection: 'row', alignItems: 'baseline', gap: 10, marginTop: 10 },
+  fileName: { fontFamily: FF.monoMedium, fontSize: 11.5, letterSpacing: 0.46, color: color.text },
+  dl: {
+    alignSelf: 'flex-start', marginTop: 12, height: 40, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 16,
+    backgroundColor: color.surface, borderWidth: borderWidth.medium, borderColor: color.borderStrong,
+  },
+  dlOff: { backgroundColor: color.surfaceMuted, borderColor: color.surfaceMuted },
+  dlText: { fontFamily: FF.bodyBold, fontSize: 14, color: color.text },
+  dlTextOff: { color: color.textSubtle },
+  destr: {
+    height: 46, borderRadius: 14, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18,
+    backgroundColor: color.surface, borderWidth: borderWidth.medium, borderColor: color.dangerBorder,
+  },
+  destrText: { fontFamily: FF.bodyBold, fontSize: 15, color: color.danger },
+  sheetActions: { marginTop: 20, gap: 8 },
+  pressed: { opacity: 0.85 },
+  pendCard: { backgroundColor: color.dangerSoft, borderWidth: borderWidth.thin, borderColor: color.dangerBorder, borderRadius: 20, padding: 16 },
+  listGroup: { gap: 10 },
+  mixed: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  dot: { width: 9, height: 9, borderRadius: 5, marginTop: 6, backgroundColor: color.borderStrong },
+  dotDone: { backgroundColor: color.successFill },
+  mixedText: { flex: 1, fontFamily: FF.body, fontSize: 14.5, lineHeight: 21, color: color.text },
+  split: { flexDirection: 'row', gap: 12 },
+  splitLabel: { width: 96, paddingTop: 3, fontFamily: FF.monoMedium, fontSize: 10.5, letterSpacing: 1.05, textTransform: 'uppercase', color: color.textMuted },
+  splitBody: { flex: 1, fontFamily: FF.body, fontSize: 14.5, lineHeight: 21, color: color.text },
 })

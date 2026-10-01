@@ -50,7 +50,7 @@ export function InterviewerPasswordScreen() {
   const [error, setError] = useState<string | null>(null)
   const [sentLine, setSentLine] = useState<string | null>(null)
 
-  const toSignIn = () => navigation.reset({ index: 0, routes: [{ name: 'Welcome' }, { name: 'InterviewerSignIn' }] })
+  const toSignIn = () => navigation.reset({ index: 0, routes: [{ name: 'Welcome' }, { name: 'SignIn' }] })
 
   function signOut() {
     Alert.alert(

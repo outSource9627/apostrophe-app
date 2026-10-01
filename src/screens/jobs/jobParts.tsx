@@ -3,8 +3,8 @@ import { StyleSheet, Text, View } from 'react-native'
 import Video from 'react-native-video'
 import type { JobDetail } from '../../lib/api/jobs'
 import { deadlineLine, employmentLabel, experienceLine, locationLine } from '../../lib/jobs/format'
-import { color, height, radius, space, spaceHalf, trackingNative } from '../../theme'
-import { Body, Tag, text } from '../../components/ui'
+import { color, fontFamilyNative as FF, height, radius, space, spaceHalf, trackingNative } from '../../theme'
+import { text } from '../../components/ui'
 
 /**
  * The full post's sections (Android M11 details): the 2-up fact tiles, mono
@@ -36,8 +36,8 @@ export function JobProse({ title, body }: { title: string; body?: string | null 
   if (!body) return null
   return (
     <View style={styles.section}>
-      <Text style={[text.metaMd, styles.eyebrow]}>{title.toUpperCase()}</Text>
-      <Text style={[text.uiMd, styles.prose]}>{body}</Text>
+      <Text style={styles.eyebrow}>{title.toUpperCase()}</Text>
+      <Text style={styles.prose}>{body}</Text>
     </View>
   )
 }
@@ -46,11 +46,11 @@ export function JobBullets({ title, items }: { title: string; items?: string[] }
   if (!items || items.length === 0) return null
   return (
     <View style={styles.section}>
-      <Text style={[text.metaMd, styles.eyebrow]}>{title.toUpperCase()}</Text>
+      <Text style={styles.eyebrow}>{title.toUpperCase()}</Text>
       {items.map((it) => (
         <View key={it} style={styles.bullet}>
-          <Text style={[text.uiMd, styles.dash]}>—</Text>
-          <Body size="md" style={styles.grow}>{it}</Body>
+          <Text style={styles.dash}>—</Text>
+          <Text style={[styles.bulletText, styles.grow]}>{it}</Text>
         </View>
       ))}
     </View>
@@ -61,8 +61,8 @@ export function JobSkills({ skills }: { skills: string[] }) {
   if (skills.length === 0) return null
   return (
     <View style={styles.section}>
-      <Text style={[text.metaMd, styles.eyebrow]}>SKILLS</Text>
-      <View style={styles.tags}>{skills.map((s) => <Tag key={s} label={s} />)}</View>
+      <Text style={styles.eyebrow}>SKILLS</Text>
+      <View style={styles.tags}>{skills.map((s) => <View key={s} style={styles.tag}><Text style={styles.tagText}>{s.toUpperCase()}</Text></View>)}</View>
     </View>
   )
 }
@@ -87,12 +87,15 @@ const styles = StyleSheet.create({
   facts: { flexDirection: 'row', flexWrap: 'wrap', gap: spaceHalf['2.5'] },
   fact: { width: '48%', flexGrow: 1, borderRadius: radius.tile, backgroundColor: color.surfaceMuted, paddingVertical: spaceHalf['2.5'], paddingHorizontal: space.md, gap: space['2xs'] },
   factKey: { color: color.textMuted, letterSpacing: trackingNative.meta },
-  section: { gap: spaceHalf['1.5'] },
-  eyebrow: { color: color.textMuted, letterSpacing: trackingNative.eyebrow },
-  prose: { color: color.textSecondary },
-  bullet: { flexDirection: 'row', gap: spaceHalf['2.5'] },
-  dash: { color: color.accent },
+  section: { gap: 7 },
+  eyebrow: { fontFamily: FF.monoMedium, fontSize: 11, letterSpacing: 1.54, color: color.textMuted },
+  prose: { fontFamily: FF.body, fontSize: 15.5, lineHeight: 24, color: color.textSecondary },
+  bullet: { flexDirection: 'row', gap: 10 },
+  dash: { fontFamily: FF.body, fontSize: 15.5, lineHeight: 23, color: color.accent },
+  bulletText: { fontFamily: FF.body, fontSize: 15.5, lineHeight: 23, color: color.text },
   grow: { flex: 1 },
-  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
+  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  tag: { backgroundColor: color.surfaceMuted, borderRadius: radius.pill, paddingVertical: 6, paddingHorizontal: 11 },
+  tagText: { fontFamily: FF.monoMedium, fontSize: 11, letterSpacing: 0.66, color: color.textSecondary },
   video: { alignSelf: 'center', aspectRatio: 9 / 16, height: height['job-video'], borderRadius: radius.lg, overflow: 'hidden', backgroundColor: color.ink },
 })

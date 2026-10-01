@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apostrophe App – My interviews, Profile & Chat mockups</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FAFAFC; --surface:#fff; --muted:#F1F3F7; --sunken:#E6E8EE;
+    --text:#0B0F1A; --text2:#3A4256; --text3:#6B7385; --text4:#8A91A2;
+    --border:#E3E6ED; --border-strong:#C9CED9;
+    --accent:#5B3DF5; --accent-hover:#4A2FE0; --accent-soft:#EFEBFF; --accent-wash:#F7F6FF;
+    --accent-muted:#C4B8FF; --accent-bright:#7258FF; --accent-deep:#3B2A8F; --accent-edge:#DCD3FF;
+    --ink:#0B0F1A; --ink-raised:#151B2B;
+    --ok:#0E9F6E; --ok-text:#0B7A55; --ok-soft:#E6F7F0; --danger:#E5484D; --danger-soft:#FDECEC; --warn:#935F00; --warn-soft:#FFF5E1; --info:#2F6BFF; --info-soft:#E8EFFF;
+    --r-md:14px; --r-lg:18px; --r-xl:28px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{font-family:'Geist',system-ui,sans-serif;background:#E9EAF2;color:var(--text);padding:40px 24px 90px}
+  button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+  svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex:none}
+  .mono{font:500 11px 'Geist Mono',monospace;letter-spacing:.14em;text-transform:uppercase}
+
+  .intro{max-width:1240px;margin:0 auto 36px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:28px 32px}
+  .intro h1{font-size:30px;letter-spacing:-.035em;line-height:1.1}
+  .intro .lede{font-size:16px;color:var(--text3);margin-top:8px;line-height:1.5;max-width:800px}
+  .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-top:22px}
+  .box{background:var(--bg);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px 18px}
+  .box h3{font-size:16px;margin:6px 0 8px;letter-spacing:-.01em}
+  .box ul{padding-left:18px;font-size:14px;line-height:1.55;color:var(--text2)}
+  .box.good{background:var(--accent-soft);border-color:var(--accent-edge)}
+  .section{max-width:1760px;margin:0 auto 70px}
+  .section>h2{font-size:28px;letter-spacing:-.035em;margin-bottom:4px}
+  .section>p{font-size:15px;color:var(--text3);margin-bottom:24px;max-width:820px;line-height:1.5}
+  .row{display:flex;flex-wrap:wrap;gap:40px;align-items:flex-start}
+  .cell{width:390px}
+  .cap{margin-top:16px}
+  .cap b{font-size:17px;letter-spacing:-.02em;display:block}
+  .cap span{font-size:14px;color:var(--text3);line-height:1.45;display:block;margin-top:4px}
+  .cap .tag{color:var(--accent);margin-bottom:6px}
+
+  .phone{width:390px;height:812px;background:var(--bg);border-radius:44px;border:10px solid #0B0F1A;overflow:hidden;position:relative}
+  .status{height:44px;display:flex;justify-content:space-between;align-items:center;padding:0 26px;font-size:14px;font-weight:600;position:absolute;top:0;left:0;right:0;z-index:40;pointer-events:none;transition:background .2s}
+  .status i{width:90px;height:24px;background:#0B0F1A;border-radius:14px;position:absolute;left:50%;top:8px;transform:translateX(-50%)}
+  .status.light{color:#fff}
+  .status.solid,.status.light.solid{background:var(--bg);color:var(--text);border-bottom:1px solid var(--border)}
+  .scroll{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none}
+  .scroll::-webkit-scrollbar{display:none}
+
+  /* floating tab bar (Profile is the last tab) */
+  .tab{position:absolute;left:14px;right:14px;bottom:14px;height:68px;background:rgba(255,255,255,.96);backdrop-filter:blur(14px);border:1px solid var(--border);border-radius:24px;display:flex;justify-content:space-around;align-items:center;z-index:25}
+  .tab button{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11.5px;font-weight:600;color:var(--text4);padding:7px 8px;border-radius:14px;min-width:60px}
+  .tab button.on{color:var(--accent);background:var(--accent-soft)}
+
+  /* shared */
+  .pill{font:500 10.5px 'Geist Mono',monospace;letter-spacing:.1em;text-transform:uppercase;border-radius:99px;padding:5px 10px;display:inline-block;white-space:nowrap}
+  .pill.ok{background:var(--ok-soft);color:var(--ok-text)}.pill.acc{background:var(--accent-soft);color:var(--accent-hover)}
+  .pill.warn{background:var(--warn-soft);color:var(--warn)}.pill.neutral{background:var(--muted);color:var(--text3)}
+  .pill.info{background:var(--info-soft);color:#1F4FD1}.pill.danger{background:var(--danger-soft);color:#C22A30}
+  .pill.onink{background:rgba(255,255,255,.14);color:#fff}
+  .live::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-right:6px;vertical-align:1px}
+  .rowc{display:flex;align-items:center;gap:14px}
+  .grow{flex:1;min-width:0}
+  .sub{font-size:14px;color:var(--text3);line-height:1.4}
+  .title{font-size:30px;font-weight:800;letter-spacing:-.04em;line-height:1.05}
+  .btn{height:46px;border-radius:var(--r-md);font-weight:700;font-size:15px;padding:0 18px;display:inline-flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap}
+  .btn.pri{background:var(--accent);color:#fff}.btn.out{border:1.5px solid var(--border-strong);background:var(--surface)}
+  .btn.white{background:#fff;color:var(--accent-deep)}.btn.ghost{border:1px solid rgba(255,255,255,.3);color:#fff}
+  .btn.dis{background:var(--muted);color:var(--text4)}.btn.full{width:100%}.btn.danger{border:1.5px solid #F2B8BA;color:#C22A30;background:var(--surface)}
+  .fab{position:absolute;right:16px;bottom:96px;height:52px;border-radius:99px;background:var(--accent);color:#fff;font-weight:700;font-size:15px;display:flex;align-items:center;gap:8px;padding:0 20px 0 16px;z-index:20}
+  .chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:0 20px}
+  .chips::-webkit-scrollbar{display:none}
+  .chip{white-space:nowrap;padding:9px 14px;border-radius:99px;font-size:14px;font-weight:600;background:var(--surface);border:1px solid var(--border);color:var(--text2)}
+  .chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .seg{display:flex;background:var(--muted);border-radius:var(--r-md);padding:4px}
+  .seg button{flex:1;height:40px;border-radius:11px;font-size:14.5px;font-weight:600;color:var(--text3)}
+  .seg button.on{background:var(--surface);color:var(--accent);border:1px solid var(--border)}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px}
+  .pad{padding:0 20px}
+  .head{padding:58px 20px 12px}
+  .avatar{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:16px;color:#fff;flex:none}
+  .chev{width:18px;color:var(--text4)}
+  [data-act]{cursor:pointer}
+
+  /* sheets / toast / thread overlay */
+  .scrim{position:absolute;inset:0;background:rgba(11,15,26,.4);z-index:50;opacity:0;pointer-events:none;transition:.25s}
+  .scrim.on{opacity:1;pointer-events:auto}
+  .sheet{position:absolute;left:0;right:0;bottom:0;max-height:88%;background:var(--bg);border-radius:28px 28px 0 0;z-index:51;transform:translateY(105%);transition:transform .35s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;overflow:hidden}
+  .sheet.on{transform:none}
+  .sheet .grab{width:40px;height:4px;border-radius:4px;background:var(--border-strong);margin:10px auto 0;flex:none}
+  .sheet .sh{display:flex;align-items:center;gap:12px;padding:12px 20px 8px;flex:none}
+  .sheet .sh b{font-size:20px;letter-spacing:-.025em}
+  .sheet .x{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--muted);margin-left:auto;flex:none}
+  .sheet .body{padding:4px 20px 20px;overflow-y:auto;display:grid;gap:14px;align-content:start;scrollbar-width:none}
+  .sheet .foot{padding:12px 20px 22px;background:var(--surface);border-top:1px solid var(--border);display:flex;gap:10px;flex:none}
+  .facts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .fact{background:var(--muted);border-radius:var(--r-md);padding:11px 13px}
+  .fact .k{font:500 10.5px 'Geist Mono',monospace;letter-spacing:.1em;color:var(--text3)}
+  .fact .v{font-size:15px;font-weight:600;margin-top:3px}
+  .rule{font-size:14px;line-height:1.5;color:var(--text2);padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md)}
+  .ink{background:var(--ink);color:#fff;border-radius:var(--r-lg);padding:18px}
+  .ink .p{font-size:14px;color:#A6ACBA;margin-top:4px;line-height:1.4}
+  .ink h4{font-size:22px;font-weight:700;letter-spacing:-.03em;margin-top:12px}
+  .toast{position:absolute;left:14px;right:14px;bottom:100px;background:var(--ink);color:#fff;border-radius:var(--r-md);padding:12px 14px;z-index:60;font-size:14px;font-weight:600;transform:translateY(20px);opacity:0;pointer-events:none;transition:.25s}
+  .toast.on{transform:none;opacity:1}
+  .thread{position:absolute;inset:0;background:var(--bg);z-index:45;transform:translateX(105%);transition:transform .35s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column}
+  .thread.on{transform:none}
+  .th-head{padding:52px 14px 10px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);background:var(--surface)}
+  .th-head .back{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--border);flex:none}
+  .th-body{flex:1;overflow-y:auto;padding:14px 16px;display:grid;gap:8px;align-content:start;scrollbar-width:none}
+  .day{text-align:center;font:500 10.5px 'Geist Mono',monospace;letter-spacing:.12em;color:var(--text4);margin:6px 0}
+  .sys{text-align:center;font-size:13px;color:var(--text3);background:var(--muted);border-radius:99px;padding:7px 12px;justify-self:center}
+  .msg{max-width:78%;padding:10px 13px;border-radius:18px;font-size:15px;line-height:1.4}
+  .msg.in{background:var(--surface);border:1px solid var(--border);border-bottom-left-radius:4px}
+  .msg.out{background:var(--accent);color:#fff;justify-self:end;border-bottom-right-radius:4px}
+  .msg small{display:block;font-size:11px;opacity:.65;margin-top:3px}
+  .compose{padding:10px 14px 24px;background:var(--surface);border-top:1px solid var(--border);display:flex;gap:10px;align-items:center}
+  .compose .in{flex:1;height:46px;border:1.5px solid var(--border);border-radius:99px;padding:0 16px;display:flex;align-items:center;color:var(--text4);font-size:15px}
+  .compose .send{width:46px;height:46px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center}
+  .ro{padding:14px 20px 26px;background:var(--surface);border-top:1px solid var(--border)}
+  .ro b{font-size:15px;display:block}.ro span{font-size:13.5px;color:var(--text3);display:block;margin-top:3px;line-height:1.4}
+
+  /* ===== INTERVIEWS ===== */
+  .dtile{width:54px;height:60px;border-radius:12px;background:var(--muted);display:grid;place-items:center;align-content:center;flex:none}
+  .dtile small{font:500 10px 'Geist Mono',monospace;letter-spacing:.1em;color:var(--text3)}
+  .dtile b{font-size:22px;letter-spacing:-.03em;line-height:1}
+  .icard{display:flex;gap:14px;padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg)}
+  .icard .when{font-size:16.5px;font-weight:600;letter-spacing:-.01em}
+  .icard .act{font-size:14px;font-weight:600;color:var(--accent);margin-top:4px}
+  .ilist{display:grid;gap:10px;padding:12px 20px 0}
+  .tl{position:relative;padding-left:76px}
+  .tl::before{content:"";position:absolute;left:62px;top:0;bottom:0;width:2px;background:var(--border)}
+  .tl .t{position:absolute;left:0;top:14px;width:52px;text-align:right;font-size:12.5px;font-weight:600;color:var(--text2);line-height:1.2}
+  .tl .t small{display:block;font-weight:500;color:var(--text4);font-size:11px}
+  .tl .dot{position:absolute;left:56px;top:18px;width:14px;height:14px;border-radius:50%;background:var(--surface);border:3px solid var(--border-strong);z-index:1}
+  .tl .dot.ok{border-color:var(--ok)}.tl .dot.acc{border-color:var(--accent)}.tl .dot.danger{border-color:var(--danger)}
+  .tl .icard{margin-bottom:10px}
+  .tl .dtile{display:none}
+  .grp{font:500 11px 'Geist Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--text3);padding:20px 20px 10px}
+  .hero{margin:0 20px;background:var(--ink);color:#fff;border-radius:var(--r-xl);padding:20px;position:relative;overflow:hidden}
+  .hero::before{content:"";position:absolute;width:260px;height:260px;border-radius:50%;background:rgba(114,88,255,.28);right:-100px;top:-110px}
+  .count{font-size:46px;font-weight:800;letter-spacing:-.045em;line-height:1;margin-top:14px;position:relative}
+  .miniRow{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--border)}
+  .miniRow:last-child{border-bottom:0}
+  .miniRow .m{width:44px;height:44px;border-radius:12px;background:var(--muted);display:grid;place-items:center;align-content:center;flex:none}
+  .miniRow .m small{font:500 9.5px 'Geist Mono',monospace;color:var(--text3)}.miniRow .m b{font-size:17px;line-height:1}
+  .strip{display:flex;gap:8px;padding:0 20px;overflow-x:auto;scrollbar-width:none}
+  .strip::-webkit-scrollbar{display:none}
+  .day-c{flex:none;width:50px;padding:10px 0;border-radius:16px;background:var(--surface);border:1px solid var(--border);text-align:center}
+  .day-c small{display:block;font:500 10.5px 'Geist Mono',monospace;color:var(--text3);letter-spacing:.08em}
+  .day-c b{display:block;font-size:19px;margin-top:3px;letter-spacing:-.02em}
+  .day-c i{display:block;width:6px;height:6px;border-radius:50%;margin:6px auto 0;background:transparent}
+  .day-c i.has{background:var(--accent)}
+  .day-c.on{background:var(--accent);border-color:var(--accent);color:#fff}.day-c.on small{color:var(--accent-muted)}.day-c.on i.has{background:#fff}
+
+  /* ===== PROFILE ===== */
+  .menu{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
+  .mrow{display:flex;align-items:center;gap:14px;padding:14px 16px;border-bottom:1px solid var(--border)}
+  .mrow:last-child{border-bottom:0}
+  .mrow .ic{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;flex:none;background:var(--accent-soft);color:var(--accent)}
+  .mrow b{font-size:16px;display:block;letter-spacing:-.01em}.mrow span{font-size:13.5px;color:var(--text3);display:block;margin-top:1px;line-height:1.35}
+  .mlabel{font:500 11px 'Geist Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--text3);padding:22px 20px 8px}
+  .bar{height:6px;border-radius:6px;background:var(--sunken);overflow:hidden}.bar i{display:block;height:100%;background:var(--accent);border-radius:6px}
+  .film{width:68px;aspect-ratio:9/16;border-radius:12px;background:linear-gradient(160deg,var(--accent-deep),var(--ink-raised));display:grid;place-items:center;color:#fff;flex:none}
+  .film svg{width:20px;fill:#fff;stroke:none}
+  .tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 20px}
+  .tile{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;display:grid;gap:12px;text-align:left}
+  .tile .ic{width:40px;height:40px;border-radius:12px;display:grid;place-items:center}
+  .tile b{font-size:15.5px;display:block;letter-spacing:-.01em}.tile span{font-size:13px;color:var(--text3);display:block;margin-top:2px;line-height:1.3}
+  .hdrP{background:linear-gradient(160deg,#6B4DFF,#3B2A8F);color:#fff;padding:58px 20px 64px;border-radius:0 0 30px 30px}
+  .kv{display:flex;justify-content:space-between;gap:16px;padding:11px 0;border-bottom:1px solid var(--border);font-size:15px}
+  .kv:last-child{border-bottom:0}.kv span{color:var(--text3);flex:none}.kv b{font-weight:600;text-align:right}
+  .sectionP{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:6px 16px 8px}
+  .sectionP .sh2{display:flex;justify-content:space-between;align-items:center;padding:12px 0 4px}
+  .sectionP .sh2 .mono{color:var(--text3);font-size:11px}.sectionP .sh2 a{font-size:14px;font-weight:600;color:var(--accent)}
+  .skill{display:inline-block;margin:0 6px 8px 0;padding:7px 12px;border-radius:99px;background:var(--accent-soft);color:var(--accent-hover);font-size:13.5px;font-weight:600}
+
+  /* ===== CHAT ===== */
+  .crow{display:flex;gap:14px;padding:14px 0;border-top:1px solid var(--border)}
+  .crow:first-child{border-top:0}
+  .crow .nm{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+  .crow .nm b{font-size:17px;letter-spacing:-.01em;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .crow .nm span{font:500 11px 'Geist Mono',monospace;color:var(--text4);flex:none}
+  .crow .ctx{font:500 10.5px 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--text4);margin-top:3px}
+  .crow .pv{display:flex;align-items:center;gap:10px;margin-top:5px;font-size:14.5px;color:var(--text3)}
+  .crow .pv.u{color:var(--text);font-weight:500}
+  .crow .pv p{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .uchip{min-width:22px;height:22px;border-radius:99px;background:var(--sunken);font:500 11px 'Geist Mono',monospace;display:grid;place-items:center;padding:0 7px;flex:none}
+  .ccard{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;display:flex;gap:14px}
+  .pin{background:var(--ink);color:#fff;border-radius:var(--r-lg);padding:14px}
+  .pin .sub{color:#A6ACBA}
+  .ringw{padding:2px;border-radius:50%;border:2.5px solid var(--accent);display:inline-block}
+  .ringw.no{border-color:transparent}
+  .avs{display:flex;gap:14px;padding:0 20px;overflow-x:auto;scrollbar-width:none}
+  .avs::-webkit-scrollbar{display:none}
+  .avi{text-align:center;width:72px;flex:none;font-size:12px;font-weight:600;color:var(--text2)}
+  .avi .avatar{width:56px;height:56px;margin:0 auto 6px}
+  .banner{margin:0 20px;background:var(--warn-soft);border:1px solid #F5E2B8;color:var(--warn);border-radius:var(--r-md);padding:11px 14px;font-size:13.5px}
+</style>
+</head>
+<body>
+
+<div class="intro">
+  <div class="mono" style="color:var(--accent)">Candidate · My interviews · Profile · Chat</div>
+  <h1>Four designs for each screen</h1>
+  <p class="lede">All content is what the app already shows — statuses, fields, rules and empty states. Names, dates and numbers are sample values. Every phone is interactive, and all use the same floating tab bar: Home · Interviews · Jobs · Interests · Profile. Chat opens from the header button, so no tab is lit there.</p>
+  <div class="cols">
+    <div class="box good"><div class="mono" style="color:var(--accent)">My interviews</div><h3>What the screen has today</h3><ul><li>Filters with counts: All, Upcoming, Completed, Cancelled</li><li>Per row: date, when, status, length · tier, interviewer once revealed, feedback note, action</li><li>“Book an interview” button; empty state “Nothing booked yet.”</li></ul></div>
+    <div class="box"><div class="mono" style="color:var(--text3)">Profile</div><h3>Account + profile in one place</h3><ul><li>Name, mobile and email, each with Verified / Verify</li><li>My profile, edit steps, videos, applications, connections, notifications, stats</li><li>Receipts, visibility, notification settings, data rights, sign out</li></ul></div>
+    <div class="box"><div class="mono" style="color:var(--text3)">Chat</div><h3>Three kinds of thread</h3><ul><li>Employer (their company name), your interviewer (masked until it starts), Apostrophe Support</li><li>Unread chip, archived section, read-only rules</li><li>Tap a row to open the conversation</li></ul></div>
+  </div>
+</div>
+
+<div class="section"><h2>My interviews</h2><p>Tap a filter, a day or a row. Each row opens the interview’s detail with the real rules and actions for its status.</p><div class="row" id="iv"></div></div>
+<div class="section"><h2>Profile</h2><p>The Profile tab. Tap rows for their destination, flip the segmented control in option D, or tap an Edit link.</p><div class="row" id="pf"></div></div>
+<div class="section"><h2>Chat</h2><p>Tap any conversation. The interviewer thread is masked as “Your Interviewer”; the archived one is read-only.</p><div class="row" id="ch"></div></div>
+
+<script>
+/* ---------- icons + shell ---------- */
+const I = {
+  home:'<svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z"/></svg>',
+  cal:'<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
+  brief:'<svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V4h6v3M3 12h18"/></svg>',
+  heart:'<svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 017-2.6A4 4 0 0119 10c0 5.6-7 10-7 10z"/></svg>',
+  chat:'<svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg>',
+  user:'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>',
+  x:'<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  back:'<svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>',
+  chev:'<svg class="chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>',
+  plus:'<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
+  play:'<svg viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z"/></svg>',
+  send:'<svg viewBox="0 0 24 24"><path d="M4 12l16-8-6 16-3-7z"/></svg>',
+  eye:'<svg viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+  clip:'<svg viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6zM14 3v4h4"/></svg>',
+  bell:'<svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0112 0v5l2 2H4zM10 20h4"/></svg>',
+  star:'<svg viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.8-4.5 4.3 1.1 6.1L12 17l-5.4 2.8 1.1-6.1L3.2 9.4l6.1-.8z"/></svg>',
+  edit:'<svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>',
+  rec:'<svg viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></svg>',
+  link:'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>',
+  card:'<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/></svg>',
+  shield:'<svg viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4-3 7-7 9-4-2-7-5-7-9V6z"/></svg>',
+  sliders:'<svg viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>',
+  out:'<svg viewBox="0 0 24 24"><path d="M10 4H5v16h5M15 8l4 4-4 4M19 12H9"/></svg>',
+  file:'<svg viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6zM14 3v4h4"/></svg>'
+};
+const TABS=[['home','Home','home'],['cal','Interviews','interviews'],['brief','Jobs','jobs'],['heart','Interests','interests'],['user','Profile','profile']];
+const tab = a => `<nav class="tab">${TABS.map(t=>`<button data-act="toast:Opens ${t[1]}" class="${t[2]===a?'on':''}">${I[t[0]]}<span>${t[1]}</span></button>`).join('')}</nav>`;
+const status = light => `<div class="status ${light?'light':''}"><span>9:41</span><i></i><span>5G ▮▮▮</span></div>`;
+const cell = (id,tag,t,d) => `<div class="cell"><div class="phone" id="${id}"></div><div class="cap"><span class="mono tag">${tag}</span><b>${t}</b><span>${d}</span></div></div>`;
+const shell = el => el.insertAdjacentHTML('beforeend','<div class="scrim" data-act="close"></div><div class="sheet"><div class="grab"></div><div class="sh"><b></b><button class="x" data-act="close">'+I.x+'</button></div><div class="body"></div><div class="foot" style="display:none"></div></div><div class="toast"></div>');
+function sheet(el,title,body,foot){el.querySelector('.sheet .sh b').textContent=title;el.querySelector('.sheet .body').innerHTML=body;const f=el.querySelector('.sheet .foot');f.style.display=foot?'flex':'none';f.innerHTML=foot||'';el.querySelector('.scrim').classList.add('on');el.querySelector('.sheet').classList.add('on');el.querySelector('.sheet .body').scrollTop=0}
+const closeSheet = el => {el.querySelector('.scrim').classList.remove('on');el.querySelector('.sheet').classList.remove('on')};
+let tt; const toast=(el,m)=>{const t=el.querySelector('.toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),1600)};
+const scrollSolid = el => {const sc=el.querySelector('.scroll'),st=el.querySelector('.status');if(sc&&st)sc.addEventListener('scroll',()=>st.classList.toggle('solid',sc.scrollTop>60))};
+
+/* =====================================================================
+   MY INTERVIEWS   (InterviewsScreen.tsx · InterviewDetailScreen.tsx)
+   ===================================================================== */
+const MARK={BOOKED:['Booked','neutral'],IN_PROGRESS:['In progress','acc live'],COMPLETED:['Completed','ok'],INCOMPLETE:['Under review','info'],CANCELLED:['Cancelled','neutral'],RESCHEDULED:['Rescheduled','neutral'],STUDENT_NO_SHOW:['No show','danger']};
+const IVS=[
+ {id:'i1',when:'Today · 11:30 AM',day:1,mon:'OCT',dow:'THU',time:'11:30 AM',status:'BOOKED',dur:20,tier:'T2',until:'IN 24 MIN',hms:'00:24:00',joinOpens:'11:20 AM',up:true,resch:true,cancel:true},
+ {id:'i2',when:'Mon 6 Oct · 4:00 PM',day:6,mon:'OCT',dow:'MON',time:'4:00 PM',status:'BOOKED',dur:20,tier:'T2',until:'IN 5 DAYS',hms:'',joinOpens:'3:50 PM',up:true,resch:true,cancel:true},
+ {id:'i3',when:'Wed 24 Sep · 11:30 AM',day:24,mon:'SEP',dow:'WED',time:'11:30 AM',status:'COMPLETED',dur:20,tier:'T2',fb:'READY',who:'Interviewer'},
+ {id:'i4',when:'Mon 15 Sep · 10:00 AM',day:15,mon:'SEP',dow:'MON',time:'10:00 AM',status:'COMPLETED',dur:20,tier:'T2',fb:'AWAITING',who:'Interviewer'},
+ {id:'i5',when:'Tue 2 Sep · 5:00 PM',day:2,mon:'SEP',dow:'TUE',time:'5:00 PM',status:'INCOMPLETE',dur:20,tier:'T2'},
+ {id:'i6',when:'Sat 6 Sep · 3:30 PM',day:6,mon:'SEP',dow:'SAT',time:'3:30 PM',status:'CANCELLED',dur:20,tier:'T2'},
+];
+const byIv=id=>IVS.find(x=>x.id===id);
+const isUp=i=>i.up, isPast=i=>!i.up;
+const subLine=i=>`${i.dur} minutes · ${i.tier}${i.who?' · with '+i.who:''}`;
+const fbNote=i=>i.status==='COMPLETED'&&i.fb==='AWAITING'?'Feedback on its way':null;
+const action=i=>i.status==='COMPLETED'?'View details':(i.resch||i.cancel)?'Manage':'View details';
+const pill=i=>{const m=MARK[i.status];return `<span class="pill ${m[1]}">${m[0]}</span>`};
+const FILTERS=['All','Upcoming','Completed','Cancelled'];
+const inFilter=f=>({All:IVS,Upcoming:IVS.filter(isUp),Completed:IVS.filter(i=>isPast(i)&&i.status==='COMPLETED'),Cancelled:IVS.filter(i=>isPast(i)&&i.status==='CANCELLED')})[f];
+const chipsHtml=f=>`<div class="chips">${FILTERS.map(x=>`<span class="chip ${x===f?'on':''}" data-act="f:${x}">${x} (${inFilter(x).length})</span>`).join('')}</div>`;
+const card=i=>`<div class="icard" data-act="iv:${i.id}"><div class="dtile"><small>${i.mon}</small><b>${i.day}</b></div><div class="grow"><div class="rowc" style="justify-content:space-between;gap:8px"><div class="when" style="min-width:0">${i.when}</div>${pill(i)}</div><div class="sub" style="font-size:13.5px;margin-top:3px">${subLine(i)}</div>${fbNote(i)?`<div class="sub" style="font-size:13.5px">${fbNote(i)}</div>`:''}<div class="act">${action(i)} →</div></div></div>`;
+const fab=`<div class="fab" data-act="toast:Opens Book an interview">${I.plus}Book an interview</div>`;
+const empty=f=>`<div class="sub" style="padding:14px 4px">No ${f.toLowerCase()} interviews.</div>`;
+
+function ivDetail(el,i){
+  const m=MARK[i.status]; let body='',foot='';
+  if(i.up){
+    body=`<div class="ink"><div class="rowc" style="justify-content:space-between"><span class="pill onink">UPCOMING</span><span class="mono" style="color:#C9CED9;font-size:11px">${i.until}</span></div>
+      <h4>${i.when.replace('Today · ','1 Oct · ')}</h4><div class="p">${i.dur}-minute interview · ${i.tier} · IST</div>
+      ${i.hms?`<div class="mono" style="color:#8A91A2;margin-top:16px;font-size:10.5px">STARTS IN</div><div style="font:600 30px 'Geist Mono',monospace;margin-top:2px">${i.hms}</div>`:''}</div>
+      <div class="rule"><b style="font-size:11px;font-family:'Geist Mono',monospace;letter-spacing:.12em;color:var(--text3)">JOIN OPENS · ${i.joinOpens} IST</b><br>The join button opens a few minutes before the start and stays open for a short time after.</div>
+      <div class="rule">The device check is required before you join: camera, microphone, speaker and network.</div>
+      <div class="rule">Your interviewer’s name and photo appear when the session starts.</div>`;
+    foot=`<button class="btn dis" style="flex:1">Join interview</button>`;
+    sheet(el,'Interview',body+`<div class="rowc" style="gap:10px"><button class="btn out" style="flex:1" data-act="toast:Opens Reschedule">Reschedule</button><button class="btn out" style="flex:1" data-act="toast:Opens Cancel">Cancel</button></div>`,foot);
+    return;
+  }
+  if(i.status==='COMPLETED'){
+    body=`<div class="ink"><div class="rowc" style="justify-content:space-between"><span class="pill onink">COMPLETED</span></div><h4>${i.when.replace(' · ',' · ')}</h4><div class="p">${i.dur}-minute interview · ${i.tier} · IST</div></div>
+      <div class="card"><b style="font-size:16px">Your interview is done.</b><div class="sub" style="margin-top:4px">When your film is published it becomes your video resume.</div>${fbNote(i)?`<div class="sub" style="margin-top:6px">${fbNote(i)}</div>`:''}</div>`;
+    foot=(i.fb==='READY'?`<button class="btn pri" style="flex:1" data-act="toast:Opens your scorecard">See my scorecard</button>`:`<button class="btn pri" style="flex:1" data-act="toast:Opens Book an interview">Book another interview</button>`);
+    sheet(el,'Interview',body+(i.fb==='READY'?`<button class="btn out full" data-act="toast:Opens Book an interview">Book another interview</button>`:''),foot);return;
+  }
+  if(i.status==='INCOMPLETE'){
+    body=`<div class="ink"><span class="pill onink">UNDER REVIEW</span><h4>${i.when}</h4><div class="p">${i.dur}-minute interview · ${i.tier} · IST</div></div>
+      <div class="card"><b style="font-size:16px">Under review</b><div class="sub" style="margin-top:6px">The session ended before it finished, so it did not become a video resume. Our team is reviewing what happened.</div><div class="sub" style="margin-top:8px">If it was not on you, a free re-interview is added to your account and you will be told here and in your notifications.</div></div>`;
+    sheet(el,'Interview',body,`<button class="btn out" style="flex:1" data-act="toast:Opens Support">Ask admin to look at this</button>`);return;
+  }
+  body=`<div class="ink"><span class="pill onink">CANCELLED</span><h4>${i.when}</h4><div class="p">${i.dur}-minute interview · ${i.tier} · IST</div></div>`;
+  sheet(el,'Interview',body,`<button class="btn pri" style="flex:1" data-act="toast:Opens Book an interview">Book another interview</button>`);
+}
+
+/* A · cards list, filter chips */
+function ivA(S){return `${status(false)}<div class="scroll" style="padding-bottom:190px">
+  <div class="head"><div class="title">My interviews</div></div>${chipsHtml(S.f)}
+  <div class="ilist">${inFilter(S.f).length?inFilter(S.f).map(card).join(''):empty(S.f)}</div></div>${fab}${tab('interviews')}`}
+
+/* B · agenda timeline */
+function ivB(S){const list=inFilter(S.f);const up=list.filter(isUp),past=list.filter(isPast);
+  const item=i=>`<div class="tl"><div class="t">${i.time.split(' ')[0]}<small>${i.time.split(' ')[1]} · ${i.dow}</small></div><div class="dot ${i.status==='COMPLETED'?'ok':i.up?'acc':i.status==='INCOMPLETE'?'':'danger'}"></div>${card(i)}</div>`;
+  return `${status(false)}<div class="scroll" style="padding-bottom:190px">
+  <div class="head" style="padding-bottom:8px"><div class="title">My interviews</div><div class="sub" style="margin-top:6px">Thursday, 1 October</div></div>${chipsHtml(S.f)}
+  ${up.length?`<div class="grp">Upcoming</div><div class="pad">${up.map(item).join('')}</div>`:''}
+  ${past.length?`<div class="grp">Past</div><div class="pad">${past.map(item).join('')}</div>`:''}
+  ${!up.length&&!past.length?`<div class="pad">${empty(S.f)}</div>`:''}</div>${fab}${tab('interviews')}`}
+
+/* C · next-up hero + Upcoming / Past */
+function ivC(S){const next=IVS.find(isUp);const list=S.seg==='Upcoming'?IVS.filter(isUp):IVS.filter(isPast);
+  return `${status(false)}<div class="scroll" style="padding-bottom:190px">
+  <div class="head" style="padding-bottom:14px"><div class="title">My interviews</div></div>
+  <div class="hero" data-act="iv:${next.id}"><div class="rowc" style="justify-content:space-between;position:relative"><span class="pill onink">NEXT UP</span><span class="mono" style="color:#C9CED9;font-size:11px">${next.until}</span></div>
+    <div class="count">${next.hms}</div><div style="font-size:15px;color:#C9CED9;margin-top:8px;position:relative">${next.when} · ${next.dur}-minute interview · IST</div>
+    <div class="rowc" style="gap:8px;margin-top:16px;position:relative"><span class="btn white grow" data-act="toast:Opens the device check">Test my setup</span><span class="btn ghost" data-act="toast:Opens Reschedule">Reschedule</span></div></div>
+  <div class="pad" style="margin-top:18px"><div class="seg">${['Upcoming','Past'].map(x=>`<button class="${x===S.seg?'on':''}" data-act="seg:${x}">${x} (${(x==='Upcoming'?IVS.filter(isUp):IVS.filter(isPast)).length})</button>`).join('')}</div></div>
+  <div class="pad" style="margin-top:6px"><div class="card" style="padding:4px 16px">${list.map(i=>`<div class="miniRow" data-act="iv:${i.id}"><div class="m"><small>${i.mon}</small><b>${i.day}</b></div><div class="grow"><div style="font-size:16px;font-weight:600">${i.when.split(' · ')[1]}${i.when.includes('Today')?' · Today':''}</div><div class="sub" style="font-size:13.5px">${subLine(i)}</div></div>${pill(i)}</div>`).join('')}</div></div></div>${fab}${tab('interviews')}`}
+
+/* D · calendar strip */
+const DAYS=[{n:1,d:'THU'},{n:2,d:'FRI'},{n:3,d:'SAT'},{n:4,d:'SUN'},{n:5,d:'MON'},{n:6,d:'TUE'},{n:7,d:'WED'}]; // 1 Oct → 7 Oct
+function ivD(S){const sel=IVS.filter(i=>i.up&&i.mon==='OCT'&&i.day===S.day);
+  return `${status(false)}<div class="scroll" style="padding-bottom:190px">
+  <div class="head" style="padding-bottom:14px"><div class="title">My interviews</div><div class="sub" style="margin-top:6px">October</div></div>
+  <div class="strip">${DAYS.map(x=>{const has=IVS.some(i=>i.up&&i.mon==='OCT'&&i.day===x.n);return `<div class="day-c ${S.day===x.n?'on':''}" data-act="day:${x.n}"><small>${x.d}</small><b>${x.n}</b><i class="${has?'has':''}"></i></div>`}).join('')}</div>
+  <div class="grp">${S.day===1?'Today':S.day+' Oct'}</div>
+  <div class="pad">${sel.length?sel.map(card).join(''):`<div class="card"><b style="font-size:16px">Nothing booked this day.</b><div class="sub" style="margin-top:4px">Your interview, and the video resume it becomes, both start here.</div><div style="margin-top:12px"><span class="btn pri" data-act="toast:Opens Book an interview">Book an interview</span></div></div>`}</div>
+  <div class="grp">Past interviews</div><div class="pad"><div class="card" style="padding:4px 16px">${IVS.filter(isPast).map(i=>`<div class="miniRow" data-act="iv:${i.id}"><div class="m"><small>${i.mon}</small><b>${i.day}</b></div><div class="grow"><div style="font-size:16px;font-weight:600">${i.when.split(' · ')[1]}</div><div class="sub" style="font-size:13.5px">${subLine(i)}</div></div>${pill(i)}</div>`).join('')}</div></div></div>${fab}${tab('interviews')}`}
+
+const IVSTATE={A:{f:'All'},B:{f:'All'},C:{seg:'Upcoming'},D:{day:1}};
+const IVFN={A:ivA,B:ivB,C:ivC,D:ivD};
+document.getElementById('iv').innerHTML=
+  cell('ivA','A · Cards','Filter chips + cards','Today’s structure, tightened: big title, filter chips with counts, then a card per interview with its date tile, status and next action.')+
+  cell('ivB','B · Timeline','Agenda with a time rail','Upcoming and Past in separate groups, with the time on a rail so the day reads top to bottom. Same chips on top.')+
+  cell('ivC','C · Next-up','Hero for the next interview','The next interview is the top of the screen with its countdown and the device check. Upcoming / Past tabs below it.')+
+  cell('ivD','D · Calendar','Week strip + that day’s interviews','A date strip with dots on days that have an interview. Pick a day to see it; past interviews sit below.');
+function renderIv(k){const el=document.getElementById('iv'+k);el.innerHTML=IVFN[k](IVSTATE[k]);shell(el);scrollSolid(el)}
+['A','B','C','D'].forEach(renderIv);
+['A','B','C','D'].forEach(k=>{const el=document.getElementById('iv'+k);el.addEventListener('click',e=>{const a=e.target.closest('[data-act]');if(!a)return;const x=a.dataset.act;
+  if(x==='close')return closeSheet(el);
+  if(x.startsWith('f:')){IVSTATE[k].f=x.slice(2);return renderIv(k)}
+  if(x.startsWith('seg:')){IVSTATE[k].seg=x.slice(4);return renderIv(k)}
+  if(x.startsWith('day:')){IVSTATE[k].day=+x.slice(4);return renderIv(k)}
+  if(x.startsWith('iv:'))return ivDetail(el,byIv(x.slice(3)));
+  if(x.startsWith('toast:')){closeSheet(el);return toast(el,x.slice(6))}})});
+
+/* =====================================================================
+   PROFILE   (AccountScreen.tsx · ProfileViewScreen.tsx)
+   ===================================================================== */
+const ME={name:'Ashish Kumar',mobile:'+91 98765 43210',email:'ashish@example.com',init:'AK',city:'Pune'};
+const YOURS=[['link','My profile','What employers see'],['edit','Finish or edit your profile','The six profile steps'],['rec','Your videos','Your video resume and self-uploads'],['clip','My applications','Jobs you have applied to'],['heart','Connections','Employers you are connected with'],['bell','Notifications','Your inbox'],['star','Your stats','How your profile is doing']];
+const MORE=[['card','Receipts','Payments and invoices'],['eye','Visibility','Who can see your profile'],['sliders','Notification settings','Push, email and in-app'],['shield','Delete or export my data','Your legal rights']];
+const mrow=(r,color)=>`<div class="mrow" data-act="toast:Opens ${r[1]}"><div class="ic" style="${color||''}">${I[r[0]]}</div><div class="grow"><b>${r[1]}</b><span>${r[2]}</span></div>${I.chev}</div>`;
+const identity=`<div class="menu"><div class="mrow"><div class="grow"><b>${ME.email}</b><span>Email</span></div><span class="pill ok">Verified</span></div><div class="mrow"><div class="grow"><b>${ME.mobile}</b><span>Mobile · how you sign in</span></div><span class="pill ok">Verified</span></div></div>`;
+const signout=`<div class="menu"><div class="mrow" data-act="signout"><div class="grow"><b>Sign out</b><span>On this device only</span></div></div></div>`;
+const who=`<div class="rowc"><div class="avatar" style="width:56px;height:56px;background:var(--accent-deep);font-size:19px">${ME.init}</div><div class="grow"><div style="font-size:22px;font-weight:800;letter-spacing:-.03em">${ME.name}</div><div class="sub">${ME.mobile} · ${ME.email}</div></div></div>`;
+const film=`<div class="card rowc"><div class="film">${I.play}</div><div class="grow"><span class="pill ok">✓ Published</span><div style="font-size:17px;font-weight:600;margin-top:6px;letter-spacing:-.01em">Your video resume</div><div class="sub">Live in employer feeds</div></div>${I.chev}</div>`;
+const completion=`<div class="card"><div class="rowc" style="align-items:baseline;gap:10px"><span style="font:600 28px 'Geist Mono',monospace;letter-spacing:-.04em">68%</span><span class="sub grow">filled in · still empty: Documents</span></div><div class="bar" style="margin-top:12px"><i style="width:68%"></i></div></div>`;
+const feedRow=`<div class="card rowc" data-act="toast:Opens Visibility"><div class="grow"><b style="font-size:16px;display:block">You are live in the employer feed</b><span class="sub" style="font-size:13.5px">Employers can find you and send an Interest.</span></div>${I.chev}</div>`;
+
+/* A · identity row + grouped menu */
+const pfA=()=>`${status(false)}<div class="scroll" style="padding-bottom:130px">
+  <div class="head" style="padding-bottom:6px"><div class="title">Account</div></div>
+  <div class="pad" style="margin-top:12px">${who}</div>
+  <div class="mlabel">Your profile</div><div class="pad"><div class="menu">${YOURS.map(r=>mrow(r)).join('')}</div></div>
+  <div class="mlabel">Identity</div><div class="pad">${identity}</div>
+  <div class="mlabel">More</div><div class="pad"><div class="menu">${MORE.map(r=>mrow(r,'background:var(--muted);color:var(--text2)')).join('')}</div></div>
+  <div class="pad" style="margin-top:22px">${signout}</div></div>${tab('profile')}`;
+
+/* B · profile preview first */
+const pfB=()=>`${status(false)}<div class="scroll" style="padding-bottom:130px">
+  <div class="head" style="padding-bottom:4px"><div class="mono" style="color:var(--text3)">YOUR PROFILE</div><div style="font-size:28px;font-weight:800;letter-spacing:-.04em;line-height:1.08;margin-top:8px">This is what an employer sees.</div></div>
+  <div class="pad stack" style="display:grid;gap:10px;margin-top:12px" data-act="toast:Opens your video resume">${film}</div>
+  <div class="pad" style="margin-top:10px">${completion}</div>
+  <div class="pad" style="margin-top:10px">${feedRow}</div>
+  <div class="mlabel">Shortcuts</div><div class="pad"><div class="menu">${YOURS.slice(1).map(r=>mrow(r)).join('')}</div></div>
+  <div class="mlabel">Account</div><div class="pad">${identity}</div>
+  <div class="pad" style="margin-top:12px"><div class="menu">${MORE.map(r=>mrow(r,'background:var(--muted);color:var(--text2)')).join('')}</div></div>
+  <div class="pad" style="margin-top:22px">${signout}</div></div>${tab('profile')}`;
+
+/* C · gradient header + tile grid */
+const tileColors=['background:var(--accent-soft);color:var(--accent)','background:#E7F8F0;color:var(--ok)','background:#FFF4DE;color:#C77D00','background:#FFEAF1;color:#E0366B','background:var(--info-soft);color:var(--info)','background:var(--muted);color:var(--text2)'];
+const tile=(r,i)=>`<div class="tile" data-act="toast:Opens ${r[1]}"><div class="ic" style="${tileColors[i%tileColors.length]}">${I[r[0]]}</div><div><b>${r[1]}</b><span>${r[2]}</span></div></div>`;
+const pfC=()=>`${status(true)}<div class="scroll" style="padding-bottom:130px">
+  <div class="hdrP"><div class="rowc"><div class="avatar" style="width:60px;height:60px;background:rgba(255,255,255,.18);font-size:21px">${ME.init}</div><div class="grow"><div style="font-size:24px;font-weight:800;letter-spacing:-.03em">${ME.name}</div><div style="font-size:14px;color:var(--accent-muted)">${ME.mobile}</div><div style="font-size:14px;color:var(--accent-muted)">${ME.email}</div></div></div></div>
+  <div class="pad" style="margin-top:-36px"><div class="card rowc" style="gap:10px"><span class="pill ok">Email verified</span><span class="pill ok">Mobile verified</span></div></div>
+  <div class="mlabel">Your profile</div><div class="tiles">${YOURS.map(tile).join('')}</div>
+  <div class="mlabel">More</div><div class="tiles">${MORE.map((r,i)=>tile(r,i+5)).join('')}</div>
+  <div class="pad" style="margin-top:20px">${signout}</div></div>${tab('profile')}`;
+
+/* D · segmented Profile / Account */
+const kv=(k,v)=>`<div class="kv"><span>${k}</span><b>${v}</b></div>`;
+const secP=(t,rows)=>`<div class="sectionP"><div class="sh2"><span class="mono">${t}</span><a data-act="toast:Edit ${t}">Edit</a></div>${rows}</div>`;
+const pfD=S=>`${status(false)}<div class="scroll" style="padding-bottom:130px">
+  <div class="head" style="padding-bottom:12px"><div class="title">Profile</div></div>
+  <div class="pad">${who}</div>
+  <div class="pad" style="margin-top:16px"><div class="seg">${['Profile','Account'].map(x=>`<button class="${x===S.seg?'on':''}" data-act="seg:${x}">${x}</button>`).join('')}</div></div>
+  ${S.seg==='Profile'?`
+  <div class="pad" style="display:grid;gap:12px;margin-top:14px">${film}${completion}
+    ${secP('Basics',kv('Name',ME.name)+kv('City',ME.city)+kv('Date of birth','12 Mar 2003')+kv('Gender','Male')+kv('Languages','English, Hindi'))}
+    ${secP('Education',kv('Qualification','Graduation')+kv('Institution','Sample University')+kv('Field of study','Commerce')+kv('Year of completion','2025'))}
+    ${secP('Experience','<div style="padding:10px 0"><b style="font-size:16px">Role</b><div class="sub">Company · Jun 2024 – Aug 2024</div></div>')}
+    ${secP('Skills','<div style="padding:10px 0 2px"><span class="skill">Excel</span><span class="skill">Communication</span><span class="skill">SQL</span></div>')}
+    ${secP('Preferences',kv('Roles you want','Analyst')+kv('Where you would work','Pune, Remote')+kv('Kind of work','Full-time')+kv('When you can join','Immediately'))}
+    ${secP('Documents','<div class="sub" style="padding:10px 0">Nothing added yet.</div>')}
+    <div class="card"><div class="rowc" style="justify-content:space-between"><span class="mono" style="color:var(--text3);font-size:11px">YOUR VIDEOS</span><a style="font-size:14px;font-weight:600;color:var(--accent)" data-act="toast:Opens Videos">Manage videos</a></div></div>
+  </div>`:`
+  <div class="mlabel">Your profile</div><div class="pad"><div class="menu">${YOURS.slice(2).map(r=>mrow(r)).join('')}</div></div>
+  <div class="mlabel">Identity</div><div class="pad">${identity}</div>
+  <div class="mlabel">More</div><div class="pad"><div class="menu">${MORE.map(r=>mrow(r,'background:var(--muted);color:var(--text2)')).join('')}</div></div>
+  <div class="pad" style="margin-top:22px">${signout}</div>`}
+</div>${tab('profile')}`;
+
+const PFSTATE={A:{},B:{},C:{},D:{seg:'Profile'}};const PFFN={A:pfA,B:pfB,C:pfC,D:pfD};
+document.getElementById('pf').innerHTML=
+  cell('pfA','A · Grouped list','Identity row + grouped menus','Today’s Account screen, cleaner: who you are, then Your profile, Identity, More and Sign out as grouped cards with icons.')+
+  cell('pfB','B · Profile first','What an employer sees, then shortcuts','Leads with your video resume, how complete the profile is and whether you are live. Shortcuts and account settings follow.')+
+  cell('pfC','C · Tiles','Header + tile grid','A violet header with your name and verified chips, then every destination as a tile.')+
+  cell('pfD','D · Profile | Account','Two views in one tab','A segmented control: Profile shows your sections with Edit links, Account shows identity, settings and Sign out.');
+function renderPf(k){const el=document.getElementById('pf'+k);el.innerHTML=PFFN[k](PFSTATE[k]);shell(el);scrollSolid(el)}
+['A','B','C','D'].forEach(renderPf);
+['A','B','C','D'].forEach(k=>{const el=document.getElementById('pf'+k);el.addEventListener('click',e=>{const a=e.target.closest('[data-act]');if(!a)return;const x=a.dataset.act;
+  if(x==='close')return closeSheet(el);
+  if(x.startsWith('seg:')){PFSTATE[k].seg=x.slice(4);return renderPf(k)}
+  if(x==='signout')return sheet(el,'Sign Out','<div class="sub" style="font-size:15px">Are you sure you want to sign out?</div>',`<button class="btn out" style="flex:1" data-act="close">Cancel</button><button class="btn danger" style="flex:1" data-act="toast:Signed out">Sign Out</button>`);
+  if(x.startsWith('toast:')){closeSheet(el);return toast(el,x.slice(6))}})});
+
+/* =====================================================================
+   CHAT   (ChatListScreen.tsx · ThreadScreen.tsx)
+   ===================================================================== */
+const COL=['#5B3DF5','#0E9F6E','#E0366B','#2F6BFF'];
+const TH=[
+ {id:'t1',kind:'INTERVIEWER',name:'Your Interviewer',masked:true,ctx:'Interview today, 11:30 AM',pv:'Hi! Looking forward to speaking with you.',time:'10:42',unread:1},
+ {id:'t2',kind:'EMPLOYER',name:'Company A',init:'CA',c:0,ctx:'Their Interest · connected 28 Sep',pv:'Thanks for accepting. Are you free this week?',time:'Yesterday',unread:2},
+ {id:'t3',kind:'EMPLOYER',name:'Company B',init:'CB',c:1,ctx:'Your application · connected 22 Sep',pv:'We would like to move you to the next round.',time:'Mon',unread:0},
+ {id:'t4',kind:'SUPPORT',name:'Apostrophe Support',init:'A’',c:3,ctx:'Support · replies within one working day',pv:'Your receipt has been regenerated.',time:'22 Sep',unread:0},
+ {id:'t5',kind:'EMPLOYER',name:'Company D',init:'CD',c:2,ctx:'Connection withdrawn 20 Sep',pv:'Thank you for your time.',time:'20 Sep',unread:0,archived:true},
+];
+const byT=id=>TH.find(x=>x.id===id);
+const plate=(t,s=48)=>t.masked?`<div class="avatar" style="width:${s}px;height:${s}px;background:var(--muted);color:var(--text3)">${I.user.replace('<svg','<svg style="width:'+Math.round(s*.46)+'px"')}</div>`:`<div class="avatar" style="width:${s}px;height:${s}px;background:${COL[t.c%4]};font-size:${Math.round(s*.34)}px">${t.init}</div>`;
+const live=TH.filter(t=>!t.archived),arch=TH.filter(t=>t.archived);
+const unreadTotal=live.reduce((n,t)=>n+t.unread,0);
+const crow=(t,muted)=>`<div class="crow" data-act="th:${t.id}">${plate(t)}<div class="grow"><div class="nm"><b style="${muted?'color:var(--text3)':''}">${t.name}</b><span>${t.time}</span></div><div class="ctx">${t.ctx}</div><div class="pv ${t.unread?'u':''}"><p>${t.pv}</p>${t.unread?`<span class="uchip">${t.unread}</span>`:''}</div></div></div>`;
+const chead=(extra='')=>`<div class="head" style="padding-bottom:8px"><div class="title">Chats</div>${unreadTotal?`<div class="mono" style="color:var(--text3);margin-top:8px">${unreadTotal} UNREAD</div>`:''}${extra}</div>`;
+const archHead=`<div class="rowc" style="gap:12px;margin:14px 0 0"><span class="mono" style="color:var(--text3)">Archived</span><div class="grow" style="height:1px;background:var(--border)"></div><span class="mono" style="color:var(--text4)">${arch.length}</span></div>`;
+
+/* A · classic list */
+const chA=()=>`${status(false)}<div class="scroll" style="padding-bottom:130px">${chead()}<div class="pad">${live.map(t=>crow(t)).join('')}${archHead}${arch.map(t=>crow(t,true)).join('')}</div></div>${tab('none')}`;
+
+/* B · segmented by kind */
+const KINDS={All:()=>live,Employers:()=>live.filter(t=>t.kind==='EMPLOYER'),Interviewer:()=>live.filter(t=>t.kind==='INTERVIEWER'),Support:()=>live.filter(t=>t.kind==='SUPPORT')};
+const chB=S=>`${status(false)}<div class="scroll" style="padding-bottom:130px">${chead()}
+  <div class="chips" style="margin-top:6px">${Object.keys(KINDS).map(k=>`<span class="chip ${k===S.k?'on':''}" data-act="k:${k}">${k} (${KINDS[k]().length})</span>`).join('')}</div>
+  <div class="pad" style="display:grid;grid-template-columns:minmax(0,1fr);gap:10px;margin-top:14px">${KINDS[S.k]().map(t=>`<div class="ccard" data-act="th:${t.id}">${plate(t)}<div class="grow"><div class="nm" style="display:flex;justify-content:space-between;gap:8px"><b style="font-size:17px">${t.name}</b><span class="mono" style="font-size:11px;color:var(--text4)">${t.time}</span></div><div class="ctx" style="font:500 10.5px 'Geist Mono',monospace;color:var(--text4);text-transform:uppercase;letter-spacing:.06em;margin-top:3px">${t.ctx}</div><div class="rowc" style="gap:10px;margin-top:6px"><span class="grow" style="font-size:14.5px;color:${t.unread?'var(--text)':'var(--text3)'};font-weight:${t.unread?500:400};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.pv}</span>${t.unread?`<span class="uchip">${t.unread}</span>`:''}</div></div></div>`).join('')||`<div class="card"><b style="font-size:17px">No chats here yet.</b></div>`}</div>
+  ${S.k==='All'?`<div class="pad">${archHead}${arch.map(t=>crow(t,true)).join('')}</div>`:''}</div>${tab('none')}`;
+
+/* C · pinned interview + support, employers below */
+const chC=()=>{const iv=byT('t1'),su=byT('t4'),em=live.filter(t=>t.kind==='EMPLOYER');
+  return `${status(false)}<div class="scroll" style="padding-bottom:130px">${chead()}
+  <div class="pad" style="display:grid;gap:10px;margin-top:6px">
+    <div class="pin" data-act="th:t1"><div class="rowc" style="gap:12px">${plate(iv,44)}<div class="grow"><div style="font-size:17px;font-weight:700;letter-spacing:-.01em">Your Interviewer</div><div class="mono" style="font-size:10.5px;color:#8A91A2;margin-top:3px;text-transform:uppercase">${iv.ctx}</div></div><span class="uchip" style="background:var(--accent-bright);color:#fff">${iv.unread}</span></div><div class="sub" style="margin-top:10px;font-size:14.5px;color:#C9CED9">${iv.pv}</div></div>
+    <div class="ccard" data-act="th:t4">${plate(su,44)}<div class="grow"><b style="font-size:16px">${su.name}</b><div class="sub" style="font-size:13.5px;margin-top:2px">${su.ctx.replace('Support · ','')}</div></div>${I.chev}</div></div>
+  <div class="mlabel" style="padding-top:22px">Employers</div><div class="pad">${em.map(t=>crow(t)).join('')}${archHead}${arch.map(t=>crow(t,true)).join('')}</div></div>${tab('none')}`};
+
+/* D · avatar strip + conversation cards */
+const chD=()=>`${status(false)}<div class="scroll" style="padding-bottom:130px">${chead()}
+  <div class="avs" style="margin-top:6px">${live.map(t=>`<div class="avi" data-act="th:${t.id}"><span class="ringw ${t.unread?'':'no'}">${plate(t,56).replace('width:56px;height:56px','width:52px;height:52px')}</span><div style="margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.name.replace('Apostrophe ','').replace('Your ','')}</div></div>`).join('')}</div>
+  <div class="mlabel" style="padding-top:20px">Recent</div>
+  <div class="pad" style="display:grid;gap:10px">${live.map(t=>`<div class="ccard" data-act="th:${t.id}" style="flex-direction:column;gap:8px"><div class="rowc" style="gap:12px">${plate(t,40)}<div class="grow"><b style="font-size:16px">${t.name}</b><div class="mono" style="font-size:10.5px;color:var(--text4);text-transform:uppercase;letter-spacing:.06em;margin-top:2px">${t.ctx}</div></div><span class="mono" style="font-size:11px;color:var(--text4)">${t.time}</span></div><div class="rowc" style="gap:10px"><span class="grow" style="font-size:14.5px;color:${t.unread?'var(--text)':'var(--text3)'};font-weight:${t.unread?500:400}">${t.pv}</span>${t.unread?`<span class="uchip">${t.unread}</span>`:''}</div></div>`).join('')}</div>
+  <div class="pad">${archHead}${arch.map(t=>crow(t,true)).join('')}</div></div>${tab('none')}`;
+
+const CHSTATE={A:{},B:{k:'All'},C:{},D:{}};const CHFN={A:chA,B:chB,C:chC,D:chD};
+document.getElementById('ch').innerHTML=
+  cell('chA','A · Classic list','Rows with context and unread chip','Today’s list, refined: a plate, the name, a mono context line, the last message and an unread chip. Archived below.')+
+  cell('chB','B · By type','Filter: All, Employers, Interviewer, Support','Chips split the three kinds of thread, each with a count. Rows are cards.')+
+  cell('chC','C · Pinned','Interviewer and Support pinned on top','The two threads that are always yours sit above. Employer chats follow in a list.')+
+  cell('chD','D · Avatar strip','Active chats as a strip + cards','A story-style strip of your conversations with a ring on unread ones, then recent conversations as cards.');
+function renderCh(k){const el=document.getElementById('ch'+k);el.innerHTML=CHFN[k](CHSTATE[k]);shell(el);el.insertAdjacentHTML('beforeend','<div class="thread"></div>');scrollSolid(el)}
+function openThread(el,t){
+  const th=el.querySelector('.thread');
+  const sub=t.kind==='INTERVIEWER'?'Interview today, 11:30 AM':t.kind==='SUPPORT'?'Support · replies within one working day':t.archived?'Withdrawn 20 Sep':'Their Interest · connected 28 Sep';
+  const msgs=t.kind==='INTERVIEWER'?`<div class="day">TODAY</div><div class="sys">This chat is open before your interview.</div><div class="msg in">${t.pv}<small>10:42</small></div>`
+    :t.kind==='SUPPORT'?`<div class="day">22 SEP</div><div class="msg out">Can you send my receipt again?<small>9:10</small></div><div class="msg in">${t.pv}<small>9:48</small></div>`
+    :t.archived?`<div class="day">20 SEP</div><div class="sys">This connection was withdrawn.</div><div class="msg in">${t.pv}<small>4:02 PM</small></div>`
+    :`<div class="day">28 SEP</div><div class="sys">Chat opened</div><div class="msg in">Hello! We liked your video resume.<small>11:02</small></div><div class="msg out">Thank you! Happy to talk.<small>11:20</small></div><div class="day">YESTERDAY</div><div class="msg in">${t.pv}<small>6:15 PM</small></div>`;
+  const foot=t.archived?`<div class="ro"><b>This connection was withdrawn on 20 Sep.</b><span>Neither side can write here again. Everything above stays, and the row stays in your Connections.</span></div>`
+    :`<div class="compose"><div class="in">Message</div><div class="send">${I.send}</div></div>`;
+  th.innerHTML=`<div class="th-head"><button class="back" data-act="back">${I.back}</button>${plate(t,38)}<div class="grow"><div style="font-size:17px;font-weight:600">${t.name}</div><div class="mono" style="font-size:10.5px;color:var(--text4);text-transform:uppercase;letter-spacing:.06em">${sub}</div></div></div>
+  <div class="th-body">${msgs}</div>${foot}`;
+  requestAnimationFrame(()=>th.classList.add('on'));
+}
+['A','B','C','D'].forEach(renderCh);
+['A','B','C','D'].forEach(k=>{const el=document.getElementById('ch'+k);el.addEventListener('click',e=>{const a=e.target.closest('[data-act]');if(!a)return;const x=a.dataset.act;
+  if(x==='close')return closeSheet(el);
+  if(x==='back')return el.querySelector('.thread').classList.remove('on');
+  if(x.startsWith('k:')){CHSTATE[k].k=x.slice(2);return renderCh(k)}
+  if(x.startsWith('th:'))return openThread(el,byT(x.slice(3)));
+  if(x.startsWith('toast:')){closeSheet(el);return toast(el,x.slice(6))}})});
+</script>
+</body>
+</html>

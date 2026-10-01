@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apostrophe App – Your videos (4 options)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FAFAFC; --surface:#fff; --muted:#F1F3F7; --sunken:#E6E8EE;
+    --text:#0B0F1A; --text2:#3A4256; --text3:#6B7385; --text4:#8A91A2;
+    --border:#E3E6ED; --border-strong:#C9CED9;
+    --accent:#5B3DF5; --accent-soft:#EFEBFF; --accent-wash:#F7F6FF; --accent-bright:#7258FF; --accent-deep:#3B2A8F; --accent-edge:#DCD3FF;
+    --ink:#0B0F1A; --ink-raised:#151B2B;
+    --ok:#0E9F6E; --ok-text:#0B7A55; --ok-soft:#E6F7F0; --danger:#E5484D; --danger-text:#C22A30; --danger-soft:#FDECEC; --danger-border:#F2B8BA;
+    --warn:#935F00; --warn-soft:#FFF5E1; --warn-edge:#F5E2B8; --warn-wash:#FFFCF3; --info-soft:#E8EFFF;
+    --r-md:14px; --r-lg:20px; --r-xl:28px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{font-family:'Geist',system-ui,sans-serif;background:#E9EAF2;color:var(--text);padding:32px 24px 80px}
+  button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+  button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex:none}
+  input{font:inherit;color:inherit}
+  .mono{font:500 11px 'Geist Mono',monospace;letter-spacing:.14em;text-transform:uppercase}
+
+  /* page chrome (not part of the app) */
+  .intro{max-width:1100px;margin:0 auto 20px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:22px 28px}
+  .intro h1{font-size:26px;letter-spacing:-.035em}
+  .intro p{font-size:14.5px;color:var(--text3);margin-top:8px;line-height:1.5;max-width:900px}
+  .opts{max-width:1100px;margin:0 auto 16px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .opt{text-align:left;align-content:start;display:block;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r-lg);padding:14px 16px}
+  .opt.on{border-color:var(--accent);background:var(--accent-wash)}
+  .opt b{display:block;font-size:16px;letter-spacing:-.02em;margin-top:6px}
+  .opt span{display:block;font-size:13px;color:var(--text3);line-height:1.4;margin-top:3px}
+  .opt .mono{color:var(--accent)}
+  .ctl{max-width:1100px;margin:0 auto 18px;display:grid;gap:8px}
+  .ctl .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .ctl .lab{width:104px;color:var(--text3)}
+  .pills{display:flex;flex-wrap:wrap;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:22px;padding:4px}
+  .pills button{padding:7px 12px;border-radius:99px;font-size:13px;font-weight:600;color:var(--text3);white-space:nowrap}
+  .pills button.on{background:var(--accent);color:#fff}
+  body.bare{padding:0;background:#E9EAF2}body.bare .intro,body.bare .opts,body.bare .ctl,body.bare .cap{display:none}
+  .stagewrap{display:flex;gap:40px;justify-content:center;align-items:flex-start;flex-wrap:wrap}
+  .cap{width:390px;margin-top:0}
+  .cap b{font-size:17px;letter-spacing:-.02em;display:block}.cap span{font-size:14px;color:var(--text3);line-height:1.45;display:block;margin-top:3px}
+  .cap ul{margin:10px 0 0 18px;font-size:13.5px;line-height:1.6;color:var(--text2)}
+
+  /* phone */
+  .phone{width:390px;height:812px;background:var(--bg);border-radius:44px;border:10px solid #0B0F1A;overflow:hidden;position:relative;flex:none}
+  .status{background:var(--bg);height:44px;display:flex;justify-content:space-between;align-items:center;padding:0 26px;font-size:14px;font-weight:600;position:absolute;top:0;left:0;right:0;z-index:40;pointer-events:none}
+  .status i{width:90px;height:24px;background:#0B0F1A;border-radius:14px;position:absolute;left:50%;top:8px;transform:translateX(-50%)}
+  .status.dark{color:#fff;background:transparent}
+  .scroll{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none;padding-top:44px}
+  .scroll::-webkit-scrollbar{display:none}
+  .scroll.withfoot{bottom:112px}
+  .toast{position:absolute;left:14px;right:14px;bottom:24px;background:var(--ink);color:#fff;border-radius:var(--r-md);padding:13px 14px;z-index:90;font-size:14px;font-weight:600;transform:translateY(20px);opacity:0;pointer-events:none;transition:.25s}
+  .toast.on{transform:none;opacity:1}
+
+  /* kit: pill, buttons, panel, header */
+  .pill{font:500 10.5px 'Geist Mono',monospace;letter-spacing:.1em;text-transform:uppercase;border-radius:99px;padding:5px 10px;display:inline-block;white-space:nowrap}
+  .pill.ok{background:var(--ok-soft);color:var(--ok-text)}.pill.acc{background:var(--accent-soft);color:#4A2FE0}
+  .pill.warn{background:var(--warn-soft);color:var(--warn)}.pill.neutral{background:var(--muted);color:var(--text3)}
+  .pill.danger{background:var(--danger-soft);color:var(--danger-text)}
+  .unv{font:500 10px 'Geist Mono',monospace;letter-spacing:.1em;text-transform:uppercase;border-radius:99px;padding:4px 9px;display:inline-block;background:var(--surface);border:1px solid var(--border);color:var(--text3)}
+  .seal{display:inline-flex;align-items:center;gap:5px;background:var(--ok-soft);color:var(--ok-text);border-radius:99px;padding:5px 10px;font:500 10px 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase}
+  .seal svg{width:12px;stroke:var(--ok);stroke-width:3}
+  .btn{height:46px;min-width:44px;border-radius:var(--r-md);font-weight:700;font-size:15px;padding:0 18px;display:inline-flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap}
+  .btn.pri{background:var(--accent);color:#fff}.btn.ink{background:var(--ink);color:#fff}.btn.out{border:1.5px solid var(--border-strong);background:var(--surface)}
+  .btn.des{background:var(--danger);color:#fff}.btn.quiet{color:var(--text2)}
+  .btn.dis{background:var(--muted);color:var(--text4);cursor:default}.btn.full{width:100%}
+  .btn.sm{height:40px;font-size:14px;padding:0 14px;border-radius:12px}
+  .btn.dtext{color:var(--danger-text)}
+  .btn svg{width:17px}
+  .iconbtn{width:44px;height:44px;border-radius:var(--r-md);border:1.5px solid var(--border);display:grid;place-items:center;color:var(--text3);flex:none;background:var(--surface)}
+  .iconbtn.d{color:var(--danger-text)}
+  .iconbtn svg{width:19px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:16px}
+  .card.dash{border-style:dashed;border-color:var(--border-strong)}
+  .card.mutedc{background:var(--muted);border-color:transparent}
+  .rowc{display:flex;align-items:center;gap:12px}.grow{flex:1;min-width:0}
+  .sub{font-size:14px;color:var(--text3);line-height:1.4}
+  .xs{font-size:13px;color:var(--text3);line-height:1.4}
+  .dhead{display:flex;align-items:center;gap:12px;padding:8px 14px}
+  .dhead .back{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--border);background:var(--surface);flex:none}
+  .dhead b{font-size:18px;letter-spacing:-.02em;flex:1}
+  .pad{padding:0 20px}
+  .eyebrow{font:500 11px 'Geist Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--text3)}
+  .h1{font-size:30px;font-weight:800;letter-spacing:-.04em;line-height:1.05}
+  .headblock{padding:8px 24px 14px;display:grid;gap:6px}
+  .group{font:500 11px 'Geist Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--text3);padding:0 4px 8px}
+  .seg{display:flex;background:var(--muted);border-radius:var(--r-md);padding:4px;margin:4px 20px 0}
+  .seg button{flex:1;height:40px;border-radius:11px;font-size:14.5px;font-weight:600;color:var(--text3)}
+  .seg button.on{background:var(--surface);color:var(--accent);border:1px solid var(--border)}
+  .seg button em{font-style:normal;font:500 11px 'Geist Mono',monospace;margin-left:4px;opacity:.75}
+  .chip{height:40px;padding:0 16px;border-radius:99px;border:1.5px solid var(--border-strong);background:var(--surface);font-size:14px;font-weight:600;color:var(--text2)}
+  .chip.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .banner{display:flex;gap:10px;align-items:flex-start;border-radius:var(--r-md);padding:12px 14px;font-size:14px;line-height:1.45}
+  .banner svg{width:18px;margin-top:1px}
+  .banner.info{background:var(--info-soft);color:#1F4FD1}.banner.warn{background:var(--warn-soft);color:var(--warn)}.banner.danger{background:var(--danger-soft);color:var(--danger-text)}
+  .banner b{display:block;font-weight:700}
+  .bar{height:6px;border-radius:6px;background:var(--sunken);overflow:hidden}.bar i{display:block;height:100%;background:var(--accent);border-radius:6px;transition:width .2s}
+  .toggle{width:52px;height:32px;border-radius:99px;background:var(--sunken);position:relative;flex:none;transition:.2s}
+  .toggle::after{content:"";position:absolute;left:3px;top:3px;width:26px;height:26px;border-radius:50%;background:#fff;transition:.2s}
+  .toggle.on{background:var(--ok)}.toggle.on::after{left:23px}
+  .skel{background:linear-gradient(90deg,var(--muted) 0%,#E9ECF2 50%,var(--muted) 100%);background-size:200% 100%;animation:sh 1.3s infinite linear;border-radius:18px}
+  @keyframes sh{to{background-position:-200% 0}}
+  .center{display:grid;justify-items:center;text-align:center;padding:36px 36px 0}
+  .center .ic{width:68px;height:68px;border-radius:22px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;margin-bottom:16px}
+  .center .ic svg{width:30px;height:30px}
+  .center b{font-size:22px;letter-spacing:-.03em;display:block}
+  .center p{font-size:15px;color:var(--text3);margin:8px 0 20px;line-height:1.5}
+  [data-act]{cursor:pointer}
+
+  /* thumbs: verified = solid ink frame, self-uploaded = dashed frame */
+  .th{aspect-ratio:9/16;border-radius:14px;position:relative;overflow:hidden;flex:none;display:grid;place-items:center;color:#fff}
+  .th.v{border:1.5px solid var(--ink);background:linear-gradient(160deg,var(--accent-bright),var(--accent-deep) 55%,var(--ink-raised))}
+  .th.s{border:1.5px dashed var(--border-strong)}
+  .th.s0{background:linear-gradient(160deg,#6B7385,#2A3042)}
+  .th.s1{background:linear-gradient(160deg,#8A91A2,#3A4256)}
+  .th.s2{background:linear-gradient(160deg,#4B5468,#151B2B)}
+  .th.dim{background:var(--muted);color:var(--text4)}
+  .th .disc{width:var(--d,40px);height:var(--d,40px);border-radius:50%;background:var(--surface);border:1px solid var(--border);display:grid;place-items:center;color:var(--ink)}
+  .th .disc svg{width:46%;fill:currentColor;stroke:none;margin-left:6%}
+  .th .len{position:absolute;right:6px;bottom:6px;font:500 10px 'Geist Mono',monospace;background:rgba(11,15,26,.7);color:#fff;border-radius:99px;padding:3px 7px}
+  .th .tl{position:absolute;left:6px;top:6px}
+  .th .ring{position:absolute;inset:0;border-radius:inherit;border:2.5px solid var(--accent);pointer-events:none}
+  .th .proc{position:absolute;inset:auto 0 0 0;padding:6px;font:500 10px 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase;text-align:center;background:rgba(11,15,26,.55);color:#fff}
+
+  /* sheet */
+  .scrim{position:absolute;inset:0;background:rgba(11,15,26,.5);z-index:60;display:flex;align-items:flex-end}
+  .sheet{background:var(--surface);width:100%;border-radius:28px 28px 0 0;padding:10px 20px 22px;display:grid;gap:14px;max-height:92%;overflow-y:auto;scrollbar-width:none}
+  .sheet::-webkit-scrollbar{display:none}
+  .sheet .grab{width:40px;height:4px;border-radius:4px;background:var(--border-strong);margin:0 auto 4px}
+  .sheet h3{font-size:21px;letter-spacing:-.03em}
+  .field label{display:block;font-size:14px;font-weight:600;margin-bottom:6px}
+  .field input{width:100%;height:48px;border-radius:var(--r-md);border:1.5px solid var(--border-strong);padding:0 14px;font-size:16px;background:var(--surface)}
+  .field input:focus{outline:none;border-color:var(--accent)}
+  .field small{display:block;font-size:13px;color:var(--text3);margin-top:6px}
+
+  /* player */
+  .player{position:absolute;inset:0;background:var(--ink);z-index:70;color:#fff;display:flex;flex-direction:column;padding:44px 16px 20px;gap:14px}
+  .player .ph{display:flex;align-items:center;gap:12px;padding-top:8px}
+  .player .ph .t{flex:1;min-width:0}
+  .player .ph b{display:block;font-size:17px;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .player .ph small{display:block;font:500 10.5px 'Geist Mono',monospace;letter-spacing:.1em;color:rgba(255,255,255,.62);margin-top:3px}
+  .player .x{width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.12);display:grid;place-items:center}
+  .player .vid{flex:1;display:grid;place-items:center;min-height:0}
+  .player .frame{height:100%;max-height:560px;aspect-ratio:9/16;border-radius:20px;background:linear-gradient(160deg,#6B7385,#2A3042);position:relative;overflow:hidden}
+  .player .frame .pp{position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.45);display:grid;place-items:center}
+  .player .frame .pp svg{width:26px;fill:#fff;stroke:none}
+  .player .ctrl{position:absolute;left:12px;right:12px;bottom:12px;display:flex;align-items:center;gap:8px;font:500 10.5px 'Geist Mono',monospace}
+  .player .ctrl .tr{flex:1;height:3px;border-radius:3px;background:rgba(255,255,255,.3)}.player .ctrl .tr i{display:block;height:100%;background:#fff;border-radius:3px}
+  .player .note{background:rgba(255,255,255,.1);border-radius:var(--r-md);padding:14px;display:grid;gap:10px;justify-items:start;font-size:14.5px;line-height:1.45}
+  .player .note .btn{border-color:rgba(255,255,255,.4);background:transparent;color:#fff}
+
+  .footbar{position:absolute;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--border);padding:12px 20px 14px;display:grid;gap:8px;z-index:30}
+  .tile .th{width:100%}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px 12px;align-items:start}
+  .shelf{display:flex;gap:10px;overflow-x:auto;padding:4px 20px 6px;scrollbar-width:none}
+  .shelf::-webkit-scrollbar{display:none}
+  .strip{display:grid;grid-template-columns:repeat(3,1fr);margin:14px 20px 0;border:1px solid var(--border);border-radius:var(--r-lg);background:var(--surface)}
+  .strip div{padding:11px 13px;border-right:1px solid var(--border)}.strip div:last-child{border-right:0}
+  .strip small{display:block;font:500 10px 'Geist Mono',monospace;letter-spacing:.1em;color:var(--text3)}
+  .strip b{display:block;font-size:15px;margin-top:4px;letter-spacing:-.01em}
+</style>
+</head>
+<body>
+<div class="intro">
+  <div class="mono" style="color:var(--accent)">Account → Your videos · 4 options</div>
+  <h1>Your videos</h1>
+  <p>Video resume (verified, filmed at the interview) plus up to the allowed number of clips the student adds from their gallery, always marked Unverified. Copy, statuses, error sentences and rules are the app's own. Limits (3 clips, 90 seconds, 100 MB, the file-type label) are server values read from /config and are sample values here; titles, dates and reasons are placeholders. The app has no in-app record step today: clips are chosen from the phone's gallery, so none is drawn.</p>
+</div>
+<div class="opts" id="opts"></div>
+<div class="ctl">
+  <div class="row"><span class="mono lab">State</span><div class="pills" id="stP"></div></div>
+  <div class="row"><span class="mono lab">Upload result</span><div class="pills" id="ouP"></div></div>
+  <div class="row"><span class="mono lab">Interview film</span><div class="pills" id="fiP"></div></div>
+</div>
+<div class="stagewrap"><div class="phone" id="ph"></div><div class="cap" id="cap"></div></div>
+
+<script>
+const I={
+ back:'<svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>',
+ alert:'<svg viewBox="0 0 24 24"><path d="M12 3l10 18H2zM12 10v5M12 18v.5"/></svg>',
+ info:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.5"/></svg>',
+ play:'<svg viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z"/></svg>',
+ pause:'<svg viewBox="0 0 24 24"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" style="fill:#fff;stroke:none"/></svg>',
+ check:'<svg viewBox="0 0 24 24"><path d="M5 12l4 4 10-10"/></svg>',
+ video:'<svg viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></svg>',
+ x:'<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+ edit:'<svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4"/></svg>',
+ trash:'<svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg>',
+ plus:'<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>'
+};
+/* real constants (server values from /config are sample numbers) */
+const CFG={max:3,seconds:90,mb:100,label:'MP4 or MOV video'};
+const TITLE_MAX=80;
+const KINDS=[['INTRO','Introduction'],['PROJECT','A project'],['SKILL','A skill']];
+const kindLabel=k=>(KINDS.find(x=>x[0]===k)||[])[1]||k;
+const nameOf=v=>v.title||kindLabel(v.kind);
+const STATUS={APPROVED:['Approved','ok'],PENDING:['Waiting for review','warn'],REJECTED:['Not published','danger']};
+const clock=s=>s?`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`:'';
+const COULD_NOT_PLAY='This video could not be played. Check your connection and try again.';
+const ERR={big:`That video is 140 MB. The limit is ${CFG.mb} MB.`,long:`That video is 120 seconds. Keep it under ${CFG.seconds}.`,net:'The upload failed. Check your connection.'};
+const SAVED_REVIEW='Saved. This video is back in review. Employers will not see it until it is approved again.';
+
+const base=()=>[
+ {id:'v1',kind:'INTRO',title:null,dur:42,status:'APPROVED',reason:null,edited:false,url:true},
+ {id:'v2',kind:'PROJECT',title:'Sample project title',dur:65,status:'PENDING',reason:null,edited:false,url:true},
+ {id:'v3',kind:'SKILL',title:'Sample skill title',dur:58,status:'REJECTED',reason:'Sample reason from the team.',edited:false,url:true}];
+const S={opt:'A',st:'list',outcome:'ok',film:'live',vids:base(),loading:false,loadErr:false,hidden:false,
+ sheet:null,target:null,kind:'INTRO',up:null,err:null,notice:null,player:null,playing:false,t:0,pErr:false,sel:'v1',tab:'yours',editTitle:'',editKind:'INTRO'};
+let upTimer=null,playTimer=null,seq=0;
+const $=id=>document.getElementById(id);
+const ph=$('ph');
+
+/* ---------- pieces ---------- */
+const status=dark=>`<div class="status ${dark?'dark':''}"><span>9:41</span><i></i><span>5G ▮▮▮</span></div>`;
+const dh=()=>`<div class="dhead"><button class="back" data-act="back" aria-label="Back">${I.back}</button><b>Your videos</b></div>`;
+const unv=()=>`<span class="unv">Unverified</span>`;
+const seal=t=>`<span class="seal">${I.check}${t||'Verified'}</span>`;
+const spill=v=>{const m=STATUS[v.status];return `<span class="pill ${m[1]}">${m[0]}</span>`};
+const idx=v=>S.vids.indexOf(v);
+const left=()=>CFG.max-S.vids.length;
+const head=(compact)=>`<div class="headblock"><div class="eyebrow">Your own recordings · ${S.vids.length} of ${CFG.max}</div>${compact?'':'<div class="h1">Say a bit more.</div>'}<div class="sub">Up to ${CFG.seconds} seconds each. Marked as not verified. Your interview film is watched first.</div></div>`;
+const noticeHTML=()=>S.notice?`<div class="pad" style="margin-bottom:12px"><div class="banner info" role="status">${I.info}<span>${S.notice}</span></div></div>`:'';
+const filmTxt=()=>({live:'Leads your profile',notlive:'Not live on your profile yet',held:'Held back until your top-up is settled',none:'Filmed at your interview'})[S.film];
+const filmMark=()=>S.film==='none'?`<span class="pill neutral">Not yet</span>`:seal();
+const skel=(n,h)=>Array.from({length:n},()=>`<div class="skel" style="height:${h}px"></div>`).join('');
+const errBlock=()=>`<div class="center"><div class="ic">${I.alert}</div><b>Could not load your videos.</b><p>Check your connection and try again.</p><button class="btn out" data-act="retry">Try again</button></div>`;
+const vis=()=>`<div class="card rowc"><div class="grow"><b style="font-size:16px">Appear in employer searches</b><div class="xs" style="margin-top:3px">Nothing is deleted when this is off.</div></div><button class="toggle ${S.hidden?'':'on'}" data-act="vis" role="switch" aria-checked="${!S.hidden}" aria-label="Appear in employer searches"></button></div>`;
+const thumb=(v,w,extra='')=>{const i=idx(v),dim=v.status==='REJECTED';
+ return `<div class="th s s${i%3} ${dim?'':''}" style="${w?`width:${w}px`:''}">${v.url?`<span class="disc">${I.play}</span>`:''}${extra}</div>`};
+const filmThumb=(w,extra='')=>`<div class="th ${S.film==='none'?'s dim':'v'}" style="width:${w}px;--d:${w<=64?22:34}px">${S.film==='none'?I.video:`<span class="disc">${I.play}</span>`}${extra}</div>`;
+const vmeta=v=>[v.title?kindLabel(v.kind):null,clock(v.dur)].filter(Boolean).join(' · ');
+const vnote=v=>v.status==='PENDING'?`${v.edited?'<div class="xs">Edited · back in review</div>':''}<div class="xs">We will tell you when it has been reviewed.</div>`
+ :v.status==='APPROVED'?`<div class="xs">Shown on your full profile to employers, marked not verified.</div>`
+ :(v.reason?`<div class="xs" style="color:var(--danger-text)">${v.reason}</div>`:'');
+const filmCard=()=>`<div class="card rowc">${filmThumb(40)}<div class="grow"><b style="font-size:16px">Your interview</b><div class="xs" style="margin-top:3px">${filmTxt()}</div></div>${filmMark()}</div>`;
+
+/* add-a-video body: shared by the sheet and the inline card */
+function addBody(){
+ if(left()<=0)return `<div class="sub">That is all ${CFG.max}. Delete one to add another.</div>`;
+ const rule=`${CFG.label} · up to ${CFG.mb} MB · ${CFG.seconds} seconds`;
+ const up=S.up!==null;
+ return `<div><b style="font-size:16px">${left()===1?'One slot left':left()+' slots left'}</b><div class="xs" style="margin-top:3px">What is this one about?</div></div>
+ <div class="chips">${KINDS.map(k=>`<button class="chip ${S.kind===k[0]?'on':''}" data-act="kind:${k[0]}">${k[1]}</button>`).join('')}</div>
+ ${up?`<div style="display:grid;gap:10px"><div class="rowc" style="justify-content:space-between"><span class="sub">Uploading…</span><span class="mono" style="color:var(--text)">${Math.round(S.up*100)}%</span></div><div class="bar"><i style="width:${S.up*100}%"></i></div><button class="btn out sm" style="justify-self:start" data-act="cancel">Cancel</button></div>`
+ :`<button class="btn out full" style="height:52px" data-act="pick">Choose a video from your gallery</button>`}
+ <div class="xs" style="color:var(--text4)">${rule}</div>
+ ${S.err?`<div class="banner danger" role="alert">${I.alert}<span>${S.err}</span></div>`:''}`;
+}
+const sheetAdd=()=>`<div class="scrim" data-act="closeSheet"><div class="sheet" data-stop><div class="grab"></div><div class="rowc"><h3 class="grow">Add a video</h3>${S.up===null?`<button class="iconbtn" data-act="closeSheet" aria-label="Close">${I.x}</button>`:''}</div>${addBody()}</div></div>`;
+function sheetEdit(){const v=S.target,st=v.status;
+ return `<div class="scrim" data-act="closeSheet"><div class="sheet" data-stop><div class="grab"></div><h3>${st==='REJECTED'?'Edit and resubmit':'Edit video'}</h3>
+ ${st==='APPROVED'?`<div class="banner warn">${I.alert}<span>Editing sends this video back for review. Employers will not see it until it is approved again.</span></div>`:''}
+ ${st==='REJECTED'?`<div class="banner danger">${I.alert}<span><b>Not published</b>${v.reason||'This video was not approved.'}</span></div>`:''}
+ <div class="field"><label for="ti">Title</label><input id="ti" maxlength="${TITLE_MAX}" value="${S.editTitle.replace(/"/g,'&quot;')}" placeholder="${kindLabel(S.editKind)}" aria-label="Video title"><small id="tc">Optional. Employers see the title. ${S.editTitle.length} / ${TITLE_MAX}</small></div>
+ <div class="chips">${KINDS.map(k=>`<button class="chip ${S.editKind===k[0]?'on':''}" data-act="ekind:${k[0]}">${k[1]}</button>`).join('')}</div>
+ <div style="display:grid;gap:8px"><button class="btn pri full" data-act="save">${st==='REJECTED'?'Edit and resubmit':'Save'}</button><button class="btn quiet full" data-act="closeSheet">Cancel</button></div></div></div>`}
+const sheetDel=()=>`<div class="scrim" data-act="closeSheet"><div class="sheet" data-stop><div class="grab"></div><h3>Remove this video?</h3><div class="sub">This cannot be undone.</div><b style="font-size:15px">${nameOf(S.target)}</b>
+ ${S.delErr?`<div class="banner danger" role="alert">${I.alert}<span>The video could not be removed. Try again.</span></div>`:''}
+ <div style="display:grid;gap:8px"><button class="btn des full" aria-label="Remove ${nameOf(S.target)}" data-act="remove">Remove</button><button class="btn quiet full" data-act="closeSheet">Keep it</button></div></div></div>`;
+function playerHTML(){
+ const film=S.player==='film',v=film?null:S.vids.find(x=>x.id===S.player);if(!film&&!v)return '';
+ const dur=film?192:(v.dur||60);const pct=Math.min(100,S.t/dur*100);
+ return `<div class="player">${status(true)}<div class="ph"><div class="t"><b>${film?'Your interview':nameOf(v)}</b><small>${film?'VERIFIED · FILMED AT YOUR INTERVIEW':'SELF-RECORDED · NOT VERIFIED'}</small></div><button class="x" data-act="closePlayer" aria-label="Close">${I.x}</button></div>
+ <div class="vid"><div class="frame" data-act="pp" style="${film?'background:linear-gradient(160deg,var(--accent-bright),var(--accent-deep) 55%,var(--ink-raised))':''}">${S.playing?'':`<div class="pp">${I.play}</div>`}<div class="ctrl"><span id="pt">${clock(Math.floor(S.t))||'0:00'}</span><div class="tr"><i id="pb" style="width:${pct}%"></i></div><span>${clock(dur)}</span></div></div></div>
+ ${S.pErr?`<div class="note"><span>${COULD_NOT_PLAY}</span><button class="btn out sm" data-act="retryPlay">Try again</button></div>`:''}</div>`}
+
+/* ---------- list/empty/loading wrappers per state ---------- */
+function stateBody(content){
+ if(S.loading)return `<div class="pad" style="display:grid;gap:12px;margin-top:12px">${skel(1,70)}${skel(2,150)}${skel(1,90)}</div>`;
+ if(S.loadErr)return errBlock();
+ return content();
+}
+const emptyBlock=()=>`<div class="center"><div class="ic">${I.video}</div><b>No videos yet.</b><p>Up to ${CFG.seconds} seconds each. Marked as not verified. Your interview film is watched first.</p><button class="btn pri" data-act="add">Choose a video from your gallery</button></div>`;
+
+/* ---------- OPTION A: 2-col 9:16 grid ---------- */
+function viewA(){
+ const tiles=S.vids.map(v=>`<div class="tile" style="display:grid;gap:8px">
+  <div data-act="play:${v.id}" role="button" aria-label="Play ${nameOf(v)}"><div class="th s s${idx(v)%3}" style="width:100%"><span class="tl">${unv()}</span><span class="disc">${I.play}</span><span class="len">${clock(v.dur)}</span></div></div>
+  <div style="display:grid;gap:5px"><b style="font-size:15.5px;letter-spacing:-.01em;line-height:1.2">${nameOf(v)}</b>${v.title?`<div class="xs">${kindLabel(v.kind)}</div>`:''}<div>${spill(v)}</div>${vnote(v)}</div>
+  <div class="rowc" style="gap:6px"><button class="btn out sm grow" style="padding:0 8px" data-act="edit:${v.id}" aria-label="Edit ${nameOf(v)}, ${kindLabel(v.kind)}">${I.edit}Edit</button><button class="btn dtext sm grow" style="padding:0 8px" data-act="del:${v.id}" aria-label="Delete ${nameOf(v)}, ${kindLabel(v.kind)}">${I.trash}Delete</button></div></div>`).join('');
+ const addTile=left()>0?`<div class="tile"><button class="th" data-act="add" style="width:100%;border:1.5px dashed var(--border-strong);background:var(--surface);color:var(--text2);display:grid;align-content:center;justify-items:center;gap:8px;padding:12px;text-align:center">${S.up!==null?`<span class="mono" style="color:var(--text);font-size:20px;letter-spacing:0">${Math.round(S.up*100)}%</span><span class="xs">Uploading…</span><div class="bar" style="width:80%"><i style="width:${S.up*100}%"></i></div>`:`<span style="width:44px;height:44px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center">${I.plus}</span><b style="font-size:15px;line-height:1.25">${left()===1?'One slot left':left()+' slots left'}</b><span class="xs">Choose a video from your gallery</span>`}</button></div>`:'';
+ const body=()=>`${head()}${noticeHTML()}<div class="pad" style="margin-bottom:18px">${filmCard()}</div>
+ <div class="pad"><div class="group">Your own recordings</div>
+ ${S.vids.length===0?`<div class="grid2"><div class="tile">${addTile.replace(/^<div class="tile">/,'').replace(/<\/div>$/,'')}</div></div>`:`<div class="grid2">${tiles}${addTile}</div>`}
+ ${left()<=0?`<div class="card mutedc" style="margin-top:14px"><span class="sub">That is all ${CFG.max}. Delete one to add another.</span></div>`:''}
+ <div style="margin-top:18px">${vis()}</div></div>`;
+ const emp=S.vids.length===0&&!S.loading&&!S.loadErr;
+ return `${status()}<div class="scroll" style="padding-bottom:30px">${dh()}${emp?`${noticeHTML()}${emptyBlock()}<div class="pad" style="margin-top:28px">${filmCard()}</div>`:stateBody(body)}</div>`;
+}
+
+/* ---------- OPTION B: list with thumbs, inline add card ---------- */
+function viewB(){
+ const rows=S.vids.map(v=>`<div class="card" style="display:grid;gap:12px"><div class="rowc" style="align-items:flex-start"><div data-act="play:${v.id}" role="button" aria-label="Play ${nameOf(v)}">${thumb(v,64)}</div><div class="grow" style="display:grid;gap:5px"><div style="display:flex;gap:6px;flex-wrap:wrap">${unv()}${spill(v)}</div><b style="font-size:16px;letter-spacing:-.015em">${nameOf(v)}</b>${vmeta(v)?`<div class="xs">${vmeta(v)}</div>`:''}${vnote(v)}</div></div>
+  <div class="rowc" style="justify-content:flex-end"><button class="btn out sm" data-act="edit:${v.id}" aria-label="Edit ${nameOf(v)}, ${kindLabel(v.kind)}">${I.edit}Edit</button><button class="btn dtext sm" data-act="del:${v.id}" aria-label="Delete ${nameOf(v)}, ${kindLabel(v.kind)}">${I.trash}Delete</button></div></div>`).join('');
+ const body=()=>`${head()}${noticeHTML()}<div class="pad" style="display:grid;gap:10px">${filmCard()}
+  ${S.vids.length===0?`<div class="card"><b style="font-size:16px">No videos yet.</b></div>`:rows}
+  <div class="card dash" style="display:grid;gap:12px">${addBody()}</div>${vis()}</div>`;
+ return `${status()}<div class="scroll" style="padding-bottom:30px">${dh()}${stateBody(body)}</div>`;
+}
+
+/* ---------- OPTION C: featured player + shelf ---------- */
+function viewC(){
+ const film=S.sel==='film';let v=S.vids.find(x=>x.id===S.sel);
+ if(!film&&!v){S.sel=S.vids[0]?S.vids[0].id:'film';v=S.vids[0];}
+ const isFilm=S.sel==='film';
+ const shelf=`<div class="shelf" role="listbox"><button style="width:84px;display:grid;gap:6px;text-align:left" data-act="sel:film" aria-label="Your interview">${filmThumb(84,`<span class="tl" style="left:4px;top:4px">${S.film==='none'?'':`<span class="seal" style="padding:3px 6px;font-size:9px">${I.check}</span>`}</span>${isFilm?'<span class="ring"></span>':''}`)}<span class="xs" style="font-weight:600;color:var(--text)">Interview</span></button>
+ ${S.vids.map(x=>`<button style="width:84px;display:grid;gap:6px;text-align:left" data-act="sel:${x.id}" aria-label="${nameOf(x)}"><div class="th s s${idx(x)%3}" style="width:84px"><span class="disc">${I.play}</span>${x.status!=='APPROVED'?`<span class="proc" style="${x.status==='REJECTED'?'background:rgba(194,42,48,.85)':''}">${x.status==='PENDING'?'In review':'Not published'}</span>`:''}${S.sel===x.id?'<span class="ring"></span>':''}</div><span class="xs" style="font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nameOf(x)}</span></button>`).join('')}
+ ${left()>0?`<button style="width:84px;display:grid;gap:6px;text-align:left" data-act="add" aria-label="Add a video"><div class="th" style="width:84px;border:1.5px dashed var(--border-strong);background:var(--surface);color:var(--accent)">${I.plus}${S.up!==null?`<span class="proc" style="background:var(--accent)">${Math.round(S.up*100)}%</span>`:''}</div><span class="xs" style="font-weight:600;color:var(--text)">${left()===1?'One slot left':left()+' slots left'}</span></button>`:''}</div>`;
+ let stage;
+ if(isFilm){
+  stage=`<div style="display:grid;justify-items:center;margin-top:6px"><div class="th v" style="width:206px;border-radius:24px" data-act="${S.film==='none'?'':'play:film'}">${S.film==='none'?I.video:`<span class="disc" style="--d:64px">${I.play}</span>`}<span class="tl" style="left:10px;top:10px">${S.film==='none'?'':seal()}</span></div></div>
+  <div style="padding:14px 24px 0;display:grid;gap:6px;justify-items:center;text-align:center"><b style="font-size:20px;letter-spacing:-.03em">Your interview</b><div class="sub">${filmTxt()}</div>${filmMark()}</div>`;
+ }else if(v){
+  stage=`<div style="display:grid;justify-items:center;margin-top:6px"><div class="th s s${idx(v)%3}" style="width:206px;border-radius:24px" data-act="play:${v.id}" role="button" aria-label="Play ${nameOf(v)}"><span class="disc" style="--d:64px">${I.play}</span><span class="tl" style="left:10px;top:10px">${unv()}</span><span class="len" style="right:10px;bottom:10px">${clock(v.dur)}</span></div></div>
+  <div style="padding:14px 24px 0;display:grid;gap:6px;justify-items:center;text-align:center"><b style="font-size:20px;letter-spacing:-.03em">${nameOf(v)}</b>${spill(v)}<div style="display:grid;gap:3px">${vnote(v)}</div></div>
+  <div class="strip"><div><small>KIND</small><b>${kindLabel(v.kind)}</b></div><div><small>LENGTH</small><b>${clock(v.dur)}</b></div><div><small>STATUS</small><b style="font-size:13.5px">${STATUS[v.status][0]}</b></div></div>
+  <div class="pad rowc" style="margin-top:14px"><button class="btn out grow" data-act="edit:${v.id}" aria-label="Edit ${nameOf(v)}, ${kindLabel(v.kind)}">${I.edit}Edit</button><button class="btn out grow dtext" data-act="del:${v.id}" aria-label="Delete ${nameOf(v)}, ${kindLabel(v.kind)}">${I.trash}Delete</button></div>`;
+ }else stage='';
+ const body=()=>`<div class="headblock" style="padding-bottom:8px"><div class="eyebrow">Your own recordings · ${S.vids.length} of ${CFG.max}</div></div>${noticeHTML()}${stage}
+  <div class="pad" style="margin:20px 0 8px"><div class="group" style="padding-bottom:0">Interview · yours</div></div>${shelf}
+  <div class="pad" style="margin-top:12px;display:grid;gap:12px"><div class="sub">Up to ${CFG.seconds} seconds each. Marked as not verified. Your interview film is watched first.</div>${left()<=0?`<div class="card mutedc"><span class="sub">That is all ${CFG.max}. Delete one to add another.</span></div>`:''}${vis()}</div>`;
+ const emp=S.vids.length===0&&!S.loading&&!S.loadErr;
+ const empBody=()=>`${noticeHTML()}${emptyBlock()}<div class="pad" style="margin:26px 0 8px"><div class="group" style="padding-bottom:0">Interview</div></div>${shelf}<div class="pad" style="margin-top:12px">${vis()}</div>`;
+ return `${status()}<div class="scroll" style="padding-bottom:30px">${dh()}${emp?empBody():stateBody(body)}</div>`;
+}
+
+/* ---------- OPTION D: segmented Interview / Yours ---------- */
+function viewD(){
+ const seg=`<div class="seg" role="tablist"><button class="${S.tab==='film'?'on':''}" role="tab" data-act="tab:film">Interview</button><button class="${S.tab==='yours'?'on':''}" role="tab" data-act="tab:yours">Yours<em>${S.vids.length}/${CFG.max}</em></button></div>`;
+ const row=v=>`<div class="card" style="padding:12px;display:grid;gap:10px"><div class="rowc" style="align-items:flex-start"><div data-act="play:${v.id}" role="button" aria-label="Play ${nameOf(v)}">${thumb(v,52)}</div><div class="grow" style="display:grid;gap:4px"><b style="font-size:16px;letter-spacing:-.015em">${nameOf(v)}</b>${vmeta(v)?`<div class="xs">${vmeta(v)}</div>`:''}<div>${unv()}</div></div><div class="rowc" style="gap:6px"><button class="iconbtn" data-act="edit:${v.id}" aria-label="Edit ${nameOf(v)}, ${kindLabel(v.kind)}">${I.edit}</button><button class="iconbtn d" data-act="del:${v.id}" aria-label="Delete ${nameOf(v)}, ${kindLabel(v.kind)}">${I.trash}</button></div></div>${vnote(v)?`<div style="display:grid;gap:3px;padding:0 2px">${vnote(v)}</div>`:''}</div>`;
+ const grp=['PENDING','APPROVED','REJECTED'].map(s=>{const a=S.vids.filter(v=>v.status===s);return a.length?`<div><div class="group">${STATUS[s][0]} · ${a.length}</div><div style="display:grid;gap:10px">${a.map(row).join('')}</div></div>`:''}).join('');
+ const filmTab=`<div style="display:grid;justify-items:center;margin-top:14px"><div class="th ${S.film==='none'?'s dim':'v'}" style="width:176px;border-radius:24px">${S.film==='none'?I.video:`<span class="disc" style="--d:60px">${I.play}</span>`}<span class="tl" style="left:10px;top:10px">${S.film==='none'?'':seal()}</span></div></div>
+ <div style="padding:14px 24px 0;display:grid;gap:8px;justify-items:center;text-align:center"><b style="font-size:21px;letter-spacing:-.03em">Your interview</b><div class="sub">${filmTxt()}</div>${filmMark()}</div>
+ <div class="pad" style="margin-top:20px"><div class="card mutedc"><span class="sub" style="color:var(--text2)">Your interview film is watched first.</span></div></div>`;
+ const yoursTab=`${noticeHTML()}<div style="padding:12px 24px 14px;display:grid;gap:4px"><div class="eyebrow">Your own recordings · ${S.vids.length} of ${CFG.max}</div><div class="sub">Up to ${CFG.seconds} seconds each. Marked as not verified.</div></div><div class="pad" style="display:grid;gap:18px">${S.vids.length===0?`<div class="card"><b style="font-size:16px">No videos yet.</b><div class="xs" style="margin-top:3px">Your interview film is watched first.</div></div>`:grp}${vis()}</div>`;
+ const empD=S.vids.length===0&&S.tab==='yours'&&!S.loading&&!S.loadErr;
+ const body=()=>S.tab==='film'?filmTab:(empD?`${noticeHTML()}${emptyBlock()}<div class="pad" style="margin-top:24px">${vis()}</div>`:yoursTab);
+ const foot=S.tab==='yours'&&!S.loading&&!S.loadErr?`<div class="footbar">${left()>0?`<button class="btn pri full" data-act="add">${S.up!==null?`Uploading… ${Math.round(S.up*100)}%`:'Choose a video from your gallery'}</button><div class="xs" style="text-align:center">${left()===1?'One slot left':left()+' slots left'} · ${CFG.label} · up to ${CFG.mb} MB · ${CFG.seconds} seconds</div>`:`<div class="btn dis full" style="height:auto;min-height:46px;padding:12px;white-space:normal;text-align:center;font-weight:600;font-size:14px">That is all ${CFG.max}. Delete one to add another.</div>`}</div>`:'';
+ return `${status()}<div class="scroll ${foot?'withfoot':''}" style="${foot?'':'padding-bottom:30px'}">${dh()}${seg}${stateBody(body)}</div>${foot}`;
+}
+
+/* ---------- render ---------- */
+const VIEW={A:viewA,B:viewB,C:viewC,D:viewD};
+function render(keep){
+ const old=ph.querySelector('.scroll'),top=old?old.scrollTop:0;
+ let overlay='';
+ if(S.sheet==='add')overlay=sheetAdd();else if(S.sheet==='edit')overlay=sheetEdit();else if(S.sheet==='del')overlay=sheetDel();
+ const pl=S.player?playerHTML():'';
+ ph.innerHTML=VIEW[S.opt]()+overlay+pl+'<div class="toast"></div>';
+ const sc=ph.querySelector('.scroll');if(sc&&keep!==false)sc.scrollTop=top;
+ const ti=$('ti');if(ti)ti.oninput=()=>{S.editTitle=ti.value;$('tc').textContent=`Optional. Employers see the title. ${ti.value.length} / ${TITLE_MAX}`};
+}
+let tt;const toast=m=>{const t=ph.querySelector('.toast');if(!t)return;t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),1700)};
+
+/* ---------- upload simulation ---------- */
+function stopUp(){clearInterval(upTimer);upTimer=null}
+function pick(){
+ S.err=null;S.notice=null;
+ if(S.outcome==='big'){S.err=ERR.big;return render()}
+ if(S.outcome==='long'){S.err=ERR.long;return render()}
+ S.up=0;render();
+ upTimer=setInterval(()=>{
+  S.up=Math.min(1,S.up+0.07);
+  if(S.outcome==='net'&&S.up>=0.42){stopUp();S.up=null;S.err=ERR.net;return render()}
+  if(S.up>=1){stopUp();S.up=null;S.vids.push({id:'n'+(++seq),kind:S.kind,title:null,dur:47,status:'PENDING',reason:null,edited:false,url:true});S.sheet=null;S.sel='n'+seq;S.tab='yours';render()}
+  else render();
+ },260);
+}
+/* ---------- playback ---------- */
+function startPlay(){clearInterval(playTimer);playTimer=setInterval(()=>{if(!S.playing||!S.player)return;S.t+=0.25;
+ const film=S.player==='film',v=S.vids.find(x=>x.id===S.player),dur=film?192:(v?v.dur:60);if(S.t>=dur){S.t=dur;S.playing=false;return render()}
+ const pt=$('pt'),pb=$('pb');if(pt)pt.textContent=clock(Math.floor(S.t))||'0:00';if(pb)pb.style.width=(S.t/dur*100)+'%'},250)}
+
+/* ---------- events ---------- */
+ph.addEventListener('click',e=>{
+ const a=e.target.closest('[data-act]');if(!a)return;const x=a.dataset.act;
+ if(a.classList.contains('scrim')&&e.target!==a)return;
+ const cmd=x.split(':')[0],arg=x.slice(cmd.length+1);
+ const vid=id=>S.vids.find(v=>v.id===id);
+ switch(cmd){
+  case 'back':return toast('Back to Account');
+  case 'retry':S.loadErr=false;S.loading=true;render();return setTimeout(()=>{S.loading=false;setSt('list',true);render()},900);
+  case 'vis':S.hidden=!S.hidden;return render();
+  case 'kind':if(S.up===null)S.kind=arg;return render();
+  case 'add':S.err=null;if(S.opt!=='B')S.sheet='add';return render();
+  case 'pick':return pick();
+  case 'cancel':stopUp();S.up=null;return render();
+  case 'closeSheet':if(S.up!==null)return;S.sheet=null;S.err=null;return render();
+  case 'play':S.player=arg;S.playing=false;S.t=0;S.pErr=false;startPlay();return render();
+  case 'closePlayer':S.player=null;S.playing=false;S.pErr=false;return render();
+  case 'pp':S.playing=!S.playing;S.pErr=false;return render();
+  case 'retryPlay':S.pErr=false;S.playing=true;return render();
+  case 'edit':{const v=vid(arg);S.target=v;S.editTitle=v.title||'';S.editKind=v.kind;S.sheet='edit';S.notice=null;return render()}
+  case 'ekind':S.editKind=arg;return render();
+  case 'save':{const v=S.target,t=S.editTitle.trim()||null,changed=t!==v.title||S.editKind!==v.kind;
+   S.sheet=null;
+   if(!changed)S.notice='Nothing changed.';
+   else{const was=v.status;v.title=t;v.kind=S.editKind;
+    if(was==='APPROVED'||was==='REJECTED'){v.status='PENDING';v.edited=true;v.reason=null;S.notice=SAVED_REVIEW}
+    else{v.edited=true;S.notice='Saved.'}}
+   return render()}
+  case 'del':S.target=vid(arg);S.delErr=false;S.sheet='del';S.notice=null;return render();
+  case 'remove':S.vids=S.vids.filter(v=>v!==S.target);S.sheet=null;S.notice='Video removed.';if(S.sel===S.target.id)S.sel=S.vids[0]?S.vids[0].id:'film';return render();
+  case 'sel':S.sel=arg;return render();
+  case 'tab':S.tab=arg;return render();
+ }
+});
+/* ---------- chrome ---------- */
+const OPTS={
+ A:['Option A','Grid of clips','Two-column 9:16 tiles with Unverified on every poster, an add tile that shows upload progress, interview film as a wide row above.',['Poster-first: clips look like the vertical videos employers will watch.','Add tile uses the empty slot and turns into progress; it disappears when all slots are used.','Add flow, edit and delete open as sheets.']],
+ B:['Option B','List with thumbs','The current screen refined: one card per clip with a small 9:16 thumb, Unverified + status, review/reject copy and Edit / Delete. Dashed add card inline at the end.',['Closest to what ships today, so the lowest build risk.','Every status sentence has room; rejection reasons read in full.','Add is inline (kind chips, gallery button, progress, error) with no sheet.']],
+ C:['Option C','Featured player + shelf','One clip large at the top, like the Video resume screen. A shelf of thumbs under it switches the clip; the interview film is first on the shelf.',['Same stage language as Video resume for consistency.','Facts strip (kind, length, status) and Edit / Delete act on the clip on stage.','The shelf ends with the add slot, showing a % while uploading.']],
+ D:['Option D','Interview / Yours','A segmented control splits the verified film from the clips the student adds, so the two are never mixed. Yours groups clips by review status; a footer holds the add action.',['Keeps verified vs unverified structurally apart.','Grouped by Waiting for review, Approved and Not published.','Footer shows slots left and the file rule; full state swaps it for the real limit sentence.']]};
+const STATES=[['list','List'],['empty','Empty'],['uploading','Uploading'],['failed','Upload failed'],['full','All slots used'],['loading','Loading'],['loaderr','Load error'],['edit','Edit sheet'],['del','Delete confirm'],['play','Playback'],['playerr','Playback error']];
+function setSt(s){
+ S.st=s;stopUp();clearInterval(playTimer);
+ Object.assign(S,{vids:[base()[0],base()[1]],loading:false,loadErr:false,sheet:null,up:null,err:null,notice:null,player:null,playing:false,t:0,pErr:false,target:null,delErr:false,sel:'v1',tab:'yours'});
+ const open=()=>{S.sheet=S.opt==='B'?null:'add'};
+ if(s==='empty'){S.vids=[];S.sel='film'}
+ if(s==='full')S.vids=base();
+ if(s==='uploading'){S.vids=[base()[0]];S.up=0.64;open()}
+ if(s==='failed'){S.vids=[base()[0],base()[2]];S.sel='v3';S.err=ERR.net;open()}
+ if(s==='loading')S.loading=true;
+ if(s==='loaderr')S.loadErr=true;
+ if(s==='edit'){S.vids=base();S.target=S.vids[2];S.editTitle=S.target.title;S.editKind=S.target.kind;S.sheet='edit';S.sel='v3'}
+ if(s==='del'){S.target=S.vids[1];S.sheet='del'}
+ if(s==='play')S.player='v1';
+ if(s==='playerr'){S.player='v1';S.pErr=true}
+ if(s==='play'||s==='playerr')startPlay();
+}
+function drawChrome(){
+ $('opts').innerHTML=Object.keys(OPTS).map(k=>`<button class="opt ${S.opt===k?'on':''}" data-o="${k}"><span class="mono">${OPTS[k][0]}</span><b>${OPTS[k][1]}</b><span>${OPTS[k][2]}</span></button>`).join('');
+ const pills=(el,list,get,attr)=>{$(el).innerHTML=list.map(o=>`<button class="${get()===o[0]?'on':''}" ${attr}="${o[0]}">${o[1]}</button>`).join('')};
+ pills('stP',STATES,()=>S.st,'data-s');
+ pills('ouP',[['ok','Succeeds'],['big','Too large'],['long','Too long'],['net','Connection fails']],()=>S.outcome,'data-u');
+ pills('fiP',[['live','Live'],['notlive','Not live yet'],['held','Held'],['none','Not yet']],()=>S.film,'data-f');
+ const o=OPTS[S.opt];$('cap').innerHTML=`<b>${o[0]} · ${o[1]}</b><span>${o[2]}</span><ul>${o[3].map(t=>`<li>${t}</li>`).join('')}</ul>`;
+}
+document.addEventListener('click',e=>{
+ const b=e.target.closest('[data-o],[data-s],[data-u],[data-f]');if(!b)return;
+ if(b.dataset.o){S.opt=b.dataset.o;setSt(S.st)}
+ else if(b.dataset.s)setSt(b.dataset.s);
+ else if(b.dataset.u)S.outcome=b.dataset.u;
+ else if(b.dataset.f)S.film=b.dataset.f;
+ drawChrome();render(false);
+});
+/* hash: #o=B&s=uploading&u=big&f=held&tab=film */
+(function(){const h=new URLSearchParams(location.hash.slice(1));if(h.get('bare'))document.body.classList.add('bare');
+ if(h.get('o')&&OPTS[h.get('o')])S.opt=h.get('o');if(h.get('u'))S.outcome=h.get('u');if(h.get('f'))S.film=h.get('f');
+ setSt(h.get('s')||'list');if(h.get('tab'))S.tab=h.get('tab');if(h.get('sel'))S.sel=h.get('sel');
+ drawChrome();render(false);
+ if(h.get('scroll')){const sc=ph.querySelector('.scroll');if(sc)sc.scrollTop=+h.get('scroll')}})();
+</script>
+</body>
+</html>

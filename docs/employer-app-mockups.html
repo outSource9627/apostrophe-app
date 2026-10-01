@@ -1,0 +1,986 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Employer App Mockups</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300..800&family=Geist+Mono:wght@400..700&display=swap" rel="stylesheet">
+<style>
+/* tokens mirror src/theme/tokens.ts (generated from apostrophe-user/lib/theme/tokens.ts) */
+:root{
+  --bg:#FAFAFC; --surface:#FFFFFF; --muted:#F1F3F7; --sunken:#E6E8EE;
+  --text:#0B0F1A; --text2:#3A4256; --text3:#6B7385; --text4:#8A91A2; --text-dis:#B4BAC7;
+  --border:#E3E6ED; --border2:#C9CED9; --border-soft:#F1F3F7;
+  --accent:#5B3DF5; --accent-h:#4A2FE0; --accent-soft:#EFEBFF; --accent-wash:#F7F6FF; --accent-muted:#C4B8FF;
+  --accent-bright:#7258FF; --accent-deep:#3B2A8F; --accent-edge:#DCD3FF;
+  --ink:#0B0F1A; --ink2:#151B2B; --ink3:#2A3142; --ink-deep:#07090F;
+  --on-ink-soft:#E3E6ED; --on-ink-muted:#C9CED9; --on-ink-subtle:#8A91A2; --on-ink-body:#A6ACBA;
+  --on-ink-ground:rgba(255,255,255,.12); --on-ink-edge:rgba(255,255,255,.2); --on-ink-hair:rgba(255,255,255,.1); --on-ink-wash:rgba(255,255,255,.06);
+  --glass:rgba(11,15,26,.6);
+  --success:#0B7A55; --success-soft:#E6F7F0; --success-wash:#F3FBF7; --success-fill:#0E9F6E; --success-on-ink:#6EE7B7; --success-edge:#9FDDC4;
+  --warning:#935F00; --warning-soft:#FFF5E1; --warning-wash:#FFFCF3; --warning-fill:#F5A524; --warning-on-ink:#FCC96B; --warning-edge:#F5E2B8;
+  --danger:#C22A30; --danger-soft:#FDECEC; --danger-fill:#E5484D; --danger-on-ink:#FF8A8E; --danger-border:#F2B8BA;
+  --sans:'Geist',ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --mono:'Geist Mono',ui-monospace,'SF Mono',Menlo,monospace;
+  --shadow-card:0 1px 2px rgba(11,15,26,.04),0 8px 24px -12px rgba(11,15,26,.1);
+  --shadow-pop:0 20px 40px -14px rgba(11,15,26,.28),0 2px 6px rgba(11,15,26,.06);
+}
+
+/* ───────── review page (not part of the app) ───────── */
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:#E9EAF1;color:var(--text);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+.vw-top{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.92);backdrop-filter:blur(14px);border-bottom:1px solid var(--border)}
+.vw-bar{max-width:1760px;margin:0 auto;padding:12px 24px;display:flex;align-items:center;gap:16px 20px;flex-wrap:wrap}
+.vw-brand{display:flex;align-items:center;gap:10px;min-width:0}
+.vw-brand b{font-weight:650;font-size:16px;letter-spacing:-.01em;white-space:nowrap}
+.vw-brand small{display:block;font:500 10.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--text3);white-space:nowrap}
+.vw-tabs{display:flex;gap:2px;background:var(--muted);padding:3px;border-radius:999px;overflow-x:auto;max-width:100%;scrollbar-width:none}
+.vw-tab{border:0;background:transparent;font:600 13px var(--sans);color:var(--text2);height:34px;padding:0 13px;border-radius:999px;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:7px}
+.vw-tab span{font:500 10px var(--mono);color:var(--text4)}
+.vw-tab[aria-selected=true]{background:#fff;color:var(--text);box-shadow:0 1px 2px rgba(11,15,26,.08)}
+.vw-tab[aria-selected=true] span{color:var(--accent)}
+.vw-spacer{flex:1}
+.vw-seg{display:flex;gap:2px;background:var(--muted);padding:3px;border-radius:999px}
+.vw-seg button{border:0;background:transparent;font:600 12.5px var(--sans);color:var(--text3);height:30px;padding:0 12px;border-radius:999px;cursor:pointer;white-space:nowrap}
+.vw-seg button[aria-pressed=true]{background:var(--ink);color:#fff}
+.vw-main{max-width:1760px;margin:0 auto;padding:22px 24px 80px}
+.vw-intro{display:flex;flex-direction:column;gap:8px;margin-bottom:18px;max-width:980px}
+.vw-intro h1{font-size:30px;line-height:1.1;letter-spacing:-.025em;margin:2px 0 0;font-weight:650}
+.vw-intro p{margin:0;color:var(--text3);font-size:14.5px;line-height:1.55}
+.vw-eyebrow{font:500 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--text3)}
+.vw-data{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:14px;margin-bottom:24px}
+.vw-box{background:#fff;border:1px solid var(--border);border-radius:16px;padding:16px 18px}
+.vw-box h3{margin:0 0 10px;font:600 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;display:flex;align-items:center;gap:8px}
+.vw-box h3 i{width:8px;height:8px;border-radius:9px;display:inline-block}
+.vw-box ul{margin:0;padding:0;list-style:none;display:grid;gap:7px}
+.vw-box li{font-size:13px;line-height:1.45;color:var(--text2);display:grid;grid-template-columns:auto 1fr;gap:8px}
+.vw-box li code{font:500 11.5px var(--mono);color:var(--accent-h);background:var(--accent-wash);border:1px solid var(--accent-edge);padding:1px 6px;border-radius:5px;white-space:nowrap;align-self:start}
+.vw-box.no li code{color:var(--text3);background:var(--muted);border-color:var(--border)}
+.vw-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:28px 22px}
+.vw-grid.six{grid-template-columns:repeat(3,minmax(0,1fr))}
+.vw-item{min-width:0;display:flex;flex-direction:column;gap:14px}
+.vw-stage{position:relative;overflow:hidden;max-width:410px;width:100%;margin:0 auto}
+.vw-stage > .dev{transform-origin:0 0;position:absolute;left:0;top:0}
+.vw-cap{display:flex;gap:10px;align-items:flex-start;max-width:410px;width:100%;margin:0 auto}
+.vw-badge{flex:none;width:28px;height:28px;border-radius:8px;color:#fff;display:flex;align-items:center;justify-content:center;font:650 13px var(--sans)}
+.vw-cap h2{margin:0;font-size:14.5px;letter-spacing:-.01em;font-weight:650;line-height:1.3}
+.vw-cap p{margin:3px 0 0;color:var(--text3);font-size:12.5px;line-height:1.5}
+.vw-notes{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}
+.vw-notes span{font:500 10.5px var(--mono);padding:3px 7px;border-radius:6px;background:#fff;border:1px solid var(--border);color:var(--text2);overflow-wrap:anywhere}
+.vw-notes span.api{background:var(--warning-soft);border-color:var(--warning-edge);color:var(--warning)}
+.vw-notes span.cfg{background:var(--accent-wash);border-color:var(--accent-edge);color:var(--accent-h)}
+.vw-foot{margin-top:44px;padding-top:18px;border-top:1px solid var(--border2);color:var(--text3);font-size:12.5px;line-height:1.6}
+.vw-foot code{font:500 11.5px var(--mono)}
+@media (max-width:1380px){.vw-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.vw-grid.six{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:900px){.vw-data{grid-template-columns:1fr}}
+@media (max-width:640px){.vw-grid,.vw-grid.six{grid-template-columns:1fr}.vw-bar,.vw-main{padding-left:16px;padding-right:16px}.vw-intro h1{font-size:24px}}
+
+/* ───────── the device ───────── */
+.dev{width:410px;height:864px;padding:10px;border-radius:52px;background:#0B0F1A;box-shadow:0 0 0 1px #2A3142 inset,0 40px 70px -34px rgba(11,15,26,.55)}
+.ph{position:relative;width:390px;height:844px;border-radius:42px;overflow:hidden;background:var(--bg);font-family:var(--sans);color:var(--text);font-size:14px;line-height:1.4;text-align:left;isolation:isolate}
+.ph *,.ph *::before,.ph *::after{box-sizing:border-box}
+.ph h1,.ph h2,.ph h3,.ph p{margin:0}
+.ph.dk{background:var(--ink)}
+.sb{position:absolute;top:0;left:0;right:0;height:32px;display:flex;align-items:center;justify-content:space-between;padding:4px 26px 0 30px;font:600 13.5px var(--sans);z-index:30;color:var(--text)}
+.sb.lt{color:#fff}
+.sb .ico{display:flex;gap:6px;align-items:center}
+.sb .ico svg{width:15px;height:15px;fill:currentColor;stroke:none}
+.punch{position:absolute;top:11px;left:50%;width:12px;height:12px;margin-left:-6px;border-radius:9px;background:#05070C;z-index:31}
+.scr{position:absolute;top:32px;left:0;right:0;bottom:0;overflow:hidden}
+.gest{position:absolute;left:50%;bottom:7px;width:108px;height:4px;margin-left:-54px;border-radius:4px;background:rgba(11,15,26,.85);z-index:40}
+.dk .gest,.gest.lt{background:rgba(255,255,255,.8)}
+
+/* atoms */
+.ic{width:20px;height:20px;flex:none;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;display:block}
+.ic.fill{fill:currentColor;stroke:none}
+.meta{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);font-weight:500;line-height:1.2}
+.tnum{font-variant-numeric:tabular-nums}
+.row{display:flex;align-items:center}
+.col{display:flex;flex-direction:column}
+.grow{flex:1;min-width:0}
+.trunc{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dot{width:3.5px;height:3.5px;border-radius:9px;background:var(--text-dis);display:inline-block;flex:none}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:44px;padding:0 18px;border-radius:999px;font:600 14.5px/1 var(--sans);border:1px solid transparent;white-space:nowrap;flex:none}
+.btn .ic{width:17px;height:17px}
+.btn-primary{background:var(--accent);color:#fff;box-shadow:0 8px 18px -10px rgba(91,61,245,.8)}
+.btn-dark{background:var(--ink);color:#fff}
+.btn-outline{background:#fff;border-color:var(--border2);color:var(--text)}
+.btn-ghost{background:var(--muted);color:var(--text)}
+.btn-white{background:#fff;color:var(--ink)}
+.btn-glass{background:var(--on-ink-ground);border-color:var(--on-ink-edge);color:#fff;backdrop-filter:blur(10px)}
+.btn-danger{background:#fff;border-color:var(--danger-border);color:var(--danger)}
+.btn-sm{height:34px;padding:0 13px;font-size:13px}
+.btn-cta{height:50px;font-size:15.5px}
+.btn-full{width:100%}
+.btn.grow{flex:1 1 0;min-width:0}
+.pill{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 9px;border-radius:999px;font:500 10px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;flex:none}
+.pill .ic{width:11px;height:11px;stroke-width:2.4}
+.p-success{background:var(--success-soft);color:var(--success)}
+.p-warning{background:var(--warning-soft);color:var(--warning)}
+.p-danger{background:var(--danger-soft);color:var(--danger)}
+.p-accent{background:var(--accent-soft);color:var(--accent-h)}
+.p-neutral{background:var(--muted);color:var(--text2)}
+.p-glass{background:var(--glass);color:#fff;backdrop-filter:blur(10px)}
+.p-on-ink{background:var(--on-ink-ground);color:var(--on-ink-soft)}
+.p-success-ink{background:rgba(14,159,110,.22);color:var(--success-on-ink)}
+.p-warning-ink{background:rgba(245,165,36,.16);color:var(--warning-on-ink)}
+.p-danger-ink{background:rgba(229,72,77,.16);color:var(--danger-on-ink)}
+.tag{display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:999px;border:1px solid var(--border2);font:500 9.5px/1 var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--text2);background:#fff;white-space:nowrap}
+.tag.ink{background:transparent;border-color:rgba(255,255,255,.3);color:var(--on-ink-soft)}
+.chip{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:999px;border:1px solid var(--border);background:#fff;font:550 12.5px/1 var(--sans);color:var(--text2);white-space:nowrap;flex:none}
+.chip .ic{width:14px;height:14px}
+.chip.on{background:var(--accent-soft);border-color:var(--accent-edge);color:var(--accent-h)}
+.chip.dark{background:var(--ink);border-color:var(--ink);color:#fff}
+.chip.ink{background:var(--on-ink-wash);border-color:var(--on-ink-hair);color:var(--on-ink-muted)}
+.chip.ink.on{background:#fff;border-color:#fff;color:var(--ink)}
+.chip em{font-style:normal;font:500 10.5px var(--mono);opacity:.65}
+.card{background:#fff;border:1px solid var(--border);border-radius:18px}
+.av{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;color:#fff;font-weight:600;flex:none;letter-spacing:-.01em;overflow:hidden;position:relative}
+.mono-sq{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:10px;background:var(--ink);color:#fff;font:600 12.5px var(--sans);flex:none}
+.icon-btn{width:40px;height:40px;border-radius:999px;display:flex;align-items:center;justify-content:center;color:var(--text2);position:relative;flex:none}
+.icon-btn .ic{width:21px;height:21px}
+.ndot{position:absolute;right:9px;top:8px;width:8px;height:8px;border-radius:9px;background:var(--accent);border:2px solid #fff;box-sizing:content-box}
+.kv{display:flex;flex-direction:column;gap:4px;padding:10px 12px;border-radius:12px;background:var(--muted);min-width:0}
+.kv .meta{font-size:9.5px}
+.kv b{font-weight:600;font-size:15px;letter-spacing:-.01em}
+.bar{height:5px;border-radius:5px;background:var(--muted);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:5px;background:var(--accent)}
+.hr{height:1px;background:var(--border-soft)}
+.badge-n{display:inline-flex;align-items:center;justify-content:center;min-width:17px;height:17px;padding:0 5px;border-radius:99px;background:var(--accent);color:#fff;font:600 10px/1 var(--sans)}
+.icw{width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex:none}
+.icw .ic{width:17px;height:17px}
+.circ{border-radius:999px;display:flex;align-items:center;justify-content:center;flex:none}
+.kbd{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;font:500 10px/1 var(--mono);padding:0 4px;border-radius:5px;border:1px solid var(--border2);background:#fff;color:var(--text2)}
+
+/* the film — a still standing in for the candidate's interview video */
+.poster{position:relative;overflow:hidden;border-radius:16px;background:var(--ink2);isolation:isolate;flex:none}
+.poster .bgl{position:absolute;inset:0;z-index:-2}
+.poster .sil{position:absolute;left:50%;bottom:0;transform:translateX(-50%);width:92%;height:auto;z-index:-1;color:#fff;opacity:.13}
+.poster .shade{position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(11,15,26,.35) 0%,rgba(11,15,26,0) 22%,rgba(11,15,26,0) 52%,rgba(11,15,26,.86) 100%)}
+.poster .pl{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:52px;height:52px;border-radius:99px;background:rgba(255,255,255,.94);display:flex;align-items:center;justify-content:center;color:var(--ink);box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.poster .pl .ic{width:19px;height:19px;margin-left:3px}
+.poster .pl.sm{width:32px;height:32px}.poster .pl.sm .ic{width:13px;height:13px;margin-left:2px}
+.poster .tl{position:absolute;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.poster .bl{position:absolute;left:14px;right:14px;bottom:14px;color:#fff}
+.poster .track{height:3px;border-radius:3px;background:rgba(255,255,255,.28);overflow:hidden}
+.poster .track i{display:block;height:100%;background:#fff;border-radius:3px}
+.mute{width:32px;height:32px;border-radius:99px;background:var(--glass);display:flex;align-items:center;justify-content:center;color:#fff;backdrop-filter:blur(10px);flex:none}
+.mute .ic{width:15px;height:15px}
+.logo-mk{display:inline-flex;align-items:flex-start;justify-content:center;border-radius:8px;background:var(--accent);color:#fff;font-weight:700;flex:none}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="sil" viewBox="0 0 200 220"><g fill="currentColor"><ellipse cx="100" cy="80" rx="35" ry="41"/><path d="M84 110h32v44H84z"/><path d="M14 220c4-46 34-74 86-74s82 28 86 74z"/></g></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.8v14.4a.8.8 0 0 0 1.2.7l11.3-7.2a.8.8 0 0 0 0-1.4L8.2 4.1A.8.8 0 0 0 7 4.8z"/></symbol>
+    <symbol id="i-bookmark" viewBox="0 0 24 24"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4.5L5 21V4a1 1 0 0 1 1-1z"/></symbol>
+    <symbol id="i-heart" viewBox="0 0 24 24"><path d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7z"/></symbol>
+    <symbol id="i-brief" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.9 1.9 0 0 0 3.4 0"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+    <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7 3v5.5c0 4.5-3 8-7 9.5-4-1.5-7-5-7-9.5V6z"/><path d="m9 12 2 2 4-4"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+    <symbol id="i-chevR" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+    <symbol id="i-chevL" viewBox="0 0 24 24"><path d="m15 6-6 6 6 6"/></symbol>
+    <symbol id="i-chevD" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></symbol>
+    <symbol id="i-vol" viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4zM15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></symbol>
+    <symbol id="i-mute" viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4zM22 9l-6 6M16 9l6 6"/></symbol>
+    <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></symbol>
+    <symbol id="i-video" viewBox="0 0 24 24"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="m16 10 6-3v10l-6-3"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></symbol>
+    <symbol id="i-tag" viewBox="0 0 24 24"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></symbol>
+    <symbol id="i-note" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="19" cy="12" r="1.3" fill="currentColor"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></symbol>
+    <symbol id="i-cards" viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M3 6v12M21 6v12"/></symbol>
+    <symbol id="i-arrowUR" viewBox="0 0 24 24"><path d="M7 17 17 7M8 7h9v9"/></symbol>
+    <symbol id="i-arrowR" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-arrowL" viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></symbol>
+    <symbol id="i-grad" viewBox="0 0 24 24"><path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/></symbol>
+    <symbol id="i-rupee" viewBox="0 0 24 24"><path d="M6 3h12M6 8h12M6 13l8.5 8M6 13h3M9 13c6.7 0 6.7-10 0-10"/></symbol>
+    <symbol id="i-building" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="1"/><path d="M9 7h1M14 7h1M9 11h1M14 11h1M9 15h1M14 15h1M10 21v-3h4v3"/></symbol>
+    <symbol id="i-funnel" viewBox="0 0 24 24"><path d="M3 5h18l-7 8v6l-4 2v-8z"/></symbol>
+    <symbol id="i-sort" viewBox="0 0 24 24"><path d="M7 4v16M3 16l4 4 4-4M17 20V4M13 8l4-4 4 4"/></symbol>
+    <symbol id="i-expand" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></symbol>
+    <symbol id="i-trend" viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8M15 7h6v6"/></symbol>
+    <symbol id="i-columns" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16M15 4v16"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5M12 16.5h.01"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+    <symbol id="i-drag" viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.2" fill="currentColor"/><circle cx="15" cy="6" r="1.2" fill="currentColor"/><circle cx="9" cy="12" r="1.2" fill="currentColor"/><circle cx="15" cy="12" r="1.2" fill="currentColor"/><circle cx="9" cy="18" r="1.2" fill="currentColor"/><circle cx="15" cy="18" r="1.2" fill="currentColor"/></symbol>
+    <symbol id="i-skip" viewBox="0 0 24 24"><path d="M5 4.5v15l10-7.5zM19 5v14"/></symbol>
+    <symbol id="i-cmd" viewBox="0 0 24 24"><path d="M9 6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3z"/></symbol>
+    <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5.1 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.9A2 2 0 0 0 16.8 4H7.2a2 2 0 0 0-1.7 1.1z"/></symbol>
+    <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 3v12M7 8l5-5 5 5M5 14v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/></symbol>
+    <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></symbol>
+    <symbol id="i-hourglass" viewBox="0 0 24 24"><path d="M6 2h12M6 22h12M7 2v4a5 5 0 0 0 10 0V2M7 22v-4a5 5 0 0 1 10 0v4"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/></symbol>
+    <symbol id="i-check2" viewBox="0 0 24 24"><path d="m2 12.5 4.5 4.5L15 8.5M10 16.5l.5.5L21 7.5"/></symbol>
+  </defs>
+</svg>
+<header class="vw-top">
+  <div class="vw-bar">
+    <div class="vw-brand">
+      <span class="logo-mk" style="width:28px;height:28px;font-size:25px;padding-top:4px">&rsquo;</span>
+      <div><b>Employer app · Android</b><small>6 screens × 4 options · sample data</small></div>
+    </div>
+    <nav class="vw-tabs" id="vwTabs" role="tablist"></nav>
+    <div class="vw-spacer"></div>
+    <div class="vw-seg" id="vwMode" role="group" aria-label="View">
+      <button type="button" data-m="screen">By screen</button>
+      <button type="button" data-m="option">By option</button>
+    </div>
+  </div>
+</header>
+<main class="vw-main">
+  <section class="vw-intro">
+    <span class="vw-eyebrow" id="vwEyebrow"></span>
+    <h1 id="vwTitle"></h1>
+    <p id="vwSub"></p>
+  </section>
+  <section class="vw-data" id="vwData"></section>
+  <div class="vw-grid" id="vwGrid"></div>
+  <footer class="vw-foot">
+    Phones are drawn at 390 × 844 dp (Android, gesture navigation) and scaled to fit. Colour, type and radii come from <code>src/theme/tokens.ts</code> — Geist, Geist Mono, violet #5B3DF5, cool slate.
+    Every field shown is one the employer API returns today (see the data panel on each screen); people, companies, jobs and numbers are <b>sample values for layout only</b>.
+    Chips under a phone: <b>violet</b> = an admin value read from <code>/config</code>, <b>amber</b> = needs a backend change. Add <code>?raw=feed.C</code> to the address to see one phone alone.
+  </footer>
+</main>
+
+<style>
+/* tab bars — one per option */
+.tA{position:absolute;left:0;right:0;bottom:0;height:86px;background:#fff;border-top:1px solid var(--border);display:flex;justify-content:space-around;padding:9px 4px 0;z-index:20}
+.tA .t{display:flex;flex-direction:column;align-items:center;gap:4px;width:70px;font:550 11px var(--sans);color:var(--text3);position:relative}
+.tA .t .w{width:58px;height:30px;border-radius:999px;display:flex;align-items:center;justify-content:center}
+.tA .t .ic{width:21px;height:21px}
+.tA .t.on{color:var(--text);font-weight:650}
+.tA .t.on .w{background:var(--accent-soft);color:var(--accent-h)}
+.tA .t .badge-n{position:absolute;top:-3px;right:9px;border:2px solid #fff;box-sizing:content-box}
+.tB{position:absolute;left:0;right:0;bottom:0;height:78px;background:#fff;border-top:1px solid var(--border);display:flex;justify-content:space-around;padding:0 4px;z-index:20}
+.tB .t{display:flex;flex-direction:column;align-items:center;gap:3px;width:70px;padding-top:10px;font:550 10.5px var(--sans);color:var(--text4);position:relative;border-top:2.5px solid transparent;margin-top:-1px}
+.tB .t .ic{width:21px;height:21px}
+.tB .t.on{color:var(--accent-h);border-top-color:var(--accent)}
+.tB .t .badge-n{position:absolute;top:5px;right:13px;border:2px solid #fff;box-sizing:content-box}
+.tC{position:absolute;left:0;right:0;bottom:0;height:84px;background:rgba(7,9,15,.88);backdrop-filter:blur(16px);border-top:1px solid var(--on-ink-hair);display:flex;justify-content:space-around;padding:12px 4px 0;z-index:20}
+.tC .t{display:flex;flex-direction:column;align-items:center;gap:5px;width:70px;font:550 10.5px var(--sans);color:var(--on-ink-subtle);position:relative}
+.tC .t .ic{width:22px;height:22px}
+.tC .t.on{color:#fff}
+.tC .t.on::after{content:'';width:4px;height:4px;border-radius:9px;background:var(--accent-bright);position:absolute;bottom:-8px}
+.tC .t .badge-n{position:absolute;top:-4px;right:14px;border:2px solid var(--ink-deep);box-sizing:content-box}
+.tD{position:absolute;left:14px;right:14px;bottom:22px;height:62px;border-radius:999px;background:#fff;border:1px solid var(--border);box-shadow:0 18px 40px -18px rgba(11,15,26,.35);display:flex;align-items:center;justify-content:space-between;padding:0 7px;z-index:20}
+.tD .t{height:48px;min-width:48px;border-radius:999px;display:flex;align-items:center;justify-content:center;gap:7px;color:var(--text3);position:relative;font:600 13px var(--sans)}
+.tD .t .ic{width:21px;height:21px}
+.tD .t.on{background:var(--ink);color:#fff;padding:0 16px 0 14px}
+.tD .t .bd{position:absolute;top:8px;right:8px;width:8px;height:8px;border-radius:9px;background:var(--accent);border:2px solid #fff;box-sizing:content-box}
+.fade-b{position:absolute;left:0;right:0;bottom:0;height:150px;background:linear-gradient(180deg,rgba(250,250,252,0),var(--bg) 70%);z-index:15;pointer-events:none}
+</style>
+
+<script>
+/* ───────── sample values (layout only) — every field exists in the employer API ───────── */
+const HUES = [
+  {bg:'radial-gradient(120% 70% at 22% 8%,#7462E0 0%,rgba(116,98,224,0) 55%),linear-gradient(170deg,#2B2466 0%,#151B2B 72%)', av:'linear-gradient(135deg,#7258FF,#3B2A8F)'},
+  {bg:'radial-gradient(110% 60% at 78% 10%,#D09062 0%,rgba(208,144,98,0) 55%),linear-gradient(170deg,#4A3326 0%,#1A1714 76%)', av:'linear-gradient(135deg,#E39A63,#8A4B2A)'},
+  {bg:'radial-gradient(110% 60% at 16% 14%,#4FA493 0%,rgba(79,164,147,0) 55%),linear-gradient(170deg,#1F3D3A 0%,#0F1A1C 76%)', av:'linear-gradient(135deg,#3FB59A,#1D5F57)'},
+  {bg:'radial-gradient(120% 60% at 76% 10%,#6690D6 0%,rgba(102,144,214,0) 55%),linear-gradient(170deg,#22314F 0%,#0E1424 76%)', av:'linear-gradient(135deg,#5C8DE0,#2A3F7A)'},
+  {bg:'radial-gradient(110% 60% at 24% 12%,#C26E86 0%,rgba(194,110,134,0) 55%),linear-gradient(170deg,#41222E 0%,#170F14 76%)', av:'linear-gradient(135deg,#D9708F,#7A2F48)'},
+  {bg:'radial-gradient(110% 60% at 70% 14%,#97A866 0%,rgba(151,168,102,0) 55%),linear-gradient(170deg,#2E3420 0%,#121410 76%)', av:'linear-gradient(135deg,#A3B465,#4F5B2B)'},
+];
+/* CandidateCard + ShortlistRow fields only. No video length on a card — the API sends it only when a film is played. */
+const C = {
+  aarav:{name:'Aarav Mehta',ini:'AM',q:'B.Com',tier:'Tier 2',city:'Pune',exp:'1.5 yrs',lang:['English','Hindi','Marathi'],sal:'₹3.6–4.8 LPA',joins:'In 15 days',skills:['Inside sales','Cold calling','CRM','Excel','Negotiation','Lead qualification'],iv:'22 Sep',sl:4,hue:1,head:'Inside sales rep · B2B SaaS lead qualification',interest:null,tags:['Call this week','Strong communicator'],job:'Inside Sales Executive',note:'Clear, confident on the objection-handling question. Ask about Mumbai relocation.',added:'30 Sep'},
+  sneha:{name:'Sneha Iyer',ini:'SI',q:'BBA',tier:'Tier 1',city:'Bengaluru',exp:'2 yrs',lang:['English','Tamil','Kannada'],sal:'₹4.2–5.5 LPA',joins:'Immediately',skills:['Customer success','Zendesk','SQL basics','Renewals'],iv:'18 Sep',sl:6,hue:0,head:'Customer success associate who keeps renewals on track',interest:'ACCEPTED',tags:['Strong communicator'],job:'Customer Success Associate',note:'Accepted — set up a call.',added:'27 Sep'},
+  rohan:{name:'Rohan Das',ini:'RD',q:'B.Tech',tier:'Tier 2',city:'Kolkata',exp:'Fresher',lang:['English','Bengali','Hindi'],sal:'₹3–4 LPA',joins:'In 30 days',skills:['Python','Excel','Power BI'],iv:'24 Sep',sl:2,hue:3,head:'Fresh B.Tech grad who likes cleaning messy sales data',interest:'SENT',left:'2 days left',tags:['Analytics'],job:null,note:'',added:'26 Sep'},
+  priya:{name:'Priya Nair',ini:'PN',q:'MBA',tier:'Tier 1',city:'Mumbai',exp:'3 yrs',lang:['English','Hindi','Malayalam'],sal:'₹6–8 LPA',joins:'In 60 days',skills:['Business development','B2B sales','HubSpot'],iv:'12 Sep',sl:9,hue:4,head:'B2B business developer, enterprise logistics accounts',interest:'SENT',left:'1 day left',tags:['Senior pick'],job:'Business Development Associate',note:'Notice period is long — check buy-out.',added:'25 Sep'},
+  kabir:{name:'Kabir Singh',ini:'KS',q:'B.A.',tier:'Tier 3',city:'Delhi',exp:'1 yr',lang:['English','Hindi','Punjabi'],sal:'₹2.8–3.6 LPA',joins:'Immediately',skills:['Telesales','Customer support'],iv:'20 Sep',sl:1,hue:2,head:'Telesales caller with a calm phone voice',interest:'NOT_ACCEPTED',tags:[],job:'Inside Sales Executive',note:'',added:'24 Sep'},
+  ananya:{name:'Ananya Rao',ini:'AR',q:'B.Sc',tier:'Tier 2',city:'Hyderabad',exp:'6 mo',lang:['English','Telugu','Hindi'],sal:'₹3.2–4.2 LPA',joins:'In 15 days',skills:['Content writing','Social media','Canva'],iv:'25 Sep',sl:3,hue:5,head:'Writes product copy and runs small social campaigns',interest:null,tags:['Call this week'],job:null,note:'',added:'29 Sep'},
+  vikram:{name:'Vikram Joshi',ini:'VJ',q:'BBA',tier:'Tier 2',city:'Ahmedabad',exp:'2.5 yrs',lang:['English','Gujarati','Hindi'],sal:'₹4.5–6 LPA',joins:'In 30 days',skills:['Field sales','Distribution','Negotiation'],iv:'15 Sep',sl:5,hue:3,head:'Field sales lead for FMCG distributors across Gujarat',interest:'SENT',left:'4 days left',tags:['Call this week','Strong communicator'],job:'Inside Sales Executive',note:'Strong numbers; ask about inside-sales fit.',added:'28 Sep'},
+  meera:{name:'Meera Kulkarni',ini:'MK',q:'B.E.',tier:'Tier 2',city:'Nagpur',exp:'1 yr',lang:['English','Marathi','Hindi'],sal:'₹3.5–4.5 LPA',joins:'Immediately',skills:['Operations','Excel','Vendor coordination'],iv:'23 Sep',sl:2,hue:0,head:'Operations coordinator — vendors, dispatch and MIS',interest:null,tags:[],job:null,note:'',added:'29 Sep'},
+  ishita:{name:'Ishita Ghosh',ini:'IG',hue:5},
+};
+/* CandidateDetail extras for the profile (education, experience[], preferences, videos[] with durationSec, documents[]) */
+const AAR = {
+  exp:[{t:'Inside Sales Associate',co:'Brightpath Software',when:'Jan 2024 – Present',d:'Qualified inbound leads for a B2B SaaS product and booked demos for the field team.'},
+       {t:'Sales Intern',co:'Kirana Mart',when:'Jun 2023 – Dec 2023',d:'Called new retail partners and kept the CRM up to date.'}],
+  edu:{q:'B.Com',field:'Commerce',inst:'Savitribai Phule Pune University',year:'2023',score:'7.8 CGPA'},
+  roles:['Inside sales','Business development'], locs:['Pune','Mumbai'], types:['Full-time'], remote:'Open to remote',
+  videos:[{t:'Interview',d:'18:42',s:'Recorded 22 Sep',ok:true},{t:'Introduction',d:'0:58',s:'Self-uploaded',ok:false},{t:'Sales pitch',d:'1:30',s:'Self-uploaded',ok:false}],
+  docs:[{n:'Aarav_Mehta_Resume.pdf',k:'Résumé',s:'214 KB'},{n:'BCom_Certificate.pdf',k:'Certificate',s:'1.2 MB'}],
+  link:'linkedin.com/in/aarav-mehta',
+};
+const ME = {first:'Riya',co:'Kestrel Logistics',mono:'KL',industry:'Logistics',office:'Pune'};
+const Q = {cardsLeft:28,cardsUsed:12,cardsLimit:40,playsLeft:9,playsLimit:15};
+const S = {shortlist:24,awaiting:5,expiring:2,live:3,applicants:71,chats:4,matches:142,passDays:30,msgMax:600};
+const JOBS = [
+  {t:'Inside Sales Executive',loc:'Pune',type:'Full-time',sal:'₹3.5–5 LPA',exp:'0–3 yrs',status:'PUBLISHED',views:412,saves:57,apps:38,short:9,deadline:'15 Oct',vac:4,video:true},
+  {t:'Customer Success Associate',loc:'Bengaluru',type:'Full-time',sal:'₹4–6 LPA',exp:'1–3 yrs',status:'PUBLISHED',views:268,saves:31,apps:21,short:7,deadline:'20 Oct',vac:2,video:false},
+  {t:'Business Development Associate',loc:'Mumbai',type:'Full-time',sal:'₹6–8 LPA',exp:'2–5 yrs',status:'PUBLISHED',views:190,saves:22,apps:12,short:4,deadline:null,vac:1,video:true},
+  {t:'Operations Trainee',loc:'Nagpur',type:'Internship',sal:'₹15–20k / mo',exp:'Fresher',status:'PENDING_MODERATION',views:0,saves:0,apps:0,short:0,deadline:null,vac:3,video:false},
+  {t:'Warehouse Supervisor',loc:'Pune',type:'Full-time',sal:'₹3–4 LPA',exp:'1–4 yrs',status:'DRAFT',views:0,saves:0,apps:0,short:0,deadline:null,vac:1,video:false,reason:'Salary range is below the listed experience.'},
+];
+const NOTIFS = [
+  {k:'conn',icon:'heart',t:'Sneha Iyer accepted your Interest',s:'Contact details unlocked',w:'10:42'},
+  {k:'app',icon:'users',t:'New application',s:'Inside Sales Executive',w:'09:15'},
+  {k:'msg',icon:'chat',t:'Ishita Ghosh sent a message',s:'“Sure, I can join a call at 4 pm.”',w:'Yesterday'},
+  {k:'bad',icon:'alert',t:'Kabir Singh didn’t accept',s:'Inside Sales Executive',w:'Yesterday'},
+];
+const TINT = {conn:['var(--success-soft)','var(--success)'],app:['var(--accent-soft)','var(--accent-h)'],msg:['var(--accent-soft)','var(--accent-h)'],bad:['var(--danger-soft)','var(--danger)'],job:['var(--muted)','var(--text2)']};
+
+/* ───────── helpers ───────── */
+const I = (n, st='', cls='') => `<svg class="ic ${cls}"${st?` style="${st}"`:''}><use href="#i-${n}"/></svg>`;
+const film = (c, o={}) => {
+  const w = o.w||200, h = o.h||Math.round(w*16/9), r = o.r ?? 16;
+  return `<div class="poster ${o.cls||''}" style="width:${w}px;height:${h}px;border-radius:${r}px;${o.st||''}"><div class="bgl" style="background:${HUES[c.hue].bg}"></div><svg class="sil" viewBox="0 0 200 220"><use href="#sil"/></svg><div class="shade"${o.noShade?' style="display:none"':''}></div>${o.play?`<span class="pl${o.play==='sm'?' sm':''}">${I('play','','fill')}</span>`:''}${o.inner||''}</div>`;
+};
+/* photoUrl exists on cards, shortlist rows and applicants — drawn as a still */
+const photo = (c, s=44, r=999, st='') => film(c,{w:s,h:s,r,noShade:true,st});
+/* interest rows carry no photo — initials only */
+const ini = (c, s=40) => `<span class="av" style="width:${s}px;height:${s}px;background:var(--muted);color:var(--text2);font-size:${Math.round(s*.34)}px;border:1px solid var(--border)">${c.ini}</span>`;
+const gav = (c, s=40) => `<span class="av" style="width:${s}px;height:${s}px;background:${HUES[c.hue].av};font-size:${Math.round(s*.36)}px">${c.ini}</span>`;
+const tags = (list, n=4, cls='') => list.slice(0,n).map(s=>`<span class="tag ${cls}">${s}</span>`).join('') + (list.length>n?`<span class="tag ${cls}" style="color:var(--text4)">+${list.length-n}</span>`:'');
+const vpill = (c, ink) => `<span class="pill ${ink?'p-success-ink':'p-success'}">${I('check')}Verified interview · ${c.iv}</span>`;
+const ipill = (c, ink) => c.interest==='ACCEPTED' ? `<span class="pill ${ink?'p-success-ink':'p-success'}">${I('check')}Accepted</span>`
+  : c.interest==='SENT' ? `<span class="pill ${ink?'p-warning-ink':'p-warning'}">${I('clock')}${c.left}</span>`
+  : c.interest==='NOT_ACCEPTED' ? `<span class="pill ${ink?'p-danger-ink':'p-danger'}">Not accepted</span>` : '';
+
+const SB_ICONS = `<span class="ico"><svg viewBox="0 0 16 16"><path d="M1 12h2v3H1zM5 9h2v6H5zM9 6h2v9H9zM13 2h2v13h-2z"/></svg><svg viewBox="0 0 16 16"><path d="M8 14 10.2 11.3a3.2 3.2 0 0 0-4.4 0zM3.4 8.6l1.5 1.5a4.4 4.4 0 0 1 6.2 0l1.5-1.5a6.5 6.5 0 0 0-9.2 0zM.6 5.8l1.5 1.5a8.4 8.4 0 0 1 11.8 0l1.5-1.5A10.5 10.5 0 0 0 .6 5.8z"/></svg><svg viewBox="0 0 26 16" style="width:23px"><rect x="1" y="3" width="20" height="10" rx="3" style="fill:none;stroke:currentColor;stroke-width:1.3;opacity:.6"/><rect x="3" y="5" width="13" height="6" rx="1.4"/><rect x="22.4" y="6.3" width="1.8" height="3.4" rx=".9" style="opacity:.6"/></svg></span>`;
+function phone(o){
+  return `<div class="dev"><div class="ph${o.dark?' dk':''}" style="${o.bg?`background:${o.bg}`:''}">
+    <div class="sb${o.light?' lt':''}"><span>9:41</span>${SB_ICONS}</div><span class="punch"></span>
+    <div class="scr">${o.body}</div>${o.fade?'<div class="fade-b"></div>':''}${o.tabs||''}<div class="gest${o.dark?' lt':''}"></div>
+  </div></div>`;
+}
+const TABS = [{k:'feed',l:'Feed',i:'play'},{k:'shortlist',l:'Shortlist',i:'bookmark'},{k:'interests',l:'Interests',i:'heart'},{k:'jobs',l:'Jobs',i:'brief'},{k:'chat',l:'Chats',i:'chat',n:S.chats}];
+const tabsA = a => `<nav class="tA">${TABS.map(t=>`<span class="t${t.k===a?' on':''}"><span class="w">${I(t.i)}</span>${t.l}${t.n?`<span class="badge-n">${t.n}</span>`:''}</span>`).join('')}</nav>`;
+const tabsB = a => `<nav class="tB">${TABS.map(t=>`<span class="t${t.k===a?' on':''}">${I(t.i)}${t.l}${t.n?`<span class="badge-n">${t.n}</span>`:''}</span>`).join('')}</nav>`;
+const tabsC = a => `<nav class="tC">${TABS.map(t=>`<span class="t${t.k===a?' on':''}">${I(t.i)}${t.l}${t.n?`<span class="badge-n">${t.n}</span>`:''}</span>`).join('')}</nav>`;
+const tabsD = a => `<nav class="tD">${TABS.map(t=>`<span class="t${t.k===a?' on':''}">${I(t.i)}${t.k===a?t.l:''}${t.n&&t.k!==a?'<span class="bd"></span>':''}</span>`).join('')}</nav>`;
+const headerA = (title, opts={}) => `<div class="row" style="height:56px;padding:0 12px 0 20px;gap:4px">${opts.back?`<span class="icon-btn" style="margin-left:-10px">${I('arrowL')}</span>`:''}<b style="font-size:${opts.big?24:19}px;font-weight:620;letter-spacing:-.02em" class="grow trunc">${title}</b>${opts.right??`<span class="icon-btn">${I('bell')}<span class="ndot"></span></span><span class="mono-sq" style="width:32px;height:32px;margin-left:2px">${ME.mono}</span>`}</div>`;
+
+const R = {home:{},feed:{},profile:{},shortlist:{},interests:{},jobs:{}};
+const N = {home:{},feed:{},profile:{},shortlist:{},interests:{},jobs:{}};
+</script>
+<script>
+const ring = (pct, size=72, stroke=7, col='var(--accent)', track='var(--muted)', label='') => {
+  const r=(size-stroke)/2, c=2*Math.PI*r;
+  return `<div style="position:relative;width:${size}px;height:${size}px;flex:none"><svg width="${size}" height="${size}" style="transform:rotate(-90deg);display:block"><circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${track}" stroke-width="${stroke}"/><circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${col}" stroke-width="${stroke}" stroke-linecap="round" stroke-dasharray="${c*pct} ${c}"/></svg><b style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:${Math.round(size*.24)}px;font-weight:620;letter-spacing:-.02em">${label}</b></div>`;
+};
+const meter = (label, left, limit, col='var(--accent)', ink=false) => `<div class="col" style="gap:6px"><span class="row" style="justify-content:space-between;font-size:12.5px"><span style="color:${ink?'var(--on-ink-muted)':'var(--text2)'}">${label}</span><b class="tnum" style="font-weight:600;color:${ink?'#fff':'var(--text)'}">${left}<span style="font-weight:500;color:${ink?'var(--on-ink-subtle)':'var(--text3)'}"> of ${limit} left</span></b></span><span class="bar" style="${ink?'background:var(--on-ink-ground)':''}"><i style="width:${(1-left/limit)*100}%;background:${col}"></i></span></div>`;
+
+/* ── A · Studio ── */
+R.home.A = () => phone({tabs:tabsA('feed'), fade:true, body:`
+  ${headerA('')}
+  <div style="padding:0 20px;margin-top:-14px" class="col">
+    <span class="meta">Wednesday, 1 October</span>
+    <h1 style="font-size:31px;font-weight:620;letter-spacing:-.035em;line-height:1.1;margin-top:8px">Welcome back, ${ME.first}.</h1>
+  </div>
+  <div style="padding:16px 16px 0" class="col">
+    <div class="row" style="gap:12px;padding:12px 14px;border-radius:16px;background:var(--success-wash);border:1px solid var(--success-edge)">
+      <span class="circ" style="width:36px;height:36px;background:#fff;color:var(--success)">${I('shield','width:18px;height:18px')}</span>
+      <span class="col grow" style="gap:1px"><b style="font-size:14.5px;font-weight:600">${ME.co}</b><span style="font-size:12.5px;color:var(--success)">Verified Employer · approved 14 Sep</span></span>
+    </div>
+    <div class="card col" style="margin-top:12px;padding:16px;gap:14px;box-shadow:var(--shadow-card)">
+      <div class="row" style="justify-content:space-between"><span class="meta">Today’s feed</span><span class="chip" style="height:26px;font-size:11.5px;padding:0 9px">${I('sliders','width:12px;height:12px')}Pune · Inside sales</span></div>
+      <div class="row" style="gap:8px">${['aarav','ananya','meera','rohan'].map((k,i)=>film(C[k],{w:78,h:118,r:12,play:i===0?'sm':'',inner:`<div class="bl trunc" style="left:8px;bottom:7px;right:6px;font-size:11px;font-weight:600">${C[k].name.split(' ')[0]}</div>`})).join('')}</div>
+      ${meter('Candidate cards',Q.cardsLeft,Q.cardsLimit)}
+      ${meter('Full-video plays',Q.playsLeft,Q.playsLimit,'var(--ink)')}
+      <span class="btn btn-primary btn-cta btn-full">${I('play','','fill')}Open the candidate feed</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px">
+      ${[['bookmark',S.shortlist,'Shortlist','5 added this week'],['heart',S.awaiting,'Awaiting reply','2 expire in 48 h'],['brief',`${S.live}<span style="color:var(--text-dis);font-weight:400"> · </span>${S.applicants}`,'Live jobs · applicants','3 jobs live'],['chat',S.chats,'Unread chats','3 conversations']].map(([i,n,l,s])=>`<div class="card col" style="padding:14px;gap:10px"><span class="row" style="justify-content:space-between;color:var(--accent)">${I(i,'width:19px;height:19px')}${I('chevR','width:15px;height:15px;color:var(--text4)')}</span><span class="col" style="gap:4px"><b class="tnum" style="font-size:26px;font-weight:620;letter-spacing:-.03em;line-height:1">${n}</b><span class="meta" style="font-size:9.5px">${l}</span><span style="font-size:11.5px;color:var(--text3)">${s}</span></span></div>`).join('')}
+    </div>
+  </div>`});
+N.home.A = {t:'Studio — today’s home, finished', d:'Keeps the current card language. Adds the day’s allowance and the next films above the CTA, and a sub-line under each of the four counts.',
+  n:[{t:'/employers/me · limits · feed page 1'},{t:'“added this week” = savedAt'},{t:'“expire in 48 h” = expiresAt'}]};
+
+/* ── B · Pro ── */
+R.home.B = () => phone({tabs:tabsB('feed'), bg:'#F5F6F9', body:`
+  <div class="row" style="height:58px;padding:0 10px 0 16px;gap:10px;background:#fff;border-bottom:1px solid var(--border)">
+    <span class="mono-sq">${ME.mono}</span><span class="col grow" style="gap:1px"><b style="font-size:14.5px;font-weight:600">${ME.co}</b><span class="row" style="gap:4px;font-size:11.5px;color:var(--success)">${I('shield','width:11px;height:11px')}Verified Employer</span></span>
+    <span class="icon-btn">${I('search')}</span><span class="icon-btn">${I('bell')}<span class="ndot"></span></span>
+  </div>
+  <div class="row" style="gap:8px;padding:14px 0 0 16px;overflow:hidden">
+    ${[['Cards today',`${Q.cardsLeft}<span style="font-size:13px;color:var(--text4)">/${Q.cardsLimit}</span>`,`<span class="bar" style="height:4px;margin-top:2px"><i style="width:${Q.cardsLeft/Q.cardsLimit*100}%"></i></span>`],['Shortlist',S.shortlist,'<span style="font-size:11px;color:var(--success)">+5 this week</span>'],['Awaiting',S.awaiting,'<span style="font-size:11px;color:var(--warning)">2 expiring</span>'],['Applicants',S.applicants,'<span style="font-size:11px;color:var(--text3)">3 live jobs</span>']].map(([l,n,x])=>`<div class="col" style="flex:none;width:116px;gap:6px;padding:12px;border-radius:14px;background:#fff;border:1px solid var(--border)"><span class="meta" style="font-size:9.5px">${l}</span><b class="tnum" style="font-size:24px;font-weight:620;letter-spacing:-.03em;line-height:1">${n}</b>${x}</div>`).join('')}
+  </div>
+  <div style="padding:18px 16px 0" class="col">
+    <div class="row" style="justify-content:space-between;margin-bottom:8px"><b style="font-size:15px;font-weight:620">Needs a reply</b><span class="badge-n">3</span></div>
+    <div style="background:#fff;border:1px solid var(--border);border-radius:16px;overflow:hidden">
+      <div class="row" style="gap:12px;padding:12px 14px">${ini(C.sneha,38)}<span class="col grow" style="gap:2px"><b style="font-size:14px;font-weight:600">Sneha Iyer accepted</b><span style="font-size:12px;color:var(--text3)">Customer Success Associate · 10:42</span></span><span class="btn btn-primary btn-sm" style="height:32px">Chat</span></div>
+      ${['priya','rohan'].map(k=>`<div class="row" style="gap:12px;padding:12px 14px;border-top:1px solid var(--border-soft)">${ini(C[k],38)}<span class="col grow" style="gap:2px"><b style="font-size:14px;font-weight:600">${C[k].name}</b><span style="font-size:12px;color:var(--text3)" class="trunc">Interest sent · ${C[k].job||'No job linked'}</span></span><span class="pill p-warning">${I('clock')}${C[k].left}</span></div>`).join('')}
+    </div>
+    <div class="row" style="justify-content:space-between;margin:18px 0 8px"><b style="font-size:15px;font-weight:620">Live jobs</b><span style="font-size:13px;font-weight:600;color:var(--accent)">All jobs</span></div>
+    <div style="background:#fff;border:1px solid var(--border);border-radius:16px;overflow:hidden">
+      ${JOBS.slice(0,3).map((j,i)=>`<div class="col" style="gap:8px;padding:12px 14px;${i?'border-top:1px solid var(--border-soft)':''}"><div class="row" style="gap:8px"><b class="grow trunc" style="font-size:14px;font-weight:600">${j.t}</b>${I('chevR','width:15px;height:15px;color:var(--text4)')}</div>
+        <div class="row tnum" style="gap:12px;font-size:11.5px;color:var(--text3)">${[['eye',j.views],['bookmark',j.saves],['users',j.apps],['check',j.short]].map(([ic,v])=>`<span class="row tnum" style="gap:4px">${I(ic,'width:13px;height:13px;color:var(--text4)')}${v}</span>`).join('')}<span style="flex:1"></span><span class="bar" style="width:70px;height:4px"><i style="width:${j.apps/j.views*500}%"></i></span></div></div>`).join('')}
+    </div>
+  </div>`});
+N.home.B = {t:'Pro — dense, built to triage', d:'Company bar on top, a row of count cards you can swipe, then the Interests that need a reply and every live job with views, saves, applications and shortlisted.',
+  n:[{t:'jobs.counters (views · saves · applications · shortlisted)'},{t:'Interests list, sorted by expiresAt'}]};
+
+/* ── C · Cinema ── */
+R.home.C = () => phone({dark:true, light:true, bg:'var(--ink-deep)', tabs:tabsC('feed'), body:`
+  <div style="position:absolute;left:-120px;top:120px;width:620px;height:620px;border-radius:50%;background:radial-gradient(closest-side,rgba(114,88,255,.32),rgba(114,88,255,0))"></div>
+  <div class="row" style="height:56px;padding:0 14px 0 20px;gap:10px;position:relative">
+    <span class="logo-mk" style="width:28px;height:28px;font-size:25px;padding-top:4px">&rsquo;</span><b style="font-size:15px;font-weight:600;color:#fff" class="grow">${ME.co}</b>
+    <span class="icon-btn" style="color:var(--on-ink-muted)">${I('bell')}<span class="ndot" style="border-color:var(--ink-deep)"></span></span><span class="mono-sq" style="background:var(--accent);width:32px;height:32px">${ME.mono}</span>
+  </div>
+  <div class="col" style="padding:6px 22px 0;gap:10px;position:relative">
+    <span class="meta" style="color:var(--on-ink-subtle)">Wednesday · 1 October</span>
+    <h1 style="font-size:40px;line-height:1;letter-spacing:-.045em;font-weight:620;color:#fff">Morning, ${ME.first}.</h1>
+    <p style="font-size:15.5px;line-height:1.45;color:var(--on-ink-muted)"><b style="color:#fff;font-weight:600">${S.matches} verified candidates</b> match your filters.</p>
+  </div>
+  <div style="position:relative;height:352px;margin-top:18px">
+    ${film(C.vikram,{w:150,h:266,r:18,st:'position:absolute;left:28px;top:44px;transform:rotate(-8deg);opacity:.6'})}
+    ${film(C.sneha,{w:150,h:266,r:18,st:'position:absolute;right:28px;top:44px;transform:rotate(8deg);opacity:.6'})}
+    ${film(C.aarav,{w:190,h:338,r:22,play:true,st:'position:absolute;left:100px;top:0;box-shadow:0 30px 60px -20px rgba(0,0,0,.8),0 0 0 1px rgba(255,255,255,.12)',inner:`<div class="tl"><span class="pill p-glass">${I('check')}Verified · ${C.aarav.iv}</span></div><div class="bl col" style="gap:2px"><b style="font-size:17px;font-weight:600">${C.aarav.name}</b><span style="font-size:12px;color:var(--on-ink-muted)">${C.aarav.q} · ${C.aarav.city} · ${C.aarav.exp}</span></div>`})}
+  </div>
+  <div class="col" style="padding:18px 22px 0;gap:12px;position:relative">
+    <span class="btn btn-white btn-cta btn-full">${I('play','','fill')}Play the feed</span>
+    <div class="row" style="justify-content:center;gap:14px;font-size:12.5px;color:var(--on-ink-subtle)"><span class="row" style="gap:6px">${I('cards','width:14px;height:14px')}${Q.cardsLeft} of ${Q.cardsLimit} cards left</span><span class="row" style="gap:6px">${I('video','width:14px;height:14px')}${Q.playsLeft} full videos</span></div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px">${[[S.shortlist,'Shortlist'],[S.awaiting,'Awaiting'],[S.applicants,'Applicants'],[S.chats,'Unread']].map(([n,l])=>`<div class="col" style="align-items:center;gap:4px;padding:12px 4px;border-radius:14px;background:var(--on-ink-wash);border:1px solid var(--on-ink-hair)"><b class="tnum" style="font-size:22px;font-weight:600;color:#fff;letter-spacing:-.02em">${n}</b><span style="font-size:10.5px;color:var(--on-ink-subtle)">${l}</span></div>`).join('')}</div>
+  </div>`});
+N.home.C = {t:'Cinema — open on the people', d:'Ink home that leads with film: the next candidates fanned out, one big “Play the feed”, and the four counts as quiet tiles underneath.',
+  n:[{t:'“142 match” = /employers/feed/match-count'},{t:'Stills = posterUrl from feed page 1'}]};
+
+/* ── D · Flow ── */
+R.home.D = () => phone({tabs:tabsD('feed'), fade:true, body:`
+  <div class="row" style="height:56px;padding:0 16px 0 22px"><span class="meta grow">Wed · 1 October</span><span class="icon-btn">${I('search')}</span><span class="mono-sq" style="width:32px;height:32px">${ME.mono}</span></div>
+  <div style="padding:2px 22px 0"><h1 style="font-size:30px;line-height:1.12;letter-spacing:-.035em;font-weight:620">Morning, ${ME.first}.<br><span style="color:var(--text4)">4 things need you.</span></h1></div>
+  <div class="col" style="padding:18px 16px 0;gap:10px">
+    ${[
+      {c:TINT.conn,i:'heart',t:'Sneha Iyer accepted',s:'Contact details unlocked · 10:42',a:'<span class="btn btn-primary btn-sm">Chat</span>'},
+      {c:['var(--warning-soft)','var(--warning)'],i:'clock',t:'2 Interests expire soon',s:'Priya · 1 day · Rohan · 2 days',a:`<span class="circ" style="width:32px;height:32px;background:var(--muted)">${I('chevR','width:16px;height:16px')}</span>`},
+      {c:TINT.app,i:'users',t:'New applications',s:'Inside Sales Executive · 38 total',a:`<span class="circ" style="width:32px;height:32px;background:var(--muted)">${I('chevR','width:16px;height:16px')}</span>`},
+      {c:TINT.msg,i:'chat',t:'4 unread messages',s:'Ishita Ghosh: “Sure, I can join a call…”',a:`<span class="circ" style="width:32px;height:32px;background:var(--muted)">${I('chevR','width:16px;height:16px')}</span>`},
+    ].map(r=>`<div class="row" style="gap:12px;padding:13px 14px;background:#fff;border:1px solid var(--border);border-radius:18px"><span class="icw" style="background:${r.c[0]};color:${r.c[1]};width:40px;height:40px;border-radius:13px">${I(r.i)}</span><span class="col grow" style="gap:2px"><b style="font-size:14.5px;font-weight:600">${r.t}</b><span class="trunc" style="font-size:12.5px;color:var(--text3)">${r.s}</span></span>${r.a}</div>`).join('')}
+    <div class="row" style="gap:14px;padding:16px;border-radius:20px;background:linear-gradient(130deg,#fff 40%,var(--accent-wash));border:1px solid var(--accent-edge);margin-top:4px">
+      ${ring(Q.cardsUsed/Q.cardsLimit,64,7,'var(--accent)','var(--accent-soft)',String(Q.cardsUsed))}
+      <span class="col grow" style="gap:3px"><span class="meta" style="font-size:9.5px">Your feed today</span><b style="font-size:16px;font-weight:600;letter-spacing:-.01em">${Q.cardsUsed} seen · ${Q.cardsLeft} left</b><span style="font-size:12px;color:var(--text3)">Resets at midnight</span></span>
+      <span class="circ" style="width:44px;height:44px;background:var(--ink);color:#fff">${I('arrowR','width:18px;height:18px')}</span>
+    </div>
+  </div>`});
+N.home.D = {t:'Flow — a list of what needs you', d:'No dashboard. Home is the few things waiting on a reply, built from live data, then one card for today’s feed. Floating tab bar.',
+  n:[{t:'“12 seen” = limits.cards.used'},{t:'Rows from notifications + interests + chats'}]};
+</script>
+<script>
+const fChips = (list, ink) => list.map(t=>`<span class="chip ${ink?'ink':'on'}" style="height:30px;font-size:12px">${t}${I('x','width:12px;height:12px;opacity:.6')}</span>`).join('');
+
+/* ── A · Studio ── */
+R.feed.A = () => { const c=C.aarav; return phone({tabs:tabsA('feed'), body:`
+  <div class="row" style="height:54px;padding:0 10px 0 20px;gap:4px"><b style="font-size:22px;font-weight:620;letter-spacing:-.025em" class="grow">Feed</b><span class="icon-btn">${I('bookmark')}</span><span class="icon-btn" style="background:var(--ink);color:#fff;width:38px;height:38px">${I('sliders','width:18px;height:18px')}<span class="badge-n" style="position:absolute;top:-4px;right:-4px;border:2px solid #fff;box-sizing:content-box">4</span></span></div>
+  <div class="row" style="gap:6px;padding:0 0 0 16px;overflow:hidden"><span class="chip" style="height:30px;font-size:12px;background:var(--muted);border-color:var(--muted)"><b class="tnum" style="font-weight:650;color:var(--text)">${S.matches}</b> match</span>${fChips(['Pune','Inside sales','0–3 yrs'])}</div>
+  <div style="position:relative;margin:12px 14px 0">
+    <div style="position:absolute;left:18px;right:18px;top:12px;bottom:-12px;background:#fff;border:1px solid var(--border);border-radius:22px"></div>
+    <div style="position:absolute;left:9px;right:9px;top:6px;bottom:-6px;background:#fff;border:1px solid var(--border);border-radius:22px"></div>
+    <div class="col" style="position:relative;background:#fff;border:1px solid var(--border);border-radius:22px;padding:8px;box-shadow:var(--shadow-pop)">
+      ${film(c,{w:346,h:340,r:16,inner:`<div class="tl"><span class="pill p-glass">${I('check')}Verified · ${c.iv}</span><span class="mute">${I('mute')}</span></div>
+        <span style="position:absolute;left:16px;top:60px;transform:rotate(-12deg);border:3px solid var(--success-fill);color:var(--success-fill);background:rgba(255,255,255,.92);border-radius:8px;padding:4px 10px;font:600 14px var(--mono);letter-spacing:.08em;opacity:.95">SHORTLIST</span>
+        <div class="bl"><div class="track"><i style="width:36%"></i></div></div>`})}
+      <div class="col" style="padding:12px 8px 6px;gap:9px">
+        <div class="row" style="gap:8px"><b style="font-size:21px;font-weight:620;letter-spacing:-.02em" class="grow">${c.name}</b><span class="row" style="gap:4px;font-size:12px;color:var(--text3)">${I('users','width:14px;height:14px')}${c.sl}</span></div>
+        <span style="font-size:13px;color:var(--text3)">${c.q} · ${c.tier} · ${c.city} · ${c.exp}</span>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="kv"><span class="meta">Expected</span><b>${c.sal}</b></div><div class="kv"><span class="meta">Joins</span><b>${c.joins}</b></div></div>
+        <div class="row" style="gap:5px;overflow:hidden">${tags(c.skills,3)}</div>
+      </div>
+    </div>
+  </div>
+  <div class="row" style="justify-content:center;gap:18px;margin-top:26px">
+    <span class="circ" style="width:44px;height:44px;background:#fff;border:1px solid var(--border2);color:var(--text2)">${I('undo','width:18px;height:18px')}</span>
+    <span class="circ" style="width:60px;height:60px;background:#fff;border:1.5px solid var(--danger-border);color:var(--danger-fill);box-shadow:var(--shadow-card)">${I('x','width:26px;height:26px;stroke-width:2.3')}</span>
+    <span class="circ" style="width:60px;height:60px;background:var(--success-fill);color:#fff;box-shadow:0 12px 24px -10px rgba(14,159,110,.8)">${I('bookmark','width:24px;height:24px;stroke-width:2.2')}</span>
+    <span class="circ" style="width:44px;height:44px;background:var(--accent-soft);color:var(--accent-h)">${I('heart','width:19px;height:19px')}</span>
+  </div>`}); };
+N.feed.A = {t:'Studio — the deck, polished', d:'Today’s swipe deck with a visible stack, a SHORTLIST stamp while dragging, the two money facts in tiles, and four round controls: Undo, Pass, Shortlist, Interest.',
+  n:[{t:'CandidateCard + quota + swipes/last'},{t:'Pass days',c:'cfg'},{t:'No video length on the card'}]};
+
+/* ── B · Pro ── */
+R.feed.B = () => { const list=['aarav','ananya','meera','vikram'].map(k=>C[k]); return phone({tabs:tabsB('feed'), bg:'#F5F6F9', body:`
+  <div style="background:#fff;border-bottom:1px solid var(--border)">
+    <div class="row" style="height:54px;padding:0 8px 0 16px;gap:4px"><span class="col grow" style="gap:1px"><b style="font-size:19px;font-weight:620;letter-spacing:-.02em">Candidates</b><span class="meta" style="font-size:9.5px">${S.matches} match · newest first</span></span><span class="icon-btn">${I('cards')}</span><span class="icon-btn">${I('sliders')}<span class="badge-n" style="position:absolute;top:2px;right:2px">4</span></span></div>
+    <div class="row" style="gap:6px;padding:0 0 10px 16px;overflow:hidden">${fChips(['Pune','Inside sales','0–3 yrs','≤ ₹5 LPA'])}</div>
+  </div>
+  <div class="row" style="gap:10px;margin:10px 16px 2px;padding:9px 12px;border-radius:12px;background:var(--accent-wash);border:1px solid var(--accent-edge);font-size:12.5px;color:var(--accent-h)">${I('cards','width:15px;height:15px')}<b class="tnum" style="font-weight:600">${Q.cardsLeft} cards left</b><span class="grow"></span><span class="tnum" style="color:var(--text3)">${Q.playsLeft} full videos</span></div>
+  <div class="col" style="gap:10px;padding:8px 16px 0">${list.map((c,i)=>`<div class="row" style="gap:12px;padding:10px;background:#fff;border:1px solid ${i===0?'var(--accent-edge)':'var(--border)'};border-radius:16px;align-items:stretch">
+    ${film(c,{w:82,h:146,r:12,play:'sm',inner:`<span class="pill p-glass" style="position:absolute;left:6px;top:6px;height:18px;padding:0 6px">${I('check','width:9px;height:9px')}</span>`})}
+    <div class="col grow" style="gap:5px;padding:2px 0">
+      <div class="row" style="gap:6px"><b class="grow trunc" style="font-size:15px;font-weight:600">${c.name}</b>${c.k==='vikram'?'':''}</div>
+      <span style="font-size:12px;color:var(--text3)" class="trunc">${c.q} · ${c.tier} · ${c.city}</span>
+      <span style="font-size:13px;font-weight:600">${c.sal}</span>
+      <span style="font-size:12px;color:var(--text3)">${c.exp} · joins ${c.joins.replace('In ','in ').toLowerCase()}</span>
+      <div class="row" style="gap:4px;overflow:hidden">${tags(c.skills,1)}</div>
+      <div class="row" style="gap:6px;margin-top:auto">${[['x','var(--danger-fill)'],['bookmark',''],['heart','']].map(([ic,col])=>`<span class="circ" style="width:30px;height:30px;border:1px solid var(--border);border-radius:9px;color:${col||'var(--text2)'}">${I(ic,'width:15px;height:15px')}</span>`).join('')}<span class="grow"></span><span style="font-size:12.5px;font-weight:600;color:var(--accent)">Profile</span></div>
+    </div></div>`).join('')}</div>`}); };
+N.feed.B = {t:'Pro — a list instead of a deck', d:'For recruiters who scan: filter chips, the allowance always visible, and a compact row per candidate with pass / shortlist / Interest on each row. The deck stays one tap away.',
+  n:[{t:'Same CandidateCard fields'},{t:'Does each listed card use one of the day’s cards?',c:'api'}]};
+
+/* ── C · Cinema ── */
+R.feed.C = () => { const c=C.aarav; return phone({dark:true, light:true, tabs:tabsC('feed'), body:`
+  <div style="position:absolute;inset:-32px 0 0 0">${film(c,{w:390,h:844,r:0,st:'position:absolute;inset:0',inner:''})}</div>
+  <div style="position:absolute;left:0;right:0;bottom:0;height:520px;background:linear-gradient(180deg,rgba(7,9,15,0),rgba(7,9,15,.7) 40%,rgba(7,9,15,.96) 78%)"></div>
+  <div style="position:absolute;left:14px;right:14px;top:6px;display:flex;gap:2px">${Array.from({length:Q.cardsLimit},(_,i)=>`<i style="flex:1;height:2.5px;border-radius:2px;background:${i<12?'rgba(255,255,255,.7)':i===12?'#fff':'rgba(255,255,255,.22)'}"></i>`).join('')}</div>
+  <div class="row" style="position:absolute;left:16px;right:12px;top:18px;gap:8px"><b style="font-size:17px;font-weight:600;color:#fff" class="grow">Feed <span style="font:500 11px var(--mono);color:var(--on-ink-muted);letter-spacing:.06em">13 / 40</span></b><span class="mute" style="width:36px;height:36px">${I('vol')}</span><span class="btn btn-glass btn-sm" style="height:36px">${I('sliders')}4</span></div>
+  <span style="position:absolute;right:92px;top:180px;transform:rotate(12deg);border:3px solid var(--danger-fill);color:var(--danger-fill);background:rgba(255,255,255,.92);border-radius:8px;padding:4px 10px;font:600 13px var(--mono);letter-spacing:.08em;opacity:.0">PASS · 30 DAYS</span>
+  <div class="col" style="position:absolute;right:12px;bottom:110px;gap:14px;align-items:center">
+    ${[['bookmark','var(--success-fill)','Shortlist'],['heart','var(--accent)','Interest'],['user','','Profile'],['expand','','Full'],['x','','Pass']].map(([ic,bg,l])=>`<span class="col" style="align-items:center;gap:4px;font-size:10.5px;font-weight:550;color:var(--on-ink-muted)"><span class="circ" style="width:50px;height:50px;background:${bg||'rgba(255,255,255,.14)'};border:1px solid ${bg||'rgba(255,255,255,.22)'};color:${ic==='x'?'var(--danger-on-ink)':'#fff'};backdrop-filter:blur(10px)">${I(ic,'width:21px;height:21px')}</span>${l}</span>`).join('')}
+  </div>
+  <div class="col" style="position:absolute;left:18px;right:84px;bottom:106px;gap:10px;color:#fff">
+    <div>${vpill(c,true)}</div>
+    <b style="font-size:32px;line-height:1;letter-spacing:-.04em;font-weight:620">${c.name}</b>
+    <span style="font-size:13.5px;color:var(--on-ink-muted)">${c.q} · ${c.tier} · ${c.city}</span>
+    <p style="font-size:14px;line-height:1.45;color:var(--on-ink-soft)">${c.head}</p>
+    <div class="row" style="gap:6px;flex-wrap:wrap">${[c.exp,c.sal,c.joins].map(t=>`<span class="chip ink" style="height:28px;font-size:12px;color:#fff;backdrop-filter:blur(10px)">${t}</span>`).join('')}</div>
+    <div class="track" style="height:3px;border-radius:3px;background:rgba(255,255,255,.25);margin-top:4px"><i style="display:block;width:36%;height:100%;background:#fff;border-radius:3px"></i></div>
+  </div>`}); };
+N.feed.C = {t:'Cinema — full-screen film', d:'The interview film fills the phone, like a reels app. A story-style bar shows today’s cards, facts sit on the film, and the actions run down the right edge.',
+  n:[{t:'Segments = limits.cards.limit'},{t:'Needs a portrait poster per card (posterUrl)'}]};
+
+/* ── D · Flow ── */
+R.feed.D = () => { const c=C.aarav; return phone({tabs:tabsD('feed'), body:`
+  <div class="row" style="height:54px;padding:0 16px;gap:10px"><span class="chip dark" style="height:34px">${I('bookmark')}Pune · Inside sales${I('chevD')}</span><span class="grow"></span><span class="col" style="align-items:flex-end;gap:4px"><span class="tnum" style="font-size:12px;color:var(--text3)"><b style="color:var(--text);font-weight:600">${Q.cardsUsed}</b> / ${Q.cardsLimit} today</span><span class="bar" style="width:84px;height:4px"><i style="width:${Q.cardsUsed/Q.cardsLimit*100}%"></i></span></span></div>
+  <div class="row" style="gap:14px;padding:6px 16px 0;align-items:flex-start">
+    ${film(c,{w:142,h:252,r:16,play:'sm',inner:`<div class="tl" style="top:8px;left:8px"><span class="pill p-glass" style="height:20px">${I('check','width:10px;height:10px')}${c.iv}</span></div>`})}
+    <div class="col grow" style="gap:0">
+      <b style="font-size:22px;font-weight:620;letter-spacing:-.025em;line-height:1.1">${c.name}</b>
+      <span style="font-size:12.5px;color:var(--text3);margin:3px 0 8px">${c.q} · ${c.tier}</span>
+      ${[['City',c.city],['Experience',c.exp],['Expected',c.sal],['Joins',c.joins],['Languages',c.lang.join(', ')]].map(([k,v])=>`<div class="col" style="gap:1px;padding:6px 0;border-top:1px solid var(--border-soft)"><span class="meta" style="font-size:9px">${k}</span><b style="font-size:13.5px;font-weight:600">${v}</b></div>`).join('')}
+    </div>
+  </div>
+  <div class="row" style="gap:5px;padding:12px 16px 0;flex-wrap:wrap">${tags(c.skills,4)}</div>
+  <div class="col" style="margin:14px 16px 0;padding:14px;border-radius:18px;background:#fff;border:1px solid var(--border);gap:10px">
+    <span class="row" style="justify-content:space-between"><span class="meta">If you shortlist</span><span style="font-size:11px;color:var(--text4)">optional</span></span>
+    <div style="border:1px solid var(--border2);border-radius:12px;padding:10px 12px;font-size:13px;line-height:1.45;position:relative">Ask about Mumbai relocation.<span style="position:absolute;right:10px;bottom:6px;font:500 10px var(--mono);color:var(--text4)">28 / 2000</span><br>&nbsp;</div>
+    <div class="row" style="gap:6px;overflow:hidden"><span class="chip on" style="height:28px">${I('check','width:12px;height:12px')}Call this week</span><span class="chip" style="height:28px">Strong communicator</span><span class="chip" style="height:28px;border-style:dashed">${I('plus','width:12px;height:12px')}</span></div>
+    <div class="row" style="justify-content:space-between;height:38px;border:1px solid var(--border2);border-radius:10px;padding:0 12px;font-size:13px"><span class="row" style="gap:8px">${I('brief','width:15px;height:15px;color:var(--text4)')}Inside Sales Executive</span>${I('chevD','width:15px;height:15px;color:var(--text4)')}</div>
+  </div>
+  <div class="row" style="position:absolute;left:14px;right:14px;bottom:96px;gap:8px">
+    <span class="btn btn-danger" style="width:52px;padding:0">${I('x')}</span>
+    <span class="btn btn-dark grow">${I('bookmark')}Shortlist</span>
+    <span class="btn btn-primary grow">${I('heart')}+ Interest</span>
+  </div>`}); };
+N.feed.D = {t:'Flow — decide once, properly', d:'A smaller film beside every card fact, then the shortlist note, tag and job captured in the same step. Three explicit outcomes instead of a swipe.',
+  n:[{t:'Note · tags · job = PATCH shortlist'},{t:'Note limit 2000',c:'cfg'},{t:'“12 / 40 today” = limits.cards.used'}]};
+</script>
+<script>
+const pSec = (label, inner, st='') => `<div class="col" style="gap:10px;padding:16px 20px;border-top:1px solid var(--border-soft);${st}"><span class="meta">${label}</span>${inner}</div>`;
+const expTL = (ink) => AAR.exp.map((e,i)=>`<div class="row" style="gap:12px;align-items:flex-start"><span style="width:11px;height:11px;border-radius:9px;border:2.5px solid var(--accent${ink?'-bright':''});margin-top:4px;flex:none"></span><span class="col" style="gap:2px"><b style="font-size:14.5px;font-weight:600;color:${ink?'#fff':'var(--text)'}">${e.t}</b><span style="font-size:12.5px;color:${ink?'var(--on-ink-subtle)':'var(--text3)'}">${e.co} · ${e.when}</span><span style="font-size:13px;line-height:1.45;color:${ink?'var(--on-ink-soft)':'var(--text2)'};margin-top:2px">${e.d}</span></span></div>`).join('');
+const docRow = (d, ink) => `<div class="row" style="gap:10px;padding:10px 12px;border-radius:12px;border:1px solid ${ink?'var(--on-ink-hair)':'var(--border)'};${ink?'background:var(--on-ink-wash)':''}"><span style="width:32px;height:36px;border-radius:7px;background:${ink?'rgba(229,72,77,.16)':'var(--danger-soft)'};color:${ink?'var(--danger-on-ink)':'var(--danger)'};display:flex;align-items:center;justify-content:center;font:600 8.5px var(--mono)">PDF</span><span class="col grow" style="gap:1px;min-width:0"><b class="trunc" style="font-size:13px;font-weight:550;color:${ink?'#fff':'var(--text)'}">${d.k}</b><span style="font-size:11.5px;color:${ink?'var(--on-ink-subtle)':'var(--text3)'}" class="trunc">${d.n} · ${d.s}</span></span>${I('download',`width:17px;height:17px;color:${ink?'var(--on-ink-muted)':'var(--text3)'}`)}</div>`;
+const actBar = (inner, st='') => `<div class="row" style="position:absolute;left:0;right:0;bottom:0;padding:12px 16px 30px;gap:8px;background:#fff;border-top:1px solid var(--border);z-index:20;${st}">${inner}</div>`;
+
+/* ── A · Studio ── */
+R.profile.A = () => { const c=C.aarav; return phone({body:`
+  ${headerA('Profile',{back:true,right:`<span style="font-size:12.5px;color:var(--text3);margin-right:6px">13 of 40</span><span class="icon-btn" style="width:34px;height:34px;border:1px solid var(--border)">${I('chevR','width:16px;height:16px')}</span>`})}
+  <div style="padding:0 16px">${film(c,{w:358,h:280,r:18,play:true,inner:`<div class="tl"><span class="pill p-glass">${I('check')}Verified interview · ${c.iv}</span><span class="mute">${I('mute')}</span></div><div class="bl row" style="justify-content:space-between;font:500 11px var(--mono);color:var(--on-ink-muted)"><span>INTERVIEW</span><span>18:42</span></div>`})}</div>
+  <div class="row" style="gap:12px;padding:16px 20px 4px">${photo(c,54)}<span class="col grow" style="gap:2px"><b style="font-size:23px;font-weight:620;letter-spacing:-.025em">${c.name}</b><span style="font-size:13px;color:var(--text3)">${c.q} · ${c.tier} · ${c.city}</span></span></div>
+  <p style="padding:6px 20px 12px;font-size:14px;line-height:1.5;color:var(--text2)">${c.head}</p>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 16px 14px">${[['Expected',c.sal.replace(' LPA','')+' L'],['Joins',c.joins.replace('In ','')],['Experience',c.exp]].map(([k,v])=>`<div class="kv" style="padding:10px"><span class="meta">${k}</span><b style="font-size:14px">${v}</b></div>`).join('')}</div>
+  ${pSec('Videos · 3',`<div class="row" style="gap:8px">${AAR.videos.map(v=>`<div class="col" style="gap:5px;width:106px">${film(c,{w:106,h:70,r:10,play:'sm',noShade:true})}<b style="font-size:12px;font-weight:600">${v.t} · ${v.d}</b><span class="pill ${v.ok?'p-success':'p-warning'}" style="height:18px;font-size:8.5px;align-self:flex-start">${v.ok?'Verified':'Self-uploaded'}</span></div>`).join('')}</div>`)}
+  ${pSec('Experience · '+c.exp, expTL())}
+  ${actBar(`<span class="btn btn-danger" style="width:46px;padding:0">${I('x')}</span><span class="btn btn-outline">${I('bookmark')}Shortlist</span><span class="btn btn-primary grow">${I('heart')}Send Interest</span>`)}`}); };
+N.profile.A = {t:'Studio — one scrolling page', d:'Film first, then the person, the three facts employers check, every video (verified vs self-uploaded), experience, education, skills and documents. Actions stay pinned at the bottom.',
+  n:[{t:'GET /employers/candidates/:id'},{t:'videos[].durationSec · unverified'},{t:'documents via signed link'}]};
+
+/* ── B · Pro ── */
+R.profile.B = () => { const c=C.aarav; return phone({bg:'#F5F6F9', body:`
+  <div style="background:#fff;border-bottom:1px solid var(--border)">
+    <div class="row" style="height:50px;padding:0 8px;gap:2px"><span class="icon-btn">${I('arrowL')}</span><span class="grow" style="font-size:13px;color:var(--text3)">Candidate <b style="color:var(--text);font-weight:600">13</b> of ${S.matches}</span><span class="icon-btn" style="width:36px">${I('chevL','width:18px;height:18px')}</span><span class="icon-btn" style="width:36px">${I('chevR','width:18px;height:18px')}</span></div>
+    <div class="row" style="gap:14px;padding:4px 16px 14px;align-items:flex-start">
+      ${film(c,{w:84,h:150,r:12,play:'sm'})}
+      <div class="col grow" style="gap:6px;min-width:0"><b style="font-size:20px;font-weight:620;letter-spacing:-.02em">${c.name}</b><span style="font-size:12.5px;color:var(--text3)">${c.q} · ${c.tier} · ${c.city} · ${c.exp}</span><div>${vpill(c)}</div><span class="row" style="gap:5px;font-size:12px;color:var(--text3)">${I('users','width:13px;height:13px')}Shortlisted by ${c.sl} employers</span></div>
+    </div>
+    <div class="row" style="gap:20px;padding:0 16px">${[['Overview',1],['Experience',0,2],['Videos',0,3],['Docs',0,2]].map(([t,on,n])=>`<span style="height:40px;display:flex;align-items:center;gap:5px;font-size:13.5px;font-weight:${on?650:550};color:${on?'var(--text)':'var(--text3)'};border-bottom:2px solid ${on?'var(--ink)':'transparent'}">${t}${n?`<span style="font:500 10px var(--mono);color:var(--text4)">${n}</span>`:''}</span>`).join('')}</div>
+  </div>
+  <div style="margin:12px 16px 0;background:#fff;border:1px solid var(--border);border-radius:14px;overflow:hidden">
+    ${[['Expected',c.sal],['Joins',c.joins],['Languages',c.lang.join(', ')],['Employment',AAR.types.join(', ')],['Work mode',AAR.remote],['Wants',AAR.roles.join(', ')],['Locations',AAR.locs.join(', ')],['Education',`${AAR.edu.q} · ${AAR.edu.year} · ${AAR.edu.score}`]].map(([k,v],i)=>`<div class="row" style="gap:10px;padding:11px 14px;${i?'border-top:1px solid var(--border-soft)':''}"><span class="meta" style="font-size:9.5px;width:88px;flex:none">${k}</span><b class="grow trunc" style="font-size:13.5px;font-weight:600;text-align:right">${v}</b></div>`).join('')}
+  </div>
+  <div class="col" style="gap:8px;padding:14px 16px 0"><span class="meta">Skills</span><div class="row" style="gap:5px;flex-wrap:wrap">${tags(c.skills,6)}</div></div>
+  ${actBar(`<span class="circ" style="width:44px;height:44px;border:1px solid var(--danger-border);color:var(--danger)">${I('x')}</span><span class="circ" style="width:44px;height:44px;border:1px solid var(--border2)">${I('bookmark')}</span><span class="circ" style="width:44px;height:44px;border:1px solid var(--border2)">${I('expand')}</span><span class="btn btn-primary grow">${I('heart')}Send Interest</span>`)}`}); };
+N.profile.B = {t:'Pro — tabs and a fact table', d:'A compact head with the film thumbnail and next/previous, then tabs. Overview is a two-column fact table, so everything fits on the first screen.',
+  n:[{t:'Same CandidateDetail read'},{t:'Next / previous walks the loaded feed page'}]};
+
+/* ── C · Cinema ── */
+R.profile.C = () => { const c=C.aarav; return phone({dark:true, light:true, bg:'var(--ink-deep)', body:`
+  <div style="position:absolute;left:0;right:0;top:-32px;height:520px">${film(c,{w:390,h:520,r:0,st:'position:absolute;inset:0'})}</div>
+  <div style="position:absolute;left:0;right:0;top:250px;height:240px;background:linear-gradient(180deg,rgba(7,9,15,0),var(--ink-deep))"></div>
+  <div class="row" style="position:absolute;left:12px;right:12px;top:8px;justify-content:space-between"><span class="circ" style="width:40px;height:40px;background:var(--glass);color:#fff;backdrop-filter:blur(10px)">${I('arrowL')}</span><span class="circ" style="width:40px;height:40px;background:var(--glass);color:#fff">${I('mute','width:18px;height:18px')}</span></div>
+  <span class="circ" style="position:absolute;left:50%;top:150px;margin-left:-32px;width:64px;height:64px;background:rgba(255,255,255,.94);color:var(--ink)">${I('play','width:22px;height:22px;margin-left:3px','fill')}</span>
+  <div class="col" style="position:absolute;left:20px;right:20px;top:330px;gap:8px;color:#fff">
+    <div>${vpill(c,true)}</div>
+    <b style="font-size:40px;line-height:.98;letter-spacing:-.05em;font-weight:620">Aarav<br>Mehta</b>
+    <span style="font-size:13.5px;color:var(--on-ink-muted)">${c.q} · ${c.tier} · ${c.city} · ${c.exp}</span>
+  </div>
+  <div class="col" style="position:absolute;left:16px;right:16px;top:500px;gap:10px">
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">${[['Expected',c.sal.replace(' LPA','')+' L'],['Joins',c.joins.replace('In ','')],['Shortlisted',c.sl+' employers']].map(([k,v])=>`<div class="col" style="gap:4px;padding:11px;border-radius:14px;background:var(--on-ink-wash);border:1px solid var(--on-ink-hair)"><span class="meta" style="font-size:9px;color:var(--on-ink-subtle)">${k}</span><b style="font-size:14px;font-weight:600;color:#fff">${v}</b></div>`).join('')}</div>
+    <div class="row" style="gap:8px">${AAR.videos.slice(1).map(v=>`<div class="row grow" style="gap:9px;padding:8px;border-radius:14px;background:var(--on-ink-wash);border:1px solid var(--on-ink-hair)">${film(c,{w:34,h:56,r:7,noShade:true})}<span class="col" style="gap:3px;min-width:0"><b style="font-size:12.5px;font-weight:600;color:#fff">${v.t} · ${v.d}</b><span class="pill p-warning-ink" style="height:17px;font-size:8.5px;padding:0 6px">Self-uploaded</span></span></div>`).join('')}</div>
+    <div class="col" style="gap:10px;padding:14px;border-radius:16px;background:var(--on-ink-wash);border:1px solid var(--on-ink-hair)"><span class="meta" style="color:var(--on-ink-subtle)">Experience</span>${expTL(true)}</div>
+  </div>
+  <div class="row" style="position:absolute;left:14px;right:14px;bottom:24px;gap:8px;padding:8px;border-radius:999px;background:rgba(21,27,43,.92);border:1px solid var(--on-ink-hair);backdrop-filter:blur(14px);z-index:20">
+    <span class="circ" style="width:46px;height:46px;background:var(--on-ink-ground);color:var(--danger-on-ink)">${I('x')}</span><span class="circ" style="width:46px;height:46px;background:var(--on-ink-ground);color:#fff">${I('bookmark')}</span><span class="btn btn-white grow" style="height:46px">${I('heart')}Send Interest</span>
+  </div>`}); };
+N.profile.C = {t:'Cinema — a cover story', d:'The film is the header. Name set large over it, three fact tiles, the self-uploaded clips flagged, and a floating action pill that never leaves the thumb.',
+  n:[{t:'Same CandidateDetail read'},{t:'Self-uploaded = videos[].unverified'}]};
+
+/* ── D · Flow ── */
+R.profile.D = () => { const c=C.aarav; return phone({body:`
+  ${headerA('',{back:true,right:`<span class="chip" style="height:30px;font-size:12px">${I('columns','width:13px;height:13px')}Compare</span>`})}
+  <div class="col" style="padding:0 22px;gap:4px"><b style="font-size:28px;font-weight:620;letter-spacing:-.035em">${c.name}</b><span style="font-size:13.5px;color:var(--text3)">${c.q} · ${c.tier} · ${c.city}</span></div>
+  <div class="row" style="gap:12px;margin:14px 16px 0;padding:10px;border-radius:16px;background:var(--muted)">
+    ${film(c,{w:74,h:132,r:10,play:'sm'})}
+    <div class="col grow" style="gap:6px"><span class="meta" style="color:var(--success);font-size:9.5px">Verified interview</span><b style="font-size:15px;font-weight:600">Recorded ${c.iv} · 18:42</b><span style="font-size:12px;color:var(--text3);line-height:1.4">Full interview uses 1 of today’s ${Q.playsLimit} plays · ${Q.playsLeft} left</span>
+      <div class="row" style="gap:6px;margin-top:2px">${AAR.videos.slice(1).map(v=>`<span class="chip" style="height:26px;font-size:11px;padding:0 8px">${I('video','width:12px;height:12px')}${v.t} ${v.d}</span>`).join('')}</div></div>
+  </div>
+  <div style="padding:8px 22px 0">${[['Summary',c.head],['Experience',`<b style="font-weight:600;color:var(--text)">${AAR.exp[0].t}</b> · ${AAR.exp[0].co}<br><span style="color:var(--text3)">${AAR.exp[0].when}</span>`],['Education',`${AAR.edu.q}, ${AAR.edu.field} · ${AAR.edu.year}`],['Looking for',`${AAR.roles[0]} · ${AAR.locs.join(', ')}<br><b style="font-weight:600;color:var(--text)">${c.sal}</b> · ${c.joins.toLowerCase()}`]].map(([k,v])=>`<div class="row" style="gap:12px;padding:11px 0;border-bottom:1px solid var(--border-soft);align-items:flex-start"><span class="meta" style="width:84px;flex:none;font-size:9.5px;padding-top:3px">${k}</span><span style="font-size:13.5px;line-height:1.45;color:var(--text2)">${v}</span></div>`).join('')}</div>
+  <div class="col" style="position:absolute;left:0;right:0;bottom:0;padding:10px 18px 30px;gap:10px;background:#fff;border-radius:26px 26px 0 0;box-shadow:0 -18px 40px -20px rgba(11,15,26,.35);z-index:20">
+    <span style="width:40px;height:4px;border-radius:4px;background:var(--border2);align-self:center"></span>
+    <b style="font-size:16px;font-weight:620">Send Interest to Aarav</b>
+    <div class="row" style="justify-content:space-between;height:38px;border:1px solid var(--border2);border-radius:10px;padding:0 12px;font-size:13px"><span class="row" style="gap:8px">${I('brief','width:15px;height:15px;color:var(--text4)')}Inside Sales Executive</span>${I('chevD','width:15px;height:15px;color:var(--text4)')}</div>
+    <div style="border:1px solid var(--border2);border-radius:12px;padding:10px 12px 22px;font-size:13px;line-height:1.45;position:relative">Hi Aarav, we liked how you handled the objection question. Would you like to talk about our Inside Sales role in Pune?<span style="position:absolute;right:10px;bottom:6px;font:500 10px var(--mono);color:var(--text4)">128 / ${S.msgMax}</span></div>
+    <div class="row" style="gap:8px"><span class="btn btn-outline" style="width:46px;padding:0">${I('bookmark')}</span><span class="btn btn-primary grow">${I('send')}Send Interest</span></div>
+  </div>`}); };
+N.profile.D = {t:'Flow — a résumé with the Interest built in', d:'A quiet one-column profile with the interview card on top. The Interest is written in a sheet already open at the bottom: choose the job, write the message, send.',
+  n:[{t:'Message limit 600',c:'cfg'},{t:'Plays left = limits.videoPlays'},{t:'jobId from your live jobs'}]};
+</script>
+<script>
+const SL = ['aarav','vikram','sneha','ananya','priya','rohan'].map(k=>C[k]);
+const TAGS = ['Call this week','Strong communicator','Senior pick','Analytics'];
+
+/* ═════════ SHORTLIST ═════════ */
+/* ── A · Studio ── */
+R.shortlist.A = () => phone({tabs:tabsA('shortlist'), fade:true, body:`
+  ${headerA(`Shortlist <span style="font:500 13px var(--mono);color:var(--text4);letter-spacing:0">${S.shortlist}</span>`,{right:`<span class="icon-btn">${I('download')}</span><span class="icon-btn">${I('sort')}</span>`})}
+  <div class="row" style="gap:6px;padding:0 0 0 16px;overflow:hidden"><span class="chip dark" style="height:30px">All <em>${S.shortlist}</em></span>${TAGS.map(t=>`<span class="chip" style="height:30px">${I('tag','width:12px;height:12px')}${t}</span>`).join('')}</div>
+  <div class="row" style="gap:6px;padding:8px 16px 0"><span class="chip" style="height:28px;font-size:12px">${I('brief','width:12px;height:12px')}All jobs${I('chevD','width:12px;height:12px')}</span><span class="chip" style="height:28px;font-size:12px">Recently added${I('chevD','width:12px;height:12px')}</span></div>
+  <div class="col" style="gap:10px;padding:12px 16px 0">${SL.slice(0,4).map((c,i)=>`<div class="col" style="gap:9px;padding:13px;background:#fff;border:1px solid var(--border);border-radius:18px">
+    <div class="row" style="gap:12px">${photo(c,46)}<span class="col grow" style="gap:2px;min-width:0"><span class="row" style="gap:6px"><b style="font-size:15px;font-weight:600" class="trunc">${c.name}</b>${I('check','width:14px;height:14px;color:var(--success);stroke-width:2.5')}</span><span style="font-size:12px;color:var(--text3)" class="trunc">${c.q} · ${c.tier} · ${c.city} · ${c.exp}</span></span>${I('more','width:18px;height:18px;color:var(--text4)')}</div>
+    ${c.note?`<span class="row" style="gap:7px;font-size:12.5px;color:var(--text2);align-items:flex-start;line-height:1.4">${I('note','width:13px;height:13px;color:var(--text4);margin-top:2px')}<span style="display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden">${c.note}</span></span>`:''}
+    <div class="row" style="gap:6px;overflow:hidden">${c.tags.slice(0,2).map(t=>`<span class="chip on" style="height:24px;font-size:11px;padding:0 8px">${t}</span>`).join('')}${c.job?`<span class="chip" style="height:24px;font-size:11px;padding:0 8px">${I('brief','width:11px;height:11px')}${c.job.split(' ').slice(0,2).join(' ')}</span>`:''}</div>
+    <div class="row" style="gap:8px;padding-top:9px;border-top:1px solid var(--border-soft)">${ipill(c)||'<span style="font-size:12px;color:var(--text4)">No Interest yet</span>'}<span class="grow"></span>${c.interest==='ACCEPTED'?`<span class="btn btn-primary btn-sm" style="height:30px">${I('chat')}Chat</span>`:c.interest?'':`<span class="btn btn-dark btn-sm" style="height:30px">${I('heart')}Send Interest</span>`}</div>
+  </div>`).join('')}</div>`});
+N.shortlist.A = {t:'Studio — cards with the note up front', d:'Tag chips and job/sort filters on top. Each card shows the person, your note, tags, the linked job and where the Interest stands, with the next action on the right.',
+  n:[{t:'GET /employers/shortlist (tag · jobId · sort)'},{t:'Interest state joined from /employers/interests'},{t:'CSV export = signed link'}]};
+
+/* ── B · Pro ── */
+R.shortlist.B = () => { const sel=new Set(['aarav','vikram','ananya']); return phone({tabs:tabsB('shortlist'), bg:'#F5F6F9', body:`
+  <div class="row" style="padding:32px 10px 0 6px;gap:4px;background:var(--ink);color:#fff;margin-top:-32px;height:86px"><span class="icon-btn" style="color:#fff">${I('x')}</span><b class="grow" style="font-size:17px;font-weight:600">3 selected</b><span style="font-size:13px;font-weight:600;color:var(--accent-muted);margin-right:8px">Select all 24</span></div>
+  <div class="row" style="gap:18px;padding:0 16px;background:#fff;border-bottom:1px solid var(--border)">${['All','Call this week','Strong communicator'].map((t,i)=>`<span style="height:42px;display:flex;align-items:center;gap:5px;font-size:13px;font-weight:${i?550:650};color:${i?'var(--text3)':'var(--text)'};border-bottom:2px solid ${i?'transparent':'var(--ink)'};white-space:nowrap">${t}${i?'':`<span style="font:500 10px var(--mono);color:var(--text4)">${S.shortlist}</span>`}</span>`).join('')}</div>
+  <div style="margin:10px 12px 0;background:#fff;border:1px solid var(--border);border-radius:14px;overflow:hidden">${['aarav','vikram','sneha','ananya','priya','rohan','kabir'].map((k,i)=>{const c=C[k],on=sel.has(k);return `<div class="row" style="gap:11px;padding:10px 12px;${i?'border-top:1px solid var(--border-soft);':''}${on?'background:var(--accent-wash)':''}">
+    <span style="width:20px;height:20px;border-radius:6px;border:1.5px solid ${on?'var(--accent)':'var(--border2)'};background:${on?'var(--accent)':'#fff'};color:#fff;display:flex;align-items:center;justify-content:center;flex:none">${on?I('check','width:13px;height:13px;stroke-width:3'):''}</span>
+    ${photo(c,36)}<span class="col grow" style="gap:1px;min-width:0"><b class="trunc" style="font-size:13.5px;font-weight:600">${c.name}</b><span class="trunc" style="font-size:11.5px;color:var(--text3)">${c.tier} · ${c.city} · ${c.exp}${c.tags.length?` · ${c.tags.length} tag${c.tags.length>1?'s':''}`:''}</span></span>
+    ${c.interest==='ACCEPTED'?'<span class="pill p-success" style="height:20px;font-size:9px">Accepted</span>':c.interest==='SENT'?`<span class="pill p-warning" style="height:20px;font-size:9px">${c.left.replace(' left','')}</span>`:c.interest==='NOT_ACCEPTED'?'<span class="pill p-danger" style="height:20px;font-size:9px">Declined</span>':''}
+  </div>`}).join('')}</div>
+  <div class="row" style="position:absolute;left:12px;right:12px;bottom:90px;padding:6px;border-radius:16px;background:var(--ink);justify-content:space-around;box-shadow:var(--shadow-pop);z-index:21">${[['tag','Tag'],['brief','Link job'],['download','Export'],['x','Remove']].map(([ic,l])=>`<span class="col" style="align-items:center;gap:3px;padding:7px 10px;font-size:11px;font-weight:550;color:${ic==='x'?'var(--danger-on-ink)':'var(--on-ink-soft)'}">${I(ic,'width:19px;height:19px')}${l}</span>`).join('')}</div>`}); };
+N.shortlist.B = {t:'Pro — select many, act once', d:'A dense list with tag tabs. Long-press to select, then tag, link to a job, export or remove the selection from a bar above the tabs.',
+  n:[{t:'Export by ids = POST shortlist/export'},{t:'Tag / job = one PATCH per row'},{t:'Bulk endpoint would be faster',c:'api'}]};
+
+/* ── C · Cinema ── */
+R.shortlist.C = () => phone({dark:true, light:true, bg:'var(--ink-deep)', tabs:tabsC('shortlist'), body:`
+  <div class="col" style="padding:14px 20px 0;gap:4px"><span class="meta" style="color:var(--on-ink-subtle)">Your shortlist</span><b style="font-size:34px;line-height:1.05;letter-spacing:-.045em;font-weight:620;color:#fff">${S.shortlist} people<br>worth a call.</b></div>
+  <div class="row" style="gap:6px;padding:16px 0 0 20px;overflow:hidden"><span class="chip ink on" style="height:32px">All</span>${[['Inside Sales',9],['Customer Success',7],['Biz Dev',4],['No job',4]].map(([t,n])=>`<span class="chip ink" style="height:32px">${t} <em>${n}</em></span>`).join('')}</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px 16px 0">${['aarav','sneha','vikram','priya'].map(k=>{const c=C[k];return `<div class="col" style="border-radius:18px;overflow:hidden;background:var(--ink2);border:1px solid var(--on-ink-hair)">
+    ${film(c,{w:173,h:190,r:0,inner:`<div class="tl" style="top:8px;left:8px;right:8px"><span class="pill p-glass" style="height:19px;font-size:9px;padding:0 6px">${I('check','width:9px;height:9px')}${c.iv}</span></div><div class="bl col" style="gap:1px;left:10px;bottom:9px"><b style="font-size:14.5px;font-weight:600">${c.name}</b><span style="font-size:11px;color:var(--on-ink-muted)">${c.tier} · ${c.city}</span></div>`})}
+    <div class="col" style="gap:7px;padding:10px">${c.note?`<span style="font-size:11.5px;line-height:1.4;color:var(--on-ink-body);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">“${c.note}”</span>`:''}<div>${ipill(c,true)||'<span class="pill p-on-ink">No Interest yet</span>'}</div></div>
+  </div>`}).join('')}</div>`});
+N.shortlist.C = {t:'Cinema — a wall of faces', d:'Dark two-column grid of photo cards grouped by job, each with your note as a quote and the Interest state. Feels like a casting board.',
+  n:[{t:'Group by shortlist.jobId'},{t:'Uses photoUrl (rows carry no film)'},{t:'Per-job counts in one call',c:'api'}]};
+
+/* ── D · Flow ── */
+R.shortlist.D = () => { const P=[C.aarav,C.vikram]; const best=t=>`<span class="pill p-accent" style="height:17px;font-size:8.5px;padding:0 6px;margin-top:3px">${t}</span>`;
+  const rows=[['Experience',[P[0].exp,P[1].exp+best('More')]],['Expected',[P[0].sal+best('Lower'),P[1].sal]],['Joins',[P[0].joins+best('Sooner'),P[1].joins]],['Interview',P.map(c=>`<span style="color:var(--success);font-weight:600">✓ ${c.iv}</span>`)],['Your note',P.map(c=>`<span style="font-size:12px;line-height:1.4;color:var(--text2)">${c.note}</span>`)]];
+  return phone({tabs:tabsD('shortlist'), body:`
+  ${headerA('Compare',{back:true,right:`<span class="icon-btn">${I('download')}</span>`})}
+  <div class="row" style="gap:6px;padding:0 16px">${P.map(c=>`<span class="chip" style="height:32px;padding-left:4px">${photo(c,24)}${c.name.split(' ')[0]}${I('x','width:12px;height:12px;opacity:.5')}</span>`).join('')}<span class="chip" style="height:32px;border-style:dashed;color:var(--text3)">${I('plus','width:13px;height:13px')}Add</span></div>
+  <div style="margin:12px 14px 0;background:#fff;border:1px solid var(--border);border-radius:18px;overflow:hidden">
+    <div style="display:grid;grid-template-columns:1fr 1fr">${P.map((c,i)=>`<div class="col" style="gap:6px;padding:14px;align-items:flex-start;${i?'border-left:1px solid var(--border-soft)':''}">${film(c,{w:52,h:68,r:10,play:'sm',noShade:true})}<b style="font-size:15px;font-weight:620;letter-spacing:-.01em">${c.name}</b><span style="font-size:11.5px;color:var(--text3)">${c.q} · ${c.tier}</span></div>`).join('')}</div>
+    ${rows.map(([l,v])=>`<div style="border-top:1px solid var(--border-soft)"><div class="meta" style="font-size:9px;padding:8px 14px 0">${l}</div><div style="display:grid;grid-template-columns:1fr 1fr">${v.map((x,i)=>`<div class="col" style="padding:4px 14px 9px;font-size:13.5px;font-weight:550;align-items:flex-start;${i?'border-left:1px solid var(--border-soft)':''}">${x}</div>`).join('')}</div></div>`).join('')}
+  </div>
+  <div class="row" style="gap:8px;padding:12px 14px 0"><span class="btn btn-primary grow btn-sm" style="height:40px">${I('heart')}Interest</span><span class="btn btn-outline grow btn-sm" style="height:40px">${C.vikram.left}</span></div>`}); };
+N.shortlist.D = {t:'Flow — compare two before you commit', d:'Pick two shortlisted people and read them row by row. The better value per row is flagged, your own notes sit side by side, and each column ends in its next step.',
+  n:[{t:'Expected + joins need a detail read each'},{t:'Flags computed on the phone'}]};
+
+/* ═════════ INTERESTS ═════════ */
+const IV = [
+  {c:C.priya,job:'Business Development Associate',sent:'26 Sep',exp:'in 1 day',pct:.86,urgent:true,msg:'Hi Priya, your enterprise accounts experience stood out…'},
+  {c:C.rohan,job:'No job linked',sent:'27 Sep',exp:'in 2 days',pct:.71,urgent:true,msg:'Hi Rohan, we’re building a small sales-ops team…'},
+  {c:C.vikram,job:'Inside Sales Executive',sent:'29 Sep',exp:'in 4 days',pct:.43,msg:'Hi Vikram, your field sales numbers are great…'},
+  {c:{name:'Neha Bhatt',ini:'NB',hue:4},job:'Inside Sales Executive',sent:'30 Sep',exp:'in 5 days',pct:.29,msg:'Hi Neha, would you like to talk about…'},
+  {c:{name:'Arjun Pillai',ini:'AP',hue:2},job:'Customer Success Associate',sent:'1 Oct',exp:'in 7 days',pct:.04,msg:'Hi Arjun, thanks for your interview…'},
+];
+/* ── A · Studio ── */
+R.interests.A = () => phone({tabs:tabsA('interests'), fade:true, body:`
+  ${headerA('Interests')}
+  <div style="margin:0 16px;padding:3px;border-radius:12px;background:var(--muted);display:grid;grid-template-columns:1.2fr 1fr 1.3fr;gap:2px">${[['Awaiting',5,1],['Accepted',2],['Not accepted',1]].map(([t,n,on])=>`<span style="height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;gap:5px;font-size:13px;font-weight:${on?650:550};color:${on?'var(--text)':'var(--text3)'};${on?'background:#fff;box-shadow:0 1px 2px rgba(11,15,26,.08)':''}">${t}<span style="font:500 10.5px var(--mono);color:var(--text4)">${n}</span></span>`).join('')}</div>
+  <div class="col" style="gap:10px;padding:14px 16px 0">${IV.map(r=>`<div class="col" style="gap:10px;padding:13px 14px;background:#fff;border:1px solid var(--border);border-radius:18px">
+    <div class="row" style="gap:12px">${ini(r.c,40)}<span class="col grow" style="gap:2px;min-width:0"><b style="font-size:15px;font-weight:600">${r.c.name}</b><span class="trunc" style="font-size:12px;color:var(--text3)">${r.job}</span></span>${r.urgent?`<span class="pill p-warning">${I('clock')}${r.exp.replace('in ','')}</span>`:''}</div>
+    <span style="font-size:12.5px;color:var(--text2);font-style:italic;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden">“${r.msg}”</span>
+    <div class="col" style="gap:5px"><span class="bar" style="height:4px"><i style="width:${r.pct*100}%;background:${r.urgent?'var(--warning-fill)':'var(--accent)'}"></i></span><span class="row" style="justify-content:space-between;font:500 10px var(--mono);letter-spacing:.04em;color:var(--text4)"><span>SENT ${r.sent.toUpperCase()}</span><span>EXPIRES ${r.exp.toUpperCase()}</span></span></div>
+  </div>`).join('')}</div>`});
+N.interests.A = {t:'Studio — tabs with an expiry bar', d:'The three outcomes as a segmented control. Each Interest shows your message, the job and a bar that runs from sent to expiry, turning amber in the last two days.',
+  n:[{t:'GET /employers/interests?outcome='},{t:'sentAt → expiresAt'},{t:'No photo on the row — initials',c:''}]};
+
+/* ── B · Pro ── */
+R.interests.B = () => phone({tabs:tabsB('interests'), bg:'#F5F6F9', body:`
+  <div style="background:#fff;border-bottom:1px solid var(--border)"><div class="row" style="height:54px;padding:0 8px 0 16px"><b class="grow" style="font-size:19px;font-weight:620;letter-spacing:-.02em">Interests</b><span class="chip" style="height:30px;font-size:12px">${I('sort','width:13px;height:13px')}Expiring first</span></div>
+  <div class="row" style="gap:6px;padding:0 0 10px 16px"><span class="chip dark" style="height:28px;font-size:12px">All 8</span><span class="chip" style="height:28px;font-size:12px">Awaiting 5</span><span class="chip" style="height:28px;font-size:12px">Accepted 2</span><span class="chip" style="height:28px;font-size:12px">Declined 1</span></div></div>
+  ${[['Accepted',[{c:C.sneha,s:'Customer Success Associate',r:`<span class="btn btn-primary btn-sm" style="height:28px;font-size:12px">Chat</span>`},{c:C.ishita,s:'Inside Sales Executive',r:`<span class="btn btn-outline btn-sm" style="height:28px;font-size:12px">Chat</span>`}]],
+     ['Awaiting reply',IV.slice(0,4).map(r=>({c:r.c,s:r.job,r:`<span class="tnum" style="font:600 11px var(--mono);color:${r.urgent?'var(--warning)':'var(--text3)'}">${r.exp.replace('in ','').toUpperCase()}</span>`}))],
+     ['Not accepted',[{c:C.kabir,s:'Can send again after 6 Oct',r:`<span style="font:500 10.5px var(--mono);color:var(--text4)">6 OCT</span>`}]]].map(([h,rows])=>`<div class="row" style="justify-content:space-between;padding:14px 18px 6px"><span class="meta">${h}</span><span class="meta" style="color:var(--text4)">${rows.length}</span></div>
+    <div style="margin:0 12px;background:#fff;border:1px solid var(--border);border-radius:14px;overflow:hidden">${rows.map((x,i)=>`<div class="row" style="gap:11px;padding:10px 12px;${i?'border-top:1px solid var(--border-soft)':''}">${ini(x.c,34)}<span class="col grow" style="gap:1px;min-width:0"><b style="font-size:13.5px;font-weight:600">${x.c.name}</b><span class="trunc" style="font-size:11.5px;color:var(--text3)">${x.s}</span></span>${x.r}</div>`).join('')}</div>`).join('')}`});
+N.interests.B = {t:'Pro — every outcome on one list', d:'Accepted first (they need a reply from you), then awaiting sorted by time left, then the declined ones with the date you can send again.',
+  n:[{t:'nextEligibleAt → “send again after”'},{t:'threadId → Chat'}]};
+
+/* ── C · Cinema ── */
+R.interests.C = () => phone({dark:true, light:true, bg:'var(--ink-deep)', tabs:tabsC('interests'), body:`
+  <div class="col" style="padding:14px 20px 0;gap:4px"><span class="meta" style="color:var(--on-ink-subtle)">Interests</span><b style="font-size:30px;letter-spacing:-.04em;font-weight:620;color:#fff;line-height:1.1">2 said yes.</b></div>
+  <div class="col" style="margin:16px 16px 0;padding:18px;border-radius:22px;gap:14px;background:linear-gradient(150deg,#1D3A33,#121A24 70%);border:1px solid rgba(110,231,183,.25);position:relative;overflow:hidden">
+    <div class="row" style="gap:12px">${gav(C.sneha,50)}<span class="col grow" style="gap:2px"><b style="font-size:18px;font-weight:600;color:#fff">Sneha Iyer</b><span style="font-size:12.5px;color:var(--on-ink-muted)">Customer Success Associate</span></span><span class="pill p-success-ink">${I('check')}10:42</span></div>
+    <span style="font-size:13px;color:var(--success-on-ink)">Contact details are unlocked.</span>
+    <div class="row" style="gap:8px"><span class="btn btn-white grow">${I('chat')}Start chat</span><span class="btn btn-glass">Profile</span></div>
+  </div>
+  <div class="row" style="justify-content:space-between;padding:20px 20px 10px"><span class="meta" style="color:var(--on-ink-subtle)">Waiting on · 5</span><span style="font-size:12.5px;color:var(--accent-muted);font-weight:600">See all</span></div>
+  <div class="row" style="gap:10px;padding-left:16px;overflow:hidden">${IV.slice(0,4).map(r=>`<div class="col" style="flex:none;width:118px;gap:9px;padding:12px;border-radius:18px;background:var(--on-ink-wash);border:1px solid var(--on-ink-hair);align-items:flex-start">${ring(1-r.pct,52,5,r.urgent?'var(--warning-fill)':'var(--accent-bright)','rgba(255,255,255,.1)',`<span style="font-size:12px;color:#fff">${r.exp.replace('in ','').replace(' days','d').replace(' day','d')}</span>`)}<b style="font-size:13.5px;font-weight:600;color:#fff">${r.c.name.split(' ')[0]}</b><span class="trunc" style="font-size:11px;color:var(--on-ink-subtle);width:100%">${r.job}</span></div>`).join('')}</div>
+  <div class="row" style="gap:12px;margin:16px 16px 0;padding:12px 14px;border-radius:16px;border:1px solid var(--on-ink-hair)">${ini(C.kabir,34).replace('background:var(--muted)','background:var(--ink3)').replace('color:var(--text2)','color:var(--on-ink-muted)').replace('border:1px solid var(--border)','border:0')}<span class="col grow" style="gap:1px"><b style="font-size:13.5px;font-weight:600;color:#fff">Kabir Singh didn’t accept</b><span style="font-size:11.5px;color:var(--on-ink-subtle)">Send again after 6 Oct</span></span></div>`});
+N.interests.C = {t:'Cinema — lead with the yes', d:'Accepted Interests are the moment that matters, so they get a hero card with Start chat. Pending ones become countdown rings you can swipe through.',
+  n:[{t:'Ring = time left of sentAt → expiresAt'},{t:'Only accepted rows open a thread'}]};
+
+/* ── D · Flow ── */
+R.interests.D = () => phone({tabs:tabsD('interests'), fade:true, body:`
+  ${headerA('',{right:`<span class="icon-btn">${I('search')}</span>`})}
+  <div style="padding:0 22px;margin-top:-12px"><h1 style="font-size:28px;letter-spacing:-.035em;font-weight:620;line-height:1.12">Interests<br><span style="color:var(--text4)">by when they expire.</span></h1></div>
+  <div class="row" style="gap:12px;margin:16px 16px 0;padding:12px 14px;border-radius:16px;background:var(--success-wash);border:1px solid var(--success-edge)">${I('heart','width:18px;height:18px;color:var(--success)')}<span class="grow" style="font-size:13.5px"><b style="font-weight:600">Sneha</b> and <b style="font-weight:600">Ishita</b> accepted</span><span class="btn btn-dark btn-sm" style="height:30px">Open</span></div>
+  ${[['Tomorrow',IV.slice(0,1)],['In 2 days',IV.slice(1,2)],['This week',IV.slice(2,5)]].map(([h,rows])=>`<div class="meta" style="padding:16px 22px 8px">${h}</div><div class="col" style="gap:0;margin:0 16px;background:#fff;border:1px solid var(--border);border-radius:18px;overflow:hidden">${rows.map((r,i)=>`<div class="row" style="gap:12px;padding:12px 14px;${i?'border-top:1px solid var(--border-soft)':''}">${ring(1-r.pct,38,4,r.urgent?'var(--warning-fill)':'var(--accent)','var(--muted)','')}<span class="col grow" style="gap:1px;min-width:0"><b style="font-size:14px;font-weight:600">${r.c.name}</b><span class="trunc" style="font-size:12px;color:var(--text3)">${r.job} · sent ${r.sent}</span></span>${I('chevR','width:16px;height:16px;color:var(--text4)')}</div>`).join('')}</div>`).join('')}`});
+N.interests.D = {t:'Flow — an agenda of deadlines', d:'Grouped by when each Interest runs out — tomorrow, in two days, this week — with the accepted ones as one banner on top. Calm, and nothing expires unnoticed.',
+  n:[{t:'Groups computed from expiresAt'},{t:'Expiry length',c:'cfg'}]};
+</script>
+<script>
+const JST = {PUBLISHED:['Live','p-success'],PENDING_MODERATION:['In review','p-warning'],DRAFT:['Not approved','p-danger'],PAUSED:['Paused','p-neutral'],CLOSED:['Closed','p-neutral']};
+const counters = (j, ink) => [['eye',j.views,'views'],['bookmark',j.saves,'saves'],['users',j.apps,'applied'],['check',j.short,'shortlisted']].map(([ic,v,l])=>`<span class="col" style="gap:2px;align-items:flex-start"><b class="tnum" style="font-size:16px;font-weight:620;letter-spacing:-.02em;color:${ink?'#fff':'var(--text)'}">${v}</b><span style="font-size:10.5px;color:${ink?'var(--on-ink-subtle)':'var(--text3)'}">${l}</span></span>`).join('');
+
+/* ── A · Studio ── */
+R.jobs.A = () => phone({tabs:tabsA('jobs'), fade:true, body:`
+  ${headerA('Jobs',{right:`<span class="btn btn-primary btn-sm" style="height:34px;margin-right:6px">${I('plus')}Post a job</span>`})}
+  <div class="row" style="gap:6px;padding:0 0 0 16px;overflow:hidden"><span class="chip dark" style="height:30px">Live <em>3</em></span><span class="chip" style="height:30px">In review <em>1</em></span><span class="chip" style="height:30px">Drafts <em>1</em></span><span class="chip" style="height:30px">Closed <em>0</em></span></div>
+  <div class="col" style="gap:10px;padding:14px 16px 0">${JOBS.slice(0,3).map(j=>`<div class="col" style="gap:12px;padding:15px;background:#fff;border:1px solid var(--border);border-radius:18px">
+    <div class="row" style="gap:10px;align-items:flex-start"><span class="col grow" style="gap:3px"><b style="font-size:16px;font-weight:620;letter-spacing:-.01em">${j.t}</b><span style="font-size:12.5px;color:var(--text3)">${j.loc} · ${j.type} · ${j.sal}</span></span><span class="pill ${JST[j.status][1]}">${JST[j.status][0]}</span></div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:10px 12px;border-radius:12px;background:var(--muted)">${counters(j)}</div>
+    <div class="row" style="gap:10px;font-size:12px;color:var(--text3)">${j.deadline?`<span class="row" style="gap:5px">${I('cal','width:13px;height:13px')}Closes ${j.deadline}</span>`:'<span>No deadline</span>'}<span class="dot"></span><span>${j.vac} opening${j.vac>1?'s':''}</span>${j.video?`<span class="dot"></span><span class="row" style="gap:4px;color:var(--accent-h)">${I('video','width:13px;height:13px')}Video</span>`:''}<span class="grow"></span>${I('chevR','width:16px;height:16px;color:var(--text4)')}</div>
+  </div>`).join('')}</div>`});
+N.jobs.A = {t:'Studio — job cards with all four counters', d:'Status chips with real counts, then one card per job: where, type and pay, the four counters the API keeps (views, saves, applied, shortlisted), deadline, openings and video.',
+  n:[{t:'GET /employers/jobs (rows + counts by status)'},{t:'counters.views · saves · applications · shortlisted'}]};
+
+/* ── B · Pro ── */
+R.jobs.B = () => phone({tabs:tabsB('jobs'), bg:'#F5F6F9', body:`
+  <div style="background:#fff;border-bottom:1px solid var(--border)"><div class="row" style="height:54px;padding:0 8px 0 16px;gap:4px"><b class="grow" style="font-size:19px;font-weight:620;letter-spacing:-.02em">Jobs</b><span class="icon-btn">${I('search')}</span><span class="icon-btn" style="background:var(--accent);color:#fff;width:36px;height:36px">${I('plus','width:18px;height:18px')}</span></div>
+  <div class="row" style="gap:18px;padding:0 16px">${[['All',5,1],['Live',3],['Review',1],['Drafts',1]].map(([t,n,on])=>`<span style="height:40px;display:flex;align-items:center;gap:5px;font-size:13px;font-weight:${on?650:550};color:${on?'var(--text)':'var(--text3)'};border-bottom:2px solid ${on?'var(--ink)':'transparent'}">${t}<span style="font:500 10px var(--mono);color:var(--text4)">${n}</span></span>`).join('')}</div></div>
+  <div style="margin:12px 12px 0;background:#fff;border:1px solid var(--border);border-radius:14px;overflow:hidden">${JOBS.map((j,i)=>`<div class="col" style="gap:8px;padding:12px 14px;${i?'border-top:1px solid var(--border-soft)':''}">
+    <div class="row" style="gap:8px"><span style="width:8px;height:8px;border-radius:9px;flex:none;background:${j.status==='PUBLISHED'?'var(--success-fill)':j.status==='DRAFT'?'var(--danger-fill)':'var(--warning-fill)'}"></span><b class="grow trunc" style="font-size:14px;font-weight:600">${j.t}</b><span style="font:500 10.5px var(--mono);color:var(--text4)">${j.loc.toUpperCase()}</span></div>
+    ${j.views?`<div class="col" style="gap:4px;padding-left:16px">${[['Views',j.views,1],['Applied',j.apps,j.apps/j.views],['Shortlisted',j.short,j.short/j.views]].map(([l,v,p])=>`<div class="row" style="gap:8px;font-size:11px;color:var(--text3)"><span style="width:64px">${l}</span><span class="bar grow" style="height:6px"><i style="width:${Math.max(p*100,3)}%;background:${l==='Views'?'var(--accent-muted)':l==='Applied'?'var(--accent)':'var(--success-fill)'}"></i></span><b class="tnum" style="width:30px;text-align:right;font-weight:600;color:var(--text)">${v}</b></div>`).join('')}</div>`
+      : j.reason?`<span style="padding-left:16px;font-size:12px;color:var(--danger);line-height:1.4">${j.reason}</span>`:`<span style="padding-left:16px;font-size:12px;color:var(--text3)">Submitted 30 Sep · checked before it goes live</span>`}
+  </div>`).join('')}</div>`});
+N.jobs.B = {t:'Pro — a funnel per job', d:'Every job on one list with a three-bar funnel — views, applied, shortlisted — so the weak post stands out. Drafts show the moderator’s reason inline.',
+  n:[{t:'Funnel = counters (all time)'},{t:'moderation.reason on not-approved'},{t:'Funnel by week',c:'api'}]};
+
+/* ── C · Cinema ── */
+R.jobs.C = () => { const j=JOBS[0]; return phone({dark:true, light:true, bg:'var(--ink-deep)', tabs:tabsC('jobs'), body:`
+  <div class="row" style="padding:12px 16px 0 20px;justify-content:space-between"><span class="col" style="gap:4px"><span class="meta" style="color:var(--on-ink-subtle)">Jobs · 3 live</span><b style="font-size:30px;letter-spacing:-.04em;font-weight:620;color:#fff;line-height:1.05">${S.applicants} people<br>applied.</b></span><span class="circ" style="width:46px;height:46px;background:#fff;color:var(--ink)">${I('plus','width:20px;height:20px')}</span></div>
+  <div class="col" style="margin:18px 16px 0;padding:18px;border-radius:24px;gap:14px;background:radial-gradient(120% 90% at 100% 0%,rgba(114,88,255,.45),rgba(114,88,255,0) 60%),var(--ink2);border:1px solid var(--on-ink-hair)">
+    <div class="row" style="gap:8px"><span class="pill p-success-ink">Live</span><span class="pill p-on-ink">${I('video')}Video</span><span class="grow"></span><span style="font-size:12px;color:var(--on-ink-subtle)">Closes ${j.deadline}</span></div>
+    <span class="col" style="gap:3px"><b style="font-size:22px;font-weight:620;letter-spacing:-.025em;color:#fff">${j.t}</b><span style="font-size:13px;color:var(--on-ink-muted)">${j.loc} · ${j.type} · ${j.sal}</span></span>
+    <div class="row" style="gap:22px;align-items:flex-end"><span class="col" style="gap:2px"><b class="tnum" style="font-size:54px;line-height:.9;letter-spacing:-.05em;font-weight:600;color:#fff">${j.apps}</b><span style="font-size:12px;color:var(--on-ink-subtle)">applications</span></span><span class="col" style="gap:2px"><b class="tnum" style="font-size:28px;letter-spacing:-.03em;font-weight:600;color:var(--success-on-ink)">${j.short}</b><span style="font-size:12px;color:var(--on-ink-subtle)">shortlisted</span></span><span class="col" style="gap:2px"><b class="tnum" style="font-size:28px;letter-spacing:-.03em;font-weight:600;color:var(--on-ink-muted)">${j.views}</b><span style="font-size:12px;color:var(--on-ink-subtle)">views</span></span></div>
+    <span class="btn btn-white btn-full">Review applicants${I('arrowR')}</span>
+  </div>
+  <div class="col" style="gap:8px;padding:14px 16px 0">${JOBS.slice(1,4).map(x=>`<div class="row" style="gap:12px;padding:13px 14px;border-radius:16px;background:var(--on-ink-wash);border:1px solid var(--on-ink-hair)"><span class="col grow" style="gap:2px;min-width:0"><b class="trunc" style="font-size:14px;font-weight:600;color:#fff">${x.t}</b><span style="font-size:12px;color:var(--on-ink-subtle)">${x.loc} · ${x.status==='PUBLISHED'?`${x.views} views`:'In review'}</span></span>${x.status==='PUBLISHED'?`<span class="col" style="align-items:flex-end"><b class="tnum" style="font-size:20px;font-weight:600;color:#fff">${x.apps}</b><span style="font-size:10px;color:var(--on-ink-subtle)">applied</span></span>`:'<span class="pill p-warning-ink">In review</span>'}</div>`).join('')}</div>`}); };
+N.jobs.C = {t:'Cinema — the busiest job up front', d:'The job with the most applications becomes a hero card with big numbers and one button to review applicants. The rest follow as quiet dark rows.',
+  n:[{t:'Hero = max counters.applications'},{t:'Same jobs list read'}]};
+
+/* ── D · Flow ── */
+R.jobs.D = () => { const j=JOBS[0]; const st=[['Applied',18,1],['Viewed',9],['Shortlisted',6],['Connected',2],['Rejected',3]];
+  const ap=[{c:C.ananya,m:'I have run inbound lead calls during my internship…',d:'Today',vr:true},{c:C.meera,m:'Interested in moving into inside sales.',d:'Today',vr:false},{c:C.kabir,m:'Available to join immediately.',d:'Yesterday',vr:true}];
+  return phone({tabs:tabsD('jobs'), body:`
+  ${headerA('',{back:true,right:`<span class="icon-btn">${I('more')}</span>`})}
+  <div class="col" style="padding:0 20px;gap:4px;margin-top:-6px"><span class="meta">${j.loc} · ${j.type} · Live</span><b style="font-size:24px;font-weight:620;letter-spacing:-.03em">${j.t}</b><span style="font-size:13px;color:var(--text3)"><b style="color:var(--text);font-weight:600">${j.apps}</b> applications · ${j.views} views · ${j.saves} saves</span></div>
+  <div class="row" style="gap:6px;padding:14px 0 0 16px;overflow:hidden">${st.map(([t,n,on])=>`<span class="chip ${on?'dark':''}" style="height:32px">${t} <em>${n}</em></span>`).join('')}</div>
+  <div class="row" style="gap:12px;margin:12px 16px 0;padding:12px 14px;border-radius:16px;background:var(--accent-wash);border:1px solid var(--accent-edge)">${I('users','width:18px;height:18px;color:var(--accent-h)')}<span class="grow" style="font-size:13.5px"><b style="font-weight:600">18 new</b> waiting for a first look</span><span class="btn btn-primary btn-sm" style="height:30px">Start</span></div>
+  <div class="col" style="gap:10px;padding:12px 16px 0">${ap.map(a=>`<div class="col" style="gap:10px;padding:13px;background:#fff;border:1px solid var(--border);border-radius:18px">
+    <div class="row" style="gap:12px">${photo(a.c,44)}<span class="col grow" style="gap:2px;min-width:0"><b style="font-size:15px;font-weight:600">${a.c.name}</b><span style="font-size:12px;color:var(--text3)">${a.c.city} · ${a.c.exp} · applied ${a.d.toLowerCase()}</span></span>${a.vr?`<span class="pill p-accent">${I('video')}Resume</span>`:''}</div>
+    <span style="font-size:12.5px;color:var(--text2);font-style:italic">“${a.m}”</span>
+    <div class="row" style="gap:8px"><span class="row grow" style="gap:5px;font-size:12px;color:var(--success);font-weight:550">${I('check','width:13px;height:13px;stroke-width:2.5')}Interview ${a.c.iv}</span><span class="btn btn-ghost btn-sm" style="height:30px;color:var(--danger)">Reject</span><span class="btn btn-dark btn-sm" style="height:30px">Shortlist</span></div>
+  </div>`).join('')}</div>`}); };
+N.jobs.D = {t:'Flow — open straight on applicants', d:'Jobs opens on the job that needs you, at its applicants: status chips with real counts, a “18 waiting for a first look” prompt, and Shortlist or Reject on each card.',
+  n:[{t:'GET /employers/jobs/:id/applications (counts by status)'},{t:'Reject needs a reason (sheet)'}]};
+</script>
+<script>
+/* ───────── what the employer API returns, per screen (read from src/lib/api/employer*.ts) ───────── */
+const DATA = {
+  home:{have:[
+    ['/employers/me','Company name, industry, office, approval date, unread notifications'],
+    ['limits.cards · videoPlays','Today’s allowance: limit, used, remaining, reset time'],
+    ['notifications[]','Category, title, body, time, read'],
+    ['/employers/shortlist','Total; savedAt gives “added this week”'],
+    ['/employers/interests','Outcome and expiresAt give “awaiting” and “expiring soon”'],
+    ['/employers/jobs','Jobs per status and the four counters per job'],
+    ['threads[].unread','Unread chats'],
+    ['/employers/candidates','First feed page: name, poster, city, experience'],
+    ['feed/match-count','How many candidates match the saved filters'],
+  ],miss:[
+    ['history','Any number over time (this week vs last)'],
+    ['today’s decisions','Shortlisted or passed today — only cards used is known'],
+    ['scores','Interview scores — employers never see them'],
+  ]},
+  feed:{have:[
+    ['CandidateCard','Name, photo, qualification, tier, city, headline, skills, experience, languages'],
+    ['expectedSalary · availability','Pay range and when they can join'],
+    ['verifiedInterview','Verified flag and interview date'],
+    ['shortlistCount','How many employers shortlisted them'],
+    ['shortlisted · interest','Your own state with this person'],
+    ['posterUrl · streamUrl','The interview film'],
+    ['quota','Cards left today and reset time'],
+    ['swipes/last','Undo the last pass or shortlist'],
+    ['feed/filters · match-count','Ten filters, live count, narrowest filter'],
+    ['/config','Pass-hide days, note and message limits'],
+  ],miss:[
+    ['video length','Only known once a film is played — not on the card'],
+    ['field of study · remote','Only on the full profile'],
+    ['match reason','Why this person matches is not computed'],
+  ]},
+  profile:{have:[
+    ['CandidateDetail','Everything on the card, plus:'],
+    ['education','Qualification, field, institution, year, score'],
+    ['experience[]','Title, company, from, to, description'],
+    ['preferences','Roles, locations, salary, employment types, joining, remote'],
+    ['videos[]','Title, durationSec, unverified (self-uploaded)'],
+    ['documents[]','Kind, name, size → 15-minute download link'],
+    ['portfolioLinks[]','Label and URL'],
+    ['connection','Active and threadId; contact only after an Interest is accepted'],
+    ['limits.videoPlays','Full-video plays left today'],
+  ],miss:[
+    ['interview score','Scorecards are never shown to employers'],
+    ['contact before yes','Email and mobile appear only after acceptance'],
+    ['other employers','Who else shortlisted — only the count'],
+  ]},
+  shortlist:{have:[
+    ['ShortlistRow','Name, photo, city, headline, experience, tier, qualification'],
+    ['verifiedInterview','Interview date'],
+    ['notes · notesUpdatedAt','Your private note'],
+    ['tags · jobId · savedAt','Your labels, linked job, date added'],
+    ['available','False once the person has left'],
+    ['query','Filter by tag or job; sort by added or interviewed'],
+    ['export','CSV by ids, tag or job — signed link'],
+    ['/employers/interests','Interest state per person, joined on the phone'],
+  ],miss:[
+    ['salary · joins · skills','Not on the row — needs a detail read per person'],
+    ['per-tag counts','Only the total for the current filter'],
+    ['film','Rows carry a photo, not the interview film'],
+  ]},
+  interests:{have:[
+    ['EmployerInterestRow','Name, outcome, your message, jobId'],
+    ['sentAt · expiresAt · closedAt','The Interest’s clock'],
+    ['connected · threadId','Accepted → open the chat'],
+    ['nextEligibleAt','When you may send again after a no'],
+    ['?outcome=','Total per tab'],
+  ],miss:[
+    ['photo · tier · city','Not on the row — initials only'],
+    ['seen','No read receipt from the candidate'],
+  ]},
+  jobs:{have:[
+    ['EmployerJobRow','Title, category, location, remote, type, salary, experience, openings'],
+    ['status · moderation','Live, in review, draft, paused, closed, and the reviewer’s reason'],
+    ['counters','Views, saves, applications, shortlisted'],
+    ['applicationDeadline · hasVideo','Deadline and job video'],
+    ['counts','Jobs per status'],
+    ['applications','Per job: rows and counts by Applied, Viewed, Shortlisted, Rejected, Connected'],
+    ['ApplicationRow','Candidate summary, message, video résumé, applied date'],
+  ],miss:[
+    ['history','Views or applications over time'],
+    ['source','Where an applicant came from'],
+  ]},
+};
+const SCREENS = [
+  {id:'home',label:'Home',sub:'Where a verified employer lands (it sits under the Feed tab). Today it shows a verified card and four counts; each option adds only what the API already returns.'},
+  {id:'feed',label:'Candidate feed',sub:'The interview-film deck with a daily card allowance. Pass hides a person for the configured days; Shortlist and Interest are the two yeses.'},
+  {id:'profile',label:'Candidate profile',sub:'Everything the card leaves out — every video, experience, education, preferences, documents — and the same three decisions.'},
+  {id:'shortlist',label:'Shortlist',sub:'Where shortlisted people are worked: your note, tags, a linked job, where the Interest stands, and CSV export.'},
+  {id:'interests',label:'Interests',sub:'Interests you sent: awaiting a reply, accepted (contact unlocked, chat open) or not accepted (with the date you can send again).'},
+  {id:'jobs',label:'Jobs',sub:'Your posts with their status and four counters, and the applicants for each job.'},
+];
+const OPTS = [
+  {id:'A',name:'Studio',col:'var(--accent)',line:'Refined light — today’s card system, finished'},
+  {id:'B',name:'Pro',col:'var(--ink)',line:'Dense lists, tabs and bulk actions for heavy users'},
+  {id:'C',name:'Cinema',col:'#3A2B22',line:'Ink grounds, film first, immersive'},
+  {id:'D',name:'Flow',col:'var(--success)',line:'Calm and task-led, floating tab bar'},
+];
+const V = {mode:'screen',screen:0,opt:0};
+try{Object.assign(V,JSON.parse(localStorage.getItem('emAppMock')||'{}'))}catch(e){}
+const q = new URLSearchParams(location.search);
+if(q.has('s')) V.screen=+q.get('s'); if(q.has('o')) V.opt=+q.get('o'); if(q.has('m')) V.mode=q.get('m');
+
+const $ = id => document.getElementById(id);
+const cache = {};
+const item = (sid, oid, showScreen) => {
+  const n = N[sid][oid], o = OPTS.find(x=>x.id===oid), sc = SCREENS.find(x=>x.id===sid);
+  if(!cache[sid+oid]) cache[sid+oid] = R[sid][oid]();
+  return `<section class="vw-item"><div class="vw-stage">${cache[sid+oid]}</div>
+    <div class="vw-cap"><span class="vw-badge" style="background:${o.col}">${oid}</span><div style="min-width:0"><h2>${showScreen?sc.label+' · ':''}${o.name} — ${n.t.split(' — ')[1]||n.t}</h2><p>${n.d}</p><div class="vw-notes">${n.n.map(x=>`<span class="${x.c||''}">${x.c==='api'?'needs API · ':x.c==='cfg'?'/config · ':''}${x.t}</span>`).join('')}</div></div></div></section>`;
+};
+function fit(){
+  document.querySelectorAll('.vw-stage').forEach(st=>{
+    const d = st.firstElementChild; const k = Math.min(1, st.clientWidth/410);
+    d.style.transform = `scale(${k})`; st.style.height = (864*k)+'px';
+  });
+}
+function render(){
+  const tabs = V.mode==='screen' ? SCREENS.map((s,i)=>`<button class="vw-tab" role="tab" data-i="${i}" aria-selected="${i===V.screen}"><span>0${i+1}</span>${s.label}</button>`).join('')
+                                 : OPTS.map((o,i)=>`<button class="vw-tab" role="tab" data-i="${i}" aria-selected="${i===V.opt}"><span>${o.id}</span>${o.name}</button>`).join('');
+  $('vwTabs').innerHTML = tabs;
+  document.querySelectorAll('#vwMode button').forEach(b=>b.setAttribute('aria-pressed', b.dataset.m===V.mode));
+  if(V.mode==='screen'){
+    const sc = SCREENS[V.screen], d = DATA[sc.id];
+    $('vwEyebrow').textContent = `Screen ${V.screen+1} of ${SCREENS.length} · 4 options`;
+    $('vwTitle').textContent = sc.label; $('vwSub').textContent = sc.sub;
+    $('vwData').style.display='';
+    $('vwData').innerHTML = `<div class="vw-box"><h3><i style="background:var(--success-fill)"></i>Data the app has for this screen</h3><ul>${d.have.map(([k,v])=>`<li><code>${k}</code><span>${v}</span></li>`).join('')}</ul></div>
+      <div class="vw-box no"><h3><i style="background:var(--text4)"></i>Not in the API — not drawn</h3><ul>${d.miss.map(([k,v])=>`<li><code>${k}</code><span>${v}</span></li>`).join('')}</ul></div>`;
+    $('vwGrid').className = 'vw-grid';
+    $('vwGrid').innerHTML = OPTS.map(o=>item(sc.id,o.id,false)).join('');
+  } else {
+    const o = OPTS[V.opt];
+    $('vwEyebrow').textContent = `Option ${o.id} · all ${SCREENS.length} screens`;
+    $('vwTitle').textContent = `${o.id} · ${o.name}`; $('vwSub').textContent = o.line + '. The same direction carried through every screen.';
+    $('vwData').style.display='none';
+    $('vwGrid').className = 'vw-grid six';
+    $('vwGrid').innerHTML = SCREENS.map(s=>item(s.id,o.id,true)).join('');
+  }
+  try{localStorage.setItem('emAppMock',JSON.stringify(V))}catch(e){}
+  requestAnimationFrame(fit);
+}
+$('vwTabs').addEventListener('click',e=>{const b=e.target.closest('.vw-tab');if(!b)return;if(V.mode==='screen')V.screen=+b.dataset.i;else V.opt=+b.dataset.i;render();scrollTo({top:0})});
+$('vwMode').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;V.mode=b.dataset.m;render()});
+addEventListener('keydown',e=>{
+  if(e.metaKey||e.ctrlKey||e.altKey)return;
+  const n = V.mode==='screen'?SCREENS.length:OPTS.length;
+  if(e.key==='ArrowRight'||e.key==='ArrowLeft'){const d=e.key==='ArrowRight'?1:n-1;if(V.mode==='screen')V.screen=(V.screen+d)%n;else V.opt=(V.opt+d)%n;render()}
+});
+new ResizeObserver(fit).observe($('vwGrid'));
+if(document.fonts) document.fonts.ready.then(fit);
+if(q.has('raw')){const [a,b]=q.get('raw').split('.');const st=[...document.querySelectorAll('body style')].map(x=>x.outerHTML).join('');document.body.innerHTML=st+document.querySelector('svg').outerHTML+R[a][b]();document.body.style.background='#fff';document.body.style.margin='0'}
+else render();
+</script>
+</body>
+</html>

@@ -5,8 +5,9 @@ import Svg, { Ellipse, Path, Rect } from 'react-native-svg'
 import { RtcSurfaceView, RenderModeType } from 'react-native-agora'
 import { useRoom } from '../../lib/room/useRoom'
 import { LogoMark } from '../../components/Logo'
-import { borderWidth, color, height, radius, space, spaceHalf } from '../../theme'
-import { Body, Button, Card, ErrorState, Meta, text } from '../../components/ui'
+import { borderWidth, color, fontFamilyNative as FF, radius } from '../../theme'
+import { Btn } from '../../components/tab/kit'
+import { Disc } from '../../components/tab/flow'
 
 /**
  * ST-30 — the interview room (student), the twin of the web room. Paper/ink only
@@ -48,8 +49,8 @@ export function RoomScreen({ id, onEnded, onLeft, onReadiness, onBack }: {
         )}
         {(!room.localReady || room.cameraOff || audioOnly) && (
           <View style={styles.previewNote}>
-            <Ico size={height['avatar-lg'] + space.xs} stroke={color.textOnInkSubtle}>{room.cameraOff || audioOnly ? <><Path d="M3 3l18 18" /><Path d="M16 10.5V7a1 1 0 0 0-1-1H8" /><Path d="M4 6.5V17a1 1 0 0 0 1 1h10" /></> : <><Path d="m16 10 5-3v10l-5-3" /><Rect x={3} y={6} width={13} height={12} rx={2} /></>}</Ico>
-            <Meta style={{ color: color.textOnInkSubtle, marginTop: space.sm }}>{audioOnly ? 'Audio only · weak connection' : room.cameraOff ? 'Your camera is off' : 'Opening your camera…'}</Meta>
+            <Ico size={40} stroke={color.textOnInkSubtle}>{room.cameraOff || audioOnly ? <><Path d="M3 3l18 18" /><Path d="M16 10.5V7a1 1 0 0 0-1-1H8" /><Path d="M4 6.5V17a1 1 0 0 0 1 1h10" /></> : <><Path d="m16 10 5-3v10l-5-3" /><Rect x={3} y={6} width={13} height={12} rx={2} /></>}</Ico>
+            <Text style={[styles.mono, { color: color.textOnInkSubtle, marginTop: 8 }]}>{audioOnly ? 'Audio only · weak connection' : room.cameraOff ? 'Your camera is off' : 'Opening your camera…'}</Text>
           </View>
         )}
         {showGuide && (
@@ -66,60 +67,57 @@ export function RoomScreen({ id, onEnded, onLeft, onReadiness, onBack }: {
        </View>
 
         <View style={styles.topRow}>
-          <View style={{ gap: space.sm }}>
-            {room.recording && <View style={styles.recChip}><View style={styles.recDot} /><Text style={[text.metaPill, styles.recText]}>REC</Text></View>}
-            {room.state === 'live' && <View style={styles.recChip}><Text style={[text.metaXl, styles.clock]}>{fmtElapsed(room.elapsedSec)}</Text></View>}
+          <View style={{ gap: 8 }}>
+            {room.recording && <View style={styles.recChip}><View style={styles.recDot} /><Text style={styles.recText}>REC</Text></View>}
+            {room.state === 'live' && <View style={styles.recChip}><Text style={styles.clock}>{fmtElapsed(room.elapsedSec)}</Text></View>}
           </View>
           {!wide && <InterviewerTile name={room.interviewer?.name ?? null} photoUrl={room.interviewer?.photoUrl ?? null} remoteUid={room.remoteVideoOn && !audioOnly ? room.remoteUid : null} />}
         </View>
 
         {room.state === 'waiting' && (
           <View style={styles.centre}>
-            <Text style={[text.displaySm, styles.waitTitle]}>Waiting for your interviewer</Text>
-            <Body size="sm" style={{ color: color.textOnInkMuted, textAlign: 'center', marginTop: space.sm }}>They will appear here the moment the session starts.</Body>
+            <Text style={styles.waitTitle}>Waiting for your interviewer</Text>
+            <Text style={styles.waitBody}>They will appear here the moment the session starts.</Text>
           </View>
         )}
         {room.state === 'reconnecting' && (
           <View style={styles.reconnect}>
-            <Meta style={{ color: color.warning }}>Reconnecting · nothing is lost</Meta>
-            <Meta style={{ color: color.warning }}>{`${room.reconnectSecLeft ?? 90}s`}</Meta>
+            <Text style={styles.glassWarn}>Reconnecting · nothing is lost</Text>
+            <Text style={styles.glassWarn}>{`${room.reconnectSecLeft ?? 90}s`}</Text>
           </View>
         )}
         {room.state === 'dropped' && (
           <View style={styles.centre}>
-            <Card raised style={styles.errorCard}>
-              <ErrorState
-                title={ERROR_TITLE[room.error?.kind ?? 'other']}
-                body={room.error?.message ?? 'We could not reconnect in time. Nothing about your interview was lost.'}
-                action={
-                  <View style={{ gap: space.sm }}>
-                    {room.error?.kind !== 'ended' && room.error?.kind !== 'not-open' && (
-                      <Button variant="primary" size="sm" label={room.error?.kind === 'permissions' ? 'Try again' : 'Rejoin'} onPress={room.retry} />
-                    )}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      label={room.error ? 'Back' : 'Leave'}
-                      // The error state's small button is 40 tall; the slop brings its tap box to the 44 floor.
-                      hitSlop={(height.tap - height['control-xs']) / 2}
-                      onPress={room.error ? (onBack ?? room.leave) : room.leave}
-                    />
-                  </View>
-                }
-              />
-            </Card>
+            <View style={styles.errorCard}>
+              <Disc tone="danger">
+                <Ico size={26} stroke={color.danger}><Path d="M3 3l18 18" /><Path d="M16 10.5V7a1 1 0 0 0-1-1H8" /><Path d="M4 6.5V17a1 1 0 0 0 1 1h10" /></Ico>
+              </Disc>
+              <Text style={styles.errorTitle}>{ERROR_TITLE[room.error?.kind ?? 'other']}</Text>
+              <Text style={styles.errorBody}>{room.error?.message ?? 'We could not reconnect in time. Nothing about your interview was lost.'}</Text>
+              <View style={styles.errorActions}>
+                {room.error?.kind !== 'ended' && room.error?.kind !== 'not-open' && (
+                  <Btn label={room.error?.kind === 'permissions' ? 'Try again' : 'Rejoin'} onPress={room.retry} style={styles.errorBtn} />
+                )}
+                <Btn
+                  variant="outline"
+                  label={room.error ? 'Back' : 'Leave'}
+                  onPress={room.error ? (onBack ?? room.leave) : room.leave}
+                  style={styles.errorBtn}
+                />
+              </View>
+            </View>
           </View>
         )}
         {room.warning != null && (room.state === 'live' || room.state === 'audio-only') && (
-          <View style={styles.warnBand}><Meta style={{ color: color.warning }}>{`${room.warning} minute${room.warning === 1 ? '' : 's'} left`}</Meta></View>
+          <View style={styles.warnBand}><Text style={styles.glassWarn}>{`${room.warning} minute${room.warning === 1 ? '' : 's'} left`}</Text></View>
         )}
 
         {/* Permanent recording truth line. */}
-        <View style={styles.truth}><Meta style={{ color: color.textOnInkSubtle }}>{truth}</Meta></View>
+        <View style={styles.truth}><Text style={styles.truthText}>{truth}</Text></View>
       </View>
 
       {/* Controls over ink — four toggles + LEAVE (the one white-ground control), each captioned. */}
-      <View style={[styles.controls, { paddingBottom: insets.bottom + space.md }]}>
+      <View style={[styles.controls, { paddingBottom: insets.bottom + 12 }]}>
         <Ctl caption={room.muted ? 'Unmute' : 'Mute'} lit={room.muted} onPress={room.toggleMic}>
           {room.muted ? <><Path d="M3 3l18 18" /><Path d="M9 9v3a3 3 0 0 0 5 2" /><Path d="M12 3a3 3 0 0 1 3 3v5" /><Path d="M19 11a7 7 0 0 1-7 7v3" /></> : <><Path d="M12 2a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3Z" /><Path d="M5 11a7 7 0 0 0 14 0" /><Path d="M12 18v3" /></>}
         </Ctl>
@@ -131,7 +129,7 @@ export function RoomScreen({ id, onEnded, onLeft, onReadiness, onBack }: {
         </Ctl>
         <View style={[styles.ctl, styles.ctlIdle]} accessibilityLabel="Network quality"><Quality quality={room.quality} /></View>
         <Pressable accessibilityRole="button" accessibilityLabel="Leave" onPress={room.leave} style={styles.leavePill}>
-          <Text style={[text.uiMdSemi, styles.leaveText]}>Leave</Text>
+          <Text style={styles.leaveText}>Leave</Text>
         </Pressable>
       </View>
     </View>
@@ -140,7 +138,7 @@ export function RoomScreen({ id, onEnded, onLeft, onReadiness, onBack }: {
 
 function fmtElapsed(sec: number) { const m = Math.floor(sec / 60), s = sec % 60; return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}` }
 function Ico({ size = 20, stroke, children }: { size?: number; stroke: string; children: React.ReactNode }) {
-  return <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">{children}</Svg>
+  return <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">{children}</Svg>
 }
 
 function InterviewerTile({ name, photoUrl, remoteUid, panel = false }: { name: string | null; photoUrl: string | null; remoteUid: number | null; panel?: boolean }) {
@@ -154,11 +152,11 @@ function InterviewerTile({ name, photoUrl, remoteUid, panel = false }: { name: s
       ) : (
         <View style={styles.plate}>
           {photoUrl ? <Image source={{ uri: photoUrl }} style={styles.photo} accessibilityLabel={name ?? undefined} />
-            : name ? <Text style={[text.uiSmSemi, styles.initials]}>{initials}</Text> : <LogoMark size={20} fill={color.ink} />}
+            : name ? <Text style={styles.initials}>{initials}</Text> : <LogoMark size={20} fill={color.ink} />}
         </View>
       )}
-      <Text style={[text.metaXs, styles.tileEyebrow]}>YOUR INTERVIEWER</Text>
-      {!!name && <Text style={[text.uiXs, styles.tileName]} numberOfLines={1}>{name}</Text>}
+      <Text style={styles.tileEyebrow}>YOUR INTERVIEWER</Text>
+      {!!name && <Text style={styles.tileName} numberOfLines={1}>{name}</Text>}
     </View>
   )
 }
@@ -175,7 +173,7 @@ const ERROR_TITLE: Record<string, string> = {
 function Ctl({ caption, lit, onPress, children }: { caption: string; lit?: boolean; onPress?: () => void; children: React.ReactNode }) {
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={caption} onPress={onPress} style={[styles.ctl, lit ? styles.leave : styles.ctlIdle]}>
-      <Ico size={height.glyph} stroke={lit ? color.text : color.textOnInk}>{children}</Ico>
+      <Ico size={24} stroke={lit ? color.text : color.textOnInk}>{children}</Ico>
     </Pressable>
   )
 }
@@ -184,8 +182,8 @@ function Quality({ quality }: { quality: 'good' | 'fair' | 'poor' }) {
   const bars = quality === 'good' ? 3 : quality === 'fair' ? 2 : 1
   const c = quality === 'good' ? color.success : quality === 'fair' ? color.warning : color.danger
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: space['2xs'] }}>
-      {[1, 2, 3].map((n) => <View key={n} style={{ width: space.xs, height: space.xs + n * spaceHalf['1.5'] / 2, borderRadius: radius.bar / 3, backgroundColor: c, opacity: n <= bars ? 1 : 0.25 }} />)}
+    <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 2 }}>
+      {[6, 10, 14].map((h, i) => <View key={h} style={{ width: 4, height: h, borderRadius: 1.5, backgroundColor: c, opacity: i + 1 <= bars ? 1 : 0.25 }} />)}
     </View>
   )
 }
@@ -194,33 +192,41 @@ const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.ink },
   stage: { flex: 1, overflow: 'hidden' },
   previewNote: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
-  topRow: { position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', padding: space.lg },
-  recChip: { flexDirection: 'row', alignItems: 'center', gap: spaceHalf['1.5'], borderRadius: radius.pill, backgroundColor: color.onInkGlass, paddingHorizontal: spaceHalf['3.5'], paddingVertical: spaceHalf['1.5'], alignSelf: 'flex-start' },
-  recDot: { width: space.sm, height: space.sm, borderRadius: radius.pill, backgroundColor: color.dangerFill },
-  recText: { color: color.dangerOnInk },
-  clock: { color: color.textOnInk },
-  tile: { width: height['room-tile-w'], alignItems: 'center', gap: space.xs, borderRadius: radius.panel, backgroundColor: color.inkRaised, borderWidth: borderWidth.thin, borderColor: color.onInkEdge, padding: space.sm },
+  mono: { fontFamily: FF.monoMedium, fontSize: 10.5, letterSpacing: 0.63, textTransform: 'uppercase' },
+  topRow: { position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', padding: 16 },
+  recChip: { flexDirection: 'row', alignItems: 'center', gap: 7, borderRadius: radius.pill, backgroundColor: color.onInkGlass, paddingHorizontal: 12, paddingVertical: 7, alignSelf: 'flex-start' },
+  recDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: color.dangerFill },
+  recText: { fontFamily: FF.monoMedium, fontSize: 10.5, letterSpacing: 1.05, color: color.textOnInk },
+  clock: { fontFamily: FF.monoMedium, fontSize: 13, letterSpacing: 0.52, color: color.textOnInk, fontVariant: ['tabular-nums'] },
+  tile: { width: 112, alignItems: 'center', gap: 4, borderRadius: 18, backgroundColor: color.inkRaised, borderWidth: borderWidth.thin, borderColor: color.onInkEdge, padding: 8 },
   // The interviewer publishes 16:9 (IR-05): draw it 16:9 so nothing is cropped away.
-  tileVideo: { width: '100%', aspectRatio: 16 / 9, borderRadius: radius.sm, overflow: 'hidden', backgroundColor: color.onInkGround },
-  panelTile: { width: '100%', alignItems: 'center', gap: space.xs, borderRadius: radius.panel, backgroundColor: color.inkRaised, borderWidth: borderWidth.thin, borderColor: color.onInkEdge, padding: space.sm },
-  wideRow: { position: 'absolute', top: height.tap + height.control, bottom: height['room-ctl'], left: 0, right: 0, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.xl, paddingHorizontal: space.xl },
-  portraitPane: { height: '100%', aspectRatio: 9 / 16, borderRadius: radius.panel, overflow: 'hidden', backgroundColor: color.inkRaised },
+  tileVideo: { width: '100%', aspectRatio: 16 / 9, borderRadius: 8, overflow: 'hidden', backgroundColor: color.onInkGround },
+  panelTile: { width: '100%', alignItems: 'center', gap: 4, borderRadius: 18, backgroundColor: color.inkRaised, borderWidth: borderWidth.thin, borderColor: color.onInkEdge, padding: 8 },
+  wideRow: { position: 'absolute', top: 92, bottom: 60, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 24, paddingHorizontal: 24 },
+  portraitPane: { height: '100%', aspectRatio: 9 / 16, borderRadius: 18, overflow: 'hidden', backgroundColor: color.inkRaised },
   panelPane: { flex: 1, maxWidth: 520, justifyContent: 'center' },
-  photo: { width: '100%', height: '100%', borderRadius: radius.pill },
-  plate: { width: height.tap, height: height.tap, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', backgroundColor: color.onInkGround },
-  initials: { color: color.textOnInk },
-  tileEyebrow: { color: color.textOnInkSubtle },
-  tileName: { color: color.textOnInk, maxWidth: '100%' },
-  waitTitle: { color: color.textOnInk, textAlign: 'center' },
-  centre: { position: 'absolute', top: '30%', left: space.xl, right: space.xl, alignItems: 'center' },
-  errorCard: { alignSelf: 'stretch' },
-  reconnect: { position: 'absolute', left: space.lg, right: space.lg, bottom: space['3xl'], flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderRadius: radius.pill, backgroundColor: color.onInkGlass, paddingHorizontal: space.lg, paddingVertical: space.sm },
-  warnBand: { position: 'absolute', left: space.xl, right: space.xl, top: height['tap'] + height.control + space.md, alignItems: 'center', borderRadius: radius.pill, backgroundColor: color.onInkGlass, paddingVertical: space.sm },
-  truth: { position: 'absolute', left: 0, right: 0, bottom: space.md, alignItems: 'center' },
-  controls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spaceHalf['4.5'], backgroundColor: color.ink, paddingHorizontal: spaceHalf['6'], paddingTop: space.lg },
-  ctl: { width: height['room-ctl'], height: height['room-ctl'], borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
+  photo: { width: '100%', height: '100%', borderRadius: 22 },
+  plate: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: color.onInkGround },
+  initials: { fontFamily: FF.bodySemiBold, fontSize: 15, color: color.textOnInk },
+  tileEyebrow: { fontFamily: FF.monoMedium, fontSize: 9.5, letterSpacing: 0.76, color: color.textOnInkSubtle },
+  tileName: { fontFamily: FF.body, fontSize: 12, color: color.textOnInk, maxWidth: '100%' },
+  waitTitle: { fontFamily: FF.bodySemiBold, fontSize: 22, letterSpacing: -0.33, color: color.textOnInk, textAlign: 'center' },
+  waitBody: { fontFamily: FF.body, fontSize: 14, lineHeight: 20, color: color.textOnInkBody, textAlign: 'center', marginTop: 8 },
+  centre: { position: 'absolute', top: '30%', left: 24, right: 24, alignItems: 'center' },
+  errorCard: { alignSelf: 'stretch', backgroundColor: color.surface, borderWidth: borderWidth.thin, borderColor: color.border, borderRadius: 18, padding: 20, gap: 10, alignItems: 'center' },
+  errorTitle: { fontFamily: FF.bodyBold, fontSize: 20, letterSpacing: -0.4, color: color.text, textAlign: 'center' },
+  errorBody: { fontFamily: FF.body, fontSize: 14, lineHeight: 20, color: color.textMuted, textAlign: 'center' },
+  errorActions: { alignSelf: 'stretch', gap: 8 },
+  errorBtn: { height: 38, borderRadius: 12 },
+  reconnect: { position: 'absolute', left: 16, right: 16, bottom: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderRadius: radius.pill, backgroundColor: color.onInkGlass, paddingHorizontal: 16, paddingVertical: 9 },
+  warnBand: { position: 'absolute', left: 20, right: 20, bottom: 44, alignItems: 'center', borderRadius: radius.pill, backgroundColor: color.onInkGlass, paddingVertical: 9 },
+  glassWarn: { fontFamily: FF.monoMedium, fontSize: 11, letterSpacing: 0.66, textTransform: 'uppercase', color: color.warningFill },
+  truth: { position: 'absolute', left: 0, right: 0, bottom: 12, alignItems: 'center' },
+  truthText: { fontFamily: FF.monoMedium, fontSize: 10.5, letterSpacing: 0.63, textTransform: 'uppercase', color: color.textOnInkSubtle, textAlign: 'center' },
+  controls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: color.ink, paddingHorizontal: 20, paddingTop: 18 },
+  ctl: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
   ctlIdle: { backgroundColor: color.onInkGround },
   leave: { backgroundColor: color.surface },
-  leavePill: { width: height['room-leave-w'], height: height['room-ctl'], borderRadius: radius.pill, backgroundColor: color.dangerFill, alignItems: 'center', justifyContent: 'center' },
-  leaveText: { color: color.textInverse },
+  leavePill: { width: 84, height: 48, borderRadius: 24, backgroundColor: color.dangerFill, alignItems: 'center', justifyContent: 'center' },
+  leaveText: { fontFamily: FF.bodySemiBold, fontSize: 15, color: color.textInverse },
 })

@@ -1,10 +1,12 @@
 import React, { useState } from 'react'
-import { StyleSheet, Text, View } from 'react-native'
+import { StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ApiClientError } from '../../lib/api'
 import { createOrder, mockSettle, settleInDev } from '../../lib/api/payments'
-import { color, space } from '../../theme'
-import { Banner, Button, Eyebrow, ScreenHeader, text } from '../../components/ui'
+import { color } from '../../theme'
+import { Banner } from '../../components/ui'
+import { Btn } from '../../components/tab/kit'
+import { Eyebrow, FlowHeader, Lead } from '../../components/tab/flow'
 
 /**
  * ST-09 — payment failed. The reason is quoted in the gateway's own words, not
@@ -58,17 +60,17 @@ export function PaymentFailedScreen({
 
   return (
     <View style={[styles.page, { paddingTop: insets.top }]}>
-      <ScreenHeader onBack={onPricing} />
+      <FlowHeader onBack={onPricing} />
       <View style={styles.body}>
         <Eyebrow tone="danger">Payment failed</Eyebrow>
-        <Text style={[text.displayLead, { marginTop: space.sm }]}>That didn&apos;t go through.</Text>
-        <Banner tone="danger" style={styles.reasonCard}>
+        <Lead>That didn&apos;t go through.</Lead>
+        <Banner tone="danger">
           {reason ? `"${reason}"` : 'The gateway declined the payment. No money was taken.'}
         </Banner>
         {error ? <Banner tone="danger">{error}</Banner> : null}
-        <View style={{ marginTop: space.xl, gap: space.md }}>
-          <Button variant="primary" size="lg" full busy={busy} label="Try again" onPress={retry} />
-          <Button variant="text" size="md" label="Back to pricing" onPress={onPricing} />
+        <View style={styles.actions}>
+          <Btn busy={busy} label="Try again" onPress={retry} style={styles.retry} />
+          <Btn variant="quiet" label="Back to pricing" onPress={onPricing} />
         </View>
       </View>
     </View>
@@ -77,6 +79,7 @@ export function PaymentFailedScreen({
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.background },
-  body: { flex: 1, padding: space.xl, justifyContent: 'center' },
-  reasonCard: { marginTop: space.lg },
+  body: { flex: 1, paddingHorizontal: 20, paddingTop: 60, gap: 14 },
+  actions: { marginTop: 14, gap: 8 },
+  retry: { height: 52 },
 })

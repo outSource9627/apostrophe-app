@@ -161,7 +161,7 @@ function Eligible({
           goneIso={goneIso} nearestIso={nearestIso} note={note ?? undefined}
           nextAvailableIso={nextAvailableIso}
           onJumpToNext={() => { const a = days.find((d) => d.slots.length > 0); if (a) selectDay(a.key) }}
-          loading={loading}
+          loading={loading} bleed={16}
         />
       </ScrollView>
       <StickyFooter inset={false}>

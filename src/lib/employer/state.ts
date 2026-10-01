@@ -30,7 +30,7 @@ export const EMPLOYER_ROUTES = {
   landing: 'Welcome',
   register: 'EmployerRegister',
   verify: 'EmployerVerify',
-  signin: 'EmployerSignIn',
+  signin: 'SignIn',
   home: 'EmployerHome',
   documents: 'EmployerDocuments',
   status: 'EmployerStatus',

@@ -60,7 +60,7 @@ export function JoinUsScreen() {
           <BrandMark />
           <Text style={text.uiLeadSemi}>Apostrophe</Text>
         </View>
-        <Pressable accessibilityRole="button" hitSlop={space.sm} onPress={() => navigation.navigate('InterviewerSignIn')} style={({ pressed }) => pressed && styles.pressed}>
+        <Pressable accessibilityRole="button" hitSlop={space.sm} onPress={() => navigation.navigate('SignIn')} style={({ pressed }) => pressed && styles.pressed}>
           <Text style={[text.uiMdSemi, styles.muted]}>Sign in</Text>
         </Pressable>
       </View>

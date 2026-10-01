@@ -7,10 +7,10 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReceiptsScreen } from './src/screens/account/ReceiptsScreen'
 import { openSupport } from './src/lib/support'
-import { EmployerWelcomeScreen } from './src/screens/employer/EmployerWelcomeScreen'
 import { EmployerForgotPasswordScreen } from './src/screens/employer/EmployerForgotPasswordScreen'
 import { BottomTabBar } from './src/navigation/BottomTabBar'
 import { WelcomeScreen } from './src/screens/WelcomeScreen'
+import { GetStartedScreen } from './src/screens/GetStartedScreen'
 import { CreateAccountScreen, type RegistrationData } from './src/screens/CreateAccountScreen'
 import { VerifyMobileScreen } from './src/screens/VerifyMobileScreen'
 import { HealthScreen } from './src/screens/HealthScreen'
@@ -53,7 +53,6 @@ import { FeedbackScreen } from './src/screens/room/FeedbackScreen'
 import { TopUpScreen } from './src/screens/room/TopUpScreen'
 import { EmployerRegisterScreen } from './src/screens/employer/EmployerRegisterScreen'
 import { EmployerVerifyScreen } from './src/screens/employer/EmployerVerifyScreen'
-import { EmployerSignInScreen } from './src/screens/employer/EmployerSignInScreen'
 import { EmployerHomeScreen } from './src/screens/employer/EmployerHomeScreen'
 import { EmployerDocumentsScreen } from './src/screens/employer/EmployerDocumentsScreen'
 import { EmployerStatusScreen } from './src/screens/employer/EmployerStatusScreen'
@@ -77,7 +76,6 @@ import { EmployerAccountScreen } from './src/screens/employer/EmployerAccountScr
 import {
   JoinUsScreen,
   InterviewerApplyScreen,
-  InterviewerSignInScreen,
   InterviewerPasswordScreen,
   InterviewerDashboardScreen,
   AvailabilityScreen,
@@ -103,6 +101,7 @@ import type { EmployerRegistrationDraft, RegisterOtpResult } from './src/lib/api
 
 export type RootStackParamList = {
   Welcome: undefined
+  GetStarted: undefined
   CreateAccount: undefined
   VerifyMobile: {
     mobile: string
@@ -151,7 +150,6 @@ export type RootStackParamList = {
   Receipts: undefined
 
   // ── Employer onboarding and verification (EM-02..EM-07) ────────────────────
-  EmployerWelcome: undefined
   EmployerRegister: undefined
   EmployerForgotPassword: undefined
   /**
@@ -161,7 +159,6 @@ export type RootStackParamList = {
    * state persistence without excluding this route.
    */
   EmployerVerify: { registration: EmployerRegistrationDraft; sent?: RegisterOtpResult; sentAt?: number }
-  EmployerSignIn: undefined
   EmployerHome: undefined
   EmployerDocuments: { focus?: 'COMPANY_PROOF' | 'PHOTO_ID' | 'REQUESTED' } | undefined
   EmployerStatus: undefined
@@ -186,7 +183,6 @@ export type RootStackParamList = {
   // ── Interviewer portal & recruitment (IV-01..IV-22) ────────────────────────
   JoinUs: undefined
   InterviewerApply: undefined
-  InterviewerSignIn: undefined
   InterviewerPassword: { email?: string; forced?: boolean; reset?: boolean } | undefined
   InterviewerDashboard: undefined
   InterviewerAvailability: undefined
@@ -262,9 +258,18 @@ export default function App() {
             <Stack.Screen name="Welcome">
               {({ navigation }) => (
                 <WelcomeScreen
-                  onGetHired={() => navigation.navigate('CreateAccount')}
-                  onWantToHire={() => navigation.navigate('EmployerWelcome')}
-                  onCreateEmployer={() => navigation.navigate('EmployerRegister')}
+                  onGetStarted={() => navigation.navigate('GetStarted')}
+                  onSignIn={() => navigation.navigate('SignIn')}
+                />
+              )}
+            </Stack.Screen>
+
+            {/* The one way into Create account — it only picks which form follows. */}
+            <Stack.Screen name="GetStarted">
+              {({ navigation }) => (
+                <GetStartedScreen
+                  onBack={() => navigation.goBack()}
+                  onContinue={(kind) => navigation.navigate(kind === 'CANDIDATE' ? 'CreateAccount' : 'EmployerRegister')}
                   onSignIn={() => navigation.navigate('SignIn')}
                   onJoinUs={() => navigation.navigate('JoinUs')}
                 />
@@ -274,7 +279,9 @@ export default function App() {
             <Stack.Screen name="CreateAccount">
               {({ navigation }) => (
                 <CreateAccountScreen
+                  onBack={() => navigation.goBack()}
                   onSignIn={() => navigation.navigate('SignIn')}
+                  onJoinUs={() => navigation.navigate('JoinUs')}
                   onOtpSent={({ form, resendAfterSeconds }) =>
                     navigation.navigate('VerifyMobile', {
                       mobile: form.mobile,
@@ -306,8 +313,16 @@ export default function App() {
             <Stack.Screen name="SignIn">
               {({ navigation }) => (
                 <SignInScreen
-                  onSignedIn={async () => navigation.replace(await signedInHome())}
-                  onRegister={() => navigation.navigate('CreateAccount')}
+                  // One login for every role: the server says who this is, and that decides the home.
+                  onSignedIn={async ({ mustChangePassword }) =>
+                    mustChangePassword
+                      ? navigation.replace('InterviewerPassword', { forced: true })
+                      : navigation.replace(await signedInHome())
+                  }
+                  onBack={() => navigation.goBack()}
+                  onRegister={() => navigation.navigate('GetStarted')}
+                  onForgot={() => navigation.navigate('EmployerForgotPassword')}
+                  onJoinUs={() => navigation.navigate('JoinUs')}
                   onOtpSent={({ mobile, resendAfterSeconds }) =>
                     navigation.navigate('VerifyMobile', {
                       mobile,
@@ -328,7 +343,11 @@ export default function App() {
                   onReschedule={(id) => navigation.navigate('Reschedule', { id })}
                   onFeedback={(id) => navigation.navigate('Feedback', { id })}
                   onVideoResume={() => navigation.navigate('VideoResume')}
-                  onAccount={() => navigation.navigate('Account')}
+                  onChat={() => navigation.navigate('Chats')}
+                  onInterests={() => navigation.navigate('Interests')}
+                  onInterviews={() => navigation.navigate('Interviews')}
+                  onSavedJobs={() => navigation.navigate('SavedJobs')}
+                  onApplications={() => navigation.navigate('Applications')}
                 />
               )}
             </Stack.Screen>
@@ -354,6 +373,7 @@ export default function App() {
                   onSaved={() => navigation.navigate('SavedJobs')}
                   onApplied={() => navigation.navigate('Applications')}
                   onApply={(id) => navigation.navigate('JobApply', { id })}
+                  onChat={() => navigation.navigate('Chats')}
                 />
               )}
             </Stack.Screen>
@@ -680,7 +700,7 @@ export default function App() {
               {({ navigation }) => (
                 <EmployerRegisterScreen
                   onBack={() => navigation.goBack()}
-                  onSignIn={() => navigation.navigate('EmployerSignIn')}
+                  onSignIn={() => navigation.navigate('SignIn')}
                   onCodesSent={({ registration, sent }) =>
                     navigation.navigate('EmployerVerify', { registration, sent, sentAt: Date.now() })
                   }
@@ -697,36 +717,14 @@ export default function App() {
                   onEdit={() => navigation.goBack()}
                   // A reset, not a push: the stack loses the params holding the password.
                   onRegistered={() => navigation.reset({ index: 0, routes: [{ name: 'EmployerHome' }] })}
-                  onSignIn={() => navigation.navigate('EmployerSignIn')}
-                />
-              )}
-            </Stack.Screen>
-
-            <Stack.Screen name="EmployerWelcome">
-              {({ navigation }) => (
-                <EmployerWelcomeScreen
-                  onCreate={() => navigation.navigate('EmployerRegister')}
-                  onSignIn={() => navigation.navigate('EmployerSignIn')}
+                  onSignIn={() => navigation.navigate('SignIn')}
                 />
               )}
             </Stack.Screen>
 
             <Stack.Screen name="EmployerForgotPassword">
               {({ navigation }) => (
-                <EmployerForgotPasswordScreen onBack={() => navigation.goBack()} onSignIn={() => navigation.navigate('EmployerSignIn')} />
-              )}
-            </Stack.Screen>
-
-            <Stack.Screen name="EmployerSignIn">
-              {({ navigation }) => (
-                <EmployerSignInScreen
-                  onBack={() => navigation.goBack()}
-                  onRegister={() => navigation.navigate('EmployerRegister')}
-                  onForgot={() => navigation.navigate('EmployerForgotPassword')}
-                  onSignedIn={(role) =>
-                    navigation.reset({ index: 0, routes: [{ name: role === 'EMPLOYER' ? 'EmployerHome' : 'Home' }] })
-                  }
-                />
+                <EmployerForgotPasswordScreen onBack={() => navigation.goBack()} onSignIn={() => navigation.navigate('SignIn')} />
               )}
             </Stack.Screen>
 
@@ -836,10 +834,6 @@ export default function App() {
 
             <Stack.Screen name="InterviewerApply">
               {() => <InterviewerApplyScreen />}
-            </Stack.Screen>
-
-            <Stack.Screen name="InterviewerSignIn">
-              {() => <InterviewerSignInScreen />}
             </Stack.Screen>
 
             <Stack.Screen name="InterviewerPassword">

@@ -2,6 +2,7 @@ import React, { useCallback, useRef, useState } from 'react'
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg'
 import Video, { type VideoRef } from 'react-native-video'
 import { api } from '../lib/api'
 import {
@@ -20,26 +21,22 @@ import {
 } from '../lib/api/uploads'
 import { ApiClientError } from '../lib/api/types'
 import { clock } from '../lib/employer/candidateFormat'
-import { borderWidth, color, height, opacity, radius, space, spaceHalf, trackingNative } from '../theme'
+import { color, fontFamilyNative as FF, height, opacity, radius, space, spaceHalf } from '../theme'
+import { Btn, DetailHeader, GroupLabel, Panel, Skel, StateBlock } from '../components/tab/kit'
 import {
   Banner,
   Body,
   Button,
-  Card,
   Chip,
-  ErrorState,
   Field,
   FilmThumb,
   Input,
   ProgressBar,
-  ScreenHeader,
   Sheet,
-  Skeleton,
   StatusPill,
   Toggle,
   UnverifiedMark,
   VerifiedSeal,
-  VideoThumb,
   text,
 } from '../components/ui'
 import { Icon } from '../components/ui/Icon'
@@ -82,6 +79,8 @@ const nameOf = (v: SelfVideo) => v.title ?? kindLabel(v.kind)
  * authority, so a change there is still caught and its sentence shown.
  */
 const TITLE_MAX = 80
+
+const noop = () => {}
 
 const COULD_NOT_PLAY = 'This video could not be played. Check your connection and try again.'
 
@@ -128,6 +127,7 @@ export function VideosScreen({ onBack }: { onBack?: () => void }) {
   const [progress, setProgress] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+  const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<SelfVideo | null>(null)
   const [removing, setRemoving] = useState<SelfVideo | null>(null)
   const [playingId, setPlayingId] = useState<string | null>(null)
@@ -172,37 +172,35 @@ export function VideosScreen({ onBack }: { onBack?: () => void }) {
 
   const frame = (child: React.ReactNode) => (
     <View style={[styles.page, { paddingTop: insets.top }]}>
-      <ScreenHeader title="Your videos" onBack={onBack} />
+      <DetailHeader title="Your videos" onBack={onBack ?? noop} />
       {child}
     </View>
   )
 
   if (videos.isPending || profile.isPending || config.isPending) {
-    return frame(<View style={styles.loading}><Skeleton lines={3} /></View>)
+    return frame(
+      <View style={styles.loading}>
+        <Skel w="100%" h={70} />
+        <Skel w="100%" h={150} />
+        <Skel w="100%" h={150} />
+        <Skel w="100%" h={90} />
+      </View>,
+    )
   }
 
   if (videos.isError || profile.isError || config.isError) {
     return frame(
-      <View style={styles.centre}>
-        <ErrorState
-          title="Could not load your videos."
-          body="Check your connection and try again."
-          action={
-            <Button
-              variant="outline"
-              size="sm"
-              label="Try again"
-              // The error state's small button is 40 tall; the slop brings its tap box to the 44 floor.
-              hitSlop={(height.tap - height['control-xs']) / 2}
-              onPress={() => {
-                videos.refetch()
-                profile.refetch()
-                config.refetch()
-              }}
-            />
-          }
-        />
-      </View>,
+      <StateBlock
+        icon="alert"
+        title="Could not load your videos."
+        body="Check your connection and try again."
+        action="Try again"
+        onAction={() => {
+          videos.refetch()
+          profile.refetch()
+          config.refetch()
+        }}
+      />,
     )
   }
 
@@ -216,6 +214,9 @@ export function VideosScreen({ onBack }: { onBack?: () => void }) {
   const live = published && !!film.data?.live
   const uploading = progress !== null
   const playing = list.find((v) => v.id === playingId) ?? null
+  const left = max - list.length
+  const slotsText = left === 1 ? 'One slot left' : `${left} slots left`
+  const intro = `Up to ${seconds} seconds each. Marked as not verified. Your interview film is watched first.`
 
   async function addFromGallery() {
     setError(null)
@@ -239,6 +240,7 @@ export function VideosScreen({ onBack }: { onBack?: () => void }) {
         ...(picked.size > 0 ? { sizeBytes: picked.size } : {}),
       })
       await qc.invalidateQueries({ queryKey: ['videos'] })
+      setAdding(false)
     } catch (e) {
       if (!(e instanceof Error && e.message === UPLOAD_CANCELLED)) setError(uploadErrorText(e))
     } finally {
@@ -247,100 +249,167 @@ export function VideosScreen({ onBack }: { onBack?: () => void }) {
     }
   }
 
+  const openAdd = () => { setError(null); setAdding(true) }
+  const closeAdd = () => { if (!uploading) { setAdding(false); setError(null) } }
+
+  const filmCard = (
+    <Panel style={styles.row}>
+      <FilmThumb status={filmStatus ?? 'NONE'} width={40} />
+      <View style={styles.rowText}>
+        <Text style={styles.rowTitle}>Your interview</Text>
+        <Text style={styles.xs}>
+          {live
+            ? 'Leads your profile'
+            : published
+              ? film.data?.held ? 'Held back until your top-up is settled' : 'Not live on your profile yet'
+              : 'Filmed at your interview'}
+        </Text>
+      </View>
+      {published ? <VerifiedSeal label="Verified" /> : <StatusPill tone="neutral" label="Not yet" />}
+    </Panel>
+  )
+
+  const visibility = (
+    <Panel style={styles.row}>
+      <View style={styles.rowText}>
+        <Text style={styles.rowTitle}>Appear in employer searches</Text>
+        <Text style={styles.xs}>Nothing is deleted when this is off.</Text>
+      </View>
+      <Toggle on={visible} tone="success" onChange={(next) => setVisibility.mutate(!next)} label="Appear in employer searches" />
+    </Panel>
+  )
+
+  const noticeBanner = !!notice && (
+    <View accessibilityLiveRegion="polite" style={styles.notice}>
+      <Banner tone="info">{notice}</Banner>
+    </View>
+  )
+
+  const tiles: React.ReactNode[] = list.map((v, i) => (
+    <SelfVideoTile
+      key={v.id}
+      video={v}
+      index={i}
+      onPlay={() => { setNotice(null); setPlayingId(v.id) }}
+      onEdit={() => { setNotice(null); edit.reset(); setEditing(v) }}
+      onRemove={() => { setNotice(null); remove.reset(); setRemoving(v) }}
+    />
+  ))
+  if (left > 0) {
+    tiles.push(
+      <Pressable
+        key="add"
+        accessibilityRole="button"
+        accessibilityLabel="Add a video"
+        onPress={openAdd}
+        style={({ pressed }) => [styles.addTile, pressed && styles.pressed]}
+      >
+        {uploading ? (
+          <>
+            <Text style={styles.addPct}>{Math.round((progress ?? 0) * 100)}%</Text>
+            <Text style={styles.xs}>Uploading…</Text>
+            <View style={styles.addBar}><ProgressBar pct={(progress ?? 0) * 100} tone="accent" thin /></View>
+          </>
+        ) : (
+          <>
+            <View style={styles.addDisc}><Icon name="plus" size={22} tint={color.accent} weight={1.9} /></View>
+            <Text style={styles.addTitle}>{slotsText}</Text>
+            <Text style={styles.xs}>Choose a video from your gallery</Text>
+          </>
+        )}
+      </Pressable>,
+    )
+  }
+  const pairs: React.ReactNode[][] = []
+  for (let i = 0; i < tiles.length; i += 2) pairs.push(tiles.slice(i, i + 2))
+
   return frame(
     <>
       <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + space.xl }]}
+        contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 30 }]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.head}>
-          <Text style={[text.metaMd, styles.eyebrow]}>YOUR OWN RECORDINGS · {list.length} OF {max}</Text>
-          <Text style={text.displayMd}>Say a bit more.</Text>
-          <Text style={[text.uiMd, styles.muted]}>
-            Up to {seconds} seconds each. Marked as not verified. Your interview film is watched first.
-          </Text>
-        </View>
-
-        {!!notice && (
-          <View accessibilityLiveRegion="polite">
-            <Banner tone="info">{notice}</Banner>
-          </View>
-        )}
-
-        <Card style={styles.row}>
-          <FilmThumb status={filmStatus ?? 'NONE'} />
-          <View style={styles.rowText}>
-            <Text style={text.uiBaseSemi}>Your interview</Text>
-            <Text style={[text.uiXs, styles.muted]}>
-              {live
-                ? 'Leads your profile'
-                : published
-                  ? film.data?.held ? 'Held back until your top-up is settled' : 'Not live on your profile yet'
-                  : 'Filmed at your interview'}
-            </Text>
-          </View>
-          {published ? <VerifiedSeal label="Verified" /> : <StatusPill tone="neutral" label="Not yet" />}
-        </Card>
-
-        {list.length === 0 && (
-          <Card style={styles.emptyCard}>
-            <Text style={text.uiBaseSemi}>No videos yet.</Text>
-          </Card>
-        )}
-
-        {list.map((v) => (
-          <SelfVideoCard
-            key={v.id}
-            video={v}
-            onPlay={() => { setNotice(null); setPlayingId(v.id) }}
-            onEdit={() => { setNotice(null); edit.reset(); setEditing(v) }}
-            onRemove={() => { setNotice(null); remove.reset(); setRemoving(v) }}
-          />
-        ))}
-
-        {list.length < max ? (
-          <Card style={styles.addCard}>
-            <Text style={text.uiBaseSemi}>{max - list.length === 1 ? 'One slot left' : `${max - list.length} slots left`}</Text>
-            <Text style={[text.uiXs, styles.muted]}>What is this one about?</Text>
-            <View style={styles.kinds}>
-              {KINDS.map((k) => (
-                <Chip key={k.value} label={k.label} selected={kind === k.value} onPress={() => !uploading && setKind(k.value)} />
-              ))}
-            </View>
-            {uploading ? (
-              <View style={styles.progress}>
-                <View style={styles.progressHead}>
-                  <Text style={[text.uiSm, styles.muted]}>Uploading…</Text>
-                  <Text style={[text.metaMd, styles.pct]}>{Math.round((progress ?? 0) * 100)}%</Text>
-                </View>
-                <ProgressBar pct={(progress ?? 0) * 100} tone="accent" thin />
-                <Button variant="outline" size="sm" label="Cancel" onPress={() => abort.current?.abort()} />
+        {list.length === 0 ? (
+          <>
+            {noticeBanner}
+            <StateBlock icon="video" title="No videos yet." body={intro} />
+            {left > 0 && (
+              <View style={styles.emptyAction}>
+                <Btn label="Choose a video from your gallery" accessibilityLabel="Add a video" onPress={openAdd} />
               </View>
-            ) : (
-              <Button variant="secondary" size="lg" full label="Choose a video from your gallery" onPress={addFromGallery} />
             )}
-            {rule ? (
-              <Text style={[text.uiXs, styles.subtle]}>{`${rule.label} · up to ${megabytes(rule.maxBytes)} · ${seconds} seconds`}</Text>
-            ) : (
-              <Text style={[text.uiXs, styles.subtle]}>{`Up to ${seconds} seconds. The file type and size are checked when you upload.`}</Text>
-            )}
-            {!!error && <Banner tone="danger">{error}</Banner>}
-          </Card>
+            <View style={styles.pad}>
+              <View style={styles.afterEmpty}>{filmCard}</View>
+              <View style={styles.visGap}>{visibility}</View>
+            </View>
+          </>
         ) : (
-          <Card style={styles.emptyCard}>
-            <Text style={[text.uiMd, styles.muted]}>{`That is all ${max}. Delete one to add another.`}</Text>
-          </Card>
+          <>
+            <View style={styles.head}>
+              <Text style={styles.eyebrow}>YOUR OWN RECORDINGS · {list.length} OF {max}</Text>
+              <Text style={styles.h1}>Say a bit more.</Text>
+              <Text style={styles.sub}>{intro}</Text>
+            </View>
+            {noticeBanner}
+            <View style={styles.pad}>
+              <View style={styles.filmGap}>{filmCard}</View>
+              <GroupLabel style={styles.group}>Your own recordings</GroupLabel>
+              <View style={styles.grid}>
+                {pairs.map((pair, i) => (
+                  <View key={i} style={styles.gridRow}>
+                    {pair}
+                    {pair.length === 1 && <View style={styles.cell} />}
+                  </View>
+                ))}
+              </View>
+              {left <= 0 && (
+                <Panel tone="muted" style={styles.cap}>
+                  <Text style={styles.sub}>{`That is all ${max}. Delete one to add another.`}</Text>
+                </Panel>
+              )}
+              <View style={styles.visGap}>{visibility}</View>
+            </View>
+          </>
         )}
-
-        {/* SP-12 / SP-13 */}
-        <Card style={styles.row}>
-          <View style={styles.rowText}>
-            <Text style={text.uiMdSemi}>Appear in employer searches</Text>
-            <Text style={[text.uiXs, styles.muted]}>Nothing is deleted when this is off.</Text>
-          </View>
-          <Toggle on={visible} tone="success" onChange={(next) => setVisibility.mutate(!next)} label="Appear in employer searches" />
-        </Card>
       </ScrollView>
+
+      <Sheet open={adding && left > 0} onClose={closeAdd}>
+        <View style={styles.sheetHead}>
+          <Text style={styles.sheetTitle}>Add a video</Text>
+          {!uploading && (
+            <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={closeAdd} style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}>
+              <Icon name="x" size={19} tint={color.textMuted} weight={1.9} />
+            </Pressable>
+          )}
+        </View>
+        <View>
+          <Text style={styles.rowTitle}>{slotsText}</Text>
+          <Text style={[styles.xs, styles.gap3]}>What is this one about?</Text>
+        </View>
+        <View style={styles.kinds}>
+          {KINDS.map((k) => (
+            <Chip key={k.value} label={k.label} selected={kind === k.value} onPress={() => !uploading && setKind(k.value)} />
+          ))}
+        </View>
+        {uploading ? (
+          <View style={styles.progress}>
+            <View style={styles.progressHead}>
+              <Text style={styles.sub}>Uploading…</Text>
+              <Text style={styles.pct}>{Math.round((progress ?? 0) * 100)}%</Text>
+            </View>
+            <ProgressBar pct={(progress ?? 0) * 100} tone="accent" thin />
+            <Btn label="Cancel" variant="outline" style={styles.cancel} onPress={() => abort.current?.abort()} />
+          </View>
+        ) : (
+          <Btn variant="outline" label="Choose a video from your gallery" style={styles.pick} onPress={addFromGallery} />
+        )}
+        {rule ? (
+          <Text style={styles.rule}>{`${rule.label} · up to ${megabytes(rule.maxBytes)} · ${seconds} seconds`}</Text>
+        ) : (
+          <Text style={styles.rule}>{`Up to ${seconds} seconds. The file type and size are checked when you upload.`}</Text>
+        )}
+        {!!error && <Banner tone="danger">{error}</Banner>}
+      </Sheet>
 
       <EditSheet
         key={`edit-${editing?.id ?? 'none'}`}
@@ -356,16 +425,14 @@ export function VideosScreen({ onBack }: { onBack?: () => void }) {
         {!!removing && <Body size="sm" weight="medium">{nameOf(removing)}</Body>}
         {remove.isError && <Banner tone="danger">{errorText(remove.error, 'The video could not be removed. Try again.')}</Banner>}
         <View style={styles.sheetButtons}>
-          <Button
+          <Btn
             variant="destructive"
-            size="block"
-            full
             busy={remove.isPending}
             label="Remove"
             accessibilityLabel={removing ? `Remove ${nameOf(removing)}` : 'Remove'}
             onPress={() => removing && remove.mutate(removing.id)}
           />
-          <Button variant="quiet" size="block" full label="Keep it" onPress={() => setRemoving(null)} />
+          <Btn variant="quiet" label="Keep it" onPress={() => setRemoving(null)} />
         </View>
       </Sheet>
 
@@ -381,54 +448,82 @@ export function VideosScreen({ onBack }: { onBack?: () => void }) {
 
 /* ─────────────────────────── one clip ─────────────────────────── */
 
-function SelfVideoCard({
-  video: v, onPlay, onEdit, onRemove,
-}: { video: SelfVideo; onPlay: () => void; onEdit: () => void; onRemove: () => void }) {
+// The poster's ground: three slate gradients, so neighbouring tiles read as different clips.
+const POSTERS: readonly [string, string][] = [
+  [color.textMuted, color.inkHover],
+  [color.textSubtle, color.textSecondary],
+  [color.inkHover, color.inkRaised],
+]
+
+function SelfVideoTile({
+  video: v, index, onPlay, onEdit, onRemove,
+}: { video: SelfVideo; index: number; onPlay: () => void; onEdit: () => void; onRemove: () => void }) {
   const mark = STATUS[v.status]
   const name = nameOf(v)
-  // A title stands for the clip; the kind then goes in the meta line so it is not lost.
-  const meta = [v.title ? kindLabel(v.kind) : null, clock(v.durationSec)].filter(Boolean).join(' · ')
-  const thumb = (
-    <View>
-      <VideoThumb verified={false} />
+  const length = clock(v.durationSec)
+  const [from, to] = POSTERS[index % POSTERS.length]
+  const poster = (
+    <View style={styles.poster}>
+      <Svg width="100%" height="100%" style={StyleSheet.absoluteFill} preserveAspectRatio="none">
+        <Defs>
+          <LinearGradient id={`poster${index % POSTERS.length}`} x1="0" y1="0" x2="0.35" y2="1">
+            <Stop offset="0" stopColor={from} />
+            <Stop offset="1" stopColor={to} />
+          </LinearGradient>
+        </Defs>
+        <Rect x="0" y="0" width="100%" height="100%" fill={`url(#poster${index % POSTERS.length})`} />
+      </Svg>
+      <View style={styles.posterMark}><UnverifiedMark /></View>
       {!!v.url && (
-        <View pointerEvents="none" style={styles.playHole}>
-          <View style={styles.playDisc}><Icon name="tri" size={space.md} tint={color.ink} fill={color.ink} weight={1.5} /></View>
+        <View pointerEvents="none" style={styles.playDisc}>
+          <Icon name="tri" size={16} tint={color.ink} fill={color.ink} weight={1.5} />
         </View>
       )}
+      {!!length && <View style={styles.len}><Text style={styles.lenText}>{length}</Text></View>}
     </View>
   )
   return (
-    <Card style={styles.videoCard}>
-      <View style={styles.rowInner}>
-        {v.url ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Play ${name}`}
-            onPress={onPlay}
-            style={({ pressed }) => pressed && { opacity: opacity.pressed }}
-          >
-            {thumb}
-          </Pressable>
-        ) : thumb}
-        <View style={styles.rowText}>
-          <View style={styles.marks}>
-            <UnverifiedMark />
-            <StatusPill tone={mark.tone} label={mark.label} />
-          </View>
-          <Text style={text.uiBaseSemi}>{name}</Text>
-          {!!meta && <Text style={[text.uiXs, styles.muted]}>{meta}</Text>}
-          {v.status === 'PENDING' && !!v.editedAt && <Text style={[text.uiXs, styles.muted]}>Edited · back in review</Text>}
-          {v.status === 'PENDING' && <Text style={[text.uiXs, styles.muted]}>We will tell you when it has been reviewed.</Text>}
-          {v.status === 'APPROVED' && <Text style={[text.uiXs, styles.muted]}>Shown on your full profile to employers, marked not verified.</Text>}
-          {v.status === 'REJECTED' && !!v.rejectionReason && <Body size="xs" tone="danger">{v.rejectionReason}</Body>}
-        </View>
+    <View style={styles.cell}>
+      {v.url ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Play ${name}`}
+          onPress={onPlay}
+          style={({ pressed }) => pressed && styles.pressed}
+        >
+          {poster}
+        </Pressable>
+      ) : poster}
+      <View style={styles.tileText}>
+        <Text style={styles.tileName}>{name}</Text>
+        {!!v.title && <Text style={styles.xs}>{kindLabel(v.kind)}</Text>}
+        <StatusPill tone={mark.tone} label={mark.label} />
+        {v.status === 'PENDING' && !!v.editedAt && <Text style={styles.xs}>Edited · back in review</Text>}
+        {v.status === 'PENDING' && <Text style={styles.xs}>We will tell you when it has been reviewed.</Text>}
+        {v.status === 'APPROVED' && <Text style={styles.xs}>Shown on your full profile to employers, marked not verified.</Text>}
+        {v.status === 'REJECTED' && !!v.rejectionReason && <Text style={styles.reason}>{v.rejectionReason}</Text>}
       </View>
-      <View style={styles.actions}>
-        <Button variant="outline" size="md" icon="edit" label="Edit" accessibilityLabel={`Edit ${name}, ${kindLabel(v.kind)}`} onPress={onEdit} />
-        <Button variant="dangerText" size="md" icon="trash" label="Delete" accessibilityLabel={`Delete ${name}, ${kindLabel(v.kind)}`} onPress={onRemove} />
+      <View style={styles.tileActions}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Edit ${name}, ${kindLabel(v.kind)}`}
+          onPress={onEdit}
+          style={({ pressed }) => [styles.tileBtn, styles.tileBtnOut, pressed && styles.pressed]}
+        >
+          <Icon name="edit" size={17} tint={color.text} weight={1.9} />
+          <Text style={styles.tileBtnText}>Edit</Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Delete ${name}, ${kindLabel(v.kind)}`}
+          onPress={onRemove}
+          style={({ pressed }) => [styles.tileBtn, pressed && styles.pressed]}
+        >
+          <Icon name="trash" size={17} tint={color.danger} weight={1.9} />
+          <Text style={[styles.tileBtnText, styles.tileBtnDanger]}>Delete</Text>
+        </Pressable>
       </View>
-    </Card>
+    </View>
   )
 }
 
@@ -479,15 +574,13 @@ function EditSheet({
       </View>
       {!!error && <Banner tone="danger">{error}</Banner>}
       <View style={styles.sheetButtons}>
-        <Button
+        <Btn
           variant="primary"
-          size="block"
-          full
           busy={busy}
           label={status === 'REJECTED' ? 'Edit and resubmit' : 'Save'}
           onPress={() => onSave(trimmed === '' ? null : trimmed, kind)}
         />
-        <Button variant="quiet" size="block" full label="Cancel" onPress={onClose} />
+        <Btn variant="quiet" label="Cancel" onPress={onClose} />
       </View>
     </Sheet>
   )
@@ -570,40 +663,72 @@ function SelfVideoPlayer({
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.background },
-  centre: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.xl },
-  loading: { padding: space.xl },
-  scroll: { paddingHorizontal: space.lg, paddingTop: space.xs, gap: spaceHalf['2.5'] },
-  head: { gap: space.xs, paddingHorizontal: space.xs, paddingBottom: space.sm },
-  eyebrow: { color: color.textMuted, letterSpacing: trackingNative.eyebrow },
-  muted: { color: color.textMuted },
-  subtle: { color: color.textSubtle },
-  centered: { textAlign: 'center' },
-  row: { flexDirection: 'row', alignItems: 'center', gap: spaceHalf['3.5'], paddingHorizontal: space.lg, paddingVertical: space.md },
-  rowInner: { flexDirection: 'row', alignItems: 'center', gap: spaceHalf['3.5'] },
-  rowText: { flex: 1, gap: space.xs, alignItems: 'flex-start' },
-  marks: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: space.sm },
-  videoCard: { paddingHorizontal: space.lg, paddingVertical: space.md, gap: space.sm },
-  actions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: space.sm },
-  emptyCard: { paddingHorizontal: space.lg, paddingVertical: space.lg, gap: space.xs },
-  // A play mark on the thumb, so a clip that can be watched reads as one; a clip with no address gets none.
-  playHole: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
-  playDisc: {
-    width: height.avatar,
-    height: height.avatar,
-    borderRadius: radius.pill,
-    backgroundColor: color.surface,
-    borderWidth: borderWidth.thin,
-    borderColor: color.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingLeft: space['2xs'],
+  pressed: { opacity: opacity.pressed },
+  loading: { paddingHorizontal: 20, paddingTop: 12, gap: 12 },
+  scroll: { paddingTop: 0 },
+  pad: { paddingHorizontal: 20 },
+  head: { paddingHorizontal: 24, paddingTop: 8, paddingBottom: 14, gap: 6 },
+  eyebrow: { fontFamily: FF.monoMedium, fontSize: 11, letterSpacing: 1.54, textTransform: 'uppercase', color: color.textMuted },
+  h1: { fontFamily: FF.bodyBold, fontSize: 30, lineHeight: 32, letterSpacing: -1.2, color: color.text },
+  sub: { fontFamily: FF.body, fontSize: 14, lineHeight: 20, color: color.textMuted },
+  xs: { fontFamily: FF.body, fontSize: 13, lineHeight: 18, color: color.textMuted },
+  reason: { fontFamily: FF.body, fontSize: 13, lineHeight: 18, color: color.danger },
+  gap3: { marginTop: 3 },
+  notice: { paddingHorizontal: 20, marginBottom: 12 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  rowText: { flex: 1, gap: 3, alignItems: 'flex-start' },
+  rowTitle: { fontFamily: FF.bodyBold, fontSize: 16, color: color.text },
+  filmGap: { marginBottom: 18 },
+  afterEmpty: { marginTop: 28 },
+  visGap: { marginTop: 18 },
+  emptyAction: { alignItems: 'center', paddingTop: 20 },
+  group: { paddingHorizontal: 4, paddingBottom: 8 },
+  grid: { gap: 14 },
+  gridRow: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
+  cell: { flex: 1, gap: 8 },
+  cap: { marginTop: 14 },
+  // The 9:16 poster of a self-recorded clip: a dashed frame, never the solid one the verified film has.
+  poster: {
+    width: '100%', aspectRatio: 9 / 16, borderRadius: 14, overflow: 'hidden', alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1.5, borderStyle: 'dashed', borderColor: color.borderStrong,
   },
-  addCard: { padding: space.lg, gap: space.md, borderStyle: 'dashed', borderColor: color.borderStrong },
-  kinds: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
-  progress: { gap: space.sm },
-  progressHead: { flexDirection: 'row', justifyContent: 'space-between' },
-  pct: { color: color.text },
-  sheetButtons: { marginTop: space.sm, gap: space.sm },
+  posterMark: { position: 'absolute', left: 6, top: 6 },
+  playDisc: {
+    width: 40, height: 40, borderRadius: 20, backgroundColor: color.surface, borderWidth: 1, borderColor: color.border,
+    alignItems: 'center', justifyContent: 'center', paddingLeft: 2,
+  },
+  len: { position: 'absolute', right: 6, bottom: 6, borderRadius: 99, paddingHorizontal: 7, paddingVertical: 3, backgroundColor: 'rgba(11,15,26,0.7)' },
+  lenText: { fontFamily: FF.monoMedium, fontSize: 10, color: color.textInverse },
+  tileText: { gap: 5, alignItems: 'flex-start' },
+  tileName: { fontFamily: FF.bodyBold, fontSize: 15.5, lineHeight: 19, letterSpacing: -0.155, color: color.text },
+  tileActions: { flexDirection: 'row', gap: 6 },
+  tileBtn: { flex: 1, height: 40, borderRadius: 12, paddingHorizontal: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  tileBtnOut: { backgroundColor: color.surface, borderWidth: 1.5, borderColor: color.borderStrong },
+  tileBtnText: { fontFamily: FF.bodyBold, fontSize: 14, color: color.text },
+  tileBtnDanger: { color: color.danger },
+  addTile: {
+    aspectRatio: 9 / 16, flex: 1, borderRadius: 14, borderWidth: 1.5, borderStyle: 'dashed', borderColor: color.borderStrong,
+    backgroundColor: color.surface, alignItems: 'center', justifyContent: 'center', gap: 8, padding: 12,
+  },
+  addDisc: { width: 44, height: 44, borderRadius: 22, backgroundColor: color.accentSoft, alignItems: 'center', justifyContent: 'center' },
+  addTitle: { fontFamily: FF.bodyBold, fontSize: 15, lineHeight: 19, color: color.text, textAlign: 'center' },
+  addPct: { fontFamily: FF.monoMedium, fontSize: 20, color: color.text },
+  addBar: { width: '80%' },
+  sheetHead: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  sheetTitle: { flex: 1, fontFamily: FF.bodyBold, fontSize: 21, letterSpacing: -0.63, color: color.text },
+  iconBtn: {
+    width: 44, height: 44, borderRadius: 14, borderWidth: 1.5, borderColor: color.border, backgroundColor: color.surface,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  kinds: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  progress: { gap: 10 },
+  progressHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  pct: { fontFamily: FF.monoMedium, fontSize: 11, letterSpacing: 1.54, color: color.text },
+  cancel: { alignSelf: 'flex-start', height: 40, borderRadius: 12, paddingHorizontal: 14 },
+  pick: { height: 52 },
+  rule: { fontFamily: FF.body, fontSize: 13, lineHeight: 18, color: color.textSubtle },
+  sheetButtons: { marginTop: space.sm, gap: 8 },
+  centered: { textAlign: 'center' },
 
   stage: { flex: 1, backgroundColor: color.inkDeep, paddingHorizontal: space.md, gap: space.md },
   stageHead: { flexDirection: 'row', alignItems: 'center', gap: space.md },

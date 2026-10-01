@@ -11,7 +11,7 @@ import type { IconName } from '../components/ui/Icon'
  * deliberately full-screen regardless of which tab they were entered from.
  */
 
-export type TabKey = 'home' | 'interviews' | 'jobs' | 'interests' | 'chat' | 'account' | 'availability' | 'wallet' | 'feed' | 'shortlist' | 'none'
+export type TabKey = 'home' | 'interviews' | 'jobs' | 'interests' | 'chat' | 'profile' | 'account' | 'availability' | 'wallet' | 'feed' | 'shortlist' | 'none'
 
 export type TabDef = {
   key: TabKey
@@ -30,7 +30,7 @@ export const STUDENT_TABS: TabDef[] = [
   { key: 'interviews', label: 'Interviews', root: 'Interviews', icon: 'calendar' },
   { key: 'jobs', label: 'Jobs', root: 'JobFeed', icon: 'briefcase' },
   { key: 'interests', label: 'Interests', root: 'Interests', icon: 'heart' },
-  { key: 'chat', label: 'Chat', root: 'Chats', icon: 'chat' },
+  { key: 'profile', label: 'Profile', root: 'Account', icon: 'person' },
 ]
 
 export const INTERVIEWER_TABS: TabDef[] = [
@@ -63,22 +63,21 @@ const STUDENT_ROUTES: Partial<Record<keyof RootStackParamList, TabKey>> = {
   JobApply: 'jobs',
   SavedJobs: 'jobs',
   Applications: 'jobs',
-  Chats: 'chat',
-  Thread: 'chat',
-  Connections: 'chat',
+  // Chat now opens from the header button on Home and Jobs, so it has no tab of its own: the bar stays, nothing is lit.
+  Chats: 'none',
+  Thread: 'none',
+  Connections: 'none',
   Interests: 'interests',
-  // The Student bar has no Profile tab (the design's five are Home, Interviews,
-  // Jobs, Interests, Chat) — Account is reached from the header avatar, and its
-  // routes keep the bar visible with no tab lit.
-  Account: 'account',
-  ProfileView: 'account',
-  Visibility: 'account',
-  Videos: 'account',
-  Stats: 'account',
-  DataRights: 'account',
-  Receipts: 'account',
-  NotificationSettings: 'account',
-  Notifications: 'account',
+  // Profile is the last tab (the Account screen), so it is one tap away on every page.
+  Account: 'profile',
+  ProfileView: 'profile',
+  Visibility: 'profile',
+  Videos: 'profile',
+  Stats: 'profile',
+  DataRights: 'profile',
+  Receipts: 'profile',
+  NotificationSettings: 'profile',
+  Notifications: 'profile',
 }
 
 const INTERVIEWER_ROUTES: Partial<Record<keyof RootStackParamList, TabKey>> = {

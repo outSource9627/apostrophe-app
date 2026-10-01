@@ -70,7 +70,7 @@ async function render(videos: SelfVideo[], cfg = config()) {
     )
   })
   open.push({ tree, client })
-  for (let i = 0; i < 20 && !textsOf(tree).includes('Say a bit more.'); i++) await settle()
+  for (let i = 0; i < 20 && !textsOf(tree).includes('Appear in employer searches'); i++) await settle()
   await settle()
   return tree
 }
@@ -83,6 +83,14 @@ async function press(tree: ReactTestRenderer.ReactTestRenderer, match: (n: React
 }
 const pressLabel = (tree: ReactTestRenderer.ReactTestRenderer, label: string) =>
   press(tree, (n) => n.props.accessibilityLabel === label)
+// Option A: the gallery button lives in the Add a video sheet, opened from the add tile (or the empty state).
+// The last match is the sheet's own button, which is rendered after the screen.
+async function pickFromGallery(tree: ReactTestRenderer.ReactTestRenderer) {
+  await pressLabel(tree, 'Add a video')
+  const hit = tree.root.findAll((n) => n.props.label === 'Choose a video from your gallery' && typeof n.props.onPress === 'function')
+  await act(async () => { hit[hit.length - 1].props.onPress() })
+  await settle()
+}
 const pressButton = (tree: ReactTestRenderer.ReactTestRenderer, label: string) =>
   press(tree, (n) => n.props.label === label)
 const players = (tree: ReactTestRenderer.ReactTestRenderer) => tree.root.findAll((n) => (n.type as unknown) === 'Video')
@@ -126,8 +134,8 @@ describe('VideosScreen rows', () => {
     const tree = await render([], config({ max: 4 }))
     const texts = textsOf(tree)
     expect(texts).toContain('No videos yet.')
-    expect(texts.join(' ')).toContain('0 OF 4')
-    expect(texts).toContain('4 slots left')
+    await pressLabel(tree, 'Add a video')
+    expect(textsOf(tree)).toContain('4 slots left')
   })
 
   it('says why there is no add card at the cap, using the config number', async () => {
@@ -278,7 +286,7 @@ describe('upload checks', () => {
     mockPick.mockResolvedValue(picked({ durationSec: 0 }))
     mockUpload.mockResolvedValue('uploads/key-1')
     mockAdd.mockResolvedValue({ id: 'n', slot: 1, status: 'PENDING' })
-    await pressButton(tree, 'Choose a video from your gallery')
+    await pickFromGallery(tree)
     expect(mockAdd).toHaveBeenCalledTimes(1)
     const sent = mockAdd.mock.calls[0][0]
     expect(sent).toMatchObject({ kind: 'INTRO', key: 'uploads/key-1', sizeBytes: 1048576 })
@@ -290,25 +298,26 @@ describe('upload checks', () => {
     mockPick.mockResolvedValue(picked({ durationSec: 30 }))
     mockUpload.mockResolvedValue('uploads/key-2')
     mockAdd.mockResolvedValue({ id: 'n', slot: 1, status: 'PENDING' })
-    await pressButton(tree, 'Choose a video from your gallery')
+    await pickFromGallery(tree)
     expect(mockAdd.mock.calls[0][0].durationSec).toBe(30)
   })
 
   it('refuses a known over-long clip before uploading anything', async () => {
     const tree = await render([])
     mockPick.mockResolvedValue(picked({ durationSec: 61 }))
-    await pressButton(tree, 'Choose a video from your gallery')
+    await pickFromGallery(tree)
     expect(mockUpload).not.toHaveBeenCalled()
     expect(textsOf(tree)).toContain('That video is 61 seconds. Keep it under 45.')
   })
 
   it('says the server will check when the file rules did not load, and still lets the upload go ahead', async () => {
     const tree = await render([], config({ rule: null }))
+    await pressLabel(tree, 'Add a video')
     expect(textsOf(tree).join(' ')).toMatch(/checked when you upload/)
     mockPick.mockResolvedValue(picked({ type: 'video/quicktime' }))
     mockUpload.mockResolvedValue('uploads/key-3')
     mockAdd.mockResolvedValue({ id: 'n', slot: 1, status: 'PENDING' })
-    await pressButton(tree, 'Choose a video from your gallery')
+    await pickFromGallery(tree)
     expect(mockUpload).toHaveBeenCalledTimes(1)
   })
 })

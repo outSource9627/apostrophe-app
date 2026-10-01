@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apostrophe App – Saved jobs, Applications & Video resume (refined)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FAFAFC; --surface:#fff; --muted:#F1F3F7; --sunken:#E6E8EE;
+    --text:#0B0F1A; --text2:#3A4256; --text3:#6B7385; --text4:#8A91A2;
+    --border:#E3E6ED; --border-strong:#C9CED9;
+    --accent:#5B3DF5; --accent-soft:#EFEBFF; --accent-wash:#F7F6FF; --accent-muted:#C4B8FF; --accent-bright:#7258FF; --accent-deep:#3B2A8F; --accent-edge:#DCD3FF;
+    --ink:#0B0F1A; --ink-raised:#151B2B;
+    --ok:#0E9F6E; --ok-text:#0B7A55; --ok-soft:#E6F7F0; --danger:#E5484D; --danger-text:#C22A30; --danger-soft:#FDECEC; --warn:#935F00; --warn-soft:#FFF5E1; --warn-edge:#F5E2B8; --info-soft:#E8EFFF;
+    --r-md:14px; --r-lg:20px; --r-xl:28px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{font-family:'Geist',system-ui,sans-serif;background:#E9EAF2;color:var(--text);padding:40px 24px 90px}
+  button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+  button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex:none}
+  .mono{font:500 11px 'Geist Mono',monospace;letter-spacing:.14em;text-transform:uppercase}
+  .intro{max-width:1240px;margin:0 auto 32px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:26px 30px}
+  .intro h1{font-size:28px;letter-spacing:-.035em}
+  .intro p{font-size:15px;color:var(--text3);margin-top:8px;line-height:1.5;max-width:860px}
+  .intro ul{margin:14px 0 0 18px;font-size:14px;line-height:1.7;color:var(--text2)}
+  .wrap{display:flex;flex-wrap:wrap;gap:48px;justify-content:center;max-width:1300px;margin:0 auto}
+  .cell{width:390px}
+  .states{display:flex;flex-wrap:wrap;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:22px;padding:4px;margin-bottom:14px}
+  .states button{padding:8px 12px;border-radius:99px;font-size:13.5px;font-weight:600;color:var(--text3);white-space:nowrap}
+  .states button.on{background:var(--accent);color:#fff}
+  .cap{margin-top:14px}.cap b{font-size:17px;letter-spacing:-.02em;display:block}.cap span{font-size:14px;color:var(--text3);line-height:1.45;display:block;margin-top:3px}
+
+  .phone{width:390px;height:812px;background:var(--bg);border-radius:44px;border:10px solid #0B0F1A;overflow:hidden;position:relative}
+  .status{height:44px;display:flex;justify-content:space-between;align-items:center;padding:0 26px;font-size:14px;font-weight:600;position:absolute;top:0;left:0;right:0;z-index:40;pointer-events:none}
+  .status i{width:90px;height:24px;background:#0B0F1A;border-radius:14px;position:absolute;left:50%;top:8px;transform:translateX(-50%)}
+  .scroll{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none;padding-top:44px}
+  .scroll::-webkit-scrollbar{display:none}
+  .tab{position:absolute;left:14px;right:14px;bottom:14px;height:68px;background:rgba(255,255,255,.96);backdrop-filter:blur(14px);border:1px solid var(--border);border-radius:24px;display:flex;justify-content:space-around;align-items:center;z-index:25}
+  .tab button{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11.5px;font-weight:600;color:var(--text4);padding:7px 8px;border-radius:14px;min-width:60px;min-height:48px;justify-content:center}
+  .tab button.on{color:var(--accent);background:var(--accent-soft)}
+
+  .pill{font:500 10.5px 'Geist Mono',monospace;letter-spacing:.1em;text-transform:uppercase;border-radius:99px;padding:5px 10px;display:inline-block;white-space:nowrap}
+  .pill.ok{background:var(--ok-soft);color:var(--ok-text)}.pill.acc{background:var(--accent-soft);color:#4A2FE0}
+  .pill.warn{background:var(--warn-soft);color:var(--warn)}.pill.neutral{background:var(--muted);color:var(--text3)}
+  .pill.info{background:var(--info-soft);color:#1F4FD1}.pill.danger{background:var(--danger-soft);color:var(--danger-text)}
+  .rowc{display:flex;align-items:center;gap:12px}.grow{flex:1;min-width:0}
+  .sub{font-size:14px;color:var(--text3);line-height:1.4}
+  .title{font-size:30px;font-weight:800;letter-spacing:-.04em;line-height:1.05}
+  .head{padding:12px 20px}
+  .pad{padding:0 20px}
+  .btn{height:46px;min-width:44px;border-radius:var(--r-md);font-weight:700;font-size:15px;padding:0 18px;display:inline-flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap}
+  .btn.pri{background:var(--accent);color:#fff}.btn.ink{background:var(--ink);color:#fff}.btn.out{border:1.5px solid var(--border-strong);background:var(--surface)}
+  .btn.dis{background:var(--muted);color:var(--text4)}.btn.full{width:100%}.btn.sm{height:40px;font-size:14px;padding:0 16px;border-radius:12px}
+  .btn svg{width:18px}
+  .iconbtn{width:46px;height:46px;border-radius:var(--r-md);border:1.5px solid var(--border);display:grid;place-items:center;color:var(--text3);flex:none;background:var(--surface)}
+  .seg{display:flex;background:var(--muted);border-radius:var(--r-md);padding:4px;margin:0 20px}
+  .seg button{flex:1;height:40px;border-radius:11px;font-size:14.5px;font-weight:600;color:var(--text3)}
+  .seg button.on{background:var(--surface);color:var(--accent);border:1px solid var(--border)}
+  .seg button em{font-style:normal;font:500 11px 'Geist Mono',monospace;margin-left:4px;opacity:.7}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px}
+  .logo{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;color:#fff;font-weight:800;font-size:17px;flex:none}
+  .skel{background:linear-gradient(90deg,var(--muted) 0%,#E9ECF2 50%,var(--muted) 100%);background-size:200% 100%;animation:sh 1.3s infinite linear;border-radius:18px}
+  @keyframes sh{to{background-position:-200% 0}}
+  .center{display:grid;place-items:center;text-align:center;padding:60px 36px 0}
+  .center .ic{width:68px;height:68px;border-radius:22px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;margin-bottom:16px}
+  .center .ic svg{width:30px;height:30px}
+  .center b{font-size:22px;letter-spacing:-.03em;display:block}
+  .center p{font-size:15px;color:var(--text3);margin:8px 0 20px;line-height:1.5}
+  [data-act]{cursor:pointer}
+  .toast{position:absolute;left:14px;right:14px;bottom:100px;background:var(--ink);color:#fff;border-radius:var(--r-md);padding:13px 14px;z-index:60;font-size:14px;font-weight:600;transform:translateY(20px);opacity:0;pointer-events:none;transition:.25s}
+  .toast.on{transform:none;opacity:1}
+
+  /* saved */
+  .job{display:grid;gap:14px;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg)}
+  .job h4{font-size:18px;font-weight:700;letter-spacing:-.025em;line-height:1.2}
+  .job .where{font-size:14px;color:var(--text3);margin-top:3px}
+  .job .pay{font-size:16px;font-weight:700;letter-spacing:-.01em}
+  .dl{font-size:13px;font-weight:600;color:var(--text3);background:var(--muted);border-radius:99px;padding:5px 11px;white-space:nowrap}
+  .dl.soon{background:var(--warn-soft);color:var(--warn)}
+  .job.closed{background:var(--muted);border-color:transparent}
+  .job.closed h4,.job.closed .pay{color:var(--text3)}
+  .vtag{display:inline-flex;align-items:center;gap:4px;font:500 10px 'Geist Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);background:var(--accent-soft);border-radius:99px;padding:4px 8px;margin-left:8px;vertical-align:2px}
+  .vtag svg{width:11px;fill:currentColor;stroke:none}
+
+  /* applications */
+  .app{display:grid;gap:14px;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg)}
+  .app h4{font-size:18px;font-weight:700;letter-spacing:-.025em;line-height:1.2}
+  .pipe{display:flex;align-items:center}
+  .pipe i{width:14px;height:14px;border-radius:50%;background:var(--sunken);flex:none}.pipe i.on{background:var(--accent)}.pipe i.cur{box-shadow:0 0 0 4px var(--accent-soft)}
+  .pipe u{flex:1;height:3px;background:var(--sunken);border-radius:3px;margin:0 -1px}.pipe u.on{background:var(--accent)}
+  .quote{border-left:3px solid var(--border-strong);padding:2px 0 2px 12px;font-size:14.5px;line-height:1.5;color:var(--text2)}
+  .quote small{display:block;font:500 10.5px 'Geist Mono',monospace;letter-spacing:.1em;color:var(--text4);margin-bottom:4px;text-transform:uppercase}
+  .app.out{background:var(--muted);border-color:transparent}
+
+  /* video */
+  .vhead{display:flex;align-items:center;gap:12px;padding:8px 14px}
+  .vhead .back{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--border);background:var(--surface);flex:none}
+  .vhead b{font-size:19px;letter-spacing:-.025em;flex:1}
+  .stage{display:grid;place-items:center;padding:6px 0 0}
+  .player{width:226px;aspect-ratio:9/16;border-radius:24px;overflow:hidden;position:relative;background:linear-gradient(170deg,var(--accent-bright),var(--accent-deep) 55%,var(--ink-raised));color:#fff}
+  .player .play{position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.45);display:grid;place-items:center}
+  .player .play svg{width:26px;fill:#fff;stroke:none}
+  .seal{position:absolute;left:10px;top:10px;display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.95);color:var(--ok-text);border-radius:99px;padding:5px 10px;font:500 10px 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase}
+  .seal svg{width:12px;stroke:var(--ok);stroke-width:3}
+  .ctrl{position:absolute;left:12px;right:12px;bottom:12px;display:flex;align-items:center;gap:8px;font:500 10.5px 'Geist Mono',monospace}
+  .ctrl .bar{flex:1;height:3px;border-radius:3px;background:rgba(255,255,255,.3)}.ctrl .bar i{display:block;height:100%;width:24%;background:#fff;border-radius:3px}
+  .strip{display:grid;grid-template-columns:repeat(3,1fr);margin:16px 20px 0;border:1px solid var(--border);border-radius:var(--r-lg);background:var(--surface)}
+  .strip div{padding:12px 14px;border-right:1px solid var(--border)}.strip div:last-child{border-right:0}
+  .strip small{display:block;font:500 10px 'Geist Mono',monospace;letter-spacing:.1em;color:var(--text3)}
+  .strip b{display:block;font-size:15.5px;margin-top:4px;letter-spacing:-.01em}
+  .vlist{margin:18px 20px 0}
+  .vlist h5{font-size:17px;letter-spacing:-.02em;margin-bottom:10px}
+  .vrow{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--border)}
+  .vrow:first-of-type{border-top:0}
+  .vrow .th{width:40px;aspect-ratio:9/16;border-radius:8px;background:linear-gradient(160deg,var(--accent-deep),var(--ink-raised));flex:none;display:grid;place-items:center}
+  .vrow .th svg{width:12px;fill:#fff;stroke:none}
+  .vrow .th.dimv{background:var(--muted)}.vrow .th.dimv svg{fill:var(--text4)}
+  .notice{margin:14px 20px 0;display:flex;gap:10px;align-items:flex-start;border-radius:var(--r-md);padding:12px 14px;font-size:14px;line-height:1.45}
+  .notice.warn{background:var(--warn-soft);color:var(--warn)}.notice.plain{background:var(--muted);color:var(--text2)}.notice.ok{background:var(--ok-soft);color:var(--ok-text)}
+  .stateCard{margin:8px 20px 0;display:grid;justify-items:center;text-align:center;gap:10px;padding:26px 20px;border:1px solid var(--border);border-radius:var(--r-xl);background:var(--surface)}
+  .stateCard .th{width:92px;aspect-ratio:9/16;border-radius:16px;display:grid;place-items:center;color:#fff;margin-bottom:6px}
+  .stateCard b{font-size:21px;letter-spacing:-.03em;line-height:1.15}
+  .stateCard p{font-size:14.5px;color:var(--text3);line-height:1.5}
+  .reason{width:100%;text-align:left;background:var(--muted);border-radius:var(--r-md);padding:12px 14px;margin-top:4px}
+  .reason small{display:block;font:500 10.5px 'Geist Mono',monospace;letter-spacing:.1em;color:var(--text3);margin-bottom:3px}
+</style>
+</head>
+<body>
+<div class="intro">
+  <div class="mono" style="color:var(--accent)">Refined · option A of each</div>
+  <h1>Saved jobs · Applications · Video resume</h1>
+  <p>Same structure you chose, with the extra words removed and the hierarchy sharpened. Only real fields and sentences remain; names, dates and numbers are sample values. Use the switches above each phone.</p>
+  <ul>
+    <li><b>Saved:</b> logo tile, one place line, pay in bold, a deadline chip (amber when it’s close), one big Apply and a small ✕. “Applications for this job have closed.” is gone — the Closed pill and a dimmed card say it.</li>
+    <li><b>Applications:</b> a progress track with no row of labels (the status pill names the stage), the employer’s note as a quote, and a full-width Open chat.</li>
+    <li><b>Video resume:</b> the intro paragraph is gone; the film sits centred in a 9:16 frame with the seal on it, a three-cell strip for the facts, and one compact list for interview videos.</li>
+  </ul>
+</div>
+<div class="wrap">
+  <div class="cell"><div class="states" id="svStates"></div><div class="phone" id="sv"></div><div class="cap"><b>Saved jobs</b><span>Tap ✕ to remove a job and Apply to start applying.</span></div></div>
+  <div class="cell"><div class="states" id="apStates"></div><div class="phone" id="ap"></div><div class="cap"><b>Applications</b><span>Read-only. The candidate cannot move a stage.</span></div></div>
+  <div class="cell"><div class="states" id="vrStates"></div><div class="phone" id="vr"></div><div class="cap"><b>Video resume</b><span>Switch the state; with the film published, Watch and Make primary work.</span></div></div>
+</div>
+
+<script>
+const I={
+ home:'<svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z"/></svg>',
+ cal:'<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
+ brief:'<svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V4h6v3M3 12h18"/></svg>',
+ heart:'<svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 017-2.6A4 4 0 0119 10c0 5.6-7 10-7 10z"/></svg>',
+ user:'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>',
+ back:'<svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>',
+ alert:'<svg viewBox="0 0 24 24"><path d="M12 3l10 18H2zM12 10v5M12 18v.5"/></svg>',
+ play:'<svg viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z"/></svg>',
+ check:'<svg viewBox="0 0 24 24"><path d="M5 12l4 4 10-10"/></svg>',
+ save:'<svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 017-2.5A4 4 0 0119 10c0 5.6-7 10-7 10z"/></svg>',
+ clip:'<svg viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6zM14 3v4h4"/></svg>',
+ video:'<svg viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></svg>',
+ x:'<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+ chat:'<svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg>'
+};
+const status=()=>`<div class="status"><span>9:41</span><i></i><span>5G ▮▮▮</span></div>`;
+const TABS=[['home','Home','home'],['cal','Interviews','interviews'],['brief','Jobs','jobs'],['heart','Interests','interests'],['user','Profile','profile']];
+const tab=a=>`<nav class="tab">${TABS.map(t=>`<button data-act="toast:Opens ${t[1]}" class="${t[2]===a?'on':''}">${I[t[0]]}<span>${t[1]}</span></button>`).join('')}</nav>`;
+const shell=el=>el.insertAdjacentHTML('beforeend','<div class="toast"></div>');
+let tt;const toast=(el,m)=>{const t=el.querySelector('.toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),1700)};
+const switcher=(host,opts,get,set)=>{host.innerHTML=opts.map(o=>`<button class="${o[0]===get()?'on':''}" data-s="${o[0]}">${o[1]}</button>`).join('');host.querySelectorAll('button').forEach(b=>b.onclick=()=>{set(b.dataset.s);host.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b))})};
+const jobsHead=(active,counts)=>`<div class="head"><div class="title">Jobs</div></div><div class="seg">${['For you','Saved','Applied'].map(t=>`<button class="${t===active?'on':''}" data-act="toast:Opens ${t}">${t}${counts[t]!=null?`<em>${counts[t]}</em>`:''}</button>`).join('')}</div>`;
+const skel=(n,h)=>Array.from({length:n},()=>`<div class="skel" style="height:${h}px"></div>`).join('');
+const errBlock=(t,b)=>`<div class="center"><div class="ic">${I.alert}</div><b>${t}</b><p>${b}</p><button class="btn out" data-act="retry">Try again</button></div>`;
+const COL=['#5B3DF5','#0E9F6E','#E0366B','#2F6BFF','#C77D00','#6B7385','#0B7A55','#3B2A8F'];
+
+/* ============================ SAVED ============================ */
+const SAVED=[
+ {id:'s1',t:'UI/UX Designer',co:'Company A',l:'CA',loc:'Bengaluru',type:'Full-time',pay:'₹12 – 18 LPA',dl:'Closes 15 Oct',soon:true,open:true,video:true},
+ {id:'s2',t:'Frontend Engineer',co:'Company B',l:'CB',loc:'Remote',type:'Full-time',pay:'₹15 – 24 LPA',dl:'Closes 20 Oct',open:true},
+ {id:'s3',t:'Brand Strategist',co:'Company C',l:'CC',loc:'Mumbai',type:'Contract',pay:'₹8 – 12 LPA',dl:'Closed',open:false},
+ {id:'s4',t:'Data Analyst',co:'Company D',l:'CD',loc:'Pune',type:'Full-time',pay:'₹9 – 14 LPA',dl:'Closes 30 Oct',open:true,applied:true},
+];
+const SV={state:'list',removed:new Set()};
+const svRows=()=>SAVED.filter(r=>!SV.removed.has(r.id));
+function svHTML(){
+  const rows=svRows();const counts={Saved:SV.state==='list'?rows.length:null};
+  let body;
+  if(SV.state==='loading')body=`<div class="pad" style="display:grid;gap:10px;margin-top:16px">${skel(4,150)}</div>`;
+  else if(SV.state==='error')body=errBlock('Could not load your saved jobs.','Nothing was changed. Pull down to try again.');
+  else if(SV.state==='empty'||!rows.length)body=`<div class="center"><div class="ic">${I.save}</div><b>Nothing saved yet.</b><p>Swipe right on the feed to keep a job here. Applying starts from this list.</p><button class="btn pri" data-act="toast:Opens the feed">Open the feed</button></div>`;
+  else body=`<div class="pad" style="display:grid;gap:10px;margin-top:16px">${rows.map(r=>{const c=COL[SAVED.indexOf(r)%8];
+   return `<div class="job ${!r.open&&!r.applied?'closed':''}"><div class="rowc" style="align-items:flex-start" data-act="toast:Opens ${r.t}"><div class="logo" style="background:${r.open||r.applied?c:'#A6ACBA'}">${r.l}</div><div class="grow"><h4>${r.t}${r.video?`<span class="vtag">${I.play}Video</span>`:''}</h4><div class="where">${r.co} · ${r.loc} · ${r.type}</div></div></div>
+   <div class="rowc" style="justify-content:space-between"><span class="pay">${r.pay}</span><span class="dl ${r.soon?'soon':''}">${r.dl}</span></div>
+   ${r.applied?`<div class="rowc"><span class="iconbtn" data-act="rm:${r.id}" aria-label="Remove">${I.x}</span><span class="pill neutral" style="padding:12px 16px;font-size:11px;border-radius:14px;flex:1;text-align:center">Applied</span></div>`
+   :`<div class="rowc"><span class="iconbtn" data-act="rm:${r.id}" aria-label="Remove">${I.x}</span><span class="btn ${r.open?'ink':'dis'} full" style="flex:1" data-act="${r.open?'toast:Opens Apply':'noop'}">${r.open?'Apply':'Closed'}</span></div>`}</div>`}).join('')}</div>`;
+  return `${status()}<div class="scroll" style="padding-bottom:130px">${jobsHead('Saved',counts)}${body}</div>${tab('jobs')}`}
+const sv=document.getElementById('sv');
+const renderSv=()=>{sv.innerHTML=svHTML();shell(sv)};renderSv();
+switcher(document.getElementById('svStates'),[['list','List'],['loading','Loading'],['empty','Empty'],['error','Error']],()=>SV.state,s=>{SV.state=s;SV.removed=new Set();renderSv()});
+sv.addEventListener('click',e=>{const a=e.target.closest('[data-act]');if(!a)return;const x=a.dataset.act;
+ if(x==='noop')return toast(sv,'Applications for this job have closed.');
+ if(x==='retry'){SV.state='loading';renderSv();return setTimeout(()=>{SV.state='list';renderSv();document.querySelectorAll('#svStates button').forEach(b=>b.classList.toggle('on',b.dataset.s==='list'))},900)}
+ if(x.startsWith('rm:')){SV.removed.add(x.slice(3));renderSv();return toast(sv,'Removed from saved')}
+ if(x.startsWith('toast:'))toast(sv,x.slice(6))});
+
+/* ============================ APPLICATIONS ============================ */
+const STEPS=['APPLIED','VIEWED','SHORTLISTED','CONNECTED'];
+const MARK={APPLIED:['Applied','neutral'],VIEWED:['Viewed','info'],SHORTLISTED:['Shortlisted','acc'],CONNECTED:['Connected','ok'],REJECTED:['Not selected','neutral']};
+const APPS=[
+ {id:'a1',t:'Operations Analyst',co:'Company G',l:'CG',loc:'Pune',st:'CONNECTED',on:'20 Sep'},
+ {id:'a2',t:'Content Writer',co:'Company E',l:'CE',loc:'Delhi',st:'SHORTLISTED',on:'26 Sep'},
+ {id:'a3',t:'QA Engineer',co:'Company I',l:'CI',loc:'Remote',st:'VIEWED',on:'28 Sep'},
+ {id:'a4',t:'Product Designer',co:'Company H',l:'CH',loc:'Mumbai',st:'APPLIED',on:'30 Sep'},
+ {id:'a5',t:'Support Associate',co:'Company F',l:'CF',loc:'Remote',st:'REJECTED',on:'22 Sep',note:'Sample: thank you for applying. We moved ahead with another candidate.'},
+];
+const AP={state:'list'};
+const reached=a=>a.st==='REJECTED'?0:STEPS.indexOf(a.st)+1;
+const dots=a=>{const r=reached(a);return `<div class="pipe" role="img" aria-label="${MARK[a.st][0]}, step ${r} of 4">${STEPS.map((_,i)=>`<i class="${i<r?'on':''} ${i===r-1?'cur':''}"></i>${i<3?`<u class="${i<r-1?'on':''}"></u>`:''}`).join('')}</div>`};
+function apHTML(){
+  const counts={Applied:AP.state==='list'?APPS.length:null};
+  let body;
+  if(AP.state==='loading')body=`<div class="pad" style="display:grid;gap:10px;margin-top:16px">${skel(4,150)}</div>`;
+  else if(AP.state==='error')body=errBlock('Could not load your applications.','Nothing was changed. Pull down to try again.');
+  else if(AP.state==='empty')body=`<div class="center"><div class="ic">${I.clip}</div><b>No applications yet.</b><p>Applications you send land here, and you will see every move an employer makes.</p><button class="btn pri" data-act="toast:Opens the feed">Find a job</button></div>`;
+  else body=`<div class="pad" style="display:grid;gap:10px;margin-top:16px">${APPS.map((a,i)=>{const m=MARK[a.st],rej=a.st==='REJECTED';
+   return `<div class="app ${rej?'out':''}"><div class="rowc" style="align-items:flex-start"><div class="logo" style="background:${rej?'#A6ACBA':COL[(i+4)%8]}">${a.l}</div><div class="grow"><h4>${a.t}</h4><div class="sub" style="font-size:14px;margin-top:3px">${a.co} · ${a.loc}</div></div><span class="pill ${m[1]}">${m[0]}</span></div>
+   ${rej?(a.note?`<div class="quote"><small>Their note</small>${a.note}</div>`:''):dots(a)}
+   <div class="rowc" style="justify-content:space-between"><span class="sub" style="font-size:13px">Applied ${a.on}</span></div>
+   ${a.st==='CONNECTED'?`<span class="btn ink full" data-act="toast:Opens the chat">${I.chat}Open chat</span>`:''}</div>`}).join('')}</div>`;
+  return `${status()}<div class="scroll" style="padding-bottom:130px">${jobsHead('Applied',counts)}${body}</div>${tab('jobs')}`}
+const ap=document.getElementById('ap');
+const renderAp=()=>{ap.innerHTML=apHTML();shell(ap)};renderAp();
+switcher(document.getElementById('apStates'),[['list','List'],['loading','Loading'],['empty','Empty'],['error','Error']],()=>AP.state,s=>{AP.state=s;renderAp()});
+ap.addEventListener('click',e=>{const a=e.target.closest('[data-act]');if(!a)return;const x=a.dataset.act;
+ if(x==='retry'){AP.state='loading';renderAp();return setTimeout(()=>{AP.state='list';renderAp();document.querySelectorAll('#apStates button').forEach(b=>b.classList.toggle('on',b.dataset.s==='list'))},900)}
+ if(x.startsWith('toast:'))toast(ap,x.slice(6))});
+
+/* ============================ VIDEO RESUME ============================ */
+const VR={s:'live',watching:null,primary:'v1',outcome:false};
+const VIDS=[{id:'v1',date:'24 Sep 2026',len:'3:12',st:'READY'},{id:'v2',date:'15 Sep 2026',len:'2:48',st:'READY'},{id:'v3',date:'2 Sep 2026',len:'',st:'FAILED'},{id:'v4',date:'6 Aug 2026',len:'3:30',st:'ARCHIVED'}];
+const VPILL={READY:['Ready','ok'],FAILED:['Could not be made','danger'],ARCHIVED:['Archived','neutral']};
+const cur=()=>VIDS.find(x=>x.id===(VR.watching||VR.primary));
+const playable=()=>VR.s==='live'||VR.s==='held';
+const HEADPILL={live:['Live','ok'],held:['Not live yet','warn'],processing:['Processing','warn'],failed:['Could not be made','danger'],taken:['Taken down','danger'],none:['No film yet','neutral']};
+const notPlayable=()=>{const m={
+ processing:{th:'linear-gradient(160deg,#C77D00,#5C4200)',t:'Your film is being prepared',b:'It will appear here when it is ready.',act:'<span class="btn out" data-act="toast:Checking again…">Check again</span>'},
+ failed:{th:'linear-gradient(160deg,#E5484D,#7A1F1F)',t:'Your film could not be made',b:'Talk to support and we will look into it.',act:'<span class="btn ink" data-act="toast:Opens Support">Talk to support</span>'},
+ taken:{th:'linear-gradient(160deg,#6B7385,#2A3042)',t:'Your film has been taken down',b:'Employers cannot see it while it is down.',reason:'Sample reason from the team.',act:'<span class="btn ink" data-act="toast:Opens Support">Talk to support</span>'},
+ none:{th:'linear-gradient(160deg,#8A91A2,#3A4256)',t:'You do not have a video resume yet',b:'The interview you book becomes your video resume.',act:'<span class="btn pri" data-act="toast:Opens Book an interview">Book an interview</span>'}}[VR.s];
+ return `<div class="stateCard"><div class="th" style="background:${m.th}">${I.video}</div><b>${m.t}</b><p>${m.b}</p>${m.reason?`<div class="reason"><small>REASON GIVEN</small><span style="font-size:14.5px">${m.reason}</span></div>`:''}${m.act}</div>`};
+const vrow=v=>{const m=VPILL[v.st],prim=v.id===VR.primary,shown=cur().id===v.id,sel=!prim&&v.st==='READY';
+ return `<div class="vrow"><div class="th ${v.st==='READY'?'':'dimv'}">${I.play}</div><div class="grow"><b style="font-size:15.5px">${v.date}${v.len?` <span class="sub" style="font-weight:400">· ${v.len}</span>`:''}</b><div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">${prim?'<span class="pill acc">Primary</span>':''}${(!prim||v.st!=='READY')?`<span class="pill ${m[1]}">${m[0]}</span>`:''}</div></div><div style="display:grid;gap:6px">${v.st==='READY'?`<span class="btn out sm ${shown?'dis':''}" data-act="${shown?'noop':'watch:'+v.id}">${shown?'Watching':'Watch'}</span>`:''}${sel?`<span class="btn ink sm" data-act="prim:${v.id}">Make primary</span>`:''}</div></div>`};
+function vrHTML(){
+  const hp=HEADPILL[VR.s];const v=cur();
+  const head=`<div class="vhead"><button class="back" data-act="toast:Back" aria-label="Back">${I.back}</button><b>Video resume</b><span class="pill ${hp[1]}">${hp[0]}</span></div>`;
+  let body;
+  if(!playable())body=notPlayable();
+  else body=`${VR.s==='held'?`<div class="notice warn">${I.alert.replace('<svg','<svg style="width:18px;margin-top:1px"')}<span>A top-up on your interview is outstanding — employers cannot see it until it is settled.</span></div>`:''}${VR.watching&&VR.watching!==VR.primary?`<div class="notice plain"><span>Previewing a video that is not your primary one.</span></div>`:''}
+   <div class="stage" style="margin-top:12px"><div class="player" data-act="toast:Plays your film"><div class="play">${I.play}</div><div class="seal">${I.check}Verified · ${v.date}</div><div class="ctrl"><span>0:46</span><div class="bar"><i></i></div><span>${v.len}</span></div></div></div>
+   <div class="strip"><div><small>DURATION</small><b>${v.len}</b></div><div><small>PUBLISHED</small><b>${v.date.replace(' 2026','')}</b></div><div><small>INTERVIEWED</small><b>${v.date.replace(' 2026','')}</b></div></div>
+   <div class="vlist"><h5>Interview videos</h5><div class="sub" style="margin:-4px 0 6px;font-size:13.5px">Employers see the Primary one.</div>${VR.outcome?'<div class="notice ok" style="margin:6px 0">This is now your primary video.</div>':''}${VIDS.map(vrow).join('')}</div>`;
+  return `${status()}<div class="scroll" style="padding-bottom:130px">${head}${body}</div>${tab('profile')}`}
+const vr=document.getElementById('vr');
+const renderVr=()=>{vr.innerHTML=vrHTML();shell(vr)};renderVr();
+switcher(document.getElementById('vrStates'),[['live','Live'],['held','Held'],['processing','Processing'],['failed','Failed'],['taken','Taken down'],['none','None']],()=>VR.s,s=>{VR.s=s;VR.watching=null;VR.outcome=false;renderVr()});
+vr.addEventListener('click',e=>{const a=e.target.closest('[data-act]');if(!a)return;const x=a.dataset.act;
+ if(x==='noop')return;
+ if(x.startsWith('watch:')){VR.watching=x.slice(6)===VR.primary?null:x.slice(6);VR.outcome=false;return renderVr()}
+ if(x.startsWith('prim:')){VR.primary=x.slice(5);VR.watching=null;VR.outcome=true;return renderVr()}
+ if(x.startsWith('toast:'))toast(vr,x.slice(6))});
+</script>
+</body>
+</html>

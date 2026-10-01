@@ -1,0 +1,1072 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apostrophe App – Student: book, pay, interview room, scorecard (4 options each)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FAFAFC; --surface:#fff; --muted:#F1F3F7; --sunken:#E6E8EE;
+    --text:#0B0F1A; --text2:#3A4256; --text3:#6B7385; --text4:#8A91A2;
+    --border:#E3E6ED; --border-strong:#C9CED9;
+    --accent:#5B3DF5; --accent-hover:#4A2FE0; --accent-soft:#EFEBFF; --accent-wash:#F7F6FF;
+    --accent-muted:#C4B8FF; --accent-bright:#7258FF; --accent-deep:#3B2A8F; --accent-edge:#DCD3FF;
+    --ink:#0B0F1A; --ink-raised:#151B2B; --on-ink-ground:rgba(255,255,255,.12); --on-ink-edge:rgba(255,255,255,.14);
+    --ok:#0E9F6E; --ok-text:#0B7A55; --ok-soft:#E6F7F0; --danger:#E5484D; --danger-text:#C22A30; --danger-soft:#FDECEC; --danger-edge:#F2B8BA;
+    --warn:#935F00; --warn-soft:#FFF5E1; --warn-edge:#F5E2B8; --warn-fill:#F5A524; --info:#2F6BFF; --info-soft:#E8EFFF;
+    --r-md:14px; --r-lg:18px; --r-xl:28px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{font-family:'Geist',system-ui,sans-serif;background:#E9EAF2;color:var(--text);padding:40px 24px 90px}
+  button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;text-align:inherit}
+  button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex:none}
+  .mono{font:500 11px 'Geist Mono',monospace;letter-spacing:.14em;text-transform:uppercase}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+  /* ---------- page chrome ---------- */
+  .intro{max-width:1300px;margin:0 auto 28px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:28px 32px}
+  .intro h1{font-size:30px;letter-spacing:-.035em;line-height:1.1}
+  .intro .lede{font-size:16px;color:var(--text3);margin-top:8px;line-height:1.5;max-width:900px}
+  .intro .tools{display:flex;flex-wrap:wrap;gap:14px 28px;align-items:center;margin-top:18px}
+  .intro .tools .lbl{font:500 11px 'Geist Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--text3);margin-right:8px}
+  .seg{display:inline-flex;gap:4px;background:var(--muted);border-radius:14px;padding:4px}
+  .seg button{padding:0 14px;height:36px;border-radius:11px;font-size:14px;font-weight:600;color:var(--text3);white-space:nowrap;text-align:center}
+  .seg button.on{background:var(--surface);border:1px solid var(--border);color:var(--accent)}
+  .legend{font-size:13.5px;color:var(--text3);margin-top:14px;line-height:1.5}
+  .cfg{border-bottom:1.5px dotted var(--accent);cursor:help}
+  body.tok .cfg{background:var(--accent-soft);color:var(--accent-hover);border-radius:6px;padding:0 4px;border-bottom:0;font-family:'Geist Mono',monospace;font-size:.82em;letter-spacing:0}
+  .section{max-width:1300px;margin:0 auto 80px}
+  .section>h2{font-size:28px;letter-spacing:-.035em}
+  .section>p.d{font-size:15px;color:var(--text3);margin:4px 0 18px;max-width:900px;line-height:1.5}
+  .bar{display:flex;flex-wrap:wrap;gap:12px 22px;align-items:center;margin-bottom:14px}
+  .states{display:flex;flex-wrap:wrap;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:22px;padding:4px;margin-bottom:18px}
+  .states button{padding:8px 12px;border-radius:99px;font-size:13.5px;font-weight:600;color:var(--text3);white-space:nowrap;text-align:center}
+  .states button.on{background:var(--accent);color:#fff}
+  .stage{display:flex;flex-wrap:wrap;gap:36px;align-items:flex-start}
+  .cell{width:390px}
+  .cell .oname{font-size:15px;font-weight:700;letter-spacing:-.01em;margin-bottom:10px}
+  .cell .oname span{font:500 11px 'Geist Mono',monospace;letter-spacing:.12em;color:var(--accent);margin-right:8px}
+  .notes{width:390px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:22px;align-self:flex-start}
+  .notes h3{font-size:18px;letter-spacing:-.02em;margin-bottom:10px}
+  .notes ul{padding-left:18px;font-size:14px;line-height:1.55;color:var(--text2)}
+  .notes li{margin-bottom:6px}
+  .notes .mono{color:var(--accent);margin:12px 0 6px;display:block}
+  .notes .mono:first-child{margin-top:0}
+  .notes code{font:500 12px 'Geist Mono',monospace;background:var(--muted);border-radius:6px;padding:1px 5px}
+
+  /* ---------- phone ---------- */
+  .phone{width:390px;height:812px;background:var(--bg);border-radius:44px;border:10px solid #0B0F1A;overflow:hidden;position:relative}
+  .phone.dark{background:var(--ink);color:#fff}
+  .status{height:44px;display:flex;justify-content:space-between;align-items:center;padding:0 26px;font-size:14px;font-weight:600;position:absolute;top:0;left:0;right:0;z-index:40;pointer-events:none}
+  .phone.dark .status,.phone.camfull .status{color:#fff}
+  .status i{width:90px;height:24px;background:#0B0F1A;border-radius:14px;position:absolute;left:50%;top:8px;transform:translateX(-50%)}
+  .phone.dark .status i,.phone.camfull .status i{background:#000}
+  .scroll{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none;padding-top:44px}
+  .scroll::-webkit-scrollbar{display:none}
+  .abs{position:absolute}
+
+  /* ---------- shared ---------- */
+  .pill{font:500 10.5px 'Geist Mono',monospace;letter-spacing:.1em;text-transform:uppercase;border-radius:99px;padding:5px 10px;display:inline-block;white-space:nowrap}
+  .pill.ok{background:var(--ok-soft);color:var(--ok-text)}.pill.acc{background:var(--accent-soft);color:var(--accent-hover)}
+  .pill.warn{background:var(--warn-soft);color:var(--warn)}.pill.neutral{background:var(--muted);color:var(--text3)}
+  .pill.info{background:var(--info-soft);color:#1F4FD1}.pill.danger{background:var(--danger-soft);color:var(--danger-text)}
+  .pill.onink{background:rgba(255,255,255,.14);color:#fff}
+  .pill.solid{background:var(--accent);color:#fff}
+  .rowc{display:flex;align-items:center;gap:14px}
+  .rowb{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .grow{flex:1;min-width:0}
+  .sub{font-size:14px;color:var(--text3);line-height:1.4}
+  .small{font-size:13px;color:var(--text3);line-height:1.45}
+  .xs{font-size:12.5px;color:var(--text3);line-height:1.4}
+  .eyebrow{font:500 11px 'Geist Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--text3)}
+  .eyebrow.acc{color:var(--accent)}.eyebrow.ok{color:var(--ok-text)}.eyebrow.danger{color:var(--danger-text)}.eyebrow.warn{color:var(--warn)}
+  .lead{font-size:28px;font-weight:600;letter-spacing:-.02em;line-height:1.15}
+  .h24{font-size:24px;font-weight:600;letter-spacing:-.02em;line-height:1.2}
+  .h22{font-size:22px;font-weight:600;letter-spacing:-.015em;line-height:1.2}
+  .h20{font-size:20px;font-weight:600;line-height:1.25}
+  .t16{font-size:16px;font-weight:600;letter-spacing:-.01em}
+  .t15{font-size:15px;line-height:1.45}
+  .t15s{font-size:15px;font-weight:600}
+  .muted{color:var(--text3)}
+  .btn{height:46px;min-width:44px;border-radius:var(--r-md);font-weight:700;font-size:15px;padding:0 18px;display:inline-flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap;text-align:center}
+  .btn.pri{background:var(--accent);color:#fff}.btn.out{border:1.5px solid var(--border-strong);background:var(--surface)}
+  .btn.ink{background:var(--ink);color:#fff}.btn.white{background:#fff;color:var(--ink)}
+  .btn.dis{background:var(--muted);color:var(--text4);cursor:not-allowed}.btn.full{width:100%}
+  .btn.dangerfill{background:var(--danger);color:#fff}.btn.sm{height:38px;font-size:14px;padding:0 14px;border-radius:12px}
+  .btn.quiet{color:var(--text2)}.btn.ghostink{border:1.5px solid rgba(255,255,255,.3);color:#fff}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px}
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;display:grid;gap:8px}
+  .pad{padding:0 20px}
+  .stack{display:grid;gap:14px;align-content:start}
+  .body{padding:4px 20px 28px;display:grid;gap:16px;align-content:start;grid-template-columns:minmax(0,1fr)}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .banner{display:block;border-radius:var(--r-md);padding:12px 14px;font-size:14px;line-height:1.4}
+  .banner.warn{background:var(--warn-soft);border:1px solid var(--warn-edge);color:var(--warn)}
+  .banner.danger{background:var(--danger-soft);border:1px solid var(--danger-edge);color:var(--danger-text)}
+  .banner.info{background:var(--info-soft);color:#1F4FD1}
+  .banner.ok{background:var(--ok-soft);color:var(--ok-text)}
+  .skel{background:linear-gradient(90deg,var(--muted) 0%,#E9ECF2 50%,var(--muted) 100%);background-size:200% 100%;animation:sh 1.3s infinite linear;border-radius:10px}
+  @keyframes sh{to{background-position:-200% 0}}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @keyframes pulse{50%{opacity:.35}}
+  .spinner{width:26px;height:26px;border-radius:50%;border:3px solid var(--accent-edge);border-top-color:var(--accent);animation:spin .9s linear infinite}
+  .disc{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;flex:none}
+  .disc.ok{background:var(--ok-soft);color:var(--ok)}.disc.warn{background:var(--warn-soft);color:var(--warn)}.disc.acc{background:var(--accent-soft)}.disc.danger{background:var(--danger-soft);color:var(--danger)}
+  .disc svg{width:26px;height:26px;stroke-width:2.2}
+  .screenhead{display:flex;align-items:center;gap:12px;padding:8px 14px 8px}
+  .screenhead .back{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--border);background:var(--surface);flex:none}
+  .screenhead b{font-size:18px;letter-spacing:-.02em;font-weight:700;flex:1}
+  .screenhead small{display:block;font:500 10.5px 'Geist Mono',monospace;letter-spacing:.1em;color:var(--text3);text-transform:uppercase;font-weight:500;margin-top:2px}
+  .screenhead.ondark .back{background:var(--on-ink-ground);border-color:var(--on-ink-edge);color:#fff}
+  .sticky{position:absolute;left:0;right:0;bottom:0;padding:12px 20px 26px;background:var(--surface);border-top:1px solid var(--border);display:grid;gap:8px;z-index:24}
+  .sticky.dk{background:var(--ink);border-top-color:var(--on-ink-edge);color:#fff}
+  .sticky .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .secured{font-size:12px;color:var(--text3);text-align:center}
+  .kv{display:flex;align-items:baseline;justify-content:space-between;gap:16px}
+  .kv .k{font-size:15px;color:var(--text3)}.kv .v{font-size:15px;font-weight:600}
+  .hr{height:1px;background:var(--border)}
+  .big{font-size:22px;font-weight:600;letter-spacing:-.015em}
+  .tnum{font-variant-numeric:tabular-nums}
+  [data-act]{cursor:pointer}
+  .you{font:500 10px 'Geist Mono',monospace;letter-spacing:.1em;background:var(--accent-soft);color:var(--accent-hover);border-radius:99px;padding:3px 8px}
+  .mark{width:52px;height:52px;border-radius:50%;border:1px solid var(--border);background:var(--muted);display:grid;place-items:center;flex:none;font-size:26px;font-weight:700;color:var(--ink);line-height:1}
+  .dark .mark,.mark.dk{background:var(--on-ink-ground);border-color:var(--on-ink-edge);color:#fff}
+  .steps li{list-style:none;display:flex;gap:14px;padding:12px 0;border-bottom:1px solid var(--border)}
+  .steps li:last-child{border-bottom:0}
+  .steps .n{width:28px;height:28px;border-radius:50%;background:var(--accent-soft);color:var(--accent-hover);font:500 11px 'Geist Mono',monospace;display:grid;place-items:center;flex:none}
+
+  /* ===== BOOKING ===== */
+  .daystrip{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:0 20px 2px}
+  .daystrip::-webkit-scrollbar{display:none}
+  .dcard{width:72px;flex:none;border-radius:var(--r-lg);padding:10px;display:grid;gap:2px;background:var(--surface);border:1px solid var(--border);text-align:left}
+  .dcard small{font-size:11px;color:var(--text3)}
+  .dcard b{font-size:20px;font-weight:600;line-height:1.25}
+  .dcard em{font:500 9.5px 'Geist Mono',monospace;letter-spacing:.08em;color:var(--text4);font-style:normal}
+  .dcard.on{background:var(--ink);border:2px solid var(--ink);color:#fff;padding:9px}
+  .dcard.on small,.dcard.on em{color:#fff}
+  .dcard.zero{opacity:.55}
+  .slotgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .slotgrid.c4{grid-template-columns:repeat(4,1fr);gap:6px}.slotgrid.c4 .slot{font-size:13.5px;padding:0}
+  .slot{height:44px;border-radius:12px;background:var(--surface);border:1px solid var(--border-strong);font-size:15px;text-align:center;display:grid;place-items:center}
+  .slot.on{background:var(--accent-soft);border:2px solid var(--accent);color:var(--accent-hover);font-weight:600}
+  .slot.near{border:2px solid var(--border-strong)}
+  .slot.skel,.trow.skel{background:linear-gradient(90deg,var(--muted) 0%,#E9ECF2 50%,var(--muted) 100%);background-size:200% 100%;animation:sh 1.3s infinite linear;border:0}
+  .dcard.on.zero{opacity:1}
+  .slot.gone{border:1px dashed var(--border-strong);color:#B6BBC8;text-decoration:line-through;cursor:not-allowed}
+  .grph{display:flex;align-items:baseline;gap:8px;margin-bottom:8px}
+  .grph b{font-size:15px;font-weight:600}
+  .emptyday{display:grid;gap:10px;padding:6px 0}
+  .nextbox{background:var(--muted);border-radius:var(--r-md);padding:12px 14px;display:grid;gap:3px}
+  .match{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:var(--r-lg);background:var(--surface);border:1px solid var(--border)}
+  .match .tk{width:40px;height:40px;border-radius:50%;background:var(--ok-soft);color:var(--ok);display:grid;place-items:center;flex:none}
+  .match .tk svg{width:18px;height:18px;stroke-width:2.6}
+  .dlist{display:grid;gap:10px;padding:0 20px}
+  .drow{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
+  .drow>button{display:flex;align-items:center;gap:14px;padding:12px 14px;width:100%;min-height:76px}
+  .drow.open{border-color:var(--accent-edge);background:var(--accent-wash)}
+  .drow.zero>button{opacity:.55;cursor:default}
+  .drow .inner{padding:0 14px 14px;display:grid;gap:12px}
+  .dtile{width:54px;height:60px;border-radius:12px;background:var(--muted);display:grid;place-items:center;align-content:center;flex:none}
+  .dtile small{font:500 10px 'Geist Mono',monospace;letter-spacing:.1em;color:var(--text3)}
+  .dtile b{font-size:22px;letter-spacing:-.03em;line-height:1;font-weight:700}
+  .drow.open .dtile{background:var(--accent)}.drow.open .dtile small{color:var(--accent-muted)}.drow.open .dtile b{color:#fff}
+  .cal{padding:0 20px}
+  .cal .mh{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+  .cal .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+  .cal .dw{font:500 10px 'Geist Mono',monospace;letter-spacing:.1em;color:var(--text4);text-align:center;padding:4px 0}
+  .cal .cd{height:44px;border-radius:12px;display:grid;place-items:center;font-size:15px;position:relative;background:var(--surface);border:1px solid var(--border);font-weight:500}
+  .cal .cd.out{background:transparent;border-color:transparent;color:#B6BBC8}
+  .cal .cd.full{background:var(--muted);border-color:var(--muted);color:var(--text4);cursor:not-allowed}
+  .cal .cd.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+  .cal .cd.today{border:1.5px dashed var(--border-strong);color:var(--text3)}
+  .cal .cd i{position:absolute;bottom:5px;width:4px;height:4px;border-radius:50%;background:var(--accent)}
+  .cal .cd.on i{background:#fff}
+  .sheetdock{position:absolute;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--border);border-radius:28px 28px 0 0;padding:10px 20px 26px;display:grid;gap:12px;z-index:24}
+  .sheetdock .grab{width:40px;height:4px;border-radius:4px;background:var(--border-strong);margin:0 auto}
+  .tabs{display:flex;gap:4px;background:var(--muted);border-radius:12px;padding:3px}
+  .tabs button{flex:1;height:36px;border-radius:9px;font-size:13.5px;font-weight:600;color:var(--text3);text-align:center}
+  .tabs button.on{background:var(--surface);border:1px solid var(--border);color:var(--accent)}
+  .wiz{display:flex;align-items:center;gap:10px;padding:0 20px}
+  .wiz .st{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;color:var(--text4)}
+  .wiz .st i{width:24px;height:24px;border-radius:50%;background:var(--muted);color:var(--text3);display:grid;place-items:center;font:500 11px 'Geist Mono',monospace;font-style:normal}
+  .wiz .st.on{color:var(--text)}.wiz .st.on i{background:var(--accent);color:#fff}
+  .wiz .st.done i{background:var(--ok-soft);color:var(--ok)}.wiz .st.done i svg{width:13px;height:13px;stroke-width:3}
+  .wiz .ln{flex:1;height:2px;background:var(--border)}
+  .dtiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 20px}
+  .dtt{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;display:grid;gap:2px;text-align:left}
+  .dtt b{font-size:22px;letter-spacing:-.02em;font-weight:600}
+  .dtt small{font-size:12.5px;color:var(--text3)}
+  .dtt.on{border:2px solid var(--accent);background:var(--accent-wash);padding:13px}
+  .dtt.zero{opacity:.55}
+  .trow{display:flex;align-items:center;gap:12px;padding:0 14px;height:52px;border-radius:14px;background:var(--surface);border:1px solid var(--border-strong);width:100%}
+  .trow .rd{width:20px;height:20px;border-radius:50%;border:2px solid var(--border-strong);flex:none;display:grid;place-items:center}
+  .trow.on{border:2px solid var(--accent);background:var(--accent-wash);padding:0 13px}
+  .trow.on .rd{border-color:var(--accent)}.trow.on .rd::after{content:"";width:10px;height:10px;border-radius:50%;background:var(--accent)}
+  .trow.gone{border-style:dashed;border-color:var(--border-strong);color:#B6BBC8;text-decoration:line-through;cursor:not-allowed}
+  .prep{display:flex;gap:12px;padding:12px 0;border-top:1px solid var(--border);align-items:flex-start;width:100%}
+  .prep .bx{width:24px;height:24px;border-radius:8px;border:1.5px solid var(--border-strong);display:grid;place-items:center;flex:none;margin-top:1px}
+  .prep.on .bx{background:var(--accent);border-color:var(--accent);color:#fff}
+  .prep .bx svg{width:14px;height:14px;stroke-width:3}
+  .prep.on b{color:var(--text4)}
+  .prep b{font-size:15px;font-weight:500;display:block}
+  .pbar{height:8px;background:var(--sunken);border-radius:8px;position:relative;overflow:visible}
+  .pbar i{position:absolute;left:0;top:0;bottom:0;border-radius:8px;background:var(--accent)}
+  .pbar u{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--text);text-decoration:none}
+
+  /* ===== PAYMENT ===== */
+  .tier{display:flex;align-items:center;gap:14px;padding:12px 16px;min-height:72px;border-radius:var(--r-lg);background:var(--surface);border:1px solid var(--border)}
+  .tier.on{border:2px solid var(--accent);padding:11px 15px}
+  .tier .rad{width:20px;height:20px;border-radius:50%;border:2px solid var(--border-strong);display:grid;place-items:center;flex:none}
+  .tier.on .rad{border-color:var(--accent)}.tier.on .rad::after{content:"";width:10px;height:10px;border-radius:50%;background:var(--accent)}
+  .stepper{display:flex;align-items:center;gap:8px;padding:6px 20px 14px}
+  .stepper .sp{flex:1;display:grid;gap:6px}
+  .stepper .sp i{height:4px;border-radius:4px;background:var(--border)}
+  .stepper .sp.done i{background:var(--accent)}
+  .stepper .sp.cur i{background:var(--accent)}
+  .stepper .sp.bad i{background:var(--danger)}
+  .stepper .sp.warn i{background:var(--warn-fill)}
+  .stepper .sp span{font:500 10.5px 'Geist Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--text4)}
+  .stepper .sp.cur span,.stepper .sp.done span{color:var(--text)}
+  .receipt{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);position:relative}
+  .receipt .top{padding:18px 18px 16px;display:grid;gap:12px}
+  .receipt .perf{height:0;border-top:2px dashed var(--border-strong);position:relative;margin:0 14px}
+  .receipt .perf::before,.receipt .perf::after{content:"";position:absolute;top:-12px;width:22px;height:22px;border-radius:50%;background:var(--bg);border:1px solid var(--border)}
+  .receipt .perf::before{left:-26px;border-left-color:transparent;border-bottom-color:transparent;transform:rotate(45deg)}
+  .receipt .perf::after{right:-26px;border-right-color:transparent;border-top-color:transparent;transform:rotate(45deg)}
+  .receipt .bot{padding:16px 18px 18px;display:grid;gap:10px}
+  .receipt .tier{padding:10px 12px;gap:10px;min-height:0}.receipt .tier.on{padding:9px 11px}.receipt .tier .big{font-size:18px}
+  .inkhero{background:var(--ink);color:#fff;border-radius:var(--r-lg);padding:20px;display:grid;gap:6px}
+  .inkhero .p{font-size:14px;color:#A6ACBA;line-height:1.4}
+  .inkhero .price{font-size:56px;font-weight:600;letter-spacing:-.05em;line-height:1}
+  .inkhero.acc{background:var(--accent)}
+  .inkhero.acc .p{color:#DCD3FF}
+  .inkhero.bad{background:#3A1417}
+  .inkhero.bad .p{color:#F2B8BA}
+  .dash{color:var(--accent)}
+  .bul{display:flex;gap:10px;font-size:15px;line-height:1.45}
+
+  /* ===== ROOM ===== */
+  .cam{position:absolute;inset:0;background:#161C2B;overflow:hidden}
+  .cam svg{position:absolute;inset:0;width:100%;height:100%;stroke:none}
+  .cam .camoff{position:absolute;inset:0;background:#161C2B;display:grid;place-items:center;align-content:center;gap:8px;color:#8A91A2;text-align:center}
+  .cam .camoff svg{position:static;width:40px;height:40px;stroke:#8A91A2;stroke-width:1.5}
+  .rec{display:inline-flex;align-items:center;gap:7px;border-radius:99px;background:rgba(11,15,26,.6);padding:7px 12px;color:#fff;font:500 10.5px 'Geist Mono',monospace;letter-spacing:.1em}
+  .rec i{width:8px;height:8px;border-radius:50%;background:#FF4D52;animation:pulse 1.4s infinite}
+  .rec.clk{font-size:13px;letter-spacing:.04em}
+  .rec.lt{background:var(--danger-soft);color:var(--danger-text)}
+  .rec.lt i{background:var(--danger)}
+  .itile{width:112px;display:grid;gap:4px;justify-items:center;border-radius:var(--r-lg);background:var(--ink-raised);border:1px solid var(--on-ink-edge);padding:8px;color:#fff}
+  .itile .pl{width:44px;height:44px;border-radius:50%;background:var(--on-ink-ground);display:grid;place-items:center;font-size:15px;font-weight:600}
+  .itile .pl.mk{font-size:24px;font-weight:700}
+  .itile .vid{width:100%;aspect-ratio:16/9;border-radius:8px;background:#2B3347;position:relative;overflow:hidden}
+  .itile .vid svg{position:absolute;inset:0;width:100%;height:100%;stroke:none}
+  .itile small{font:500 9.5px 'Geist Mono',monospace;letter-spacing:.08em;color:#8A91A2}
+  .itile span{font-size:12px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .truth{font:500 10.5px 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:#8A91A2;text-align:center}
+  .ctls{display:flex;align-items:center;justify-content:center;gap:10px}
+  .ctl{width:48px;height:48px;border-radius:50%;background:var(--on-ink-ground);color:#fff;display:grid;place-items:center;flex:none}
+  .ctl svg{width:24px;height:24px;stroke-width:1.6}
+  .ctl.lit{background:#fff;color:var(--ink)}
+  .ctl.lt{background:var(--muted);color:var(--text)}
+  .ctl.lt.lit{background:var(--ink);color:#fff}
+  .leave{width:84px;height:48px;border-radius:99px;background:var(--danger);color:#fff;font-size:15px;font-weight:600;display:grid;place-items:center;flex:none;text-align:center}
+  .qual{display:flex;align-items:flex-end;gap:2px}
+  .qual i{width:4px;border-radius:1.5px;background:var(--ok)}
+  .qual i:nth-child(1){height:6px}.qual i:nth-child(2){height:10px}.qual i:nth-child(3){height:14px}
+  .qual.fair i:nth-child(3){opacity:.25;background:var(--warn-fill)}
+  .qual.fair i:nth-child(1),.qual.fair i:nth-child(2){background:var(--warn-fill)}
+  .qual.poor i{background:var(--danger)}.qual.poor i:nth-child(2),.qual.poor i:nth-child(3){opacity:.25}
+  .glass{border-radius:99px;background:rgba(11,15,26,.6);color:#fff;padding:9px 16px;display:flex;justify-content:space-between;gap:10px;font:500 11px 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase}
+  .glass.w{color:#F5A524}
+  .errcard{background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;display:grid;gap:10px;justify-items:center;text-align:center}
+  .errcard b{font-size:20px;letter-spacing:-.02em}
+  .check{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--border)}
+  .check:first-child{border-top:0}
+  .check .ci{width:36px;height:36px;border-radius:11px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;flex:none}
+  .check .ci svg{width:19px;height:19px}
+  .check b{font-size:15px;font-weight:600;display:block}
+  .check span.s{font-size:13px;color:var(--text3);display:block}
+  .dark .check{border-color:var(--on-ink-edge)}.dark .check .ci{background:var(--on-ink-ground);color:#fff}.dark .check span.s{color:#8A91A2}
+  .chip{white-space:nowrap;padding:0 12px;height:34px;display:inline-flex;align-items:center;gap:6px;border-radius:99px;font-size:13px;font-weight:600;background:var(--ok-soft);color:var(--ok-text)}
+  .chip svg{width:14px;height:14px;stroke-width:3}
+  .chip.w{background:var(--warn-soft);color:var(--warn)}
+  .chip.k{background:var(--on-ink-ground);color:#fff}
+  .clock{display:grid;gap:4px}
+  .clock b{font:500 34px 'Geist Mono',monospace;letter-spacing:-.02em;font-variant-numeric:tabular-nums;font-weight:500}
+  .when{display:grid;gap:12px;padding:16px;border-radius:var(--r-lg);background:var(--surface);border:1px solid var(--border)}
+  .sheetover{position:absolute;left:0;right:0;bottom:0;background:var(--bg);border-radius:28px 28px 0 0;padding:10px 20px 24px;display:grid;gap:14px;z-index:24;color:var(--text)}
+  .sheetover .mark{background:var(--muted);border-color:var(--border);color:var(--ink)}
+  .sheetover .grab{width:40px;height:4px;border-radius:4px;background:var(--border-strong);margin:0 auto}
+  .ring{position:relative;display:grid;place-items:center}
+  .ring svg{width:100%;height:100%;stroke:none}
+  .ring .c{position:absolute;inset:0;display:grid;place-items:center;align-content:center;text-align:center}
+
+  /* ===== SCORECARD ===== */
+  .cells{display:grid;grid-template-columns:repeat(10,1fr);gap:3px}
+  .cells i{height:8px;border-radius:3px;background:var(--sunken)}
+  .cells i.f{background:var(--accent)}
+  .private{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:12px;background:var(--ok-soft);color:var(--ok-text);font-size:12.5px;line-height:1.4}
+  .private b{font:500 10px 'Geist Mono',monospace;letter-spacing:.1em;background:var(--ok);color:#fff;border-radius:6px;padding:3px 7px;flex:none}
+  .scoreink{background:var(--ink);color:#fff;border-radius:var(--r-lg);padding:18px;display:flex;align-items:center;gap:18px}
+  .scoreink .n{font-size:56px;font-weight:600;letter-spacing:-.05em;line-height:1}
+  .scoreink .of{font-size:15px;color:#8A91A2;margin-left:4px}
+  .lrow{display:flex;align-items:center;gap:14px;padding:14px 0;border-top:1px solid var(--border)}
+  .lrow:first-child{border-top:0}
+  .lrow .num{font-size:40px;font-weight:600;letter-spacing:-.04em;line-height:1;width:54px;text-align:right}
+  .thin{height:4px;border-radius:4px;background:var(--sunken);position:relative;margin-top:7px}
+  .thin i{position:absolute;left:0;top:0;bottom:0;border-radius:4px;background:var(--accent)}
+  .prose{font-size:17px;line-height:1.6;color:var(--text2)}
+  .prose b{color:var(--text);font-weight:600}
+  .samp{font:500 10px 'Geist Mono',monospace;letter-spacing:.08em;color:var(--text4);text-transform:uppercase}
+  .tl{display:grid;gap:0}
+  .tl .it{display:flex;gap:14px;padding-bottom:18px;position:relative}
+  .tl .it:not(:last-child)::before{content:"";position:absolute;left:13px;top:30px;bottom:2px;width:2px;background:var(--border)}
+  .tl .dot{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;flex:none;background:var(--muted);color:var(--text3)}
+  .tl .dot svg{width:14px;height:14px;stroke-width:2.8}
+  .tl .dot.ok{background:var(--ok-soft);color:var(--ok)}.tl .dot.acc{background:var(--accent);color:#fff}
+
+  /* ---------- shot mode (headless verification) ---------- */
+  body.shot{padding:20px;background:#E9EAF2}
+  body.shot .intro,body.shot .section>h2,body.shot .section>p.d,body.shot .bar,body.shot .states,body.shot .notes{display:none}
+  body.shot .stage{flex-wrap:nowrap}body.shot .section{max-width:none;margin:0}
+</style>
+</head>
+<body>
+
+<div class="intro">
+  <h1>Student: book, pay, interview room, scorecard</h1>
+  <p class="lede">Four layouts (A/B/C/D) for each of the four student screens in the React Native app. Same real content, rules and states as the current screens (<code>BookInterviewScreen</code>, <code>SlotPicker</code>, <code>PricingScreen</code>, <code>CheckoutScreen</code>, <code>ConfirmingScreen</code>, <code>PaymentFailedScreen</code>, <code>TopUpScreen</code>, <code>ReadinessScreen</code>, <code>RoomScreen</code>, <code>EndedScreen</code>, <code>FeedbackScreen</code>). Geist, theme tokens, 390px frame, no shadows. Click slots, days, states and buttons.</p>
+  <div class="tools">
+    <div><span class="lbl">All sections</span><span class="seg" id="globalOpt"><button data-g="A">A</button><button data-g="B">B</button><button data-g="C">C</button><button data-g="D">D</button></span></div>
+    <div><span class="lbl">Config values</span><span class="seg" id="tokSeg"><button data-tok="0" class="on">Sample values</button><button data-tok="1">Show config keys</button></span></div>
+  </div>
+  <p class="legend">Every number that the app reads from the server is a <b>sample placeholder</b> here, marked with a <span class="cfg">dotted underline</span> (hover for its source: <code>/config</code> tiers, <code>/config</code> booking rules, <code>/config</code> scorecard window, or the interview record). Flip "Show config keys" to see the key instead of a number. Nothing here is a real price or rule.</p>
+</div>
+
+<div id="app"></div>
+
+<script>
+/* =====================================================================
+   helpers
+   ===================================================================== */
+const ICON={
+  back:'<path d="M19 12H5M11 6l-6 6 6 6"/>',
+  close:'<path d="M6 6l12 12M18 6L6 18"/>',
+  check:'<path d="M5 12.5l4.5 4.5L19 7"/>',
+  chev:'<path d="M9 6l6 6-6 6"/>',
+  chevd:'<path d="M6 9l6 6 6-6"/>',
+  mic:'<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>',
+  micoff:'<path d="M3 3l18 18M9 9v2a3 3 0 0 0 5 2M12 3a3 3 0 0 1 3 3v4M19 11a7 7 0 0 1-1 3.5M12 18v3"/>',
+  cam:'<path d="m16 10 5-3v10l-5-3"/><rect x="3" y="6" width="13" height="12" rx="2"/>',
+  camoff:'<path d="M3 3l18 18M16 10.5V7a1 1 0 0 0-1-1H8M4 6.5V17a1 1 0 0 0 1 1h10M21 7v10"/>',
+  spk:'<path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 6a9 9 0 0 1 0 12"/>',
+  wifi:'<path d="M2 9a15 15 0 0 1 20 0M5 12.5a10.5 10.5 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0"/><circle cx="12" cy="19.5" r="1"/>',
+  lock:'<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+  cal:'<rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  alert:'<path d="M12 8v5M12 16.5v.01"/><path d="M10.3 4.2 2.8 17.5A2 2 0 0 0 4.5 20.5h15a2 2 0 0 0 1.7-3L13.7 4.2a2 2 0 0 0-3.4 0Z"/>',
+  film:'<rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 9h18M3 15h18M8 4v16M16 4v16"/>',
+  shield:'<path d="M12 3l8 3v6c0 4.5-3.2 8-8 9-4.8-1-8-4.5-8-9V6l8-3Z"/><path d="M9 12l2.2 2.2L15.5 10"/>',
+  star:'<path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.8 6.8 19.6l1-5.8L3.5 9.7l5.9-.8L12 3.5Z"/>',
+  mail:'<rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m4 7 8 6 8-6"/>',
+  play:'<path d="M8 5.5v13l11-6.5-11-6.5Z"/>',
+  user:'<circle cx="12" cy="8" r="4"/><path d="M4 20c1-4 4-6 8-6s7 2 8 6"/>',
+  refresh:'<path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6"/>'
+};
+const ic=(n,sz)=>`<svg viewBox="0 0 24 24"${sz?` style="width:${sz}px;height:${sz}px"`:''}>${ICON[n]}</svg>`;
+
+/* config-sourced values: sample vs key */
+let TOK=false;
+const CFG={
+  amount:{src:'/config → tiers[].amountPaise (tier of your qualification)',sample:'₹1,000',key:'₹{amountPaise}'},
+  amountT1:{src:'/config → tiers[T1].amountPaise',sample:'₹500',key:'₹{T1.amountPaise}'},
+  amountT2:{src:'/config → tiers[T2].amountPaise',sample:'₹1,000',key:'₹{T2.amountPaise}'},
+  amountT3:{src:'/config → tiers[T3].amountPaise',sample:'₹1,500',key:'₹{T3.amountPaise}'},
+  amountT4:{src:'/config → tiers[T4].amountPaise',sample:'₹2,000',key:'₹{T4.amountPaise}'},
+  diff:{src:'interview.topup.differencePaise',sample:'₹500',key:'₹{differencePaise}'},
+  dur:{src:'/config → tiers[].durationMin',sample:'30',key:'{durationMin}'},
+  minH:{src:'/config → booking.windowMinHours',sample:'2 hours',key:'{windowMinHours} hours'},
+  maxD:{src:'/config → booking.windowMaxDays',sample:'14',key:'{windowMaxDays}'},
+  pct:{src:'/config → booking.minProfileCompletionPct',sample:'80',key:'{minProfileCompletionPct}'},
+  joinOpen:{src:'/config → booking.joinOpensMinutesBefore',sample:'10 minutes',key:'{joinOpensMinutesBefore} minutes'},
+  joinOpenT:{src:'slotStart − booking.joinOpensMinutesBefore',sample:'11:20 AM',key:'{joinOpensAt}'},
+  joinCloseT:{src:'slotStart + booking.noShowMinutesAfter (optional)',sample:'11:45 AM',key:'{joinClosesAt}'},
+  noShow:{src:'/config → booking.noShowMinutesAfter (optional)',sample:'15 minutes',key:'{noShowMinutesAfter} minutes'},
+  scoreWin:{src:'/config → scorecard.windowHours (optional; sentence drops it when absent)',sample:'24 hours',key:'{windowHours} hours'},
+  warn:{src:'room.warning (minutes left, from the room service)',sample:'5',key:'{warning}'},
+  mbps:{src:'/readiness spec MIN_BANDWIDTH_MBPS + measured',sample:'12.4 Mbps · needs 3',key:'{measured} Mbps · needs {MIN_BANDWIDTH_MBPS}'},
+  slotT:{src:'interview.slotStart (IST)',sample:'11:30 AM',key:'{slotStart}'},
+  slotD:{src:'interview.slotStart (IST)',sample:'Sat 3 Oct',key:'{slotStart date}'},
+  iname:{src:'interview.interviewer.name — only after the session starts (SC-16)',sample:'Interviewer name',key:'{interviewer.name}'},
+  ihead:{src:'interviewer.headline · company (when the server sends them)',sample:'Headline · Company',key:'{headline} · {company}'},
+  ref:{src:'bookingRef(id) = IV-XXXXXXX',sample:'IV-4F2A91C',key:'IV-{id.slice(-7)}'},
+  pref:{src:'PAY-{paymentId.slice(-7)}',sample:'PAY-7B30E4D',key:'PAY-{paymentId.slice(-7)}'},
+  reason:{src:'payment.failureReason — gateway’s own words, quoted verbatim',sample:'“Gateway reason text”',key:'“{failureReason}”'},
+  sc:{src:'feedback.scorecard.scores (0–10)',sample:null,key:null},
+  txt:{src:'feedback.scorecard.strengths / improvements (free text, shown in full)',sample:null,key:null}
+};
+function cfg(k,override){
+  const c=CFG[k];
+  return `<span class="cfg" title="${c.src}">${TOK?c.key:(override||c.sample)}</span>`;
+}
+
+const btn=(label,cls='pri',act='',extra='')=>`<button class="btn ${cls}"${act?` data-act="${act}"`:''}${extra}>${label}</button>`;
+const pill=(l,t='neutral')=>`<span class="pill ${t}">${l}</span>`;
+const head=(title,sub,{dark=false,right='',close=false}={})=>`<div class="screenhead${dark?' ondark':''}"><button class="back" aria-label="${close?'Close':'Back'}">${ic(close?'close':'back')}</button><b>${title}${sub?`<small>${sub}</small>`:''}</b>${right}</div>`;
+const sticky=(inner,dk)=>`<div class="sticky${dk?' dk':''}">${inner}</div>`;
+const phone=(inner,{dark=false,cam=false,fh=0,foot=''}={})=>`<div class="phone${dark?' dark':''}${cam?' camfull':''}"><div class="status"><span>9:41</span><i></i><span>●●● 5G</span></div>${cam?'':`<div class="scroll" style="padding-bottom:${fh}px">${inner}</div>`}${cam?inner:''}${foot}</div>`;
+const secured='<div class="secured">Secured by Razorpay · UPI, cards, netbanking</div>';
+
+/* =====================================================================
+   BOOKING
+   ===================================================================== */
+const DOW=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const DOWL=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+const POOL=['9:00 AM','9:30 AM','10:00 AM','10:30 AM','11:00 AM','11:30 AM','12:30 PM','2:00 PM','3:30 PM','4:00 PM','5:30 PM','6:00 PM','7:00 PM','7:30 PM'];
+const DAYS=Array.from({length:14},(_,i)=>{
+  const date=2+i;                               // Fri 2 Oct 2026 onward
+  const dow=(4+i)%7;                            // Fri = 4
+  const slots=dow===6?[]:POOL.filter((_,j)=>((i+2)*(j+3))%4!==0||j%5===0).slice(0,dow===5?7:12);
+  return {i,date,dow,short:DOW[dow],long:`${DOWL[dow]} ${date} Oct`,slots};
+});
+const hr24=t=>{const[m,ap]=t.split(' ');let h=+m.split(':')[0];if(ap==='PM'&&h!==12)h+=12;if(ap==='AM'&&h===12)h=0;return h};
+const PARTS=[['Morning','BEFORE 12 PM',h=>h<12],['Afternoon','12 – 5 PM',h=>h>=12&&h<17],['Evening','FROM 5 PM',h=>h>=17]];
+const parts=d=>PARTS.map(([n,r,f])=>({n,r,s:d.slots.filter(t=>f(hr24(t)))})).filter(g=>g.s.length);
+const firstOpen=()=>DAYS.find(d=>d.slots.length);
+
+const bookingFlags=(st,c)=>{
+  const d=DAYS[c.day];
+  let gone=null,note=null,sel=c.slot;
+  if(st==='taken'){gone=d.slots[1]||null;sel=d.slots[2]||null;note=`${gone} was taken a moment ago. Your pick moved to ${sel}, the nearest block on this day.`}
+  return {d,gone,note,sel};
+};
+const matchCard=()=>`<div class="match"><div class="tk">${ic('check')}</div><div class="grow"><b style="font-size:14px;font-weight:600">${cfg('dur')}-minute interview</b><div class="xs">T2 · Graduation · spends the one interview you have</div></div></div>`;
+const noticeLine=()=>`<div class="xs">It’s Thu 1 Oct, 8:42 PM right now. Earliest open slot is Fri 2 Oct, 9:00 AM — bookings need at least ${cfg('minH')}’ notice.</div>`;
+function emptyBlock(d,{compact=false}={}){
+  const nx=firstOpen();
+  return `<div class="emptyday"><div class="h20">Nobody is free on ${DOWL[d.dow]}.</div>
+  <div class="sub">Every interviewer who matches your tier, your language and your field is already booked that day.</div>
+  <div class="nextbox"><span class="eyebrow">Next available</span><b style="font-size:15px;font-weight:600">${nx.short} ${nx.date} Oct · ${nx.slots[0]} IST</b></div>
+  ${btn(`Show ${nx.long}`,'out full',`day:${nx.i}`)}</div>`;
+}
+const slotBtn=(t,sel,gone,near,cls='slot')=>{
+  if(t===gone)return `<div class="${cls} gone">${t}</div>`;
+  return `<button class="${cls}${t===sel?' on':''}" data-act="slot:${t}">${t}</button>`;
+};
+const bookFoot=(sel,{label='Confirm · uses 1 credit',act='state:confirmed',dis=false}={})=>sticky(`<div class="rowb"><span class="small">Selected</span><b style="font-size:14px">${sel?`${DAYS_SEL_LABEL(sel)}`:'Pick a time'}</b></div>${dis||!sel?btn(label,'dis full'):btn(label,'pri full',act)}`);
+let _selDay=0;
+const DAYS_SEL_LABEL=t=>{const d=DAYS[_selDay];return `${d.short} ${d.date} Oct · ${t} IST`};
+
+/* shared gate screens */
+function bookGate(opt){
+  const pctCard={
+    A:`<div class="card" style="display:grid;gap:10px"><div class="rowb"><span class="tnum" style="font:500 40px 'Geist Mono',monospace;letter-spacing:-.04em;color:var(--accent)">62%</span><span class="small">book at ${cfg('pct')}% · 18% to go</span></div><div class="pbar"><i style="width:62%"></i><u style="left:80%"></u></div></div>`,
+    B:`<div class="inkhero" style="gap:12px"><div class="rowb"><span class="tnum" style="font:500 40px 'Geist Mono',monospace;letter-spacing:-.04em">62%</span><span class="p" style="margin:0">book at ${cfg('pct')}% · 18% to go</span></div><div class="pbar" style="background:rgba(255,255,255,.18)"><i style="width:62%;background:#7258FF"></i><u style="left:80%;background:#fff"></u></div></div>`,
+    C:`<div class="card rowc" style="gap:18px"><div class="ring" style="width:96px;height:96px;flex:none">${ringSvg(6.2,96,8,'#5B3DF5','#E6E8EE')}<div class="c"><b class="tnum" style="font:500 22px 'Geist Mono',monospace">62%</b></div></div><div class="grow"><b class="t15s">Profile completion</b><div class="small" style="margin-top:3px">Booking opens at ${cfg('pct')}% · 18% to go</div></div></div>`,
+    D:`<div class="stack" style="gap:8px"><div class="rowb"><b class="t15s">Profile completion</b><span class="mono" style="color:var(--accent)">62% / ${cfg('pct')}%</span></div><div class="pbar"><i style="width:62%"></i><u style="left:80%"></u></div></div>`
+  }[opt];
+  const steps=opt==='D'
+    ?`<ol class="steps card" style="padding:4px 16px;list-style:none">${[1,2].map(n=>`<li><span class="n">${n}</span><div class="grow"><div class="t15s">Profile section</div><div class="xs">missing field · missing field</div></div><span class="pill acc" style="align-self:center">+9%</span></li>`).join('')}</ol>`
+    :[1,2].map(()=>`<div class="card rowc" style="padding:12px 16px"><div class="grow"><div class="t15s">Profile section</div><div class="xs">missing field · missing field</div></div><span class="pill acc" style="font-size:11px">+9%</span></div>`).join('');
+  return phone(`${head('Book an interview')}<div class="body">
+    <div class="stack" style="gap:8px"><span class="eyebrow acc">Booking opens at ${cfg('pct')}%</span><div class="lead">2 sections to go.</div><div class="sub" style="font-size:15px">Interviewers are matched on what your profile says. Below ${cfg('pct')}% there is not enough of it to match on.</div></div>
+    ${pctCard}${steps}
+    <div class="samp">Section names, missing fields and % come from the profile completion response</div>
+  </div>`,{fh:92,foot:sticky(btn('Finish your profile','pri full'))});
+}
+function bookNoCredit(){
+  return phone(`${head('Book an interview')}<div class="body">
+    <div class="stack" style="gap:8px"><span class="eyebrow acc">Nothing to book with</span><div class="lead">You have no interview left.</div><div class="sub" style="font-size:15px">The one you bought has been used. Buy another and this calendar opens again straight away.</div></div>
+    <div class="tier on"><div class="grow"><div class="rowc" style="gap:8px"><b class="t15s">T2 · Graduation</b><span class="you">YOURS</span></div><div class="xs">${cfg('dur')}-minute interview · one-time</div></div><b class="big">${cfg('amount')}</b></div>
+    <div class="stack" style="gap:10px;padding:0 4px"><span class="eyebrow">What you get</span>
+      <div class="bul"><span class="dash">—</span><span>A live ${cfg('dur')}-minute interview with a real interviewer</span></div>
+      <div class="bul"><span class="dash">—</span><span>The edited film, as your video resume</span></div>
+      <div class="bul"><span class="dash">—</span><span>Written feedback and five scores</span></div></div>
+    <div class="samp">Unpaid student sees: “Buy an interview to open the calendar.” + See pricing</div>
+  </div>`,{fh:150,foot:sticky(`<div class="rowb"><b style="font-size:15px">Total</b><b class="big">${cfg('amount')}</b></div>${btn(`Buy an interview · ${cfg('amount')}`,'pri full','sec:payment:state:pricing')}${secured}`)});
+}
+const prepItems=[
+  ['Test your camera and mic',`Two minutes — camera, microphone and connection — so nothing is a surprise at ${'{T}'}.`],
+  ['Find somewhere quiet','Silence your phone.'],
+  ['Face a light','Avoid a bright window behind you.'],
+  ['Look at the camera, not at the screen','Keep your head and shoulders inside the guide.']
+];
+function prepList(c){
+  return prepItems.map((p,i)=>`<button class="prep${c.tick[i]?' on':''}" data-act="tick:${i}"><span class="bx">${c.tick[i]?ic('check'):''}</span><span><b>${p[0]}</b><span class="xs" style="display:block">${p[1].replace('{T}',cfg('slotT'))}</span></span></button>`).join('');
+}
+function bookConfirmed(opt,c){
+  const d=DAYS[c.day];const when=`${cfg('slotD')} · ${cfg('slotT')}`;
+  const foot=sticky(`${btn('Run the device check now','ink full','sec:room:state:precheck')}<div class="two">${btn('Add to calendar','out sm')}${btn('Share .ics','out sm')}</div>`);
+  const count=c.tick.filter(Boolean).length;
+  if(opt==='B'||opt==='D'){
+    return phone(`${head('',null,{close:true})}<div class="body" style="padding-top:0">
+      <div class="inkhero" style="gap:10px"><span class="eyebrow" style="color:var(--accent-muted)">BOOKED · ${cfg('ref')}</span><div class="h24" style="font-size:30px;line-height:1.1">${when}</div><div class="p">12:00 PM IST · ${cfg('dur')} min · in the app</div>
+        <div class="rowc" style="gap:10px;margin-top:8px;padding-top:12px;border-top:1px solid var(--on-ink-edge)"><span class="mark dk" style="width:36px;height:36px;font-size:18px">’</span><span class="p" style="margin:0">Interviewer assigned — named once the session starts</span></div></div>
+      <div><div class="rowb"><b class="t15s" style="font-size:16px">Before your interview</b><span class="mono muted">${count} / 4</span></div><div>${prepList(c)}</div></div>
+    </div>`,{fh:140,foot});
+  }
+  return phone(`${head('',null,{close:true})}<div class="body" style="gap:20px;padding-top:0">
+    <div class="disc ok">${ic('check')}</div>
+    <div class="stack" style="gap:6px"><span class="eyebrow ok">BOOKED · ${cfg('ref')}</span><div class="lead">${when}</div><div class="sub" style="font-size:15px">12:00 PM IST · ${cfg('dur')} min · in the app</div></div>
+    <div><div class="rowb"><b class="t15s" style="font-size:16px">Before your interview</b><span class="mono muted">${count} / 4</span></div>${prepList(c)}</div>
+  </div>`,{fh:140,foot});
+}
+
+/* ---- Option A: day strip + part-of-day grid (evolves the current screen) ---- */
+function bookA(st,c){
+  const {d,gone,note,sel}=bookingFlags(st,c);_selDay=c.day;
+  const loading=st==='loading';
+  let grid;
+  if(loading)grid=`<div class="slotgrid">${Array(6).fill('<div class="slot skel" style="border:0"></div>').join('')}</div>`;
+  else if(!d.slots.length)grid=emptyBlock(d);
+  else grid=parts(d).map(g=>`<div><div class="grph"><b>${g.n}</b><span class="mono muted" style="font-size:10.5px">${g.r}</span></div><div class="slotgrid">${g.s.map(t=>slotBtn(t,sel,gone)).join('')}</div></div>`).join('');
+  const strip=DAYS.map(x=>`<button class="dcard${x.i===c.day?' on':''}${x.slots.length?'':' zero'}" data-act="day:${x.i}"><small>${x.short}</small><b>${x.date}</b><em>${loading?'…':x.slots.length+' FREE'}</em></button>`).join('');
+  return phone(`${head(`Pick a ${cfg('dur')}-min slot`,'IST · Asia/Kolkata')}<div class="body" style="gap:14px;padding-top:2px">
+    ${matchCard()}${noticeLine()}
+    <div class="stack" style="gap:8px;margin:0 -20px"><span class="eyebrow" style="padding:0 20px">Next ${cfg('maxD')} days</span><div class="daystrip">${strip}</div></div>
+    <div class="rowb" style="align-items:baseline"><b class="t16" style="font-size:16px">${d.long}</b><span class="mono muted">IST</span></div>
+    ${note?`<div class="xs">${note}</div>`:''}
+    ${grid}</div>`,{fh:130,foot:bookFoot(d.slots.length&&!loading?sel:null,{dis:loading})});
+}
+
+/* ---- Option B: vertical list of days, one open at a time ---- */
+function bookB(st,c){
+  const {gone,note,sel}=bookingFlags(st,c);_selDay=c.day;
+  const loading=st==='loading';
+  const rows=DAYS.map(x=>{
+    const open=x.i===c.day;
+    let inner='';
+    if(open&&!loading){
+      if(!x.slots.length)inner=`<div class="inner">${emptyBlock(x)}</div>`;
+      else inner=`<div class="inner">${note?`<div class="xs">${note}</div>`:''}${parts(x).map(g=>`<div><div class="grph"><b style="font-size:13.5px">${g.n}</b><span class="mono muted" style="font-size:10px">${g.r}</span></div><div class="slotgrid c4">${g.s.map(t=>slotBtn(t,sel,gone)).join('')}</div></div>`).join('')}</div>`;
+    }
+    if(open&&loading)inner=`<div class="inner"><div class="slotgrid c4">${Array(8).fill('<div class="slot skel" style="border:0"></div>').join('')}</div></div>`;
+    return `<div class="drow${open?' open':''}${x.slots.length?'':' zero'}"><button data-act="day:${x.i}"><div class="dtile"><small>${x.short.toUpperCase()}</small><b>${x.date}</b></div><div class="grow"><div class="t16" style="font-size:16.5px">${x.long}</div><div class="small">${x.slots.length?`${x.slots.length} free · from ${x.slots[0]}`:'Nobody free'}</div></div>${x.slots.length?`<span style="color:var(--text4)">${ic(open?'chevd':'chev')}</span>`:pill('Booked out')}</button>${inner}</div>`;
+  }).join('');
+  return phone(`${head('Book an interview','IST · Asia/Kolkata')}<div class="body" style="padding:0 0 24px;gap:12px">
+    <div class="pad stack" style="gap:10px">${matchCard()}${noticeLine()}<span class="eyebrow">Next ${cfg('maxD')} days</span></div>
+    <div class="dlist">${rows}</div></div>`,{fh:130,foot:bookFoot(DAYS[c.day].slots.length&&!loading?sel:null,{dis:loading})});
+}
+
+/* ---- Option C: month calendar + docked bottom sheet for times ---- */
+function bookC(st,c){
+  const {d,gone,note,sel}=bookingFlags(st,c);_selDay=c.day;
+  const loading=st==='loading';
+  const cells=[];for(let k=0;k<3;k++)cells.push('<div class="cd out"></div>');           // Oct 1 2026 is a Thursday
+  cells.push(`<div class="cd today">1</div>`);
+  for(let n=2;n<=31;n++){
+    const x=DAYS.find(z=>z.date===n);
+    if(!x){cells.push(`<div class="cd out">${n}</div>`);continue}
+    const on=x.i===c.day;
+    cells.push(`<button class="cd${on?' on':''}${x.slots.length?'':' full'}" data-act="${x.slots.length||on?'':'x'}day:${x.i}">${n}${x.slots.length?'<i></i>':''}</button>`);
+  }
+  const tab=c.tab;
+  const g=d.slots.length?parts(d):[];
+  const cur=g.find(z=>z.n===tab)||g[0];
+  const sheet=`<div class="sheetdock"><div class="grab"></div>
+    <div class="rowb"><div><div class="t16" style="font-size:17px">${d.long}</div><div class="xs">${loading?'Loading open slots…':d.slots.length?`${d.slots.length} free · IST`:'Nobody is free'}</div></div>${sel&&!loading?`<span class="pill acc">${sel}</span>`:''}</div>
+    ${loading?`<div class="slotgrid c4">${Array(8).fill('<div class="slot skel" style="border:0"></div>').join('')}</div>`
+    :!d.slots.length?emptyBlock(d)
+    :`<div class="tabs">${g.map(z=>`<button class="${(cur&&cur.n===z.n)?'on':''}" data-act="tab:${z.n}">${z.n}</button>`).join('')}</div>
+      ${note?`<div class="xs">${note}</div>`:''}
+      <div class="slotgrid c4">${cur.s.map(t=>slotBtn(t,sel,gone)).join('')}</div>`}
+    ${(d.slots.length&&!loading&&sel)?btn('Confirm · uses 1 credit','pri full','state:confirmed'):btn('Confirm · uses 1 credit','dis full')}</div>`;
+  return phone(`${head('Book an interview','IST · Asia/Kolkata')}<div class="body" style="gap:12px;padding-bottom:0">${matchCard()}</div>
+   <div class="cal" style="margin-top:12px"><div class="mh"><b class="h20" style="font-size:19px">October 2026</b><span class="xs">Open for the next ${cfg('maxD')} days</span></div>
+     <div class="grid">${DOW.map(x=>`<div class="dw">${x[0]}</div>`).join('')}${cells.join('')}</div>
+     <div class="xs" style="margin-top:10px;display:flex;gap:14px;flex-wrap:wrap"><span>● has open slots</span><span>▢ booked out</span><span>Earliest: Fri 2 Oct · ${cfg('minH')}’ notice</span></div></div>`,{fh:300,foot:sheet});
+}
+
+/* ---- Option D: two-step wizard — day, then time ---- */
+function bookD(st,c){
+  const {d,gone,note,sel}=bookingFlags(st,c);_selDay=c.day;
+  const loading=st==='loading';
+  const step=(st==='taken'||st==='empty')?2:c.step;
+  const wiz=`<div class="wiz"><div class="st ${step===1?'on':'done'}"><i>${step===1?'1':ic('check')}</i>Day</div><div class="ln"></div><div class="st ${step===2?'on':''}"><i>2</i>Time</div></div>`;
+  if(step===1){
+    const t=DAYS.map(x=>`<button class="dtt${x.i===c.day?' on':''}${x.slots.length?'':' zero'}" data-act="${x.slots.length?'':'x'}pickday:${x.i}"><small>${x.short}${x.i===0?' · earliest':''}</small><b>${x.date} Oct</b><small>${loading?'…':x.slots.length?x.slots.length+' free':'Booked out'}</small></button>`).join('');
+    return phone(`${head('Book an interview')}<div class="body" style="gap:14px;padding:0 0 24px">
+      <div class="pad stack">${matchCard()}${noticeLine()}</div>${wiz}
+      <div class="pad"><span class="eyebrow">Next ${cfg('maxD')} days · IST</span></div><div class="dtiles">${t}</div></div>`,{fh:100,foot:sticky(btn('Continue','pri full','step:2'))});
+  }
+  const list=loading?Array(6).fill('<div class="trow skel" style="border:0"></div>').join('')
+   :!d.slots.length?emptyBlock(d)
+   :parts(d).map(g=>`<div class="stack" style="gap:8px"><div class="grph" style="margin:0"><b>${g.n}</b><span class="mono muted" style="font-size:10.5px">${g.r}</span></div>${g.s.map(t=>{
+      const end=(()=>{const[m,ap]=t.split(' ');let[h,mm]=m.split(':').map(Number);mm+=30;if(mm>=60){mm-=60;h+=1}let a=ap;if(h===12&&ap==='AM'&&false)a='PM';if(h===12&&mm>=0&&ap==='AM'&&m.startsWith('11'))a='PM';if(h>12)h-=12;return `${h}:${String(mm).padStart(2,'0')} ${a}`})();
+      if(t===gone)return `<div class="trow gone"><span class="rd"></span><span>${t} – ${end}</span></div>`;
+      return `<button class="trow${t===sel?' on':''}" data-act="slot:${t}"><span class="rd"></span><span class="grow">${t} – ${end}</span>${t===d.slots[0]&&d.i===firstOpen().i?pill('Earliest','acc'):''}</button>`}).join('')}</div>`).join('');
+  return phone(`${head('Book an interview')}<div class="body" style="gap:14px">
+    ${wiz}
+    <div class="rowb"><div><span class="eyebrow">Your day</span><div class="t16" style="font-size:18px">${d.long}</div></div><button class="btn out sm" data-act="step:1">Change day</button></div>
+    ${note?`<div class="banner warn" style="font-size:13.5px">${note}</div>`:''}
+    ${list}</div>`,{fh:130,foot:bookFoot(d.slots.length&&!loading?sel:null,{dis:loading})});
+}
+
+function bookingRender(opt,st,c0){
+  const c=st==='empty'?Object.assign({},c0,{day:2,slot:null,step:2}):c0;
+  if(st==='gate')return bookGate(opt);
+  if(st==='nocredit')return bookNoCredit();
+  if(st==='confirmed')return bookConfirmed(opt,c);
+  return {A:bookA,B:bookB,C:bookC,D:bookD}[opt](st,c);
+}
+
+/* =====================================================================
+   PAYMENT
+   ===================================================================== */
+const TIERS=[['T1','Class 12','amountT1'],['T2','Graduation','amountT2'],['T3','Post Graduation','amountT3'],['T4','PhD','amountT4']];
+const tierRows=(mine='T2')=>TIERS.map(([t,n,k])=>`<div class="tier${t===mine?' on':''}"><span class="rad"></span><div class="grow"><div class="rowc" style="gap:8px"><b class="t15s">${t} · ${n}</b>${t===mine?'<span class="you">YOURS</span>':''}</div><div class="xs">${cfg('dur')}-minute interview</div></div><b class="big">${cfg(k)}</b></div>`).join('');
+const REASON_DEF='The gateway declined the payment. No money was taken.';
+const confirmCopy={
+  confirming:['Payment submitted','Confirming with your bank.','Your money is safe and your account is being set up. This usually takes a few seconds.'],
+  slow:['Still working','This is taking a little longer.','Your money is not lost. The confirmation is just slow to reach us — keep waiting here, or email support with the reference below and we will settle it.']
+};
+const refRow=(slow,dk)=>`<div class="rowb" style="padding-top:12px;border-top:1px solid ${dk?'var(--on-ink-edge)':'var(--border)'}"><span class="mono" style="font-size:11px;color:${dk?'#8A91A2':'var(--text4)'};letter-spacing:.06em">Reference · ${cfg('pref')}</span>${slow?'':`<span class="mono" style="font-size:11px;color:${dk?'#8A91A2':'var(--text4)'};letter-spacing:.06em">Checking · 0:07</span>`}</div>`;
+const topCopy='Your interviewer confirmed a higher qualification than the tier you paid for. Settle the difference and your video resume publishes right away.';
+const nothingCopy='Nothing is owed on this interview. If an interviewer ever confirms a higher qualification than you paid for, the small difference would show here and hold your video resume until it’s settled.';
+const failCopy=`<b>${cfg('reason')}</b>`;
+const failedReasonText=()=>`<div>${cfg('reason')}<span class="samp" style="display:block;margin-top:8px;text-transform:none;letter-spacing:0">With no reason from the gateway: “${REASON_DEF}”</span></div>`;
+
+/* ---- Option A: summary card (tier list + order card), classic result screens ---- */
+function payA(st){
+  const sum=`<div class="card" style="display:grid;gap:12px;padding:18px"><div class="kv"><span class="k">Tier</span><span class="v">T2 · Graduation</span></div><div class="kv"><span class="k">Length</span><span class="v">${cfg('dur')} minutes</span></div><div class="hr"></div><div class="kv"><span class="k">Amount</span><b class="big">${cfg('amount')}</b></div></div>`;
+  if(st==='pricing')return phone(`${head('Buy an interview')}<div class="body" style="gap:10px"><span class="eyebrow" style="margin-top:4px">YOUR TIER IS SET BY YOUR HIGHEST QUALIFICATION</span>${tierRows()}<div class="rowb" style="padding:6px 4px 0"><span class="sub" style="font-size:15px">Interview credit</span><span class="mono" style="font-size:13px;letter-spacing:0;text-transform:none">${cfg('amount')}</span></div><div class="samp">Student who already holds an unused credit sees “Book an interview” instead (nothing to pay).</div></div>`,{fh:150,foot:sticky(`<div class="rowb"><b style="font-size:15px">Total</b><b class="big">${cfg('amount')}</b></div>${btn('Pay and book my interview','pri full','state:checkout')}${secured}`)});
+  if(st==='checkout')return phone(`${head('Checkout')}<div class="body" style="gap:20px"><div class="stack" style="gap:8px"><span class="eyebrow acc">Your order</span><div class="h24">One interview.</div></div>${sum}<div class="sub">Pay by UPI, card, net banking or wallet — the gateway offers them next. One-time; nothing recurring.</div></div>`,{fh:110,foot:sticky(`${btn('Pay now','pri full','state:confirming')}${secured}`)});
+  if(st==='confirming'||st==='slow'){
+    const slow=st==='slow',[e,t,b]=confirmCopy[st];
+    return phone(`${head('')}<div class="body" style="padding-top:60px;gap:14px"><div class="disc ${slow?'warn':'acc'}">${slow?'<b style="font-size:26px">!</b>':'<div class="spinner"></div>'}</div><span class="eyebrow ${slow?'warn':'acc'}">${e}</span><div class="lead">${t}</div><div class="sub" style="font-size:15px;line-height:1.5">${b}</div><div style="margin-top:10px">${refRow(slow)}</div></div>`,{fh:slow?150:0,foot:slow?sticky(`${btn('Keep waiting','pri full','state:confirming')}${btn('Email support','out full')}`):''});
+  }
+  if(st==='paid')return phone(`${head('')}<div class="body" style="padding-top:60px;gap:14px"><div class="disc ok">${ic('check')}</div><span class="eyebrow ok">Payment confirmed</span><div class="lead">Your interview is ready to book.</div><div class="sub" style="font-size:15px">The calendar is open. <span class="samp">Proposed hand-off: today SUCCESS routes straight on, with no confirmation screen.</span></div></div>`,{fh:100,foot:sticky(btn('Book an interview','pri full','sec:booking:state:pick'))});
+  if(st==='failed')return phone(`${head('')}<div class="body" style="padding-top:60px;gap:14px"><span class="eyebrow danger">Payment failed</span><div class="lead">That didn’t go through.</div><div class="banner danger" style="font-size:15px">${failedReasonText()}</div><div class="stack" style="margin-top:14px"><button class="btn pri full" data-act="state:checkout" style="height:52px">Try again</button>${btn('Back to pricing','quiet full','state:pricing')}</div></div>`);
+  if(st==='topup')return phone(`${head('Top-up')}<div class="body" style="gap:18px"><div class="stack" style="gap:8px"><span class="eyebrow acc">Top-up · publication held</span><div class="lead">A little more is owed.</div><div class="sub" style="font-size:15px;line-height:1.5">${topCopy}</div></div><div class="card" style="display:grid;gap:12px;padding:18px"><div class="kv"><span class="k">You paid for</span><span class="v">T2</span></div><div class="kv"><span class="k">Confirmed as</span><span class="v">T3</span></div><div class="hr"></div><div class="kv"><b style="font-size:15px">Difference owed</b><b class="big">${cfg('diff')}</b></div></div></div>`,{fh:120,foot:sticky(`${btn(`Pay the difference · ${cfg('diff')}`,'pri full','state:confirming')}<div class="secured">Your video resume publishes the moment this is settled.</div>`)});
+  return phone(`${head('Top-up')}<div class="body" style="gap:14px"><div class="disc ok">${ic('check')}</div><span class="eyebrow ok">Nothing owed</span><div class="lead">You’re all set.</div><div class="sub" style="font-size:15px;line-height:1.5">${nothingCopy}</div></div>`,{fh:90,foot:sticky(btn('Back to my interviews','out full'))});
+}
+
+/* ---- Option B: three-step stepper (Order · Pay · Confirm) ---- */
+function payB(st){
+  const map={pricing:[0,'cur'],checkout:[0,'cur'],confirming:[2,'cur'],slow:[2,'warn'],paid:[3,'done'],failed:[1,'bad'],topup:[0,'cur'],nothing:[3,'done']};
+  const [i,tone]=map[st];
+  const names=['Order','Pay','Confirm'];
+  const stepper=`<div class="stepper">${names.map((n,k)=>`<div class="sp ${k<i?'done':k===i?(tone==='bad'?'bad':tone==='warn'?'warn':'cur'):''}"><i></i><span>${k+1} · ${n}</span></div>`).join('')}</div>`;
+  const panelOrder=`<div class="card" style="display:grid;gap:12px"><div class="rowc"><div class="disc acc" style="width:44px;height:44px">${ic('film',22).replace('<svg','<svg style="color:var(--accent)"')}</div><div class="grow"><b class="t15s">One interview</b><div class="xs">T2 · Graduation · ${cfg('dur')} minutes</div></div><b class="big">${cfg('amount')}</b></div><div class="hr"></div><div class="xs">Pay by UPI, card, net banking or wallet — the gateway offers them next. One-time; nothing recurring.</div></div>`;
+  let body='',foot='',title='Checkout';
+  if(st==='pricing'){title='Buy an interview';body=`<span class="eyebrow">Your tier is set by your highest qualification</span>${tierRows()}`;foot=sticky(`<div class="rowb"><b style="font-size:15px">Total</b><b class="big">${cfg('amount')}</b></div>${btn('Pay and book my interview','pri full','state:checkout')}`)}
+  else if(st==='checkout'){body=`<span class="eyebrow acc">Your order</span><div class="h24">One interview.</div>${panelOrder}`;foot=sticky(`${btn('Pay now','pri full','state:confirming')}${secured}`)}
+  else if(st==='confirming'||st==='slow'){const slow=st==='slow',[e,t,b]=confirmCopy[st];title='Payment';body=`<div class="card" style="display:grid;gap:12px;justify-items:start"><div class="rowc"><div class="disc ${slow?'warn':'acc'}" style="width:44px;height:44px">${slow?'<b>!</b>':'<div class="spinner" style="width:20px;height:20px"></div>'}</div><span class="eyebrow ${slow?'warn':'acc'}">${e}</span></div><div class="h22">${t}</div><div class="sub" style="font-size:15px">${b}</div>${refRow(slow)}</div>${slow?`<div class="stack">${btn('Keep waiting','pri full','state:confirming')}${btn('Email support','out full')}</div>`:''}`}
+  else if(st==='paid'){title='Payment';body=`<div class="card" style="display:grid;gap:12px;justify-items:start"><div class="disc ok">${ic('check')}</div><div class="h22">Payment confirmed.</div><div class="sub" style="font-size:15px">Your interview is ready to book. <span class="samp">Proposed hand-off screen</span></div></div>`;foot=sticky(btn('Book an interview','pri full','sec:booking:state:pick'))}
+  else if(st==='failed'){title='Payment';body=`<div class="card" style="display:grid;gap:12px;border-color:var(--danger-edge)"><span class="eyebrow danger">Payment failed</span><div class="h22">That didn’t go through.</div><div class="banner danger" style="font-size:15px">${failedReasonText()}</div></div>`;foot=sticky(`${btn('Try again','pri full','state:checkout')}${btn('Back to pricing','quiet full','state:pricing')}`)}
+  else if(st==='topup'){title='Top-up';body=`<span class="eyebrow acc">Top-up · publication held</span><div class="h24">A little more is owed.</div><div class="sub" style="font-size:15px;line-height:1.5">${topCopy}</div><div class="card" style="display:grid;gap:12px"><div class="rowb"><span class="k sub">You paid for</span><b>T2</b></div><div class="rowc" style="justify-content:center;color:var(--text4)">${ic('chevd')}</div><div class="rowb"><span class="sub">Confirmed as</span><b>T3</b></div><div class="hr"></div><div class="rowb"><b>Difference owed</b><b class="big">${cfg('diff')}</b></div></div>`;foot=sticky(`${btn(`Pay the difference · ${cfg('diff')}`,'pri full','state:confirming')}<div class="secured">Your video resume publishes the moment this is settled.</div>`)}
+  else{title='Top-up';body=`<div class="card" style="display:grid;gap:12px;justify-items:start"><div class="disc ok">${ic('check')}</div><span class="eyebrow ok">Nothing owed</span><div class="h22">You’re all set.</div><div class="sub" style="font-size:15px">${nothingCopy}</div></div>`;foot=sticky(btn('Back to my interviews','out full'))}
+  const hide=(st==='topup'||st==='nothing')?'':stepper;
+  return phone(`${head(title)}${hide}<div class="body" style="gap:14px">${body}</div>`,{fh:foot?150:0,foot});
+}
+
+/* ---- Option C: receipt-first — one slip whose status stamp changes ---- */
+function payC(st){
+  const stamp={pricing:['Estimate','neutral'],checkout:['To pay','acc'],confirming:['Confirming','acc'],slow:['Still working','warn'],paid:['Paid','ok'],failed:['Failed','danger'],topup:['Difference owed','warn'],nothing:['Settled','ok']}[st];
+  const rowsOrder=`<div class="kv"><span class="k">Tier</span><span class="v">T2 · Graduation</span></div><div class="kv"><span class="k">Length</span><span class="v">${cfg('dur')} minutes</span></div><div class="kv"><span class="k">Interview credit</span><span class="v">${cfg('amount')}</span></div>`;
+  const rowsTop=`<div class="kv"><span class="k">You paid for</span><span class="v">T2</span></div><div class="kv"><span class="k">Confirmed as</span><span class="v">T3</span></div>`;
+  const total=(l,k)=>`<div class="kv"><b style="font-size:15px">${l}</b><b class="h24" style="font-size:30px;letter-spacing:-.03em">${cfg(k)}</b></div>`;
+  let title='Receipt',top='',bot='',foot='',extra='';
+  const topHead=`<div class="rowb"><span class="eyebrow">Apostrophe · interview</span>${pill(stamp[0],stamp[1])}</div>`;
+  if(st==='pricing'){top=`${topHead}<span class="eyebrow" style="margin-top:2px">Your tier is set by your highest qualification</span><div class="stack" style="gap:8px">${tierRows()}</div>`;bot=`${total('Total','amount')}`;foot=sticky(`${btn('Pay and book my interview','pri full','state:checkout')}${secured}`)}
+  else if(st==='checkout'){top=`${topHead}<div class="h22">One interview.</div>${rowsOrder}`;bot=`${total('Amount','amount')}<div class="xs">Pay by UPI, card, net banking or wallet — the gateway offers them next. One-time; nothing recurring.</div>`;foot=sticky(`${btn('Pay now','pri full','state:confirming')}${secured}`)}
+  else if(st==='confirming'||st==='slow'){const slow=st==='slow',[e,t,b]=confirmCopy[st];top=`${topHead}<div class="rowc"><div class="disc ${slow?'warn':'acc'}" style="width:44px;height:44px">${slow?'<b>!</b>':'<div class="spinner" style="width:20px;height:20px"></div>'}</div><div class="h22" style="font-size:21px">${t}</div></div><div class="sub" style="font-size:15px">${b}</div>`;bot=`${rowsOrder.split('</div><div')[2]?'':''}<div class="kv"><span class="k">Amount</span><b class="big">${cfg('amount')}</b></div>${refRow(slow)}`;foot=slow?sticky(`${btn('Keep waiting','pri full','state:confirming')}${btn('Email support','out full')}`):''}
+  else if(st==='paid'){top=`${topHead}<div class="disc ok">${ic('check')}</div><div class="h22">Payment confirmed.</div><div class="sub" style="font-size:15px">Your interview is ready to book. <span class="samp">Proposed hand-off</span></div>`;bot=`<div class="kv"><span class="k">Paid</span><b class="big">${cfg('amount')}</b></div><div class="mono muted" style="font-size:11px;letter-spacing:.06em">${cfg('pref')}</div>`;foot=sticky(btn('Book an interview','pri full','sec:booking:state:pick'))}
+  else if(st==='failed'){top=`${topHead}<span class="eyebrow danger">Payment failed</span><div class="h22">That didn’t go through.</div><div class="banner danger" style="font-size:15px">${failedReasonText()}</div>`;bot=``;foot=sticky(`${btn('Try again','pri full','state:checkout')}${btn('Back to pricing','quiet full','state:pricing')}`)}
+  else if(st==='topup'){top=`${topHead}<span class="eyebrow acc">Top-up · publication held</span><div class="h22">A little more is owed.</div><div class="sub" style="font-size:15px">${topCopy}</div>${rowsTop}`;bot=total('Difference owed','diff');foot=sticky(`${btn(`Pay the difference · ${cfg('diff')}`,'pri full','state:confirming')}<div class="secured">Your video resume publishes the moment this is settled.</div>`)}
+  else{top=`${topHead}<div class="disc ok">${ic('check')}</div><span class="eyebrow ok">Nothing owed</span><div class="h22">You’re all set.</div><div class="sub" style="font-size:15px">${nothingCopy}</div>`;bot=`<div class="kv"><span class="k">Owed</span><b class="big">₹0</b></div>`;foot=sticky(btn('Back to my interviews','out full'))}
+  return phone(`${head(title,null,{})}<div class="body" style="gap:14px"><div class="receipt"><div class="top">${top}</div>${bot?`<div class="perf"></div><div class="bot">${bot}</div>`:''}</div></div>`,{fh:foot?150:0,foot});
+}
+
+/* ---- Option D: ink hero price card, bottom-anchored action ---- */
+function payD(st){
+  const incl=`<div class="stack" style="gap:10px;padding:0 4px"><span class="eyebrow">What you get</span><div class="bul"><span class="dash">—</span><span>A live ${cfg('dur')}-minute interview with a real interviewer</span></div><div class="bul"><span class="dash">—</span><span>The edited film, as your video resume</span></div><div class="bul"><span class="dash">—</span><span>Written feedback and five scores</span></div></div>`;
+  if(st==='pricing'||st==='checkout'){
+    return phone(`${head(st==='pricing'?'Buy an interview':'Checkout')}<div class="body" style="gap:16px"><div class="inkhero"><span class="eyebrow" style="color:var(--accent-muted)">Your order · T2 · Graduation</span><div class="price">${cfg('amount')}</div><div class="p">${cfg('dur')}-minute interview · one-time · nothing recurring</div></div>
+      ${st==='pricing'?`<div class="stack" style="gap:8px"><span class="eyebrow">Your tier is set by your highest qualification</span>${tierRows()}</div>`:incl}
+      <div class="sub">Pay by UPI, card, net banking or wallet — the gateway offers them next.</div></div>`,{fh:190,foot:sticky(`${btn(st==='pricing'?'Pay and book my interview':'Pay now','pri full','state:'+(st==='pricing'?'checkout':'confirming'))}${secured}`)});
+  }
+  if(st==='confirming'||st==='slow'){const slow=st==='slow',[e,t,b]=confirmCopy[st];
+    return phone(`${head('')}<div class="body" style="gap:16px"><div class="inkhero ${slow?'':'acc'}" style="padding:26px 22px;gap:10px"><div class="disc" style="background:rgba(255,255,255,.14);color:#fff">${slow?'<b style="font-size:26px">!</b>':'<div class="spinner" style="border-color:rgba(255,255,255,.3);border-top-color:#fff"></div>'}</div><span class="eyebrow" style="color:#DCD3FF">${e}</span><div class="lead" style="color:#fff">${t}</div><div class="p" style="font-size:15px;line-height:1.5">${b}</div><div style="margin-top:8px">${refRow(slow,true)}</div></div></div>`,{fh:slow?150:0,foot:slow?sticky(`${btn('Keep waiting','pri full','state:confirming')}${btn('Email support','out full')}`):''});}
+  if(st==='paid')return phone(`${head('')}<div class="body"><div class="inkhero" style="padding:26px 22px;gap:10px"><div class="disc" style="background:var(--ok);color:#fff">${ic('check')}</div><span class="eyebrow" style="color:#7FE3BE">Payment confirmed</span><div class="lead" style="color:#fff">Your interview is ready to book.</div><div class="p">The calendar is open. <span class="samp" style="color:#8A91A2">Proposed hand-off</span></div></div>${incl}</div>`,{fh:100,foot:sticky(btn('Book an interview','pri full','sec:booking:state:pick'))});
+  if(st==='failed')return phone(`${head('')}<div class="body"><div class="inkhero bad" style="padding:26px 22px;gap:10px"><span class="eyebrow" style="color:#FF9A9E">Payment failed</span><div class="lead" style="color:#fff">That didn’t go through.</div><div class="p" style="font-size:15px;line-height:1.5;color:#fff">${failedReasonText().replace('class="samp"','class="samp" style="color:#F2B8BA"')}</div></div></div>`,{fh:150,foot:sticky(`${btn('Try again','pri full','state:checkout')}${btn('Back to pricing','quiet full','state:pricing')}`)});
+  if(st==='topup')return phone(`${head('Top-up')}<div class="body" style="gap:16px"><div class="inkhero"><span class="eyebrow" style="color:var(--accent-muted)">Top-up · publication held</span><div class="p" style="margin-top:6px">Difference owed</div><div class="price">${cfg('diff')}</div><div class="p">T2 paid → confirmed as T3</div></div><div class="h22">A little more is owed.</div><div class="sub" style="font-size:15px;line-height:1.5">${topCopy}</div></div>`,{fh:130,foot:sticky(`${btn(`Pay the difference · ${cfg('diff')}`,'pri full','state:confirming')}<div class="secured">Your video resume publishes the moment this is settled.</div>`)});
+  return phone(`${head('Top-up')}<div class="body"><div class="inkhero" style="padding:26px 22px;gap:10px"><div class="disc" style="background:var(--ok);color:#fff">${ic('check')}</div><span class="eyebrow" style="color:#7FE3BE">Nothing owed</span><div class="lead" style="color:#fff">You’re all set.</div><div class="p" style="font-size:15px;line-height:1.5">${nothingCopy}</div></div></div>`,{fh:90,foot:sticky(btn('Back to my interviews','out full'))});
+}
+const paymentRender=(opt,st)=>({A:payA,B:payB,C:payC,D:payD})[opt](st);
+
+/* =====================================================================
+   ROOM
+   ===================================================================== */
+const sil=`<svg viewBox="0 0 90 160" preserveAspectRatio="xMidYMid meet"><circle cx="45" cy="58" r="12" fill="#2B3347"/><path d="M18 160c0-26 11-42 27-42s27 16 27 42z" fill="#2B3347"/></svg>`;
+const silI=`<svg viewBox="0 0 160 90" preserveAspectRatio="xMidYMid slice"><circle cx="80" cy="38" r="15" fill="#46506B"/><path d="M42 90c0-22 14-33 38-33s38 11 38 33z" fill="#46506B"/></svg>`;
+const guide=`<svg viewBox="0 0 90 160" preserveAspectRatio="none"><ellipse cx="45" cy="58" rx="26" ry="34" fill="none" stroke="rgba(255,255,255,.26)" stroke-width=".5" stroke-dasharray="3 2.5"/></svg>`;
+const cam=({guideOn=true,off=false,note='',round=0}={})=>`<div class="cam"${round?` style="border-radius:${round}px"`:''}>${sil}${guideOn&&!off?guide:''}${off?`<div class="camoff">${ic('camoff')}<span class="mono" style="font-size:10.5px">${note}</span></div>`:''}</div>`;
+const camBox=(h,opts={})=>`<div style="position:relative;height:${h}px;border-radius:18px;overflow:hidden;background:#161C2B">${cam(opts)}</div>`;
+
+const RSTATES={
+  waiting:{rec:false,clock:null,name:false,truth:'Recording starts when the interview does',center:['Waiting for your interviewer','They will appear here the moment the session starts.']},
+  live:{rec:true,clock:'12:34',name:true,truth:'Recording · neither party can stop it'},
+  warn:{rec:true,clock:'54:12',name:true,warn:true,truth:'Recording · neither party can stop it'},
+  reconnecting:{rec:true,clock:'12:34',name:true,recon:true,truth:'Recording · neither party can stop it'},
+  audio:{rec:true,clock:'12:34',name:true,audio:true,truth:'Recording · neither party can stop it'},
+  blocked:{rec:false,clock:null,name:false,drop:true,truth:'Recording starts when the interview does'}
+};
+const dropCard=()=>`<div class="errcard"><div class="disc danger">${ic('camoff')}</div><b>Camera and microphone needed</b><div class="sub"><span class="samp" style="display:block;text-transform:none;letter-spacing:0">[message text comes from the room service]</span></div><div class="stack" style="width:100%">${btn('Try again','pri sm full')}${btn('Back','out sm full','state:early')}</div></div>`;
+const iTile=(r,w)=>{
+  const body=r.name?`<div class="vid">${silI}</div>`:`<div class="pl mk">’</div>`;
+  return `<div class="itile">${body}<small>YOUR INTERVIEWER</small>${r.name?`<span>${cfg('iname')}</span>`:''}</div>`;
+};
+const qualEl=q=>`<div class="qual ${q||''}"><i></i><i></i><i></i></div>`;
+const ctlRow=(r,lt=false)=>{
+  const c=lt?' lt':'';
+  return `<div class="ctls"><button class="ctl${c}" aria-label="Mute">${ic('mic')}</button><button class="ctl${c}${r.audio?' lit':''}" aria-label="Camera">${ic(r.audio?'camoff':'cam')}</button><button class="ctl${c}" aria-label="Speaker">${ic('spk')}</button><div class="ctl${c}" aria-label="Network quality">${qualEl(r.audio?'fair':'')}</div><button class="leave" data-act="state:left">Leave</button></div>`;
+};
+const camNote=r=>r.audio?'Audio only · weak connection':'';
+const bandA=r=>r.warn?`<div class="abs" style="left:20px;right:20px;bottom:150px"><div class="glass w" style="justify-content:center">${cfg('warn')} minutes left</div></div>`:'';
+const reconA=r=>r.recon?`<div class="abs" style="left:16px;right:16px;bottom:150px"><div class="glass w"><span>Reconnecting · nothing is lost</span><span>90s</span></div></div>`:'';
+
+/* ---- Option A: full-bleed dark, self preview full screen, interviewer tile top-right ---- */
+function roomLiveA(st){
+  const r=RSTATES[st];
+  const inner=`${cam({off:r.audio,note:camNote(r)})}
+   <div class="abs" style="left:0;right:0;top:44px;display:flex;justify-content:space-between;align-items:flex-start;padding:16px">
+     <div style="display:grid;gap:8px">${r.rec?'<span class="rec"><i></i>REC</span>':''}${r.clock?`<span class="rec clk tnum">${r.clock}</span>`:''}</div>${iTile(r)}</div>
+   ${r.center?`<div class="abs" style="left:24px;right:24px;top:30%;text-align:center"><div class="h22" style="color:#fff">${r.center[0]}</div><div class="sub" style="color:#A6ACBA;margin-top:8px">${r.center[1]}</div></div>`:''}
+   ${r.drop?`<div class="abs" style="left:20px;right:20px;top:30%">${dropCard()}</div>`:''}
+   ${bandA(r)}${reconA(r)}
+   <div class="abs truth" style="left:0;right:0;bottom:112px">${r.truth}</div>
+   <div class="abs" style="left:0;right:0;bottom:0;padding:18px 20px 30px;background:var(--ink)">${ctlRow(r)}</div>`;
+  return phone(inner,{cam:true,dark:true});
+}
+
+/* ---- Option B: light lobby/stage — stacked cards, white control bar ---- */
+function roomLiveB(st){
+  const r=RSTATES[st];
+  const iv=r.name?`<div style="position:relative;aspect-ratio:16/9;border-radius:14px;overflow:hidden;background:#2B3347"><div class="cam" style="background:#2B3347">${silI}</div></div>`
+   :`<div style="aspect-ratio:16/9;border-radius:14px;background:var(--muted);display:grid;place-items:center;align-content:center;gap:8px;border:1px solid var(--border)"><div class="mark" style="width:56px;height:56px">’</div><div class="t15s">${r.center?r.center[0]:'Your interviewer'}</div><div class="xs" style="text-align:center;padding:0 24px">${r.center?r.center[1]:''}</div></div>`;
+  const top=`${head('Interview room',r.rec?'Recording':'Not started',{right:`${r.rec?`<span class="rec lt"><i></i>REC · <span class="tnum">${r.clock}</span></span>`:''}`})}`;
+  const inner=`${top}<div class="body" style="gap:10px;padding-bottom:0">
+    ${r.drop?dropCard():''}
+    ${r.warn?`<div class="banner warn" style="padding:9px 14px;font-size:13.5px;text-align:center"><b>${cfg('warn')} minutes left</b></div>`:''}
+    ${r.recon?`<div class="banner warn" style="padding:9px 14px;font-size:13px;display:flex;justify-content:space-between"><span>Reconnecting · nothing is lost</span><b>90s</b></div>`:''}
+    <div class="card" style="padding:10px;display:grid;gap:8px"><div class="rowb"><span class="eyebrow">YOUR INTERVIEWER</span>${r.name?`<span class="small"><b style="color:var(--text)">${cfg('iname')}</b></span>`:`<span class="small">named when the session starts</span>`}</div>${iv}</div>
+    <div class="card" style="padding:10px;display:grid;gap:8px"><div class="rowb"><span class="eyebrow">YOU</span><span class="xs">Guide is on your screen only · never recorded</span></div>${camBox(270,{off:r.audio,note:camNote(r)})}</div>
+    <div class="xs" style="text-align:center">${r.truth}</div></div>`;
+  return phone(inner,{fh:96,foot:`<div class="sticky" style="padding:12px 16px 24px">${ctlRow(r,true)}</div>`});
+}
+
+/* ---- Option C: dark split screen — interviewer panel above, you below ---- */
+function roomLiveC(st){
+  const r=RSTATES[st];
+  const iv=r.name?`<div style="position:relative;height:100%;border-radius:18px;overflow:hidden;background:#2B3347"><div class="cam" style="background:#2B3347">${silI}</div><div class="abs" style="left:12px;bottom:10px;right:12px;display:flex;justify-content:space-between;align-items:flex-end"><div><div style="font-size:15px;font-weight:600">${cfg('iname')}</div><div style="font-size:12px;color:#C9CED9">${cfg('ihead')}</div></div></div></div>`
+   :`<div style="height:100%;border-radius:18px;background:var(--ink-raised);border:1px solid var(--on-ink-edge);display:grid;place-items:center;align-content:center;gap:8px;text-align:center;padding:0 24px"><div class="mark dk" style="width:56px;height:56px">’</div><div class="t16" style="color:#fff">${r.center?r.center[0]:'Your interviewer'}</div><div class="xs" style="color:#8A91A2">${r.center?r.center[1]:''}</div></div>`;
+  const inner=`<div style="position:absolute;left:0;right:0;top:44px;bottom:0;display:flex;flex-direction:column;padding:6px 12px 0;gap:10px">
+    <div class="rowb" style="padding:0 4px;height:36px"><div class="rowc" style="gap:8px">${r.rec?'<span class="rec"><i></i>REC</span>':'<span class="rec" style="background:var(--on-ink-ground)">Not recording</span>'}${r.clock?`<span class="rec clk tnum">${r.clock}</span>`:''}</div><div class="rowc" style="gap:8px;color:#8A91A2;font-size:12px">${qualEl(r.audio?'fair':'')}<span class="mono" style="font-size:10px">${r.audio?'Weak':'Good'}</span></div></div>
+    ${r.warn?`<div class="glass w" style="justify-content:center;background:var(--on-ink-ground)">${cfg('warn')} minutes left</div>`:''}
+    ${r.recon?`<div class="glass w" style="background:var(--on-ink-ground)"><span>Reconnecting · nothing is lost</span><span>90s</span></div>`:''}
+    <div style="height:${r.warn||r.recon?190:226}px;flex:none;position:relative">${iv}</div>
+    <div style="flex:1;position:relative;border-radius:18px;overflow:hidden;min-height:0">${cam({off:r.audio,note:camNote(r)})}<div class="abs" style="left:12px;top:10px"><span class="pill onink">You</span></div>${r.drop?`<div class="abs" style="left:14px;right:14px;top:14%">${dropCard()}</div>`:''}</div>
+    <div class="truth" style="padding-top:2px">${r.truth}</div>
+    <div style="padding:2px 0 28px">${ctlRow(r)}</div></div>`;
+  return phone(inner,{cam:true,dark:true});
+}
+
+/* ---- Option D: interviewer-first full-bleed, self PiP, light bottom sheet ---- */
+function roomLiveD(st){
+  const r=RSTATES[st];
+  const main=r.name&&!r.audio?`<div class="cam" style="background:#2B3347">${silI.replace('preserveAspectRatio="xMidYMid slice"','preserveAspectRatio="xMidYMid slice"')}</div>`:`<div class="cam" style="background:#161C2B"></div>`;
+  const inner=`${main}
+   <div class="abs" style="left:16px;top:56px;display:flex;gap:8px;flex-wrap:wrap">${r.rec?'<span class="rec"><i></i>REC</span>':''}${r.clock?`<span class="rec clk tnum">${r.clock}</span>`:''}</div>
+   <div class="abs" style="right:16px;top:56px;width:96px;height:140px;border-radius:14px;overflow:hidden;border:1.5px solid var(--on-ink-edge)">${cam({off:r.audio,note:r.audio?'Audio only':''})}</div>
+   ${(!r.name&&!r.drop)?`<div class="abs" style="left:0;right:120px;top:210px;text-align:center;padding-left:20px"><div class="mark dk" style="width:64px;height:64px;margin:0 auto 10px;font-size:30px">’</div></div>`:''}
+   ${r.audio?`<div class="abs" style="left:24px;right:24px;top:240px;text-align:center;color:#8A91A2" class="mono"><div class="mono" style="font-size:11px">Audio only · weak connection</div></div>`:''}
+   ${r.warn?`<div class="abs" style="left:16px;right:130px;top:104px"><div class="glass w" style="justify-content:center">${cfg('warn')} minutes left</div></div>`:''}
+   ${r.recon?`<div class="abs" style="left:16px;right:16px;bottom:230px"><div class="glass w"><span>Reconnecting · nothing is lost</span><span>90s</span></div></div>`:''}
+   ${r.drop?`<div class="abs" style="left:20px;right:20px;top:150px">${dropCard()}</div>`:''}
+   <div class="sheetover"><div class="grab"></div>
+     ${r.center?`<div class="rowc"><div class="mark">’</div><div class="grow"><div class="t16" style="font-size:17px">${r.center[0]}</div><div class="xs">${r.center[1]}</div></div></div>`
+      :r.drop?`<div class="t16">Camera and microphone needed</div>`
+      :`<div class="rowc"><div class="mark" style="font-size:18px;font-weight:600">IN</div><div class="grow"><div class="t16" style="font-size:16px">${cfg('iname')}</div><div class="xs">${cfg('ihead')}</div></div><span class="pill ok">Live</span></div>`}
+     ${ctlRow(r,true)}
+     <div class="xs" style="text-align:center">${r.truth}</div></div>`;
+  return phone(inner,{cam:true,dark:true});
+}
+
+/* ---- pre-room: Interview detail (early / join open / started) and device check ---- */
+const plateCard=(note,dk)=>`<div class="card rowc" style="align-items:flex-start;${dk?'background:var(--ink-raised);border-color:var(--on-ink-edge);color:#fff':''}"><div class="mark${dk?' dk':''}">’</div><div class="grow"><b class="t15s">Your interviewer</b><div class="small" style="margin-top:3px;${dk?'color:#8A91A2':''}">${note}</div></div></div>`;
+const NOTE_EARLY='Assigned, and kept unnamed until the session starts. Every student gets the same interviewer on the same terms, and nobody can shop for a soft one.';
+const NOTE_OPEN='You will see who it is the moment the session starts — that is the first thing that happens in the room.';
+function preDetail(opt,st){
+  const open=st!=='early',started=st==='started';
+  const clk=started?`<div class="clock"><span class="eyebrow">UNTIL JOIN CLOSES</span><b>14:52</b></div>`:`<div class="clock"><span class="eyebrow">STARTS IN</span><b>${open?'04:12':'01:42:10'}</b></div>`;
+  const pl=open?(started?'Started':'Join open'):'Booked';
+  const closes=open?`<span class="small">Closes ${cfg('joinCloseT')}</span>`:'';
+  const winPanel=open?'':`<div class="panel"><span class="eyebrow">JOIN WINDOW · ${cfg('joinOpenT')} – ${cfg('joinCloseT')} IST</span><div class="t15">Join opens ${cfg('joinOpen')} before the start and closes at ${cfg('joinCloseT')}. Run the device check before then.</div></div>`;
+  const warnB=started?`<div class="banner warn">Your interviewer is in the room, waiting. Join closes at ${cfg('joinCloseT')} — after that this is a no-show and the interview you paid for is spent.</div>`:'';
+  const footBtns=open?`${btn('Join interview','pri full','sec:room:state:waiting')}${btn('Run the device check','out full','state:precheck')}`:`${btn('Join interview','dis full')}<div class="two">${btn('Reschedule','out')}${btn('Cancel','out')}</div>`;
+  const dk=opt==='C';
+  const whenCard=`<div class="when" style="${dk?'background:var(--ink-raised);border-color:var(--on-ink-edge);color:#fff':''}"><div class="rowb"><div><div class="t16" style="font-size:19px">${cfg('slotD')} · ${cfg('slotT')}</div><div class="small" style="${dk?'color:#8A91A2':''}">12:00 PM IST · ${cfg('dur')} min</div></div>${pill(pl,open?'acc':'neutral')}</div>${clk}${closes}</div>`;
+  if(opt==='A')return phone(`${head('Your interview')}<div class="body">${whenCard}${warnB}${plateCard(open?NOTE_OPEN:NOTE_EARLY)}${winPanel}</div>`,{fh:open?130:150,foot:sticky(footBtns)});
+  if(opt==='B'){
+    // ring countdown
+    const ring=`<div class="ring" style="width:190px;height:190px;margin:6px auto 0"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" fill="none" stroke="#E6E8EE" stroke-width="5"/><circle cx="50" cy="50" r="44" fill="none" stroke="#5B3DF5" stroke-width="5" stroke-linecap="round" stroke-dasharray="276" stroke-dashoffset="${open?60:240}" transform="rotate(-90 50 50)"/></svg><div class="c"><span class="eyebrow">${started?'UNTIL JOIN CLOSES':'STARTS IN'}</span><b class="tnum" style="font:500 ${open?34:28}px 'Geist Mono',monospace;letter-spacing:-.02em">${started?'14:52':open?'04:12':'01:42:10'}</b>${pill(pl,open?'acc':'neutral')}</div></div>`;
+    const tl=`<div class="tl card" style="padding:16px 16px 0"><div class="it"><span class="dot ${open?'ok':''}">${open?ic('check'):ic('lock',14)}</span><div><b class="t15s">Join opens · ${cfg('joinOpenT')}</b><div class="xs">${cfg('joinOpen')} before the start</div></div></div><div class="it"><span class="dot ${started?'ok':''}">${started?ic('check'):ic('clock',14)}</span><div><b class="t15s">Interview starts · ${cfg('slotT')}</b><div class="xs">${cfg('slotD')} · ${cfg('dur')} min</div></div></div><div class="it"><span class="dot">${ic('alert',14)}</span><div><b class="t15s">Join closes · ${cfg('joinCloseT')}</b><div class="xs">After that it is a no-show and the interview is spent</div></div></div></div>`;
+    return phone(`${head('Your interview',null)}<div class="body">${ring}${warnB}${tl}${plateCard(open?NOTE_OPEN:NOTE_EARLY)}</div>`,{fh:open?130:150,foot:sticky(footBtns)});
+  }
+  if(opt==='C')return phone(`${head('Your interview',null,{dark:true})}<div class="body"><div class="stack" style="gap:6px;padding:8px 4px"><span class="eyebrow" style="color:var(--accent-muted)">${pl}</span><div class="lead" style="color:#fff;font-size:44px;font-family:'Geist Mono',monospace;font-weight:500;letter-spacing:-.04em">${started?'14:52':open?'04:12':'1:42:10'}</div><div class="sub" style="color:#8A91A2">${started?'until join closes':'until your interview starts'} · ${cfg('slotD')} ${cfg('slotT')}</div></div>${warnB.replace('class="banner warn"','class="banner warn" style="background:#2A2008;border-color:#5C4510;color:#F5A524"')}${plateCard(open?NOTE_OPEN:NOTE_EARLY,true)}${open?'':`<div class="panel" style="background:var(--ink-raised);border-color:var(--on-ink-edge);color:#fff"><span class="eyebrow" style="color:var(--accent-muted)">JOIN WINDOW · ${cfg('joinOpenT')} – ${cfg('joinCloseT')} IST</span><div class="t15" style="color:#C9CED9">Join opens ${cfg('joinOpen')} before the start and closes at ${cfg('joinCloseT')}. Run the device check before then.</div></div>`}</div>`,{dark:true,fh:open?130:150,foot:sticky(open?`${btn('Join interview','pri full','sec:room:state:waiting')}${btn('Run the device check','ghostink full','state:precheck')}`:`<button class="btn full" style="background:var(--on-ink-ground);color:#8A91A2;cursor:not-allowed">Join interview</button><div class="two">${btn('Reschedule','ghostink')}${btn('Cancel','ghostink')}</div>`,true)});
+  // D: camera preview dimmed behind a sheet
+  return phone(`${cam({off:false})}<div class="abs" style="inset:0;background:rgba(11,15,26,.55)"></div>
+   <div class="sheetover" style="padding-bottom:26px"><div class="grab"></div>
+     <div class="rowb"><div><div class="t16" style="font-size:19px">${cfg('slotD')} · ${cfg('slotT')}</div><div class="xs">12:00 PM IST · ${cfg('dur')} min</div></div>${pill(pl,open?'acc':'neutral')}</div>
+     <div class="rowb" style="background:var(--muted);border-radius:14px;padding:12px 14px"><span class="eyebrow">${started?'UNTIL JOIN CLOSES':'STARTS IN'}</span><b class="tnum" style="font:500 24px 'Geist Mono',monospace">${started?'14:52':open?'04:12':'01:42:10'}</b></div>
+     ${warnB}
+     <div class="small">${open?NOTE_OPEN:`Join opens ${cfg('joinOpen')} before the start and closes at ${cfg('joinCloseT')}. ${NOTE_EARLY}`}</div>
+     ${open?`${btn('Join interview','pri full','sec:room:state:waiting')}${btn('Run the device check','out full','state:precheck')}`:`${btn('Join interview','dis full')}<div class="two">${btn('Reschedule','out')}${btn('Cancel','out')}</div>`}</div>`,{cam:true});
+}
+const CHECKS=[['cam','Camera','Working','Ready'],['mic','Microphone','Access granted','Ready'],['spk','Speaker','You heard the tone','Ready'],['wifi','Bandwidth','__mbps','Fast enough'],['wifi','Connection','Wi-Fi','Connected'],['shield','Permissions','Camera and microphone allowed','Allowed']];
+const checkRows=(pillTone=true)=>CHECKS.map(c=>`<div class="check"><span class="ci">${ic(c[0])}</span><div class="grow"><b>${c[1]}</b><span class="s">${c[2]==='__mbps'?cfg('mbps'):c[2]}</span></div>${pillTone?pill(c[3],'ok'):''}</div>`).join('');
+function preCheck(opt){
+  const foot=(dk)=>sticky(`<div class="xs" style="text-align:center">All five checks must pass before you can join.</div>${btn('Join interview','pri full','sec:room:state:waiting')}`,dk);
+  const frame=`<div style="position:relative;height:250px;width:141px;margin:0 auto;border-radius:18px;overflow:hidden;background:#161C2B">${cam({})}<div class="abs mono" style="left:0;right:0;text-align:center;bottom:8px;color:#8A91A2;font-size:9px">Live preview · not recorded</div></div>`;
+  if(opt==='A')return phone(`${head('Device check')}<div class="body"><div class="stack" style="gap:8px"><span class="eyebrow acc">Mandatory before you join · ${cfg('slotT')} IST</span><div class="lead">This is the frame that publishes.</div></div>${frame}<div class="card" style="padding:4px 16px">${checkRows()}</div><button class="btn out full" style="border-color:transparent;color:var(--accent)">How to prepare: lighting, background, questions</button></div>`,{fh:140,foot:foot()});
+  if(opt==='B')return phone(`${head('Device check')}<div class="body"><div class="rowc"><div class="ring" style="width:86px;height:86px"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none" stroke="#E6E8EE" stroke-width="8"/><circle cx="50" cy="50" r="42" fill="none" stroke="#0E9F6E" stroke-width="8" stroke-linecap="round" stroke-dasharray="264" stroke-dashoffset="0" transform="rotate(-90 50 50)"/></svg><div class="c"><b style="font:500 20px 'Geist Mono',monospace">6/6</b></div></div><div class="grow"><span class="eyebrow ok">All checks pass</span><div class="h22" style="margin-top:4px">You’re ready to join.</div></div></div>
+    <div class="card" style="padding:4px 16px">${checkRows()}</div><div class="rowc"><div style="width:84px;height:112px;border-radius:12px;overflow:hidden;position:relative;flex:none;background:#161C2B">${cam({})}</div><div class="small">This is the frame that publishes. Face a light, keep your head and shoulders inside the dashed guide. Live preview · not recorded.</div></div></div>`,{fh:140,foot:foot()});
+  if(opt==='C')return phone(`${head('Green room',null,{dark:true})}<div class="body" style="gap:12px"><div style="position:relative;height:360px;border-radius:20px;overflow:hidden">${cam({})}<div class="abs mono" style="left:14px;top:12px;color:#fff;font-size:10.5px">This is the frame that publishes</div><div class="abs mono" style="left:14px;bottom:12px;color:#8A91A2;font-size:10px">Live preview · not recorded</div></div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px">${CHECKS.map(c=>`<span class="chip k">${ic('check')}${c[1]}</span>`).join('')}</div><div class="small" style="color:#8A91A2">Bandwidth: ${cfg('mbps')}</div></div>`,{dark:true,fh:140,foot:foot(true)});
+  return phone(`${cam({})}<div class="abs mono" style="left:0;right:0;top:58px;text-align:center;color:#fff;font-size:11px">This is the frame that publishes</div>
+    <div class="sheetover"><div class="grab"></div><div class="rowb"><div><span class="eyebrow acc">Mandatory before you join</span><div class="h20" style="margin-top:2px">6 of 6 checks pass</div></div><span class="pill ok">Ready</span></div>
+     <div class="card" style="padding:2px 14px;max-height:220px;overflow:hidden">${CHECKS.slice(0,4).map(c=>`<div class="check" style="padding:8px 0"><span class="ci" style="width:30px;height:30px">${ic(c[0])}</span><div class="grow"><b style="font-size:14px">${c[1]}</b></div>${pill(c[3],'ok')}</div>`).join('')}<div class="xs" style="padding:6px 0 8px">+ Connection, Permissions · tap to expand</div></div>
+     <div class="xs" style="text-align:center">All five checks must pass before you can join.</div>${btn('Join interview','pri full','sec:room:state:waiting')}</div>`,{cam:true});
+}
+/* ---- post-room: left / ended / ended early ---- */
+const reveal=`<div class="rowc"><div class="mark" style="width:44px;height:44px;font-size:15px;font-weight:600">IN</div><div class="grow"><b class="t15s">Interviewed by ${cfg('iname')}</b><div class="small">${cfg('ihead')}</div></div></div>`;
+const wrapSteps=(dk)=>`<ul class="steps" style="padding:0">${[['1','Now','Your interview is being edited into your 9:16 video resume.'],['2','Next','It publishes itself and starts appearing to employers.'],['3','Within a day','Your feedback — five scores, strengths and improvements — lands here.']].map(s=>`<li style="${dk?'border-color:var(--on-ink-edge)':''}"><span class="n"${dk?' style="background:var(--on-ink-ground);color:#fff"':''}>${s[0]}</span><div><b class="t15s">${s[1]}</b><div class="small"${dk?' style="color:#8A91A2"':''}>${s[2]}</div></div></li>`).join('')}</ul>`;
+const earlyBanner=`<div class="banner warn">The session ended before it finished, so it did not become a video resume. Our team is reviewing what happened. If it was not on you, a free re-interview is added to your account and you will be told here and in your notifications.</div>`;
+function roomPost(opt,st){
+  const inc=st==='endedEarly',left=st==='left';
+  const eb=left?null:inc?['INTERVIEW ENDED EARLY','warn','Your interview is under review.']:['THAT IS A WRAP','ok','Your video is being made.'];
+  const sub=inc?'':'It joins the employer feed on its own — there is no approval step to wait for.';
+  const footBtns=left?`${btn('Rejoin the interview','pri full','sec:room:state:live')}${btn('Back to my interviews','out full')}`:btn('Back to my interviews',inc?'out full':'ink full');
+  const leftBody=`<div class="stack" style="gap:8px"><div class="lead">You left the interview.</div><div class="sub" style="font-size:15px">It is still running — only your interviewer can end it. You can rejoin while it is in progress.</div></div>${reveal}`;
+  const mainBody=left?leftBody:`<div class="disc ${inc?'warn':'ok'}">${inc?'<b style="font-size:26px">!</b>':ic('check')}</div><div class="stack" style="gap:8px"><span class="eyebrow ${eb[1]}">${eb[0]}</span><div class="lead">${eb[2]}</div>${sub?`<div class="sub" style="font-size:15px">${sub}</div>`:''}</div>${reveal}${inc?earlyBanner:`<div><b class="t15s" style="font-size:16px">What happens next</b>${wrapSteps(false)}</div>`}`;
+  if(opt==='A')return phone(`${head('')}<div class="body" style="gap:20px">${mainBody}</div>`,{fh:left?150:100,foot:sticky(footBtns)});
+  if(opt==='B'){
+    if(left)return phone(`${head('')}<div class="body">${leftBody}</div>`,{fh:150,foot:sticky(footBtns)});
+    return phone(`${head('')}<div class="body"><div class="card" style="display:grid;gap:14px"><div class="rowc"><div class="disc ${inc?'warn':'ok'}" style="width:48px;height:48px">${inc?'<b>!</b>':ic('check')}</div><div><span class="eyebrow ${eb[1]}">${eb[0]}</span><div class="h22" style="margin-top:2px">${eb[2]}</div></div></div>${sub?`<div class="sub">${sub}</div>`:''}</div>${inc?earlyBanner:`<div class="tl card" style="padding:16px 16px 0"><div class="it"><span class="dot acc">${ic('film',14)}</span><div><b class="t15s">Now</b><div class="small">Your interview is being edited into your 9:16 video resume.</div></div></div><div class="it"><span class="dot">${ic('play',14)}</span><div><b class="t15s">Next</b><div class="small">It publishes itself and starts appearing to employers.</div></div></div><div class="it"><span class="dot">${ic('star',14)}</span><div><b class="t15s">Within a day</b><div class="small">Your feedback — five scores, strengths and improvements — lands here.</div></div></div></div>`}${reveal}</div>`,{fh:100,foot:sticky(footBtns)});
+  }
+  if(opt==='C'){
+    const body=left?`<div class="stack" style="gap:8px"><div class="lead" style="color:#fff">You left the interview.</div><div class="sub" style="color:#A6ACBA;font-size:15px">It is still running — only your interviewer can end it. You can rejoin while it is in progress.</div></div>${reveal.replace('class="small"','class="small" style="color:#8A91A2"')}`
+     :`<div class="disc" style="background:${inc?'#2A2008':'rgba(14,159,110,.2)'};color:${inc?'#F5A524':'#2BD6A0'}">${inc?'<b style="font-size:26px">!</b>':ic('check')}</div><div class="stack" style="gap:8px"><span class="eyebrow" style="color:${inc?'#F5A524':'#2BD6A0'}">${eb[0]}</span><div class="lead" style="color:#fff">${eb[2]}</div>${sub?`<div class="sub" style="color:#A6ACBA;font-size:15px">${sub}</div>`:''}</div>${reveal.replace('class="small"','class="small" style="color:#8A91A2"')}${inc?`<div class="banner warn" style="background:#2A2008;border-color:#5C4510;color:#F5A524">${earlyBanner.replace(/<[^>]+>/g,'')}</div>`:`<div><b class="t15s" style="font-size:16px;color:#fff">What happens next</b>${wrapSteps(true)}</div>`}`;
+    return phone(`${head('',null,{dark:true})}<div class="body" style="gap:20px">${body}</div>`,{dark:true,fh:left?150:100,foot:sticky(left?`${btn('Rejoin the interview','pri full','sec:room:state:live')}${btn('Back to my interviews','ghostink full')}`:btn('Back to my interviews','white full'),true)});
+  }
+  // D: frozen last frame under a sheet
+  const sheet=`<div class="sheetover" style="top:34%;grid-template-rows:auto 1fr auto"><div class="grab"></div><div class="stack" style="gap:12px;overflow:hidden">${left?`<div class="lead" style="font-size:26px">You left the interview.</div><div class="sub" style="font-size:15px">It is still running — only your interviewer can end it. You can rejoin while it is in progress.</div>${reveal}`:`<div class="rowc"><div class="disc ${inc?'warn':'ok'}" style="width:44px;height:44px">${inc?'<b>!</b>':ic('check')}</div><span class="eyebrow ${eb[1]}">${eb[0]}</span></div><div class="lead" style="font-size:26px">${eb[2]}</div>${sub?`<div class="sub">${sub}</div>`:''}${inc?earlyBanner:wrapSteps(false)}`}</div><div class="stack" style="gap:8px">${footBtns}</div></div>`;
+  return phone(`${cam({guideOn:false})}<div class="abs" style="inset:0;background:rgba(11,15,26,.6)"></div><div class="abs" style="left:0;right:0;top:70px;text-align:center"><span class="pill onink">${left?'Interview still running':inc?'Ended early':'Interview ended'}</span></div>${sheet}`,{cam:true});
+}
+function roomRender(opt,st){
+  if(st==='precheck')return preCheck(opt);
+  if(['early','joinopen','started'].includes(st))return preDetail(opt,st);
+  if(['left','ended','endedEarly'].includes(st))return roomPost(opt,st);
+  return {A:roomLiveA,B:roomLiveB,C:roomLiveC,D:roomLiveD}[opt](st);
+}
+
+/* =====================================================================
+   SCORECARD
+   ===================================================================== */
+const SC=[['Communication',7],['Domain knowledge',8],['Confidence and presence',6],['Problem solving',7]];
+const OVERALL=7;
+const SAMP_S='Sample strengths text. The interviewer writes this in free text and it is shown in full, never truncated.';
+const SAMP_I='Sample improvement text. Also free text from the interviewer, shown in full — no internal note, no recommendation.';
+const privateNote=`<div class="private"><b>PRIVATE</b><span>Employers never see your scores or this note — only your video resume.</span></div>`;
+const sampleTag=`<div class="samp">Scores and text are sample placeholders</div>`;
+const cells=v=>`<div class="cells">${Array.from({length:10},(_,i)=>`<i class="${i<v?'f':''}"></i>`).join('')}</div>`;
+const ringSvg=(v,sz,stroke,tc,bgc)=>{const r=44,C=2*Math.PI*r;return `<svg viewBox="0 0 100 100" style="width:${sz}px;height:${sz}px;stroke:none"><circle cx="50" cy="50" r="${r}" fill="none" stroke="${bgc}" stroke-width="${stroke}"/><circle cx="50" cy="50" r="${r}" fill="none" stroke="${tc}" stroke-width="${stroke}" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C*(1-v/10)}" transform="rotate(-90 50 50)"/></svg>`};
+const radar=(sz)=>{
+  const cx=100,cy=100,R=78;const pt=(i,v)=>{const a=-Math.PI/2+i*Math.PI/2;return [cx+Math.cos(a)*R*v/10,cy+Math.sin(a)*R*v/10]};
+  const poly=v=>SC.map((s,i)=>pt(i,typeof v==='number'?v:s[1]).join(',')).join(' ');
+  return `<svg viewBox="0 0 200 200" style="width:${sz}px;height:${sz}px;stroke:none">${[10,7.5,5,2.5].map(g=>`<polygon points="${poly(g)}" fill="none" stroke="#E3E6ED" stroke-width="1"/>`).join('')}${SC.map((s,i)=>{const[x,y]=pt(i,10);return `<line x1="100" y1="100" x2="${x}" y2="${y}" stroke="#E3E6ED"/>`}).join('')}<polygon points="${poly()}" fill="rgba(91,61,245,.16)" stroke="#5B3DF5" stroke-width="2" stroke-linejoin="round"/>${SC.map((s,i)=>{const[x,y]=pt(i,s[1]);return `<circle cx="${x}" cy="${y}" r="4" fill="#5B3DF5"/>`}).join('')}<circle cx="100" cy="100" r="22" fill="#0B0F1A"/><text x="100" y="108" text-anchor="middle" fill="#fff" font-size="22" font-weight="600" font-family="Geist">${OVERALL}</text></svg>`;
+};
+function scoreWaiting(opt,kind){
+  const awaiting=kind==='awaiting';
+  const eb=awaiting?['Feedback','acc']:['Feedback',''];
+  const title=awaiting?'Your feedback is on its way.':'Feedback will not be available for this interview.';
+  const body=awaiting?`Your interviewer writes it up after the session and has up to ${cfg('scoreWin')} after the session to send it — we’ll notify you the moment it does.`:'';
+  const back=btn('Back to my interviews','out');
+  if(opt==='A')return phone(`${head('Your scorecard',cfg('slotD')+' · '+cfg('slotT'))}<div class="body" style="padding-top:90px;gap:12px"><span class="eyebrow ${eb[1]}">${eb[0]}</span><div class="lead">${title}</div>${body?`<div class="sub" style="font-size:15px;line-height:1.5">${body}</div>`:''}<div style="margin-top:8px">${back}</div></div>`);
+  if(opt==='B')return phone(`${head('Your scorecard')}<div class="body"><div class="card" style="display:grid;gap:6px"><span class="eyebrow ${eb[1]}">${eb[0]}</span><div class="h22">${title}</div></div>${awaiting?`<div class="tl card" style="padding:16px 16px 0"><div class="it"><span class="dot ok">${ic('check')}</span><div><b class="t15s">Interview done</b><div class="xs">${cfg('slotD')} · ${cfg('slotT')}</div></div></div><div class="it"><span class="dot acc">${ic('mail',14)}</span><div><b class="t15s">Interviewer writes it up</b><div class="xs">Up to ${cfg('scoreWin')} after the session</div></div></div><div class="it"><span class="dot">${ic('star',14)}</span><div><b class="t15s">We notify you</b><div class="xs">The moment it is sent</div></div></div></div>`:`<div class="banner info">Nothing is wrong with your account. This interview never carries feedback.</div>`}${back}</div>`);
+  if(opt==='C')return phone(`${head('Your scorecard',null,{dark:true})}<div class="body" style="padding-top:70px;gap:14px"><div class="disc" style="background:var(--on-ink-ground);color:#fff">${awaiting?'<div class="spinner" style="border-color:rgba(255,255,255,.25);border-top-color:#fff;width:22px;height:22px"></div>':ic('film')}</div><span class="eyebrow" style="color:var(--accent-muted)">${eb[0]}</span><div class="lead" style="color:#fff">${title}</div>${body?`<div class="sub" style="color:#A6ACBA;font-size:15px;line-height:1.5">${body}</div>`:''}<div>${btn('Back to my interviews','ghostink')}</div></div>`,{dark:true});
+  return phone(`${head('Your scorecard')}<div class="body" style="gap:14px"><div class="card" style="display:grid;place-items:center;padding:20px;border-style:dashed"><div style="opacity:.35">${radar(200).replace(/#5B3DF5/g,'#8A91A2').replace('>7<','>–<')}</div></div><span class="eyebrow ${eb[1]}">${eb[0]}</span><div class="h24">${title}</div>${body?`<div class="sub" style="font-size:15px;line-height:1.5">${body}</div>`:''}${back}</div>`);
+}
+function scoreReady(opt,c){
+  if(opt==='A'){ // ring + bars
+    return phone(`${head('Your scorecard',cfg('slotD')+' · '+cfg('slotT'))}<div class="body" style="gap:12px">
+      <div class="scoreink"><div class="ring" style="width:104px;height:104px;flex:none">${ringSvg(OVERALL,104,9,'#7258FF','rgba(255,255,255,.14)')}<div class="c"><span class="n tnum" style="font-size:38px">${OVERALL}</span><span style="font-size:12px;color:#8A91A2">/10</span></div></div><div class="grow"><div class="eyebrow" style="color:var(--accent-muted)">OVERALL SCORE</div><div style="font-size:14px;color:#C9CED9;margin-top:6px">From your interviewer, out of ten.</div></div></div>
+      ${privateNote}
+      <div class="card" style="padding:6px 14px">${SC.map(s=>`<div style="padding:12px 0;border-top:1px solid var(--border);display:grid;gap:8px" class="${'srow'}"><div class="rowb"><span style="font-size:15px;font-weight:500">${s[0]}</span><span style="font-size:17px">${s[1]}</span></div>${cells(s[1])}</div>`).join('').replace('border-top:1px solid var(--border);','')}</div>
+      <div class="card" style="display:grid;gap:6px"><b style="font-size:14px;color:var(--ok-text)">↑ Did well</b><div class="t15">${SAMP_S}</div></div>
+      <div class="card" style="display:grid;gap:6px"><b style="font-size:14px;color:var(--warn)">→ Sharpen</b><div class="t15">${SAMP_I}</div></div>${sampleTag}</div>`);
+  }
+  if(opt==='B'){ // ledger list + segmented text
+    const tab=c.tab||'Did well';
+    return phone(`${head('Your scorecard',cfg('slotD')+' · '+cfg('slotT'))}<div class="body" style="gap:12px">
+      <div class="rowc" style="align-items:flex-end;padding:4px 4px 0"><span class="tnum" style="font-size:72px;font-weight:600;letter-spacing:-.05em;line-height:.9">${OVERALL}</span><div style="padding-bottom:6px"><div class="mono" style="font-size:11px;color:var(--accent)">/ 10 · OVERALL</div><div class="small">From your interviewer</div></div></div>
+      <div class="card" style="padding:2px 16px">${SC.map(s=>`<div class="lrow"><div class="grow"><div class="t15s">${s[0]}</div><div class="thin"><i style="width:${s[1]*10}%"></i></div></div><span class="num tnum">${s[1]}</span></div>`).join('')}</div>
+      <div class="tabs" style="background:var(--muted)">${['Did well','Sharpen'].map(t=>`<button class="${tab===t?'on':''}" data-act="tab:${t}">${t==='Did well'?'↑ Did well':'→ Sharpen'}</button>`).join('')}</div>
+      <div class="card"><div class="t15">${tab==='Did well'?SAMP_S:SAMP_I}</div></div>
+      ${privateNote}${sampleTag}</div>`);
+  }
+  if(opt==='C'){ // narrative
+    return phone(`${head('Your scorecard',cfg('slotD')+' · '+cfg('slotT'))}<div class="body" style="gap:18px">
+      <div class="stack" style="gap:8px"><span class="eyebrow acc">Feedback from your interviewer</span><div class="lead" style="font-size:32px">Overall, <span style="color:var(--accent)">${OVERALL} out of 10.</span></div></div>
+      <div class="stack" style="gap:6px"><span class="eyebrow ok">↑ Did well</span><div class="prose">${SAMP_S}</div></div>
+      <div class="hr"></div>
+      <div class="stack" style="gap:6px"><span class="eyebrow warn">→ Sharpen</span><div class="prose">${SAMP_I}</div></div>
+      <div class="hr"></div>
+      <div class="stack" style="gap:10px"><span class="eyebrow">The four scores behind it</span><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${SC.map(s=>`<div class="card" style="padding:12px 14px;display:grid;gap:2px"><span class="xs">${s[0]}</span><b class="tnum" style="font-size:28px;letter-spacing:-.03em;font-weight:600">${s[1]}<span style="font-size:13px;color:var(--text4);font-weight:400"> /10</span></b></div>`).join('')}</div></div>
+      ${privateNote}${sampleTag}</div>`);
+  }
+  // D radar + tabs
+  const tab=c.tab||'Scores';
+  const tabs=['Scores','Did well','Sharpen'];
+  let pane='';
+  if(tab==='Scores')pane=`<div class="card" style="padding:4px 16px">${SC.map(s=>`<div class="rowb" style="padding:12px 0;border-top:1px solid var(--border)"><span style="font-size:15px">${s[0]}</span><b class="tnum" style="font-size:17px">${s[1]}<span style="color:var(--text4);font-weight:400;font-size:13px"> /10</span></b></div>`).join('').replace('border-top:1px solid var(--border)','')}</div>`;
+  else pane=`<div class="card"><div class="t15">${tab==='Did well'?SAMP_S:SAMP_I}</div></div>`;
+  return phone(`${head('Your scorecard',cfg('slotD')+' · '+cfg('slotT'))}<div class="body" style="gap:12px">
+    <div class="card" style="display:grid;place-items:center;padding:10px;position:relative"><div style="position:relative">${radar(250)}<span class="xs abs" style="left:50%;top:-2px;transform:translateX(-50%)">Communication</span><span class="xs abs" style="right:-6px;top:50%">Domain</span><span class="xs abs" style="left:50%;bottom:-2px;transform:translateX(-50%)">Confidence</span><span class="xs abs" style="left:-6px;top:50%">Problem</span></div><div class="mono muted" style="font-size:10.5px;margin-top:6px">CENTRE · OVERALL ${OVERALL} / 10</div></div>
+    <div class="tabs">${tabs.map(t=>`<button class="${tab===t?'on':''}" data-act="tab:${t}">${t}</button>`).join('')}</div>${pane}${privateNote}${sampleTag}</div>`);
+}
+const scoreRender=(opt,st,c)=>st==='ready'?scoreReady(opt,c):scoreWaiting(opt,st);
+
+/* =====================================================================
+   section registry + engine
+   ===================================================================== */
+const SECTIONS={
+  booking:{
+    title:'1 · Booking an interview',
+    desc:'Pick a day and a time from the live capacity of interviewers. Gated by profile completion and by whether you hold an unused interview. Times are IST.',
+    states:[['pick','Slots open'],['taken','Slot just taken'],['empty','Empty day'],['loading','Loading'],['gate','Profile gate'],['nocredit','No credit'],['confirmed','Confirmed']],
+    opts:{A:['Day strip + parts of day','Horizontal day cards, slots grouped Morning/Afternoon/Evening. Closest to today’s screen, tightened.'],
+          B:['List of days','All days in range as rows; tap one to open its slots inline. Zero-slot days are visible and labelled.'],
+          C:['Month calendar + sheet','Whole window at a glance, dots for open days; times live in a docked bottom sheet with its own Confirm.'],
+          D:['Two steps: day, then time','Day tiles first, then a time list with end times and an “Earliest” tag. One decision per screen.']},
+    render:bookingRender,
+    ctx:()=>({day:0,slot:'9:00 AM',tab:'Morning',step:1,tick:[false,false,false,false]}),
+    notes:[
+      ['Real states shown',['Slots open · Slot just taken (409 SLOT_TAKEN: “was taken a moment ago. Your pick moved to …, the nearest block on this day”) · Empty day (“Nobody is free on …” + NEXT AVAILABLE + “Show …”) · Loading','Profile gate: “Booking opens at {n}%”, progress bar with the gate marker, up to 3 missing sections with +% gain','No credit: “You have no interview left.”, tier row, WHAT YOU GET, Total + Buy; an unpaid student gets “Buy an interview to open the calendar.”','Confirmed: BOOKED · IV-ref, date/time, 4-item prep checklist (tap to tick), Run device check / Add to calendar / .ics']],
+      ['From config',['<code>/config booking.windowMinHours</code> (notice), <code>windowMaxDays</code> (range), <code>minProfileCompletionPct</code> (gate), tier <code>durationMin</code> + <code>amountPaise</code>']],
+      ['Rules kept',['Capacity is never coloured as a heatmap; empty days are a real empty state; CONFIRM spends 1 credit; “No eligible interviewer” and “taken” share the same recovery to the nearest block']]]
+  },
+  payment:{
+    title:'2 · Payment',
+    desc:'Pricing, order, the wait for the bank, failure, and the top-up when an interviewer confirms a higher tier. The gateway callback proves nothing — only the confirmed status does.',
+    states:[['pricing','Pricing (4 tiers)'],['checkout','Order'],['confirming','Confirming'],['slow','Still working'],['paid','Paid'],['failed','Failed'],['topup','Top-up owed'],['nothing','Nothing owed']],
+    opts:{A:['Summary card','Tier list, then an order summary card; classic centred result screens.'],
+          B:['Stepper','Order · Pay · Confirm progress across every state; red when failed, amber when slow.'],
+          C:['Receipt first','One receipt slip with a status stamp that changes (Estimate, To pay, Confirming, Paid, Failed).'],
+          D:['Ink price hero','A big price on an ink card with “What you get”; result states recolour the same card.']},
+    render:(o,s)=>paymentRender(o,s),
+    ctx:()=>({}),
+    notes:[
+      ['Real states shown',['Pricing: YOUR TIER IS SET BY YOUR HIGHEST QUALIFICATION, four tiers, own tier marked YOURS, Interview credit, Total, “Pay and book my interview”','Order: Tier / Length / Amount, “Pay by UPI, card, net banking or wallet…”, Pay now, Secured by Razorpay','Confirming: “Payment submitted — Confirming with your bank.”, Reference · PAY-ref, Checking timer (polls 2.5 s, 90 s limit)','Still working: “Your money is not lost…” Keep waiting / Email support','Failed: gateway reason quoted verbatim (default: “The gateway declined the payment. No money was taken.”), Try again opens a fresh order','Top-up: You paid for / Confirmed as / Difference owed, publication held; Nothing owed resting state']],
+      ['From config',['<code>/config tiers[].amountPaise</code> and <code>durationMin</code>; <code>differencePaise</code> on the interview; <code>failureReason</code> from the payment status']],
+      ['Proposed',['“Paid” is a suggested hand-off. Today SUCCESS routes straight on with no confirmation screen — flagged on the screen so you can drop it.']]]
+  },
+  room:{
+    title:'3 · Interview room (student side)',
+    desc:'Join window, mandatory device check, waiting, live, trouble states, and what happens after. The interviewer stays masked until the session starts; only the interviewer can end it; recording cannot be stopped by either side.',
+    states:[['early','Booked · too early'],['joinopen','Join open'],['started','Started · join closing'],['precheck','Device check'],['waiting','Waiting'],['live','Live'],['warn','Time warning'],['reconnecting','Reconnecting'],['audio','Audio only'],['blocked','Permissions blocked'],['left','Left (still running)'],['ended','Ended'],['endedEarly','Ended early']],
+    opts:{A:['Full-bleed dark, you first','Your camera fills the screen with the face guide; interviewer tile top right; classic control row.'],
+          B:['Light lobby, stacked cards','Paper-and-ink all the way: interviewer card above, your card below, white control bar. Lobby and room feel the same.'],
+          C:['Dark split screen','Interviewer panel on top, you below; countdown and device check feel like a green room.'],
+          D:['Interviewer-first + bottom sheet','Interviewer full-bleed with you as a corner window; lobby, check and ended states are the same screen with a sheet.']},
+    render:roomRender,
+    ctx:()=>({}),
+    notes:[
+      ['Real states shown',['Booked: STARTS IN countdown, JOIN WINDOW · open – close IST, Join disabled, Reschedule/Cancel','Join open and Started: “Your interviewer is in the room, waiting. Join closes at … — after that this is a no-show and the interview you paid for is spent.”','Device check, all six rows: Camera, Microphone, Speaker (tone), Bandwidth (measured vs minimum), Connection, Permissions; all must pass','Room: REC chip + clock, “YOUR INTERVIEWER” tile (masked until start, then the name), truth line “Recording · neither party can stop it”, Mute / Camera / Speaker / Network / Leave','Reconnecting · nothing is lost (90 s), “N minutes left”, audio-only on weak connection, Camera and microphone needed','After: Left (Rejoin), Ended (“Your video is being made.”, 3 steps), Ended early (under review, free re-interview if not on you)']],
+      ['From config / room service',['<code>booking.joinOpensMinutesBefore</code>, <code>noShowMinutesAfter</code> (optional), <code>MIN_BANDWIDTH_MBPS</code>, the warning minutes, interviewer name/headline after start']],
+      ['Rules kept',['Student has Leave only — never End; face guide is an overlay, never in the published stream; no refund/sorry language after the session']]]
+  },
+  scorecard:{
+    title:'4 · Scorecard',
+    desc:'The student’s result: four scored dimensions plus an overall (0–10), strengths and improvements in full, and a note that employers never see any of it.',
+    states:[['ready','Ready'],['awaiting','Awaiting feedback'],['unavailable','Never available']],
+    opts:{A:['Ring + bars','Overall in a ring on an ink card, the four dimensions as ten-cell bars (as the app does today), text cards.'],
+          B:['Ledger list','Big overall figure, one ledger row per dimension, strengths / sharpen as a switcher.'],
+          C:['Narrative','Reads like a note from the interviewer: sentence first, written feedback, scores last.'],
+          D:['Radar + tabs','Four-axis shape with the overall in the centre; Scores / Did well / Sharpen tabs.']},
+    render:scoreRender,
+    ctx:()=>({tab:null}),
+    notes:[
+      ['Real states shown',['Ready: Communication, Domain knowledge, Confidence and presence, Problem solving + Overall, strengths and improvements in full, PRIVATE note','Awaiting: “Your feedback is on its way.” with the interviewer’s time limit (sentence drops the number when the config lacks it)','Never available: “Feedback will not be available for this interview.” — promises nothing']],
+      ['From config',['<code>/config scorecard.windowHours</code> (optional) · scores and text come from <code>GET /interviews/:id/feedback</code>; the values here are samples']],
+      ['Rules kept',['No internal note, no recommendation, nothing employers can see']]]
+  }
+};
+const OPTS=['A','B','C','D'];
+const S={};
+function init(){
+  const app=document.getElementById('app');
+  for(const [key,sec] of Object.entries(SECTIONS)){
+    S[key]={opt:'A',state:sec.states[0][0],all:false,ctx:{}};
+    for(const o of OPTS)S[key].ctx[o]=sec.ctx();
+    app.insertAdjacentHTML('beforeend',`<section class="section" id="sec-${key}"><h2>${sec.title}</h2><p class="d">${sec.desc}</p>
+      <div class="bar"><span class="seg" data-optseg>${OPTS.map(o=>`<button data-o="${o}">${o} · ${sec.opts[o][0]}</button>`).join('')}<button data-o="ALL">Compare all 4</button></span></div>
+      <div class="states" data-states>${sec.states.map(s=>`<button data-s="${s[0]}">${s[1]}</button>`).join('')}</div>
+      <div class="stage" data-stage></div></section>`);
+    draw(key);
+  }
+}
+function draw(key){
+  const sec=SECTIONS[key],st=S[key],root=document.getElementById('sec-'+key);
+  root.querySelectorAll('[data-optseg] button').forEach(b=>b.classList.toggle('on',st.all?b.dataset.o==='ALL':b.dataset.o===st.opt));
+  root.querySelectorAll('[data-states] button').forEach(b=>b.classList.toggle('on',b.dataset.s===st.state));
+  const list=st.all?OPTS:[st.opt];
+  const stage=root.querySelector('[data-stage]');
+  stage.innerHTML=list.map(o=>`<div class="cell" data-sec="${key}" data-opt="${o}"><div class="oname"><span>OPTION ${o}</span>${sec.opts[o][0]}</div>${sec.render(o,st.state,st.ctx[o])}<div class="small" style="margin-top:12px">${sec.opts[o][1]}</div></div>`).join('')
+    +(st.all?'':`<div class="notes">${sec.notes.map(n=>`<span class="mono">${n[0]}</span><ul>${n[1].map(x=>`<li>${x}</li>`).join('')}</ul>`).join('')}</div>`);
+}
+document.addEventListener('click',e=>{
+  const g=e.target.closest('[data-g]');
+  if(g){for(const k in S){S[k].opt=g.dataset.g;S[k].all=false;draw(k)}document.querySelectorAll('#globalOpt button').forEach(b=>b.classList.toggle('on',b===g));return}
+  const tk=e.target.closest('[data-tok]');
+  if(tk){TOK=tk.dataset.tok==='1';document.body.classList.toggle('tok',TOK);document.querySelectorAll('#tokSeg button').forEach(b=>b.classList.toggle('on',b===tk));for(const k in S)draw(k);return}
+  const ob=e.target.closest('[data-optseg] button');
+  if(ob){const k=ob.closest('.section').id.slice(4);if(ob.dataset.o==='ALL')S[k].all=true;else{S[k].all=false;S[k].opt=ob.dataset.o}draw(k);return}
+  const sb=e.target.closest('[data-states] button');
+  if(sb){const k=sb.closest('.section').id.slice(4);S[k].state=sb.dataset.s;draw(k);return}
+  const a=e.target.closest('[data-act]');
+  if(!a)return;
+  const cell=a.closest('[data-sec]');if(!cell)return;
+  const key=cell.dataset.sec,opt=cell.dataset.opt,c=S[key].ctx[opt];
+  const act=a.dataset.act;
+  if(act.startsWith('sec:')){const[,k2,,s2]=act.split(':');S[k2].state=s2;S[k2].opt=opt;S[k2].all=false;draw(k2);document.getElementById('sec-'+k2).scrollIntoView({behavior:'smooth',block:'start'});return}
+  const [kind,...rest]=act.split(':');const val=rest.join(':');
+  if(kind==='state'){S[key].state=val}
+  else if(kind==='day'){c.day=+val;const d=DAYS[c.day];c.slot=d.slots[0]||null;c.tab='Morning';if(S[key].state==='taken'||S[key].state==='empty'||S[key].state==='loading')S[key].state='pick'}
+  else if(kind==='pickday'){c.day=+val;c.slot=DAYS[c.day].slots[0]}
+  else if(kind==='slot'){c.slot=val;if(S[key].state==='taken')S[key].state='pick'}
+  else if(kind==='tab'){c.tab=val}
+  else if(kind==='step'){c.step=+val;if(S[key].state==='taken'||S[key].state==='empty')S[key].state='pick'}
+  else if(kind==='tick'){c.tick[+val]=!c.tick[+val]}
+  else return;
+  draw(key);
+});
+/* shot mode for headless verification: #row=section:state[:opt]  */
+function shot(){
+  const m=location.hash.match(/row=([a-z]+):([a-zA-Z]+)(?::([A-D]))?/);
+  if(!m)return;
+  document.body.classList.add('shot');
+  const[,k,s,o]=m;S[k].state=s;
+  document.querySelectorAll('.section').forEach(x=>{if(x.id!=='sec-'+k)x.style.display='none'});
+  if(o){S[k].opt=o;S[k].all=false}else S[k].all=true;
+  draw(k);
+}
+init();shot();
+document.querySelectorAll('#globalOpt button')[0].classList.add('on');
+</script>
+</body>
+</html>

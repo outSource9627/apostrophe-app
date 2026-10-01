@@ -73,6 +73,16 @@ const ICONS = {
   out: [P('M10 4H5v16h5M15 8l4 4-4 4M19 12H9')],
   sliders: [P('M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12'), C(16, 6, 2), C(10, 12, 2), C(18, 18, 2)],
   grid: [R(4, 4, 7, 7, 1.5), R(13, 4, 7, 7, 1.5), R(4, 13, 7, 7, 1.5), R(13, 13, 7, 7, 1.5)],
+  user: [C(12, 8, 4), P('M4 21c0-4 4-6 8-6s8 2 8 6')],
+  card: [R(3, 5, 18, 14, 2), P('M3 10h18')],
+  star: [P('M12 3l2.7 5.6 6.1.8-4.5 4.3 1.1 6.1L12 17l-5.4 2.8 1.1-6.1L3.2 9.4l6.1-.8z')],
+  // Employer Studio (docs/employer-app-studio.html): skip, education, links, sort.
+  arrowU: [P('M12 19V5M6 11l6-6 6 6')],
+  chevU: [P('M6 15l6-6 6 6')],
+  grad: [P('M22 10L12 5 2 10l10 5 10-5z'), P('M6 12v5c3 2 9 2 12 0v-5')],
+  link: [P('M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7'), P('M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7')],
+  sort: [P('M7 4v16M3 16l4 4 4-4M17 20V4M13 8l4-4 4 4')],
+  arrowUR: [P('M7 17L17 7M8 7h9v9')],
 } satisfies Record<string, Shape[]>
 
 export type IconName = keyof typeof ICONS

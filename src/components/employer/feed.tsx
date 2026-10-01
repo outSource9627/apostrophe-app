@@ -1,42 +1,31 @@
 import React, { memo, useRef, useState } from 'react'
 import { Animated, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import Video from 'react-native-video'
-import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg'
 import { borderWidth, color, height, opacity, radius, rotation, shadow, space, spaceHalf, trackingNative } from '../../theme'
 import { text } from '../ui'
 import { Icon } from '../ui/Icon'
 import type { CandidateCard } from '../../lib/api/employerFeed'
 import {
-  experienceLine, interviewDate, joinsLine, nameInitials, salaryLine, shortlistedLine, tierLine,
+  experienceLine, interviewDate, joinsLine, nameInitials, salaryLine, tierLine,
 } from '../../lib/employer/candidateFormat'
-import { EmAvatarButton, EmIconButton, initialsOf } from './em'
+import { EmIconButton } from './em'
+import { FactTile, GlassPill, SkillTags } from './studio'
 
 /**
- * The Employer Android feed (EM-08, `gen/a1.js` A.feedTop, A.card, A.ctl): the
- * bar with the day's position, the filter chips, the full-bleed film card with
- * its caption, the SHORTLIST / PASS stamps, the four round controls and the
- * undo toast. Tokens only; every fact on the card is the API's, and a fact it
- * did not send is left off rather than drawn as a placeholder.
+ * The candidate feed in the Studio direction (docs/employer-app-studio.html ·
+ * F0–F7): the bar, the filter chips with the live match count, the white deck
+ * card (the interview film over the facts an employer checks first), the
+ * SHORTLIST / PASS / SKIP stamps, the four round controls and the skip hint.
+ * Tokens only; every fact is the API's, and one it did not send is left off.
  */
 
-// ── the bar (A.feedTop) ──────────────────────────────────────────────────────
+// ── the bar ──────────────────────────────────────────────────────────────────
 export function FeedTop({
-  position, filterCount, companyName, locked, onSaved, onFilters, onAccount,
-}: {
-  position: string
-  filterCount: number
-  companyName?: string
-  locked?: boolean
-  onSaved: () => void
-  onFilters: () => void
-  onAccount: () => void
-}) {
+  filterCount, locked, onSaved, onFilters,
+}: { filterCount: number; locked?: boolean; onSaved: () => void; onFilters: () => void }) {
   return (
     <View style={styles.top}>
-      <View style={styles.topTitle}>
-        <Text style={text.displayMd}>Feed</Text>
-        <Text style={[text.metaSm, styles.mono, styles.muted]}>{position}</Text>
-      </View>
+      <Text style={[text.displaySm, styles.grow]} accessibilityRole="header">Feed</Text>
       <View style={locked && styles.dim}>
         <EmIconButton name="bookmark" label="Saved searches" tint={color.textSecondary} onPress={onSaved} disabled={locked} />
       </View>
@@ -45,24 +34,31 @@ export function FeedTop({
         accessibilityLabel={filterCount ? `Filters, ${filterCount} on` : 'Filters'}
         disabled={locked}
         onPress={onFilters}
-        hitSlop={space['2xs']}
-        style={({ pressed }) => [styles.filterPill, locked && styles.dim, pressed && styles.pressed]}
+        hitSlop={space.xs}
+        style={({ pressed }) => [styles.filterBtn, locked && styles.dim, pressed && styles.pressed]}
       >
-        <Icon name="filter" size={space.lg - 1} tint={color.text} />
-        <View style={styles.filterCount}><Text style={[text.metaMd, styles.filterCountText]}>{filterCount}</Text></View>
+        <Icon name="sliders" size={space.lg + 2} tint={color.textInverse} />
+        {filterCount > 0 && (
+          <View style={styles.filterBadge}><Text style={[text.metaXs, styles.filterBadgeText]}>{filterCount}</Text></View>
+        )}
       </Pressable>
-      <EmAvatarButton initials={initialsOf(companyName)} onPress={onAccount} />
     </View>
   )
 }
 
-/** The removable chips under the bar, then Clear — or "No filters". */
+/** The match count, then the removable filter chips, then Clear. */
 export function FeedChips({
-  chips, onRemove, onClear, locked,
-}: { chips: { key: string; text: string }[]; onRemove: (key: string) => void; onClear: () => void; locked?: boolean }) {
+  matches, chips, onRemove, onClear, locked,
+}: { matches: number | null; chips: { key: string; text: string }[]; onRemove: (key: string) => void; onClear: () => void; locked?: boolean }) {
   if (locked) return <View style={styles.chipsSpacer} />
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll} contentContainerStyle={styles.chips}>
+      {matches !== null && (
+        <View style={styles.matchChip} accessibilityLabel={`${matches} candidates match`}>
+          <Text style={text.uiSmSemi}>{matches}</Text>
+          <Text style={[text.uiSm, styles.secondary]}>match</Text>
+        </View>
+      )}
       {chips.length === 0 ? (
         <Text style={[text.uiSm, styles.subtle]}>No filters</Text>
       ) : (
@@ -76,162 +72,139 @@ export function FeedChips({
               hitSlop={{ top: space.sm, bottom: space.sm }}
               style={({ pressed }) => [styles.chip, pressed && styles.pressed]}
             >
-              <Text style={text.uiSm} numberOfLines={1}>{c.text}</Text>
-              <Icon name="x" size={space.md} tint={color.textMuted} weight={2} />
+              <Text style={[text.uiSmMedium, styles.accentText]} numberOfLines={1}>{c.text}</Text>
+              <Icon name="x" size={space.md} tint={color.accentText} weight={2} />
             </Pressable>
           ))}
-          <Pressable accessibilityRole="button" onPress={onClear} hitSlop={space.sm} style={({ pressed }) => [styles.clear, pressed && styles.pressed]}>
-            <Text style={[text.uiSmSemi, styles.accent]}>Clear</Text>
-          </Pressable>
+          {chips.length > 1 && (
+            <Pressable accessibilityRole="button" onPress={onClear} hitSlop={space.sm} style={({ pressed }) => [styles.clear, pressed && styles.pressed]}>
+              <Text style={[text.uiSmSemi, styles.accent]}>Clear</Text>
+            </Pressable>
+          )}
         </>
       )}
     </ScrollView>
   )
 }
 
-// ── the card (A.card) ────────────────────────────────────────────────────────
+// ── the card ─────────────────────────────────────────────────────────────────
 /**
- * One candidate as the design's film card: the verified-interview film full
- * bleed (muted, looping; a tap turns the sound on), the verified pill and the
- * sound button on top, the Full button on the right edge, and the caption over
- * a gradient at the foot — the part a tap opens the profile from. `active` is
- * false for the card waiting behind, which draws its poster and plays nothing.
+ * One candidate as the Studio deck card: the verified-interview film on top
+ * (muted, looping; a tap turns the sound on), the verified pill, the day's
+ * position and the sound button over it, Full at its foot; then the name, the
+ * qualification line, Expected / Joins and the skills. `active` is false for
+ * the card waiting behind, which draws its poster and plays nothing.
  */
-export const FeedFilmCard = memo(function FilmCard({
-  card, active, muted, fullBlocked, onToggleMute, onOpenFull, onOpenProfile, onStreamFail, children,
+export const DeckCard = memo(function DeckCardView({
+  card, active, muted, position, fullBlocked, onToggleMute, onOpenFull, onOpenProfile, onStreamFail, stamps,
 }: {
   card: CandidateCard
   active: boolean
   muted: boolean
+  /** “13 / 40” — the day's position. */
+  position?: string | null
   fullBlocked?: boolean
   onToggleMute?: () => void
   onOpenFull?: () => void
   onOpenProfile?: () => void
   onStreamFail?: () => void
   /** Drawn over the film (the swipe stamps). */
-  children?: React.ReactNode
+  stamps?: React.ReactNode
 }) {
   const [failed, setFailed] = useState<string | null>(null)
   const progress = useRef(new Animated.Value(0)).current
   const playing = active && !!card.streamUrl && failed !== card.streamUrl
   const poster = card.posterUrl ?? card.photoUrl
   const date = card.verifiedInterview?.verified ? interviewDate(card.verifiedInterview.at) : null
-  const facts = [card.city, experienceLine(card.experienceYears)].filter(Boolean).join(' · ')
+  const meta = [tierLine(card.tier, card.qualification), card.city, experienceLine(card.experienceYears)].filter(Boolean).join(' · ')
   const salary = salaryLine(card.expectedSalary)
   const joins = joinsLine(card.availability)
-  const shortlisted = shortlistedLine(card.shortlistCount)
-  const sub = tierLine(card.tier, card.qualification)
 
   return (
-    <View style={styles.film}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={muted ? 'Turn the sound on' : 'Mute'}
-        onPress={playing ? onToggleMute : onOpenProfile}
-        style={StyleSheet.absoluteFill}
-      >
-        {!!poster && <Image source={{ uri: poster }} style={StyleSheet.absoluteFill} resizeMode="cover" />}
-        {!poster && !playing && (
-          <View style={styles.initialsWrap}><Text style={[text.displayPoster, styles.initials]}>{nameInitials(card.name)}</Text></View>
-        )}
-        {playing && (
-          <Video
-            source={{ uri: card.streamUrl! }}
-            style={StyleSheet.absoluteFill}
-            resizeMode="cover"
-            muted={muted}
-            repeat
-            paused={!active}
-            playInBackground={false}
-            progressUpdateInterval={250}
-            onProgress={(p) => {
-              if (p.seekableDuration > 0) progress.setValue(Math.min(1, p.currentTime / p.seekableDuration))
-            }}
-            onError={() => {
-              setFailed(card.streamUrl)
-              onStreamFail?.()
-            }}
-          />
-        )}
-      </Pressable>
+    <View style={styles.card}>
+      <View style={styles.film}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={playing ? (muted ? 'Turn the sound on' : 'Mute') : `${card.name}, open profile`}
+          onPress={playing ? onToggleMute : onOpenProfile}
+          style={StyleSheet.absoluteFill}
+        >
+          {!!poster && <Image source={{ uri: poster }} style={StyleSheet.absoluteFill} resizeMode="cover" />}
+          {!poster && !playing && (
+            <View style={styles.initialsWrap}><Text style={[text.displayPoster, styles.initials]}>{nameInitials(card.name)}</Text></View>
+          )}
+          {playing && (
+            <Video
+              source={{ uri: card.streamUrl! }}
+              style={StyleSheet.absoluteFill}
+              resizeMode="cover"
+              muted={muted}
+              repeat
+              paused={!active}
+              playInBackground={false}
+              progressUpdateInterval={250}
+              onProgress={(p) => {
+                if (p.seekableDuration > 0) progress.setValue(Math.min(1, p.currentTime / p.seekableDuration))
+              }}
+              onError={() => {
+                setFailed(card.streamUrl)
+                onStreamFail?.()
+              }}
+            />
+          )}
+        </Pressable>
 
-      <View style={styles.filmTop} pointerEvents="box-none">
-        {date ? (
-          <View style={styles.verified} pointerEvents="none">
-            <Icon name="check" size={space.md} tint={color.successOnInk} weight={2.6} />
-            <Text style={[text.metaSm, styles.onInk, styles.mono]}>{`VERIFIED INTERVIEW · ${date.toUpperCase()}`}</Text>
+        <View style={styles.filmTop} pointerEvents="box-none">
+          {date ? <GlassPill icon="check" label={`Verified · ${date}`} /> : <View />}
+          <View style={styles.filmTopRight} pointerEvents="box-none">
+            {!!position && <GlassPill label={position} />}
+            {playing && (
+              <Pressable accessibilityRole="button" accessibilityLabel={muted ? 'Turn the sound on' : 'Mute'} onPress={onToggleMute} hitSlop={space.sm} style={styles.sound}>
+                <Icon name={muted ? 'mute' : 'sound'} size={space.lg - 1} tint={color.textOnInk} />
+              </Pressable>
+            )}
           </View>
-        ) : <View />}
-        {playing && (
-          <Pressable accessibilityRole="button" accessibilityLabel={muted ? 'Turn the sound on' : 'Mute'} onPress={onToggleMute} hitSlop={space.xs} style={styles.sound}>
-            <Icon name={muted ? 'mute' : 'sound'} size={space.lg + 2} tint={color.textOnInk} />
-          </Pressable>
-        )}
+        </View>
+
+        {stamps}
+
+        <View style={styles.filmFoot} pointerEvents="box-none">
+          {card.hasVideo && !fullBlocked && (
+            <Pressable accessibilityRole="button" accessibilityLabel={`Watch ${card.name}’s full interview`} onPress={onOpenFull} hitSlop={space.sm} style={({ pressed }) => [styles.full, pressed && styles.pressed]}>
+              <Icon name="max" size={space.md + 1} tint={color.textOnInk} weight={2} />
+              <Text style={[text.metaXs, styles.mono, styles.onInk]}>FULL</Text>
+            </Pressable>
+          )}
+          <View style={styles.progressTrack} pointerEvents="none">
+            <Animated.View style={[styles.progressFill, { transform: [{ scaleX: progress }] }]} />
+          </View>
+        </View>
       </View>
 
-      {card.hasVideo && !fullBlocked && (
-        <Pressable accessibilityRole="button" accessibilityLabel={`Watch ${card.name}’s full interview`} onPress={onOpenFull} style={({ pressed }) => [styles.full, pressed && styles.pressed]}>
-          <Icon name="video" size={space.xl} tint={color.textOnInk} />
-          <Text style={[text.uiXsSemi, styles.onInk]}>Full</Text>
-        </Pressable>
-      )}
-
-      {children}
-
-      <Pressable accessibilityRole="button" accessibilityLabel={`${card.name}, open profile`} onPress={onOpenProfile} style={styles.caption}>
-        <Svg style={StyleSheet.absoluteFill} preserveAspectRatio="none" viewBox="0 0 1 1">
-          <Defs>
-            <LinearGradient id="feedCaption" x1="0" y1="0" x2="0" y2="1">
-              <Stop offset="0" stopColor={color.inkDeep} stopOpacity={0} />
-              <Stop offset="0.45" stopColor={color.inkDeep} stopOpacity={0.95} />
-              <Stop offset="1" stopColor={color.inkDeep} stopOpacity={0.95} />
-            </LinearGradient>
-          </Defs>
-          <Rect x="0" y="0" width="1" height="1" fill="url(#feedCaption)" />
-        </Svg>
-        <View style={styles.who}>
-          <FeedFace name={card.name} photo={card.photoUrl} />
-          <View style={styles.grow}>
-            <Text style={[text.displaySm, styles.onInk]} numberOfLines={1}>{card.name}</Text>
-            {!!sub && <Text style={[text.uiXs, styles.onInkMuted]} numberOfLines={1}>{sub}</Text>}
-          </View>
-        </View>
-        {!!facts && <Text style={[text.uiXs, styles.onInkSoft]} numberOfLines={1}>{facts}</Text>}
-        {(!!salary || !!joins) && (
-          <Text style={[text.uiSm, styles.onInk]} numberOfLines={1}>
-            {!!salary && <Text style={styles.semi}>{salary}</Text>}
-            {!!salary && <Text style={styles.onInkBody}> expected</Text>}
-            {!!salary && !!joins && '    '}
-            {!!joins && <Text style={styles.onInkBody}>Joins </Text>}
-            {!!joins && <Text style={styles.semi}>{joins}</Text>}
-          </Text>
-        )}
-        {card.languages.length > 0 && <Text style={[text.uiXs, styles.onInkMuted]} numberOfLines={1}>{card.languages.join(', ')}</Text>}
-        {card.skills.length > 0 && (
-          <View style={styles.tags}>
-            {card.skills.slice(0, 4).map((s) => (
-              <View key={s} style={styles.tag}><Text style={[text.metaSm, styles.onInk]} numberOfLines={1}>{s.toUpperCase()}</Text></View>
-            ))}
-          </View>
-        )}
-        <View style={styles.captionFoot}>
-          {shortlisted ? (
-            <View style={styles.shortlisted}>
-              <Icon name="users" size={space.md + 2} tint={color.textOnInkSoft} />
-              <Text style={[text.uiXs, styles.onInkSoft]}>{shortlisted}</Text>
+      <Pressable accessibilityRole="button" accessibilityLabel={`${card.name}, open profile`} onPress={onOpenProfile} style={styles.info}>
+        <View style={styles.nameRow}>
+          <Text style={[text.displaySm, styles.grow]} numberOfLines={1}>{card.name}</Text>
+          {card.shortlistCount > 0 && (
+            <View style={styles.count} accessibilityLabel={`Shortlisted by ${card.shortlistCount} employers`}>
+              <Icon name="users" size={space.md + 2} tint={color.textMuted} />
+              <Text style={[text.uiSm, styles.muted]}>{card.shortlistCount}</Text>
             </View>
-          ) : <View />}
-          <Text style={[text.metaXs, styles.onInkBody, styles.mono]}>TAP FOR PROFILE</Text>
+          )}
         </View>
-        <View style={styles.progressTrack}>
-          <Animated.View style={[styles.progressFill, { transform: [{ scaleX: progress }] }]} />
-        </View>
+        {!!meta && <Text style={[text.uiSm, styles.muted]} numberOfLines={1}>{meta}</Text>}
+        {(!!salary || !!joins) && (
+          <View style={styles.facts}>
+            {!!salary && <FactTile label="Expected" value={salary} />}
+            {!!joins && <FactTile label="Joins" value={joins} />}
+          </View>
+        )}
+        <SkillTags skills={card.skills} max={3} style={styles.skills} />
       </Pressable>
     </View>
   )
 })
 
-/** A candidate's face (H.av on the card): the photo, else the initials on the violet disc. */
+/** A candidate's face (the photo, else the initials on the violet disc). Shared with the shortlist and Interest sheets. */
 export function FeedFace({ name, photo, size = height.avatar }: { name: string; photo: string | null | undefined; size?: number }) {
   return photo ? (
     <Image source={{ uri: photo }} style={[styles.face, { width: size, height: size }]} />
@@ -242,8 +215,16 @@ export function FeedFace({ name, photo, size = height.avatar }: { name: string; 
   )
 }
 
-/** SHORTLIST (green, tilted left) and PASS · N DAYS (red, tilted right), faded in by the drag. */
-export function FeedStamp({ kind, passDays }: { kind: 'shortlist' | 'pass'; passDays?: number }) {
+/** SHORTLIST (green, tilted left), PASS · N DAYS (red, tilted right), SKIP (ink, level) — faded in by the drag. */
+export function FeedStamp({ kind, passDays }: { kind: 'shortlist' | 'pass' | 'skip'; passDays?: number }) {
+  if (kind === 'skip') {
+    return (
+      <View style={styles.skipStamp}>
+        <Icon name="arrowU" size={space.md + 1} tint={color.textOnInk} weight={2.2} />
+        <Text style={[text.metaMd, styles.stampText, styles.onInk]}>SKIP</Text>
+      </View>
+    )
+  }
   const pass = kind === 'pass'
   return (
     <View style={[styles.stamp, pass ? styles.stampPass : styles.stampShort]}>
@@ -254,33 +235,42 @@ export function FeedStamp({ kind, passDays }: { kind: 'shortlist' | 'pass'; pass
   )
 }
 
-// ── the controls (A.ctl) ─────────────────────────────────────────────────────
-/** Undo 48, Pass 64, Shortlist 64, Profile 48 — every target at least 48. */
+// ── the controls ─────────────────────────────────────────────────────────────
+/** Undo 44, Pass 60, Shortlist 60, Interest 44, then the skip hint. */
 export function FeedControls({
-  canUndo, disabled, onUndo, onPass, onShortlist, onProfile,
-}: { canUndo: boolean; disabled: boolean; onUndo: () => void; onPass: () => void; onShortlist: () => void; onProfile: () => void }) {
+  canUndo, disabled, interestDisabled, onUndo, onPass, onShortlist, onInterest,
+}: {
+  canUndo: boolean; disabled: boolean; interestDisabled?: boolean
+  onUndo: () => void; onPass: () => void; onShortlist: () => void; onInterest: () => void
+}) {
   return (
-    <View style={styles.ctl}>
-      <Round size="sm" label="Undo last swipe" disabled={!canUndo || disabled} onPress={onUndo}>
-        <Icon name="undo" size={space.xl} tint={color.textSecondary} />
-      </Round>
-      <Round size="lg" label="Pass" disabled={disabled} onPress={onPass}>
-        <Icon name="x" size={height.glyph + 2} tint={color.dangerFill} weight={2.2} />
-      </Round>
-      <Round size="lg" dark label="Shortlist" disabled={disabled} onPress={onShortlist}>
-        <Icon name="bookmark" size={height.glyph} tint={color.textInverse} weight={2} />
-      </Round>
-      <Round size="sm" label="Open profile" disabled={disabled} onPress={onProfile}>
-        <Icon name="info" size={space.xl} tint={color.textSecondary} />
-      </Round>
+    <View style={styles.ctlWrap}>
+      <View style={styles.ctl}>
+        <Round size="sm" tone="plain" label="Undo last swipe" disabled={!canUndo || disabled} onPress={onUndo}>
+          <Icon name="undo" size={space.lg + 2} tint={color.textSecondary} />
+        </Round>
+        <Round size="lg" tone="pass" label="Pass" disabled={disabled} onPress={onPass}>
+          <Icon name="x" size={height.glyph + 2} tint={color.dangerFill} weight={2.3} />
+        </Round>
+        <Round size="lg" tone="short" label="Shortlist" disabled={disabled} onPress={onShortlist}>
+          <Icon name="bookmark" size={height.glyph} tint={color.textInverse} weight={2.2} />
+        </Round>
+        <Round size="sm" tone="interest" label="Send Interest" disabled={disabled || interestDisabled} onPress={onInterest}>
+          <Icon name="heart" size={space.lg + 3} tint={color.accentText} />
+        </Round>
+      </View>
+      <View style={styles.hint} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+        <Icon name="chevD" size={space.md + 1} tint={color.textSubtle} />
+        <Text style={[text.metaXs, styles.mono, styles.subtle]}>SCROLL DOWN TO SKIP</Text>
+      </View>
     </View>
   )
 }
 
 function Round({
-  size, dark, label, disabled, onPress, children,
-}: { size: 'sm' | 'lg'; dark?: boolean; label: string; disabled?: boolean; onPress: () => void; children: React.ReactNode }) {
-  const d = size === 'lg' ? height['deck-action'] : height.control
+  size, tone, label, disabled, onPress, children,
+}: { size: 'sm' | 'lg'; tone: 'plain' | 'pass' | 'short' | 'interest'; label: string; disabled?: boolean; onPress: () => void; children: React.ReactNode }) {
+  const d = size === 'lg' ? height['deck-action'] - space.xs : height.tap
   return (
     <Pressable
       accessibilityRole="button"
@@ -288,29 +278,20 @@ function Round({
       accessibilityState={{ disabled }}
       disabled={disabled}
       onPress={onPress}
+      hitSlop={size === 'sm' ? space.xs : undefined}
       style={({ pressed }) => [
         styles.round,
         { width: d, height: d },
-        dark ? styles.roundDark : styles.roundLight,
-        size === 'lg' && (dark ? styles.roundDarkLift : styles.roundLift),
+        tone === 'plain' && styles.roundPlain,
+        tone === 'pass' && styles.roundPass,
+        tone === 'short' && styles.roundShort,
+        tone === 'interest' && styles.roundInterest,
         disabled && styles.roundOff,
         pressed && styles.pressed,
       ]}
     >
       {children}
     </Pressable>
-  )
-}
-
-/** The ink bar after a swipe: what happened, and UNDO (the server keeps one). */
-export function FeedToast({ message, onUndo, disabled }: { message: string; onUndo: () => void; disabled?: boolean }) {
-  return (
-    <View style={styles.toast} accessibilityLiveRegion="polite" accessibilityRole="alert">
-      <Text style={[text.uiSm, styles.onInk, styles.grow]} numberOfLines={1}>{message}</Text>
-      <Pressable accessibilityRole="button" accessibilityLabel="Undo" disabled={disabled} onPress={onUndo} hitSlop={space.xs} style={({ pressed }) => [styles.toastUndo, pressed && styles.pressed]}>
-        <Text style={[text.uiSmSemi, styles.toastUndoText]}>UNDO</Text>
-      </Pressable>
-    </View>
   )
 }
 
@@ -331,6 +312,7 @@ export function FeedLockCard() {
 export const FEED_HOW = [
   { icon: 'arrowR', text: 'Swipe right to shortlist privately' },
   { icon: 'arrowL', text: 'Swipe left to pass' },
+  { icon: 'arrowU', text: 'Scroll down to skip — nothing is saved' },
   { icon: 'heart', text: 'Send an Interest when you want to talk' },
 ] as const
 
@@ -340,62 +322,64 @@ const styles = StyleSheet.create({
   dim: { opacity: opacity.disabled - 0.1 },
   mono: { letterSpacing: trackingNative.eyebrow },
   muted: { color: color.textMuted },
+  secondary: { color: color.textSecondary },
   subtle: { color: color.textSubtle },
   accent: { color: color.accent },
-  semi: { fontFamily: text.uiSmSemi.fontFamily },
+  accentText: { color: color.accentText },
   onInk: { color: color.textOnInk },
-  onInkSoft: { color: color.textOnInkSoft },
   onInkMuted: { color: color.textOnInkMuted },
-  onInkBody: { color: color.textOnInkBody },
 
-  top: { minHeight: height['screen-header'], flexDirection: 'row', alignItems: 'center', gap: space.xs, paddingLeft: spaceHalf['4.5'], paddingRight: space.sm },
-  topTitle: { flex: 1, minWidth: 0, gap: space['2xs'] },
-  filterPill: { height: height.avatar, paddingLeft: space.md, paddingRight: spaceHalf['1.5'], borderRadius: radius.pill, borderWidth: borderWidth.thin, borderColor: color.borderStrong, flexDirection: 'row', alignItems: 'center', gap: spaceHalf['1.5'] },
-  filterCount: { minWidth: space.xl + 2, height: space.xl + 2, paddingHorizontal: spaceHalf['1.5'], borderRadius: radius.pill, backgroundColor: color.accentSoft, alignItems: 'center', justifyContent: 'center' },
-  filterCountText: { color: color.accentText },
+  top: { minHeight: height['screen-header'] - 2, flexDirection: 'row', alignItems: 'center', gap: space.xs, paddingLeft: space.xl, paddingRight: spaceHalf['2.5'] },
+  filterBtn: { width: height['control-xs'] - 2, height: height['control-xs'] - 2, borderRadius: radius.pill, backgroundColor: color.ink, alignItems: 'center', justifyContent: 'center', marginLeft: space.xs },
+  filterBadge: {
+    position: 'absolute', top: -space.xs, right: -space.xs, minWidth: space.lg + 1, height: space.lg + 1, paddingHorizontal: space.xs,
+    borderRadius: radius.pill, backgroundColor: color.accent, borderWidth: borderWidth.accent, borderColor: color.background, alignItems: 'center', justifyContent: 'center',
+  },
+  filterBadgeText: { color: color.textInverse },
 
   chipsScroll: { flexGrow: 0 },
   chips: { gap: spaceHalf['1.5'], paddingHorizontal: space.lg, paddingBottom: spaceHalf['2.5'], alignItems: 'center', minHeight: height['chip-sm'] + spaceHalf['2.5'] },
   chipsSpacer: { height: height['chip-sm'] + spaceHalf['2.5'] },
-  chip: { height: height['chip-sm'], paddingLeft: spaceHalf['2.5'] + 1, paddingRight: space.sm, borderRadius: radius.pill, backgroundColor: color.surface, borderWidth: borderWidth.thin, borderColor: color.borderStrong, flexDirection: 'row', alignItems: 'center', gap: space.xs + 1 },
+  matchChip: { height: height['chip-sm'], paddingHorizontal: space.md, borderRadius: radius.pill, backgroundColor: color.surfaceMuted, flexDirection: 'row', alignItems: 'center', gap: space.xs },
+  chip: { height: height['chip-sm'], paddingLeft: space.md, paddingRight: spaceHalf['2.5'], borderRadius: radius.pill, backgroundColor: color.accentSoft, borderWidth: borderWidth.thin, borderColor: color.accentEdge, flexDirection: 'row', alignItems: 'center', gap: spaceHalf['1.5'] },
   clear: { paddingHorizontal: space.xs, height: height['chip-sm'], justifyContent: 'center' },
 
-  film: { flex: 1, borderRadius: radius.deck, backgroundColor: color.inkRaised, overflow: 'hidden', boxShadow: shadow.deck },
+  card: { flex: 1, backgroundColor: color.surface, borderRadius: radius.deck, borderWidth: borderWidth.thin, borderColor: color.border, padding: space.sm, boxShadow: shadow.deck },
+  film: { flex: 1, borderRadius: radius.lg, backgroundColor: color.inkRaised, overflow: 'hidden' },
   initialsWrap: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
   initials: { color: color.onInkWash },
-  filmTop: { position: 'absolute', top: space.md, left: space.md, right: space.md, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  verified: { height: height['chip-sm'] - 2, paddingHorizontal: spaceHalf['2.5'], borderRadius: radius.pill, backgroundColor: color.onInkGlass, flexDirection: 'row', alignItems: 'center', gap: spaceHalf['1.5'] },
-  sound: { width: height.avatar, height: height.avatar, borderRadius: radius.pill, backgroundColor: color.onInkDiscPlaying, alignItems: 'center', justifyContent: 'center' },
-  full: { position: 'absolute', right: space.md, top: '40%', paddingVertical: spaceHalf['2.5'], paddingHorizontal: space.sm, borderRadius: radius.panel, backgroundColor: color.onInkGlass, alignItems: 'center', gap: space.xs, minWidth: height.control },
-
-  caption: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingTop: height.fab + space.md, paddingHorizontal: space.lg, paddingBottom: spaceHalf['3.5'], gap: space.sm },
-  who: { flexDirection: 'row', alignItems: 'center', gap: spaceHalf['2.5'] },
-  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: space.xs + 1 },
-  tag: { height: space.xl + space.xs, paddingHorizontal: spaceHalf['2.5'] + 1, borderRadius: radius.pill, borderWidth: borderWidth.thin, borderColor: color.onInkOutline, backgroundColor: color.onInkWash, justifyContent: 'center' },
-  captionFoot: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: space['2xs'] },
-  shortlisted: { flexDirection: 'row', alignItems: 'center', gap: spaceHalf['1.5'] },
+  filmTop: { position: 'absolute', top: space.md, left: space.md, right: space.md, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: space.sm },
+  filmTopRight: { flexDirection: 'row', alignItems: 'center', gap: spaceHalf['1.5'] },
+  sound: { width: height.avatar, height: height.avatar, borderRadius: radius.pill, backgroundColor: color.onInkGlass, alignItems: 'center', justifyContent: 'center' },
+  filmFoot: { position: 'absolute', left: spaceHalf['3.5'], right: spaceHalf['3.5'], bottom: spaceHalf['3.5'], gap: spaceHalf['2.5'] },
+  full: { alignSelf: 'flex-end', height: space.xl + space.xs, paddingHorizontal: space.sm + 1, borderRadius: radius.pill, backgroundColor: color.onInkGlass, flexDirection: 'row', alignItems: 'center', gap: space.xs + 1 },
   progressTrack: { height: height['film-progress'], borderRadius: radius.bar, backgroundColor: color.onInkLevel, overflow: 'hidden' },
   progressFill: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: color.textOnInk, transformOrigin: 'left' },
+
+  info: { paddingTop: space.md, paddingHorizontal: space.sm, paddingBottom: space.xs, gap: space.sm },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  count: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
+  facts: { flexDirection: 'row', gap: space.sm },
+  skills: { flexWrap: 'nowrap', overflow: 'hidden' },
 
   face: { borderRadius: radius.pill },
   faceMono: { backgroundColor: color.accentBright, alignItems: 'center', justifyContent: 'center' },
 
-  stamp: { paddingVertical: spaceHalf['1.5'], paddingHorizontal: spaceHalf['3.5'], borderRadius: radius.md, borderWidth: borderWidth.stamp, backgroundColor: color.onInkDisc },
+  stamp: { paddingVertical: spaceHalf['1.5'] - 1, paddingHorizontal: space.md - 1, borderRadius: radius.ctl + 1, borderWidth: borderWidth.stamp, backgroundColor: color.onInkDisc },
   stampShort: { borderColor: color.successFill, transform: [{ rotate: rotation.stamp }] },
   stampPass: { borderColor: color.dangerFill, transform: [{ rotate: rotation['stamp-alt'] }] },
   stampText: { letterSpacing: trackingNative.eyebrow },
+  skipStamp: { height: height['chip-sm'] + 2, paddingHorizontal: spaceHalf['3.5'], borderRadius: radius.pill, backgroundColor: color.ink, flexDirection: 'row', alignItems: 'center', gap: spaceHalf['1.5'] },
 
-  ctl: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: space.lg, paddingTop: space.md, paddingBottom: spaceHalf['2.5'] },
+  ctlWrap: { paddingTop: spaceHalf['3.5'], paddingBottom: space.sm, gap: space.sm, alignItems: 'center' },
+  ctl: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: spaceHalf['4.5'] },
   round: { borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
-  roundLight: { backgroundColor: color.surface, borderWidth: borderWidth.thin, borderColor: color.borderStrong },
-  roundDark: { backgroundColor: color.ink },
-  roundLift: { boxShadow: shadow['deck-skip'] },
-  roundDarkLift: { boxShadow: shadow['deck-save'] },
+  roundPlain: { backgroundColor: color.surface, borderWidth: borderWidth.thin, borderColor: color.borderStrong },
+  roundPass: { backgroundColor: color.surface, borderWidth: borderWidth.medium, borderColor: color.dangerBorder, boxShadow: shadow.card },
+  roundShort: { backgroundColor: color.successFill, boxShadow: shadow['deck-save'] },
+  roundInterest: { backgroundColor: color.accentSoft },
   roundOff: { opacity: opacity.disabled - 0.05 },
-
-  toast: { position: 'absolute', left: space.lg, right: space.lg, bottom: space.lg, height: height.control, paddingLeft: spaceHalf['3.5'], paddingRight: space.sm, borderRadius: radius.tile, backgroundColor: color.ink, flexDirection: 'row', alignItems: 'center', gap: space.sm, boxShadow: shadow.toast },
-  toastUndo: { height: spaceHalf['4.5'] * 2 - 2, paddingHorizontal: spaceHalf['2.5'], borderRadius: radius.ctl, justifyContent: 'center' },
-  toastUndoText: { color: color.accentMuted },
+  hint: { flexDirection: 'row', alignItems: 'center', gap: spaceHalf['1.5'] },
 
   lock: { flex: 1, borderRadius: radius.deck, backgroundColor: color.inkRaised, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   lockHead: { width: height['room-tile-w'] - space.sm, height: height['room-tile-w'] - space.sm, borderRadius: radius.pill, backgroundColor: color.inkSilhouette, marginBottom: -space.xs },

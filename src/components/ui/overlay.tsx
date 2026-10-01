@@ -145,10 +145,34 @@ export type TabItem = {
  * pass `glyph` to swap it 1:1 when the set arrives.
  */
 export function TabBar({
-  items, current, onSelect,
-}: { items: readonly TabItem[]; current: string; onSelect?: (key: string) => void }) {
+  items, current, onSelect, floating = false,
+}: { items: readonly TabItem[]; current: string; onSelect?: (key: string) => void; floating?: boolean }) {
   const insets = useSafeAreaInsets()
   const android = Platform.OS === 'android'
+  // The student app's bar: a white pill floating over the page, the active tab lit in violet.
+  if (floating) {
+    return (
+      <View style={[styles.floatWrap, { paddingBottom: Math.max(insets.bottom, space.sm) + space.xs }]}>
+        <View style={styles.floatBar}>
+          {items.map((it) => {
+            const active = it.key === current
+            return (
+              <Pressable
+                key={it.key}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: active }}
+                onPress={() => onSelect?.(it.key)}
+                style={({ pressed }) => [styles.floatTab, active && styles.floatTabOn, pressed && { opacity: opacity.pressed }]}
+              >
+                {it.glyph}
+                <Text style={[text.uiXsSemi, { color: active ? color.accentText : color.textSubtle }]}>{it.label}</Text>
+              </Pressable>
+            )
+          })}
+        </View>
+      </View>
+    )
+  }
   return (
     <View style={[styles.tabBar, android ? styles.tabBarAndroid : styles.tabBarIos, { paddingBottom: insets.bottom }]}>
       {items.map((it) => {
@@ -271,6 +295,13 @@ const styles = StyleSheet.create({
     borderTopColor: color.border,
     paddingTop: space.sm,
   },
+  floatWrap: { backgroundColor: color.background, paddingHorizontal: 14, paddingTop: space.sm },
+  floatBar: {
+    height: 68, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around',
+    backgroundColor: color.surface, borderWidth: borderWidth.thin, borderColor: color.border, borderRadius: 24, paddingHorizontal: space.xs,
+  },
+  floatTab: { alignItems: 'center', gap: space['2xs'], paddingVertical: 7, paddingHorizontal: space.sm, borderRadius: 14, minWidth: 60 },
+  floatTabOn: { backgroundColor: color.accentSoft },
   tabBarIos: { backgroundColor: color.surfaceMuted },
   tabBarAndroid: { backgroundColor: color.surface },
   tab: { flex: 1, alignItems: 'center', gap: space.xs, paddingVertical: space.xs },

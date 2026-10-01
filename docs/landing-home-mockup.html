@@ -1,0 +1,569 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apostrophe App – Landing, Auth & Home mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* tokens mirror src/theme/tokens.ts */
+    --bg:#FAFAFC; --surface:#fff; --muted:#F1F3F7; --sunken:#E6E8EE;
+    --text:#0B0F1A; --text2:#3A4256; --text3:#6B7385; --text4:#8A91A2;
+    --border:#E3E6ED; --border-strong:#C9CED9;
+    --accent:#5B3DF5; --accent-hover:#4A2FE0; --accent-soft:#EFEBFF;
+    --accent-muted:#C4B8FF; --accent-bright:#7258FF; --accent-deep:#3B2A8F; --accent-edge:#DCD3FF;
+    --ok:#12A66A; --r-md:14px; --r-lg:20px; --r-xl:28px;
+    --shadow:0 1px 2px rgba(11,15,26,.04),0 8px 24px rgba(11,15,26,.06);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{font-family:'Geist',system-ui,sans-serif;background:#E9EAF2;color:var(--text);min-height:100vh;display:flex;gap:48px;justify-content:center;align-items:flex-start;flex-wrap:wrap;padding:40px 16px}
+  .label{font:500 11px 'Geist Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--text3);text-align:center;margin-bottom:14px}
+  button,input{font:inherit;color:inherit}
+  button{cursor:pointer;border:0;background:none}
+  svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+
+  .phone{width:390px;height:812px;background:var(--bg);border-radius:44px;border:10px solid #0B0F1A;overflow:hidden;position:relative;box-shadow:0 30px 60px rgba(11,15,26,.25)}
+  .status{height:44px;display:flex;justify-content:space-between;align-items:center;padding:0 26px;font-size:14px;font-weight:600;position:absolute;top:0;left:0;right:0;z-index:20}
+  .status i{width:90px;height:24px;background:#0B0F1A;border-radius:14px;position:absolute;left:50%;top:8px;transform:translateX(-50%)}
+  .screen{position:absolute;inset:0;transition:transform .45s cubic-bezier(.2,.8,.2,1),opacity .3s;display:flex;flex-direction:column}
+  .screen.off-right{transform:translateX(100%);pointer-events:none}
+  .screen.off-left{transform:translateX(-30%);opacity:0;pointer-events:none}
+
+  /* ---------- buttons ---------- */
+  .btn{height:50px;border-radius:var(--r-md);font-weight:700;font-size:16px;display:flex;align-items:center;justify-content:center;gap:8px;width:100%;transition:.15s}
+  .btn:active{transform:scale(.98)}
+  .btn.primary{background:var(--accent);color:#fff;box-shadow:0 8px 18px rgba(91,61,245,.32)}
+  .btn.outline{border:1.5px solid var(--border-strong);background:var(--surface)}
+  .btn.white{background:#fff;color:var(--accent-deep)}
+  .btn.ghost{height:44px;color:#fff;font-weight:600}
+
+  /* ---------- 1 · LANDING ---------- */
+  .landing{background:linear-gradient(170deg,#6B4DFF 0%,#4A2FE0 45%,#2A1B8A 100%);color:#fff;overflow:hidden}
+  .landing::before,.landing::after{content:"";position:absolute;border-radius:50%;pointer-events:none}
+  .landing::before{width:380px;height:380px;background:rgba(255,255,255,.07);right:-140px;top:-90px}
+  .landing::after{width:300px;height:300px;background:rgba(255,120,200,.16);left:-150px;bottom:140px;filter:blur(30px)}
+  .l-top{padding:64px 28px 0;display:flex;align-items:center;gap:10px;position:relative;z-index:2}
+  .l-mark{width:40px;height:40px;border-radius:13px;background:#fff;color:var(--accent);display:grid;place-items:center;font-size:28px;font-weight:800;line-height:1}
+  .l-word{font-size:22px;font-weight:800;letter-spacing:-.02em}
+  .carousel{flex:1;display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;position:relative;z-index:2}
+  .carousel::-webkit-scrollbar{display:none}
+  .slide{flex:0 0 100%;scroll-snap-align:start;padding:0 28px;display:flex;flex-direction:column;justify-content:center}
+  .art{height:250px;position:relative;margin-bottom:30px}
+  .vcard{position:absolute;width:150px;height:230px;border-radius:24px;background:linear-gradient(160deg,#fff 0%,#E6DEFF 100%);box-shadow:0 24px 40px rgba(20,10,80,.35);display:flex;align-items:flex-end;padding:12px;color:var(--text)}
+  .vcard.a{left:42px;top:10px;transform:rotate(-8deg)}
+  .vcard.b{right:42px;top:0;transform:rotate(7deg);background:linear-gradient(160deg,#FFD9EC,#C4B8FF)}
+  .vcard .who{background:rgba(255,255,255,.9);border-radius:12px;padding:8px 10px;font-size:13px;font-weight:700;width:100%}
+  .vcard .who span{display:block;font-weight:500;color:var(--text3);font-size:11.5px;margin-top:1px}
+  .vcard .tick{position:absolute;top:12px;right:12px;width:28px;height:28px;border-radius:50%;background:var(--ok);color:#fff;display:grid;place-items:center}
+  .vcard .tick svg{width:16px;stroke-width:2.6}
+  .bigico{width:150px;height:150px;border-radius:44px;background:rgba(255,255,255,.16);border:1.5px solid rgba(255,255,255,.3);display:grid;place-items:center;margin:20px auto 0;backdrop-filter:blur(8px)}
+  .bigico svg{width:70px;height:70px;stroke-width:1.5}
+  .heart{position:absolute;width:62px;height:62px;border-radius:50%;display:grid;place-items:center;box-shadow:0 14px 26px rgba(20,10,80,.3)}
+  .slide h1{font-size:40px;line-height:1.06;letter-spacing:-.04em;font-weight:800}
+  .slide p{font-size:17px;line-height:1.45;color:rgba(255,255,255,.78);margin-top:12px}
+  .dots{display:flex;justify-content:center;gap:7px;padding:6px 0 18px;position:relative;z-index:2}
+  .dots i{width:7px;height:7px;border-radius:99px;background:rgba(255,255,255,.35);transition:.3s}
+  .dots i.on{width:24px;background:#fff}
+  .l-cta{padding:0 28px 36px;position:relative;z-index:2;display:grid;gap:4px}
+  .terms{font-size:12px;color:rgba(255,255,255,.6);text-align:center;margin-top:6px;line-height:1.4}
+
+  /* ---------- 2 · GET STARTED (roles + auth) ---------- */
+  .sheet{background:var(--bg);padding-top:44px}
+  .back{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;margin:8px 14px 0;background:var(--surface);border:1px solid var(--border)}
+  .s-body{flex:1;overflow-y:auto;padding:14px 24px 24px;scrollbar-width:none}
+  .s-body::-webkit-scrollbar{display:none}
+  .s-title{font-size:30px;font-weight:800;letter-spacing:-.035em;line-height:1.1}
+  .s-sub{font-size:16px;color:var(--text3);margin-top:8px;line-height:1.45}
+  .roles{display:grid;gap:10px;margin-top:22px}
+  .role{display:flex;gap:14px;align-items:center;text-align:left;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r-lg);padding:14px;transition:.2s}
+  .role .ri{width:48px;height:48px;border-radius:14px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;flex:none}
+  .role b{font-size:17px;display:block;letter-spacing:-.01em}
+  .role span{font-size:14px;color:var(--text3);display:block;margin-top:2px;line-height:1.35}
+  .role .rad{margin-left:auto;width:22px;height:22px;border-radius:50%;border:2px solid var(--border-strong);flex:none;display:grid;place-items:center}
+  .role.on{border-color:var(--accent);background:#F7F6FF}
+  .role.on .rad{border-color:var(--accent);background:var(--accent)}
+  .role.on .rad::after{content:"";width:8px;height:8px;border-radius:50%;background:#fff}
+  .s-foot{padding:14px 24px 28px;border-top:1px solid var(--border);background:var(--surface);display:grid;gap:10px}
+  .s-foot .note{font-size:13px;color:var(--text3);text-align:center;line-height:1.4}
+
+  /* auth form */
+  .tabs{display:flex;background:var(--muted);border-radius:var(--r-md);padding:4px;margin-top:20px}
+  .tabs button{flex:1;height:40px;border-radius:11px;font-size:15px;font-weight:600;color:var(--text3)}
+  .tabs button.on{background:var(--surface);color:var(--accent);box-shadow:0 1px 3px rgba(11,15,26,.12)}
+  .field{margin-top:14px}
+  .field label{font-size:13.5px;font-weight:600;color:var(--text2);display:block;margin-bottom:6px}
+  .field .in{display:flex;align-items:center;height:50px;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r-md);padding:0 14px;gap:10px}
+  .field .in:focus-within{border-color:var(--accent)}
+  .field input{border:0;outline:0;background:none;flex:1;font-size:16px;min-width:0}
+  .field .cc{font-weight:600;color:var(--text2);padding-right:10px;border-right:1px solid var(--border)}
+  .or{display:flex;align-items:center;gap:12px;margin:20px 0 4px;font-size:13px;color:var(--text4)}
+  .or::before,.or::after{content:"";flex:1;height:1px;background:var(--border)}
+  .social{display:grid;gap:10px;margin-top:12px}
+  .g{width:20px;height:20px;border-radius:50%;background:conic-gradient(#EA4335 0 25%,#FBBC05 0 50%,#34A853 0 75%,#4285F4 0)}
+  .fine{font-size:12.5px;color:var(--text4);text-align:center;margin-top:16px;line-height:1.45}
+  .fine b{color:var(--accent);font-weight:600}
+  .hrnote{margin-top:18px;background:var(--accent-soft);border-radius:var(--r-md);padding:14px;font-size:14px;color:var(--text2);line-height:1.45}
+  .hrnote b{color:var(--accent-deep)}
+
+  /* ---------- HOME ---------- */
+  .home .scroll{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none;padding-bottom:96px}
+  .home .scroll::-webkit-scrollbar{display:none}
+  .hero-top{background:linear-gradient(160deg,#5B3DF5,#3B2A8F);color:#fff;padding:60px 24px 66px;border-radius:0 0 32px 32px;position:relative;overflow:hidden}
+  .hero-top::after{content:"";position:absolute;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.08);right:-60px;top:-60px}
+  .row{display:flex;justify-content:space-between;align-items:center;position:relative;z-index:1}
+  .hi{font-size:14px;color:var(--accent-muted)}.name{font-size:26px;font-weight:800;letter-spacing:-.03em;margin-top:2px}
+  .circle{width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.16);display:grid;place-items:center;position:relative}
+  .dot{position:absolute;top:10px;right:11px;width:9px;height:9px;border-radius:50%;background:#FF5C7A;border:2px solid #4A2FE0}
+  .search{margin-top:18px;background:#fff;border-radius:var(--r-md);height:48px;display:flex;align-items:center;gap:10px;padding:0 14px;color:var(--text4);font-size:15px;position:relative;z-index:1}
+  .strength{margin:-44px 24px 0;background:var(--surface);border-radius:var(--r-lg);padding:16px;box-shadow:var(--shadow);border:1px solid var(--border);display:flex;gap:14px;align-items:center;position:relative;z-index:2}
+  .ring{width:60px;height:60px;border-radius:50%;background:conic-gradient(var(--accent) 0 72%,var(--sunken) 72% 100%);display:grid;place-items:center;flex:none}
+  .ring span{width:46px;height:46px;border-radius:50%;background:#fff;display:grid;place-items:center;font-weight:800;font-size:15px}
+  .strength b{font-size:16px}.strength p{font-size:13.5px;color:var(--text3);margin-top:2px;line-height:1.35}
+  .strength a{color:var(--accent);font-weight:600;font-size:14px;display:inline-block;margin-top:5px}
+  .metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px 24px 0}
+  .metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:12px 14px}
+  .metric b{font-size:24px;letter-spacing:-.03em;display:block}.metric span{font-size:13px;color:var(--text3)}
+  .sec{display:flex;justify-content:space-between;align-items:baseline;padding:22px 24px 10px}
+  .sec h3{font-size:19px;letter-spacing:-.025em}.sec a{font-size:14px;color:var(--accent);font-weight:600}
+  .quick{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:0 24px}
+  .qk{text-align:center;font-size:12.5px;font-weight:600;color:var(--text2)}
+  .qk div{height:56px;border-radius:var(--r-md);display:grid;place-items:center;margin-bottom:6px;border:1px solid}
+  .c1{background:var(--accent-soft);border-color:var(--accent-edge);color:var(--accent)}
+  .c2{background:#E7F8F0;border-color:#C5EEDB;color:var(--ok)}
+  .c3{background:#FFF4DE;border-color:#FBE3AC;color:#C77D00}
+  .c4{background:#FFEAF1;border-color:#FFD0E0;color:#E0366B}
+  .iv{margin:0 24px;border-radius:var(--r-lg);background:var(--text);color:#fff;padding:16px}
+  .pill{font:500 10.5px 'Geist Mono',monospace;letter-spacing:.1em;text-transform:uppercase;background:rgba(255,255,255,.14);padding:5px 10px;border-radius:99px;display:inline-block}
+  .iv h4{font-size:19px;margin-top:12px;letter-spacing:-.02em}.iv p{font-size:14px;color:#A6ACBA;margin-top:4px}
+  .iv .go{margin-top:14px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .anon{display:flex;align-items:center;gap:8px;font-size:14px;color:#C9CED9}
+  .anon i{width:32px;height:32px;border-radius:50%;background:#2A3042;display:grid;place-items:center}
+  .iv .btn{width:auto;height:40px;background:#2A3042;color:#8A91A2;font-size:14px;border-radius:99px;padding:0 16px}
+  .chips{display:flex;gap:8px;padding:0 24px 12px;overflow-x:auto;scrollbar-width:none}
+  .chip{white-space:nowrap;padding:9px 15px;border-radius:99px;font-size:14px;font-weight:600;background:var(--surface);border:1px solid var(--border);color:var(--text2)}
+  .chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .job{margin:0 24px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:18px;box-shadow:var(--shadow)}
+  .job .top{display:flex;gap:12px;align-items:center}
+  .co{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;font-weight:800;color:#fff;font-size:19px;background:linear-gradient(135deg,#5B3DF5,#7258FF);flex:none}
+  .job b{font-size:18px;letter-spacing:-.02em}.job .m{font-size:14px;color:var(--text3);margin-top:2px}
+  .tags{display:flex;gap:7px;flex-wrap:wrap;margin-top:14px}
+  .tags span{font-size:13px;padding:6px 11px;border-radius:99px;background:var(--muted);color:var(--text2);font-weight:500}
+  .tags span.sk{background:var(--accent-soft);color:#4A2FE0}
+  .age{font-size:13px;color:var(--text4);margin-top:12px}
+  .swipe{display:flex;justify-content:center;align-items:center;gap:16px;padding:16px 0 0}
+  .sw{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;border:1.5px solid var(--border);background:var(--surface)}
+  .sw.no{color:#E0366B}.sw.yes{color:#fff;background:var(--accent);border-color:var(--accent)}.sw.undo{width:44px;height:44px;color:var(--text3)}
+  .swhint{text-align:center;font-size:13px;color:var(--text4);padding-top:10px}
+  .tab{position:absolute;left:14px;right:14px;bottom:14px;height:68px;background:rgba(255,255,255,.93);backdrop-filter:blur(14px);border:1px solid var(--border);border-radius:24px;display:flex;justify-content:space-around;align-items:center;box-shadow:0 12px 30px rgba(11,15,26,.14);z-index:10}
+  .tab button{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;font-weight:600;color:var(--text4);padding:7px 11px;border-radius:14px}
+  .tab button.on{color:var(--accent);background:var(--accent-soft)}
+  /* ---------- AUTH SCREENS ---------- */
+  .a-head{padding:6px 24px 0}
+  .a-top{display:flex;align-items:center;justify-content:space-between;padding:8px 14px 0 14px}
+  .a-top .mini{display:flex;align-items:center;gap:8px;font-weight:800;font-size:17px;letter-spacing:-.02em;padding-right:10px}
+  .a-top .mini i{width:28px;height:28px;border-radius:9px;background:var(--accent);color:#fff;display:grid;place-items:center;font-style:normal;font-size:19px;line-height:1}
+  .form{flex:1;overflow-y:auto;padding:12px 24px 24px;scrollbar-width:none}
+  .form::-webkit-scrollbar{display:none}
+  .grp{font:500 11px 'Geist Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--text3);margin:24px 0 2px}
+  .field{margin-top:14px}
+  .field label{font-size:14px;font-weight:600;color:var(--text2);display:flex;justify-content:space-between;margin-bottom:6px}
+  .field label em{font-style:normal;font-weight:500;color:var(--text4)}
+  .field .in{display:flex;align-items:center;height:50px;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r-md);padding:0 14px;gap:10px;transition:.15s}
+  .field .in:focus-within{border-color:var(--accent);box-shadow:0 0 0 4px rgba(91,61,245,.12)}
+  .field.err .in{border-color:#E5484D;box-shadow:0 0 0 4px rgba(229,72,77,.1)}
+  .field input,.field select{border:0;outline:0;background:none;flex:1;font-size:16px;min-width:0;height:100%;appearance:none;-webkit-appearance:none}
+  .field select{color:var(--text)}.field select:invalid{color:var(--text4)}
+  .field .in svg{width:18px;color:var(--text4);flex:none}
+  .field .cc{font-weight:600;color:var(--text2);padding-right:10px;border-right:1px solid var(--border);font-size:16px}
+  .field .eye{color:var(--text3);font-size:13.5px;font-weight:600}
+  .msg{font-size:13px;color:#E5484D;margin-top:6px;display:none}
+  .field.err .msg{display:block}
+  .help{font-size:13px;color:var(--text3);margin-top:6px;line-height:1.4}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .meter{display:flex;gap:4px;margin-top:8px}
+  .meter i{flex:1;height:4px;border-radius:4px;background:var(--sunken);transition:.2s}
+  .meter.s1 i:nth-child(-n+1){background:#E5484D}.meter.s2 i:nth-child(-n+2){background:#F59E0B}.meter.s3 i:nth-child(-n+3){background:#84CC16}.meter.s4 i{background:var(--ok)}
+  .price{margin-top:10px;background:var(--accent-soft);border-radius:var(--r-md);padding:12px 14px;display:flex;justify-content:space-between;align-items:center;font-size:14px;color:var(--text2)}
+  .price b{color:var(--accent-deep);font-size:16px}
+  .check{display:flex;gap:12px;align-items:flex-start;margin-top:20px;font-size:14px;line-height:1.45;color:var(--text2);text-align:left}
+  .check .box{width:22px;height:22px;border-radius:7px;border:2px solid var(--border-strong);flex:none;display:grid;place-items:center;margin-top:1px;background:var(--surface)}
+  .check.on .box{background:var(--accent);border-color:var(--accent)}
+  .check .box svg{width:14px;stroke:#fff;stroke-width:3;display:none}.check.on .box svg{display:block}
+  .check b{color:var(--accent);font-weight:600}
+  .check.err .box{border-color:#E5484D}
+  .bar{padding:12px 24px 26px;background:var(--surface);border-top:1px solid var(--border);display:grid;gap:10px}
+  .bar .swap{text-align:center;font-size:15px;color:var(--text3)}
+  .bar .swap b{color:var(--accent);font-weight:700;cursor:pointer}
+  .seg2{display:flex;background:var(--muted);border-radius:var(--r-md);padding:4px;margin-top:16px}
+  .seg2 button{flex:1;height:42px;border-radius:11px;font-size:15px;font-weight:600;color:var(--text3);transition:.2s}
+  .seg2 button.on{background:var(--surface);color:var(--accent);box-shadow:0 1px 3px rgba(11,15,26,.12)}
+  .link{color:var(--accent);font-weight:600;font-size:14px}
+  .or{display:flex;align-items:center;gap:12px;margin:22px 0 4px;font-size:14px;color:var(--text4)}
+  .or::before,.or::after{content:"";flex:1;height:1px;background:var(--border)}
+  .g{width:20px;height:20px;border-radius:50%;background:conic-gradient(#EA4335 0 25%,#FBBC05 0 50%,#34A853 0 75%,#4285F4 0)}
+  .note{margin-top:18px;background:var(--accent-soft);border-radius:var(--r-md);padding:14px;font-size:14px;color:var(--text2);line-height:1.45}
+  .note b{color:var(--accent-deep)}
+  /* otp */
+  .otp{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:26px}
+  .otp input{height:56px;border:1.5px solid var(--border);border-radius:var(--r-md);text-align:center;font-size:22px;font-weight:700;background:var(--surface);outline:0;width:100%}
+  .otp input:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(91,61,245,.12)}
+  .otp.err input{border-color:#E5484D}
+  .resend{text-align:center;font-size:15px;color:var(--text3);margin-top:22px}
+  .resend b{color:var(--accent);font-weight:700}
+  .resend .dis{color:var(--text4);font-weight:600}
+  .vlist{margin-top:22px;display:grid;gap:10px}
+  .vrow{display:flex;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:12px 14px;font-size:14px}
+  .vrow .vi{width:36px;height:36px;border-radius:11px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;flex:none}
+  .vrow b{display:block;font-size:15px}.vrow span{color:var(--text3)}
+  .vrow .st{margin-left:auto;font-size:12.5px;font-weight:600;color:#C77D00;background:#FFF4DE;padding:4px 9px;border-radius:99px}
+  .vrow .st.ok{color:var(--ok);background:#E7F8F0}
+</style>
+</head>
+<body>
+
+<!-- ================= PROTOTYPE: Landing → Get started → Auth ================= -->
+<div>
+  <div class="label">01 · Landing → Create account / Log in (clickable, validated)</div>
+  <div class="phone" id="proto">
+    <div class="status" id="statusbar" style="color:#fff"><span>9:41</span><i></i><span>5G ▮▮▮</span></div>
+
+    <!-- LANDING -->
+    <section class="screen landing" id="s-landing">
+      <div class="l-top"><div class="l-mark">'</div><div class="l-word">apostrophe</div></div>
+
+      <div class="carousel" id="carousel">
+        <div class="slide">
+          <div class="art">
+            <div class="vcard a"><div class="tick"><svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg></div><div class="who">Priya S.<span>Verified interview</span></div></div>
+            <div class="vcard b"><div class="tick"><svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg></div><div class="who">Rahul M.<span>Verified interview</span></div></div>
+          </div>
+          <h1>Beyond resumes.<br>Meet the person.</h1>
+          <p>A hiring app built on real, verified video interviews.</p>
+        </div>
+        <div class="slide">
+          <div class="art"><div class="bigico"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></svg></div></div>
+          <h1>One live interview.<br>Your video resume.</h1>
+          <p>A real person interviews you. The recording becomes your verified profile.</p>
+        </div>
+        <div class="slide">
+          <div class="art"><div class="bigico"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div></div>
+          <h1>Swipe. Shortlist.<br>Get hired.</h1>
+          <p>Employers watch, shortlist and reach out. No first-round screening calls.</p>
+        </div>
+      </div>
+
+      <div class="dots" id="dots"><i class="on"></i><i></i><i></i></div>
+      <div class="l-cta">
+        <button class="btn white" onclick="go('s-signup')">Get started</button>
+        <button class="btn ghost" onclick="go('s-login')">I already have an account</button>
+        <div class="terms">By continuing you agree to our Terms &amp; Privacy Policy</div>
+      </div>
+    </section>
+
+    <!-- LOGIN -->
+    <section class="screen sheet off-right" id="s-login">
+      <div class="a-top"><button class="back" style="margin:0" onclick="go('s-landing')" aria-label="Back"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button><div class="mini"><i>'</i>apostrophe</div></div>
+      <div class="form">
+        <div class="s-title" style="margin-top:12px">Welcome back</div>
+        <div class="s-sub">Log in to your Apostrophe account.</div>
+
+        <div class="seg2" id="lTabs"><button class="on" data-m="otp">Mobile OTP</button><button data-m="pwd">Email &amp; password</button></div>
+
+        <div id="l-otp">
+          <div class="field" data-v="mobile"><label>Mobile number</label>
+            <div class="in"><span class="cc">+91</span><input inputmode="numeric" maxlength="10" placeholder="98765 43210"></div>
+            <div class="msg">Enter a valid 10-digit mobile number</div></div>
+          <div class="help">We'll send a 6-digit code by SMS.</div>
+        </div>
+
+        <div id="l-pwd" style="display:none">
+          <div class="field" data-v="email"><label>Email</label>
+            <div class="in"><input type="email" placeholder="you@example.com" autocomplete="email"></div>
+            <div class="msg">Enter a valid email address</div></div>
+          <div class="field" data-v="pass-login"><label>Password <span class="link" onclick="go('s-forgot')">Forgot?</span></label>
+            <div class="in"><input type="password" placeholder="Your password"><button class="eye" type="button" onclick="toggleEye(this)">Show</button></div>
+            <div class="msg">Enter your password</div></div>
+        </div>
+
+        <button class="btn primary" style="margin-top:22px" id="lCta" onclick="submitLogin()">Send OTP</button>
+
+        <div class="or">or</div>
+        <button class="btn outline" style="margin-top:12px"><span class="g"></span>Continue with Google</button>
+
+        <div class="note"><b>Interviewer?</b> Log in with the email and temporary password we sent you. You'll set a new password the first time. New here? <span class="link" style="font-size:14px">Join us as HR</span></div>
+      </div>
+      <div class="bar"><div class="swap">New to Apostrophe? <b onclick="go('s-signup')">Create account</b></div></div>
+    </section>
+
+    <!-- CREATE ACCOUNT -->
+    <section class="screen sheet off-right" id="s-signup">
+      <div class="a-top"><button class="back" style="margin:0" onclick="go('s-landing')" aria-label="Back"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button><div class="mini"><i>'</i>apostrophe</div></div>
+      <div class="form" id="suForm">
+        <div class="s-title" style="margin-top:12px">Create your account</div>
+        <div class="s-sub">Join Apostrophe in a minute.</div>
+
+        <div class="seg2" id="rTabs"><button class="on" data-r="student">I'm a candidate</button><button data-r="employer">I'm hiring</button></div>
+
+        <!-- common: personal -->
+        <div class="grp" id="gPerson">About you</div>
+        <div class="field" data-v="name"><label>Full name</label><div class="in"><input placeholder="As on your ID" autocomplete="name"></div><div class="msg">Enter your full name</div></div>
+        <div class="field emp-only" data-v="desig"><label>Designation</label><div class="in"><input placeholder="e.g. HR Manager"></div><div class="msg">Enter your designation</div></div>
+        <div class="field" data-v="mobile"><label>Mobile number</label><div class="in"><span class="cc">+91</span><input inputmode="numeric" maxlength="10" placeholder="98765 43210"></div><div class="msg">Enter a valid 10-digit mobile number</div></div>
+        <div class="field" data-v="email"><label id="suEmailL">Email</label><div class="in"><input type="email" placeholder="you@example.com"></div><div class="msg" id="suEmailMsg">Enter a valid email address</div></div>
+        <div class="field stu-only" data-v="city"><label>City</label><div class="in"><input placeholder="e.g. Pune"></div><div class="msg">Enter your city</div></div>
+
+        <!-- candidate: qualification -->
+        <div class="field stu-only" data-v="qual"><label>Highest qualification</label>
+          <div class="in"><select id="qual" required><option value="" disabled selected>Select qualification</option><option value="12th pass">12th pass</option><option value="Graduation">Graduation</option><option value="Post Graduation">Post Graduation</option><option value="PhD">PhD</option></select><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+          <div class="msg">Select your highest qualification</div></div>
+        <div class="price stu-only" id="priceBox" style="display:none"><span>Interview fee for this level</span><b id="priceVal"></b></div>
+
+        <!-- employer: company -->
+        <div class="grp emp-only">Company</div>
+        <div class="field emp-only" data-v="company"><label>Company name</label><div class="in"><input placeholder="Registered company name"></div><div class="msg">Enter your company name</div></div>
+        <div class="row2 emp-only">
+          <div class="field" data-v="industry"><label>Industry</label><div class="in"><select required><option value="" disabled selected>Select</option><option>IT &amp; Software</option><option>Finance</option><option>Healthcare</option><option>Education</option><option>Retail</option><option>Manufacturing</option><option>Other</option></select><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div><div class="msg">Select one</div></div>
+          <div class="field" data-v="size"><label>Company size</label><div class="in"><select required><option value="" disabled selected>Select</option><option>1–10</option><option>11–50</option><option>51–200</option><option>201–500</option><option>500+</option></select><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div><div class="msg">Select one</div></div>
+        </div>
+        <div class="field emp-only"><label>Website <em>Optional</em></label><div class="in"><input type="url" placeholder="https://company.com"></div></div>
+        <div class="field emp-only" data-v="office"><label>Office location</label><div class="in"><input placeholder="City, State"></div><div class="msg">Enter your office location</div></div>
+
+        <div class="grp">Secure your account</div>
+        <div class="field" data-v="pass"><label>Password</label>
+          <div class="in"><input type="password" id="pw" placeholder="At least 8 characters" oninput="meter(this.value)"><button class="eye" type="button" onclick="toggleEye(this)">Show</button></div>
+          <div class="meter" id="meter"><i></i><i></i><i></i><i></i></div>
+          <div class="msg">Use at least 8 characters</div></div>
+        <div class="field" data-v="pass2"><label>Confirm password</label>
+          <div class="in"><input type="password" id="pw2" placeholder="Re-enter password"></div>
+          <div class="msg">Passwords don't match</div></div>
+
+        <div class="check" id="terms" onclick="this.classList.toggle('on');this.classList.remove('err')"><div class="box"><svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg></div><div>I agree to the <b>Terms of Service</b> and <b>Privacy Policy</b></div></div>
+        <div class="help emp-only" style="margin-top:14px">After signing up you'll upload company documents so we can verify your account — usually within 24 hours.</div>
+
+        <div class="or">or</div>
+        <button class="btn outline stu-only" style="margin-top:12px"><span class="g"></span>Sign up with Google</button>
+      </div>
+      <div class="bar">
+        <button class="btn primary" onclick="submitSignup()">Continue</button>
+        <div class="swap">Already have an account? <b onclick="go('s-login')">Log in</b></div>
+      </div>
+    </section>
+
+    <!-- VERIFY OTP -->
+    <section class="screen sheet off-right" id="s-otp">
+      <div class="a-top"><button class="back" style="margin:0" onclick="go(otpBack)" aria-label="Back"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button></div>
+      <div class="form">
+        <div class="s-title" style="margin-top:12px">Verify your number</div>
+        <div class="s-sub">Enter the 6-digit code sent to <b id="otpNum" style="color:var(--text)">+91 98765 43210</b>. <span class="link" onclick="go(otpBack)">Edit</span></div>
+        <div class="otp" id="otp"><input maxlength="1" inputmode="numeric"><input maxlength="1" inputmode="numeric"><input maxlength="1" inputmode="numeric"><input maxlength="1" inputmode="numeric"><input maxlength="1" inputmode="numeric"><input maxlength="1" inputmode="numeric"></div>
+        <div class="msg" id="otpMsg" style="text-align:center;display:none">That code isn't right. Try again.</div>
+        <div class="resend" id="resend"></div>
+
+        <div class="vlist" id="vlist">
+          <div class="vrow"><div class="vi"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 8l9 6 9-6"/></svg></div><div><b>Check your email</b><span id="vMail">We sent a verification link</span></div><div class="st">Pending</div></div>
+        </div>
+        <div class="help" style="margin-top:10px">Your account can't make payments or bookings until your email is verified.</div>
+      </div>
+      <div class="bar"><button class="btn primary" onclick="verifyOtp()">Verify &amp; continue</button></div>
+    </section>
+
+    <!-- FORGOT PASSWORD -->
+    <section class="screen sheet off-right" id="s-forgot">
+      <div class="a-top"><button class="back" style="margin:0" onclick="go('s-login')" aria-label="Back"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button></div>
+      <div class="form">
+        <div class="s-title" style="margin-top:12px">Reset password</div>
+        <div class="s-sub">Enter your email and we'll send you a link to reset it.</div>
+        <div class="field" data-v="email"><label>Email</label><div class="in"><input type="email" placeholder="you@example.com"></div><div class="msg">Enter a valid email address</div></div>
+        <button class="btn primary" style="margin-top:22px" onclick="submitForgot()">Send reset link</button>
+        <div class="note" id="fgOk" style="display:none"><b>Check your inbox.</b> If an account exists for that email, a reset link is on its way.</div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- ================= HOME (candidate) ================= -->
+<div>
+  <div class="label">02 · Home · Candidate (after login)</div>
+  <div class="phone home">
+    <div class="status" style="color:#fff"><span>9:41</span><i></i><span>5G ▮▮▮</span></div>
+    <div class="scroll">
+      <div class="hero-top">
+        <div class="row">
+          <div><div class="hi">Good morning</div><div class="name">Ashish Kumar</div></div>
+          <div class="circle"><svg viewBox="0 0 24 24" style="stroke:#fff"><path d="M6 8a6 6 0 0112 0c0 7 3 8 3 8H3s3-1 3-8M10 20a2 2 0 004 0"/></svg><span class="dot"></span></div>
+        </div>
+        <div class="search"><svg viewBox="0 0 24 24" style="width:18px"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>Search roles, companies, skills</div>
+      </div>
+      <div class="strength">
+        <div class="ring"><span>72%</span></div>
+        <div><b>Complete your profile</b><p>Reach 80% to unlock interview booking.</p><a href="#">Continue profile →</a></div>
+      </div>
+      <div class="metrics">
+        <div class="metric"><b>5</b><span>Employers shortlisted you</span></div>
+        <div class="metric"><b>38</b><span>Profile views</span></div>
+      </div>
+      <div class="sec"><h3>Quick actions</h3></div>
+      <div class="quick">
+        <div class="qk"><div class="c1"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg></div>Book</div>
+        <div class="qk"><div class="c2"><svg viewBox="0 0 24 24"><path d="M5 4h14v16l-7-4-7 4z"/></svg></div>Saved</div>
+        <div class="qk"><div class="c3"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H8l-4 4z"/></svg></div>Chats</div>
+        <div class="qk"><div class="c4"><svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4M12 3a9 9 0 100 18 9 9 0 000-18z"/></svg></div>Scorecard</div>
+      </div>
+      <div class="sec"><h3>Upcoming interview</h3><a href="#">View all</a></div>
+      <div class="iv">
+        <span class="pill">Today · 11:30 AM · 20 min</span>
+        <h4>Your live interview</h4>
+        <p>Readiness check required before joining.</p>
+        <div class="go">
+          <div class="anon"><i><svg viewBox="0 0 24 24" style="width:16px;stroke:#8A91A2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></i>Your Interviewer</div>
+          <button class="btn">Opens 11:20</button>
+        </div>
+      </div>
+      <div class="sec"><h3>Jobs for you</h3><a href="#">Filters</a></div>
+      <div class="chips"><span class="chip on">All</span><span class="chip">Remote</span><span class="chip">Full-time</span><span class="chip">Internship</span></div>
+      <div class="job">
+        <div class="top"><div class="co">F</div><div><b>UI/UX Designer</b><div class="m">Company name · Bengaluru</div></div></div>
+        <div class="tags"><span>Full-time</span><span>₹12–18L</span><span>1–3 yrs</span><span class="sk">Figma</span><span class="sk">Research</span></div>
+        <div class="age">Posted 2 days ago</div>
+      </div>
+      <div class="swipe">
+        <button class="sw no"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+        <button class="sw undo"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5M4 9h10a6 6 0 010 12h-3"/></svg></button>
+        <button class="sw yes"><svg viewBox="0 0 24 24"><path d="M5 4h14v16l-7-4-7 4z"/></svg></button>
+      </div>
+      <div class="swhint">Swipe right to save · left to skip</div>
+    </div>
+    <nav class="tab">
+      <button class="on"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z"/></svg>Home</button>
+      <button><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V4h6v3"/></svg>Jobs</button>
+      <button><svg viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></svg>Interviews</button>
+      <button><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>Profile</button>
+    </nav>
+  </div>
+</div>
+
+<script>
+  const order = ['s-landing','s-login','s-signup','s-otp','s-forgot'];
+  let cur = 's-landing', otpBack = 's-signup';
+  function go(id){
+    const ni = order.indexOf(id);
+    order.forEach((s,i) => {
+      const el = document.getElementById(s);
+      el.classList.toggle('off-right', i > ni);
+      el.classList.toggle('off-left', i < ni);
+    });
+    // forgot/otp sit above their parent screens
+    cur = id;
+    document.getElementById('statusbar').style.color = id === 's-landing' ? '#fff' : 'var(--text)';
+  }
+
+  /* carousel */
+  const car = document.getElementById('carousel'), dots = [...document.querySelectorAll('#dots i')];
+  const idx = () => Math.round(car.scrollLeft / car.clientWidth);
+  car.addEventListener('scroll', () => dots.forEach((d,i) => d.classList.toggle('on', i === idx())));
+  setInterval(() => { if (cur !== 's-landing') return;
+    car.scrollTo({left: ((idx()+1) % dots.length) * car.clientWidth, behavior:'smooth'}); }, 3800);
+
+  /* helpers */
+  const $ = (s,r=document) => r.querySelector(s);
+  const val = (root,key) => { const f = $(`[data-v="${key}"]`, root); const i = f && f.querySelector('input,select'); return {f, v: i ? i.value.trim() : ''}; };
+  const bad = (f,on) => f && f.classList.toggle('err', on);
+  const isMobile = v => /^[6-9]\d{9}$/.test(v.replace(/\s/g,''));
+  const isEmail = v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+  function toggleEye(b){ const i = b.previousElementSibling; const s = i.type === 'password'; i.type = s ? 'text' : 'password'; b.textContent = s ? 'Hide' : 'Show'; }
+  document.addEventListener('input', e => { const f = e.target.closest('.field'); if (f) f.classList.remove('err'); });
+
+  /* ---------- LOGIN ---------- */
+  let lMode = 'otp';
+  document.querySelectorAll('#lTabs button').forEach(b => b.onclick = () => {
+    lMode = b.dataset.m;
+    document.querySelectorAll('#lTabs button').forEach(x => x.classList.toggle('on', x === b));
+    $('#l-otp').style.display = lMode === 'otp' ? '' : 'none';
+    $('#l-pwd').style.display = lMode === 'pwd' ? '' : 'none';
+    $('#lCta').textContent = lMode === 'otp' ? 'Send OTP' : 'Log in';
+  });
+  function submitLogin(){
+    const root = $('#s-login');
+    if (lMode === 'otp'){
+      const m = val($('#l-otp'),'mobile'); const ok = isMobile(m.v); bad(m.f,!ok);
+      if (ok){ $('#otpNum').textContent = '+91 ' + m.v; $('#vlist').style.display = 'none'; startOtp('s-login'); }
+    } else {
+      const e = val($('#l-pwd'),'email'), p = val($('#l-pwd'),'pass-login');
+      bad(e.f,!isEmail(e.v)); bad(p.f,!p.v);
+      if (isEmail(e.v) && p.v) alert('Logged in → Home');
+    }
+  }
+  function submitForgot(){
+    const e = val($('#s-forgot'),'email'); const ok = isEmail(e.v); bad(e.f,!ok);
+    if (ok) $('#fgOk').style.display = '';
+  }
+
+  /* ---------- SIGN UP ---------- */
+  let role = 'student';
+  const PRICE = {'12th pass':'₹99 · 20 min','Graduation':'₹199 · 20 min','Post Graduation':'₹299 · 30 min','PhD':'₹399 · 30 min'};
+  function applyRole(){
+    const emp = role === 'employer';
+    document.querySelectorAll('.emp-only').forEach(el => el.style.display = emp ? (el.classList.contains('row2') ? 'grid' : '') : 'none');
+    document.querySelectorAll('.stu-only').forEach(el => el.style.display = emp ? 'none' : (el.id === 'priceBox' ? ($('#qual').value ? '' : 'none') : ''));
+    $('#suEmailL').textContent = emp ? 'Work email' : 'Email';
+    $('#suEmailMsg').textContent = emp ? 'Use your company email, not Gmail or Yahoo' : 'Enter a valid email address';
+    $('#gPerson').textContent = emp ? 'Authorised person' : 'About you';
+    $('#suForm').scrollTop = 0;
+  }
+  document.querySelectorAll('#rTabs button').forEach(b => b.onclick = () => {
+    role = b.dataset.r;
+    document.querySelectorAll('#rTabs button').forEach(x => x.classList.toggle('on', x === b));
+    applyRole();
+  });
+  $('#qual').onchange = e => { $('#priceBox').style.display = ''; $('#priceVal').textContent = PRICE[e.target.value]; };
+  const FREE = /@(gmail|yahoo|hotmail|outlook|rediffmail)\./i;
+  function meter(v){
+    let s = 0; if (v.length >= 8) s++; if (/[A-Z]/.test(v) && /[a-z]/.test(v)) s++; if (/\d/.test(v)) s++; if (/[^A-Za-z0-9]/.test(v)) s++;
+    $('#meter').className = 'meter' + (v ? ' s' + Math.max(1,s) : '');
+  }
+  function submitSignup(){
+    const root = $('#suForm'); const emp = role === 'employer'; let ok = true; let first = null;
+    const chk = (key, test) => { const x = val(root,key); if (!x.f || x.f.offsetParent === null) return x; const bd = !test(x.v); bad(x.f,bd); if (bd){ ok = false; first = first || x.f; } return x; };
+    chk('name', v => v.length > 1);
+    if (emp) chk('desig', v => v.length > 1);
+    chk('mobile', isMobile);
+    const em = chk('email', v => isEmail(v) && (!emp || !FREE.test(v)));
+    if (!emp){ chk('city', v => v.length > 1); chk('qual', v => !!v); }
+    else { chk('company', v => v.length > 1); chk('industry', v => !!v); chk('size', v => !!v); chk('office', v => v.length > 1); }
+    chk('pass', v => v.length >= 8);
+    const p1 = $('#pw').value, p2 = val(root,'pass2'); bad(p2.f, p1 !== p2.v || !p2.v); if (p1 !== p2.v || !p2.v){ ok = false; first = first || p2.f; }
+    const t = $('#terms'); if (!t.classList.contains('on')){ t.classList.add('err'); ok = false; first = first || t; }
+    if (!ok){ first && first.scrollIntoView({behavior:'smooth',block:'center'}); return; }
+    $('#otpNum').textContent = '+91 ' + val(root,'mobile').v;
+    $('#vMail').textContent = 'We sent a link to ' + em.v;
+    $('#vlist').style.display = '';
+    startOtp('s-signup');
+  }
+
+  /* ---------- OTP ---------- */
+  let timer, left = 30;
+  const boxes = [...document.querySelectorAll('#otp input')];
+  boxes.forEach((b,i) => {
+    b.addEventListener('input', () => { b.value = b.value.replace(/\D/g,''); if (b.value && boxes[i+1]) boxes[i+1].focus(); $('#otp').classList.remove('err'); $('#otpMsg').style.display='none'; });
+    b.addEventListener('keydown', e => { if (e.key === 'Backspace' && !b.value && boxes[i-1]) boxes[i-1].focus(); });
+  });
+  function startOtp(back){
+    otpBack = back; boxes.forEach(b => b.value = ''); left = 30; tickResend();
+    clearInterval(timer); timer = setInterval(() => { left--; tickResend(); if (left <= 0) clearInterval(timer); }, 1000);
+    go('s-otp'); setTimeout(() => boxes[0].focus(), 450);
+  }
+  function tickResend(){
+    $('#resend').innerHTML = left > 0 ? `Resend code in <span class="dis">0:${String(left).padStart(2,'0')}</span>` : `Didn't get it? <b onclick="startOtp(otpBack)">Resend code</b>`;
+  }
+  function verifyOtp(){
+    const code = boxes.map(b => b.value).join('');
+    if (code.length < 6){ $('#otp').classList.add('err'); $('#otpMsg').textContent = 'Enter the 6-digit code'; $('#otpMsg').style.display = ''; return; }
+    alert(role === 'employer' && otpBack === 's-signup' ? 'Verified → Employer: upload verification documents' : otpBack === 's-signup' ? 'Verified → Candidate: pricing & payment' : 'Logged in → Home');
+  }
+  applyRole();
+</script>
+
+</body>
+</html>

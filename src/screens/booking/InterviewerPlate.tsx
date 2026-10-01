@@ -1,7 +1,6 @@
 import React from 'react'
-import { StyleSheet, View } from 'react-native'
-import { color, space, radius, borderWidth, height } from '../../theme'
-import { Body, Card } from '../../components/ui'
+import { StyleSheet, Text, View } from 'react-native'
+import { borderWidth, color, fontFamilyNative as FF } from '../../theme'
 import { LogoMark } from '../../components/Logo'
 
 /**
@@ -18,25 +17,28 @@ import { LogoMark } from '../../components/Logo'
  */
 export function InterviewerPlate({ note }: { note: string }) {
   return (
-    <Card style={styles.card}>
+    <View style={styles.card}>
       <View style={styles.disc}>
         <LogoMark size={24} />
       </View>
       <View style={styles.body}>
-        <Body weight="semibold" size="lg">Your interviewer</Body>
-        <Body size="sm" tone="muted">{note}</Body>
+        <Text style={styles.title}>Your interviewer</Text>
+        <Text style={styles.note}>{note}</Text>
       </View>
-    </Card>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
   card: {
-    flexDirection: 'row', gap: space.md, padding: space.lg,
+    flexDirection: 'row', gap: 14, padding: 16, borderRadius: 18,
+    backgroundColor: color.surface, borderWidth: borderWidth.thin, borderColor: color.border,
   },
   disc: {
-    width: height.fab, height: height.fab, borderRadius: radius.pill, borderWidth: borderWidth.thin,
+    width: 52, height: 52, borderRadius: 26, borderWidth: borderWidth.thin,
     borderColor: color.border, backgroundColor: color.surfaceMuted, alignItems: 'center', justifyContent: 'center',
   },
-  body: { flex: 1, minWidth: 0, gap: space.xs, justifyContent: 'center' },
+  body: { flex: 1, minWidth: 0, gap: 4, justifyContent: 'center' },
+  title: { fontFamily: FF.bodySemiBold, fontSize: 16, color: color.text },
+  note: { fontFamily: FF.body, fontSize: 14, lineHeight: 20, color: color.textMuted },
 })
