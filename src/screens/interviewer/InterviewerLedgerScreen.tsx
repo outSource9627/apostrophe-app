@@ -1,14 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react'
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native'
+import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { color, space } from '../../theme'
-import { Button, text } from '../../components/ui'
-import { InterviewerShell } from '../../components/interviewer/InterviewerShell'
-import { IvCard } from '../../components/interviewer/iv'
-import { EmEmpty, EmError, EmPills } from '../../components/employer/em'
+import { color, fontFamilyNative as FF } from '../../theme'
 import { getLedger, type LedgerKind, type LedgerRowDto } from '../../lib/api/interviewer'
-import { LedgerLine } from './InterviewerWalletScreen'
+import { EmptyBlock, ErrBlock, k, LedgerRow, OutBtn, PageFrame, SkelRows, WChip } from './walletKit'
 import type { RootStackParamList } from '../../../App'
 
 type Tab = 'all' | 'fees' | 'withdrawals' | 'adjustments'
@@ -52,50 +48,44 @@ export function InterviewerLedgerScreen() {
   }, [load])
 
   const shown = tab === 'all' ? rows ?? [] : (rows ?? []).filter((r) => GROUP[tab].includes(r.kind))
+  const hasBal = (rows ?? []).some((r) => typeof r.balanceAfterPaise === 'number')
 
   return (
-    <InterviewerShell back={() => navigation.goBack()} title="Ledger" sub={rows ? `${total} ${total === 1 ? 'entry' : 'entries'}` : undefined} scroll={false}>
+    <PageFrame onBack={() => navigation.goBack()} title="Ledger" sub={rows ? `${total} ${total === 1 ? 'entry' : 'entries'}` : undefined}>
       {rows === null && !error ? (
-        <ActivityIndicator color={color.textSubtle} style={styles.loading} />
+        <SkelRows count={6} />
       ) : error && !rows ? (
-        <View style={styles.pad}><EmError title="Couldn’t load the ledger." body={error} action={<Button variant="secondary" size="pair" icon="refresh" label="Try again" onPress={() => { load(1) }} />} /></View>
+        <ErrBlock title="Couldn’t load the ledger." body={error} onRetry={() => { load(1) }} />
       ) : (rows ?? []).length === 0 ? (
-        <View style={[styles.pad, styles.center]}><EmEmpty icon="file" title="No transactions yet." body="Interview fees land here once each scorecard is in." /></View>
+        <EmptyBlock title="No transactions yet." body="Interview fees land here once each scorecard is in." />
       ) : (
-        <FlatList
-          data={[0]}
-          keyExtractor={() => 'ledger'}
-          contentContainerStyle={styles.list}
-          ListHeaderComponent={
-            <EmPills<Tab>
-              items={[{ key: 'all', label: 'All' }, { key: 'fees', label: 'Interview fees' }, { key: 'withdrawals', label: 'Withdrawals' }, { key: 'adjustments', label: 'Adjustments' }]}
-              value={tab}
-              onChange={setTab}
-            />
-          }
-          ListHeaderComponentStyle={styles.pillsWrap}
-          renderItem={() =>
-            shown.length === 0 ? (
-              <Text style={[text.uiMd, styles.muted, styles.none]}>Nothing here yet.</Text>
-            ) : (
-              <IvCard style={styles.card}>{shown.map((r, i) => <LedgerLine key={r.id} r={r} last={i === shown.length - 1} />)}</IvCard>
-            )
-          }
-          ListFooterComponent={(rows?.length ?? 0) < total ? <Button variant="outline" size="md" label="Load more" busy={more} onPress={() => { load(page + 1) }} style={styles.more} /> : undefined}
-        />
+        <>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.chipsWrap} contentContainerStyle={s.chips}>
+            {FILTERS.map((f) => <WChip key={f.key} label={f.label} on={tab === f.key} onPress={() => setTab(f.key)} />)}
+          </ScrollView>
+          {hasBal && <Text style={k.sub}>Balance after each entry, newest first</Text>}
+          {shown.length === 0 ? (
+            <Text style={s.none}>Nothing here yet.</Text>
+          ) : (
+            <View style={k.ow}>{shown.map((r, i) => <LedgerRow key={r.id} r={r} last={i === shown.length - 1} />)}</View>
+          )}
+          {(rows?.length ?? 0) < total && <OutBtn label={more ? 'Loading…' : 'Load more'} disabled={more} onPress={() => { load(page + 1) }} style={s.more} />}
+        </>
       )}
-    </InterviewerShell>
+    </PageFrame>
   )
 }
 
-const styles = StyleSheet.create({
-  muted: { color: color.textMuted },
-  pad: { flex: 1, paddingHorizontal: space.lg },
-  center: { justifyContent: 'center' },
-  loading: { paddingVertical: space['3xl'] },
-  none: { paddingVertical: space.xl, textAlign: 'center' },
-  pillsWrap: { marginHorizontal: -space.lg },
-  list: { paddingHorizontal: space.lg, paddingBottom: space.lg, gap: space.md },
-  card: { paddingVertical: 0 },
+const FILTERS: { key: Tab; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'fees', label: 'Interview fees' },
+  { key: 'withdrawals', label: 'Withdrawals' },
+  { key: 'adjustments', label: 'Adjustments' },
+]
+
+const s = StyleSheet.create({
+  chipsWrap: { marginHorizontal: -20, flexGrow: 0 },
+  chips: { gap: 8, paddingHorizontal: 20, paddingBottom: 4 },
+  none: { fontFamily: FF.body, fontSize: 16, color: color.textMuted, textAlign: 'center', paddingVertical: 24 },
   more: { alignSelf: 'center' },
 })

@@ -80,6 +80,10 @@ export interface InterviewerMeDto {
   status: InterviewerStatus
   statusReason?: string | null
   profile?: {
+    /** Additive (profile write): the display name, the short bio and a 15-minute photo read URL. */
+    name?: string
+    bio?: string | null
+    avatarUrl?: string | null
     domains: string[]
     languages: string[]
     tiers: Tier[]
@@ -285,7 +289,23 @@ export interface AvailabilityOverviewDto {
   totals: { openMinutes: number; slots: number; booked: number }
   overrides: { date: string; available: boolean; kind: 'DAY_OFF' | 'CUSTOM_HOURS'; blocks: AvailabilityBlockDto[] }[]
   next14Days: { date: string; totalSlots: number; bookedSlots: number; openSlots: number }[]
+  /** today .. today + days - 1 (IST); additive, absent on an older server. `days` is the admin's supply.horizonDays. */
+  horizon?: AvailabilityHorizonDto
 }
+
+export interface AvailabilityHorizonDateDto {
+  date: string
+  weekday: number
+  weekdayName: string
+  totalSlots: number
+  openSlots: number
+  bookedSlots: number
+  /** One cell per slot; the same shape as `days[].cells`. */
+  cells: { startMin: number; status: 'OPEN' | 'BOOKED'; interview?: { id: string; status: InterviewStatus; candidateShortName: string } }[]
+  override: null | { kind: 'DAY_OFF' | 'CUSTOM_HOURS'; available: boolean; blocks: AvailabilityBlockDto[] }
+  coveredByWeeklyRules: boolean
+}
+export interface AvailabilityHorizonDto { days: number; dates: AvailabilityHorizonDateDto[] }
 
 /** `weekOf` is any IST date in the week wanted (YYYY-MM-DD); omitted means this week. */
 export const getAvailabilityOverview = (weekOf?: string) =>
@@ -413,3 +433,42 @@ export interface InterviewerApplicationInput {
 }
 export const submitInterviewerApplication = (body: InterviewerApplicationInput) =>
   api.post<{ received: boolean; message: string }>('/interviewers/apply', body, { anonymous: true })
+
+// ── Profile write (PATCH /interviewers/me/profile) ───────────────────────────
+/** Any subset, at least one. Domains, tiers, fees, load caps and status are admin-only (a 400). */
+export interface InterviewerProfilePatch {
+  /** 2–80 characters, trimmed. */
+  name?: string
+  /** 1–12 languages, each 1–40 characters. */
+  languages?: string[]
+  /** At most 280; '' clears it. */
+  bio?: string
+  /** The key from the avatar upload, or null to remove the photo. */
+  avatarKey?: string | null
+}
+export interface InterviewerProfileDto {
+  name: string
+  bio: string | null
+  avatarUrl: string | null
+  domains: string[]
+  languages: string[]
+  tiers: Tier[]
+  loadCaps?: { perDay?: number | null; perWeek?: number | null }
+  feePaise?: Partial<Record<Tier, number>>
+}
+export const updateInterviewerProfile = async (body: InterviewerProfilePatch) =>
+  (await api.patch<{ profile: InterviewerProfileDto }>('/interviewers/me/profile', body)).profile
+
+export type AvatarContentType = 'image/jpeg' | 'image/png' | 'image/webp'
+export const AVATAR_MAX_BYTES = 5_242_880
+export interface AvatarUploadDto {
+  key: string
+  url: string
+  method: 'PUT'
+  headers: Record<string, string>
+  expiresAt: string
+  purpose: string
+  maxBytes: number
+}
+export const getAvatarUploadUrl = (body: { contentType: AvatarContentType; sizeBytes: number }) =>
+  api.post<AvatarUploadDto>('/interviewers/me/profile/avatar-upload', body)

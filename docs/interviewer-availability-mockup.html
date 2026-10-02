@@ -1,0 +1,541 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apostrophe App – Interviewer Availability (final)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FAFAFC; --surface:#fff; --muted:#F1F3F7; --sunken:#E6E8EE;
+    --text:#0B0F1A; --text2:#3A4256; --text3:#6B7385; --text4:#8A91A2;
+    --border:#E3E6ED; --border-strong:#C9CED9;
+    --accent:#5B3DF5; --accent-hover:#4A2FE0; --accent-soft:#EFEBFF; --accent-wash:#F7F6FF;
+    --accent-muted:#C4B8FF; --accent-deep:#3B2A8F;
+    --ink:#0B0F1A; --ink-raised:#151B2B;
+    --ok:#0E9F6E; --ok-text:#0B7A55; --ok-soft:#E6F7F0; --ok-edge:#BFE8D6;
+    --danger:#E5484D; --danger-text:#C22A30; --danger-soft:#FDECEC; --danger-edge:#F2B8BA;
+    --warn:#935F00; --warn-soft:#FFF5E1; --warn-edge:#F5E2B8; --info:#2F6BFF; --info-soft:#E8EFFF;
+    --r-md:14px; --r-lg:18px; --r-xl:28px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{font-family:'Geist',system-ui,sans-serif;background:#E9EAF2;color:var(--text);padding:40px 24px 90px}
+  button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+  button:disabled{cursor:default}
+  button:focus-visible,[tabindex]:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex:none}
+  .mono{font:500 11.5px 'Geist Mono',monospace;letter-spacing:.14em;text-transform:uppercase}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+  /* ---------- page ---------- */
+  .wrap{max-width:1000px;margin:0 auto}
+  .intro{margin:0 auto 20px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:28px 32px}
+  .intro h1{font-size:30px;letter-spacing:-.035em;line-height:1.1}
+  .intro .lede{font-size:16px;color:var(--text3);margin-top:8px;line-height:1.5;max-width:900px}
+  .legend{display:grid;gap:10px;margin-top:16px;font-size:14px;color:var(--text2);line-height:1.45}
+  .states{display:flex;flex-wrap:wrap;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:22px;padding:4px;margin-bottom:20px;width:fit-content;max-width:100%}
+  .states button{padding:8px 14px;border-radius:99px;font-size:14px;font-weight:600;color:var(--text3);white-space:nowrap}
+  .states button.on{background:var(--accent);color:#fff}
+  .layout{display:flex;flex-wrap:wrap;gap:40px;align-items:flex-start}
+  .notes{width:520px;max-width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:22px 24px}
+  .notes ul{padding-left:18px;font-size:13.5px;line-height:1.55;color:var(--text2)}
+  .notes li{margin-bottom:5px}
+  .notes .mono{color:var(--accent);margin:14px 0 6px;display:block;font-size:11.5px}
+  .notes .mono:first-child{margin-top:0}
+  .notes.side{position:sticky;top:20px}
+  .notes ul.cov{list-style:none;padding-left:0}
+  .notes ul.cov li{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:10px;border-top:1px solid var(--border);padding:6px 0;margin:0}
+  .notes ul.cov li:first-child{border-top:0}
+  .notes ul.cov b{font-weight:600;color:var(--text)}
+  .ptag{display:inline-block;font:500 10.5px 'Geist Mono',monospace;letter-spacing:.04em;text-transform:uppercase;border:1px dashed var(--accent);color:var(--accent);border-radius:99px;padding:2px 8px;background:var(--accent-wash);white-space:nowrap;vertical-align:middle;line-height:1.3}
+
+  /* ---------- phone ---------- */
+  .phone{width:390px;height:812px;background:var(--bg);border-radius:44px;border:10px solid #0B0F1A;overflow:hidden;position:relative;flex:none}
+  .status{height:44px;display:flex;justify-content:space-between;align-items:center;padding:0 26px;font-size:14px;font-weight:600;position:absolute;top:0;left:0;right:0;z-index:40;pointer-events:none}
+  .status i{width:90px;height:24px;background:#0B0F1A;border-radius:14px;position:absolute;left:50%;top:8px;transform:translateX(-50%)}
+  .scroll{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none;padding-top:44px;padding-bottom:210px}
+  .scroll::-webkit-scrollbar{display:none}
+  .compact{position:absolute;top:0;left:0;right:0;height:96px;padding:44px 20px 0;display:flex;align-items:center;justify-content:space-between;background:rgba(250,250,252,.96);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);z-index:30;opacity:0;transform:translateY(-8px);pointer-events:none;transition:.2s}
+  .compact.on{opacity:1;transform:none}
+  .compact b{font-size:18px;letter-spacing:-.02em}
+  .compact .mono{color:var(--accent-hover)}
+  .tab{position:absolute;left:14px;right:14px;bottom:14px;height:68px;background:rgba(255,255,255,.96);backdrop-filter:blur(14px);border:1px solid var(--border);border-radius:24px;display:flex;justify-content:space-around;align-items:center;z-index:25}
+  .tab button{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10.5px;font-weight:600;color:var(--text4);padding:7px 2px;border-radius:14px;min-width:60px;min-height:48px;justify-content:center}
+  .tab button.on{color:var(--accent);background:var(--accent-soft)}
+  .toast{position:absolute;left:14px;right:14px;bottom:100px;background:var(--ink);color:#fff;border-radius:var(--r-md);padding:13px 14px;z-index:70;font-size:14px;font-weight:600;transform:translateY(20px);opacity:0;pointer-events:none;transition:.25s}
+  .toast.on{transform:none;opacity:1}
+  [data-act]{cursor:pointer}
+  [data-act]:disabled{cursor:default}
+
+  /* ---------- shared ---------- */
+  .grow{flex:1;min-width:0}
+  .ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pad{padding:0 20px}
+  .stack{display:grid;gap:10px;grid-template-columns:minmax(0,1fr)}
+  .stack>*{min-width:0}
+  .head{padding:6px 20px 14px}
+  .title{font-size:30px;font-weight:700;letter-spacing:-.04em;line-height:1.1}
+  .head .mono{color:var(--text3);margin-top:7px;display:block}
+  .sub{font-size:12.5px;color:var(--text3);line-height:1.35}
+  .brandbar{height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 20px}
+  .brand{display:flex;align-items:center;gap:10px;font-size:18px;font-weight:700;letter-spacing:-.01em}
+  .mark{width:30px;height:30px;border-radius:9px;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:800;font-size:19px;line-height:1;padding-bottom:3px}
+  .disc{width:40px;height:40px;border-radius:50%;background:var(--ink-raised);color:#fff;display:grid;place-items:center;font-size:13.5px;font-weight:600;flex:none}
+  .btn{height:46px;min-width:44px;border-radius:var(--r-md);font-weight:600;font-size:15px;padding:0 16px;display:inline-flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap}
+  .btn.out{border:1.5px solid var(--border-strong);background:var(--surface)}
+  .btn.full{width:100%}
+  .btn.sm{height:40px;font-size:13.5px;padding:0 12px;border-radius:12px}
+  .pbtn{height:48px;border-radius:99px;width:100%;font-weight:600;font-size:15px;display:flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap}
+  .pbtn svg{width:18px;height:18px}
+  .pbtn.on{background:var(--accent);color:#fff}.pbtn.off{background:var(--sunken);color:var(--text3);cursor:default}.pbtn.ok{background:var(--ok);color:#fff}
+  .spin{width:18px;height:18px;border-radius:50%;border:2.5px solid rgba(11,15,26,.2);border-top-color:var(--text3);animation:sp .8s linear infinite;flex:none}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .bd{font:600 11.5px 'Geist',sans-serif;letter-spacing:0;border-radius:99px;padding:2px 8px;display:inline-block;white-space:nowrap;line-height:1.3}
+  .bd.green{background:var(--ok-soft);color:var(--ok-text)}.bd.violet{background:var(--accent-soft);color:var(--accent-hover)}
+  .bd.red{background:var(--danger-soft);color:var(--danger-text)}.bd.gray{background:var(--muted);color:var(--text3)}
+  .oh{display:flex;align-items:center;justify-content:space-between;padding:4px 2px 0;gap:8px}
+  .oh h3{font-size:16px;font-weight:700;letter-spacing:-.02em;display:flex;align-items:center;gap:8px}
+  .ct{font:600 11.5px 'Geist',sans-serif;color:var(--accent-hover);background:var(--accent-soft);border-radius:99px;min-width:24px;height:24px;padding:0 8px;display:grid;place-items:center}
+  .ow{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+  .nmx{font-size:15px;font-weight:600;letter-spacing:-.015em;line-height:1.25}
+  .skel{background:linear-gradient(90deg,var(--muted) 0%,#E9ECF2 50%,var(--muted) 100%);background-size:200% 100%;animation:sh 1.3s infinite linear;border-radius:10px}
+  @keyframes sh{to{background-position:-200% 0}}
+  .center{display:grid;place-items:center;text-align:center;padding:72px 32px 0}
+  .center .ic{width:72px;height:72px;border-radius:24px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;margin-bottom:16px}
+  .center .ic svg{width:32px;height:32px}
+  .center b{font-size:24px;font-weight:700;letter-spacing:-.03em;display:block}
+  .center p{font-size:16px;color:var(--text3);margin:10px 0 22px;line-height:1.5}
+  .center .btn{height:52px;font-size:16px;padding:0 26px;border-radius:16px}
+  .band{display:flex;gap:10px;align-items:flex-start;padding:14px 20px;background:var(--danger-soft);border-top:1px solid var(--danger-edge);border-bottom:1px solid var(--danger-edge);color:var(--danger-text);font-size:14.5px;line-height:1.45;margin-bottom:14px}
+  .band svg{width:20px;height:20px;margin-top:1px}
+  .note{font-size:12px;color:var(--text3);line-height:1.4;padding:0 4px}
+  .hint{border-radius:16px;background:var(--accent-wash);border:1px dashed var(--accent-muted);padding:12px 14px;display:grid;gap:3px}
+  .hint b{font-size:15px;font-weight:600;letter-spacing:-.02em}
+  .hint p{font-size:12.5px;color:var(--text3);line-height:1.4}
+  .hint.plain{background:var(--surface);border:1px solid var(--border)}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px;display:grid;gap:10px}
+  .lbl{font:500 14px 'Geist',sans-serif;color:var(--text3)}
+  .errtxt{font-size:12.5px;color:var(--danger-text);font-weight:500;text-align:center;padding:0 4px}
+  .warnbox{border-radius:12px;background:var(--warn-soft);border:1px solid var(--warn-edge);color:var(--warn);font-size:12.5px;line-height:1.4;padding:9px 12px}
+
+  /* stat strip: icon + label, value below, one line */
+  .strip3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;align-items:stretch}
+  .tile{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:10px 8px 10px 12px;display:grid;align-content:center;gap:4px;min-width:0}
+  .tile .top{display:flex;align-items:center;gap:6px;min-width:0}
+  .chipi{width:20px;height:20px;border-radius:7px;display:grid;place-items:center;flex:none}
+  .chipi svg{width:13px;height:13px}
+  .chipi.acc{background:var(--accent-soft);color:var(--accent)}
+  .chipi.ok{background:var(--ok-soft);color:var(--ok-text)}
+  .tile .lbl{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2;min-width:0;letter-spacing:-.005em}
+  .tile .fig{font:700 25px/1 'Geist',sans-serif;letter-spacing:-.035em;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .tile .fig small{font-size:15px;font-weight:600;letter-spacing:-.02em;color:var(--text3);margin-left:2px}
+  .tile .fig.ok{color:var(--ok)}
+
+  /* hour tile (the app's own tile) */
+  .hgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+  .hcell{height:44px;border-radius:12px;border:1px solid var(--border);background:var(--surface);padding:0 10px;display:flex;align-items:center;justify-content:space-between;gap:6px;min-width:0}
+  .hcell .t{font:500 13px 'Geist Mono',monospace;color:var(--text3);white-space:nowrap}
+  .hcell small{font:600 11.5px 'Geist',sans-serif;color:var(--ok-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+  .hcell.on{background:var(--ok-soft);border-color:var(--ok-edge)}.hcell.on .t{color:var(--ok-text)}
+  .hcell.part{background:linear-gradient(90deg,var(--ok-soft) 50%,var(--surface) 50%);border-color:var(--ok-edge)}.hcell.part .t{color:var(--ok-text)}
+  .hcell.bk{background:var(--accent-soft);border-color:var(--accent-muted);cursor:default}.hcell.bk .t,.hcell.bk small{color:var(--accent-deep)}
+  .hcell.chg{border:1.5px dashed var(--accent)}
+  .hcell.ro:disabled{opacity:.85}
+  .hcell:disabled{opacity:.55}
+  .hcell.bk svg{width:15px;height:15px;color:var(--accent-deep);margin-left:auto}
+  /* switch */
+  .tg{width:52px;height:32px;border-radius:99px;background:var(--border-strong);padding:0 4px;display:flex;align-items:center;flex:none}
+  .tg i{width:24px;height:24px;border-radius:50%;background:#fff;display:block}
+  .tg.on{background:var(--ok);justify-content:flex-end}
+  .tg:disabled{opacity:.5}
+
+  /* sticky bar */
+  .pubbar{position:absolute;left:0;right:0;bottom:92px;padding:22px 20px 8px;background:linear-gradient(to bottom,rgba(250,250,252,0),var(--bg) 34%);z-index:24;display:grid;gap:8px}
+
+  /* segmented */
+  .seg{display:flex;background:var(--muted);border-radius:14px;padding:3px;gap:2px}
+  .seg button{flex:1;min-width:0;height:38px;border-radius:11px;font-size:13.5px;font-weight:600;color:var(--text3);display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;padding:0 4px}
+  .seg button.on{background:var(--surface);color:var(--text);border:1px solid var(--border)}
+  .seg .ct{height:20px;min-width:20px;padding:0 6px;font-size:11px}
+
+  /* override list row */
+  .orow{display:flex;align-items:center;gap:10px;padding:8px 8px 8px 12px;border-bottom:1px solid var(--border)}
+  .orow:last-child{border-bottom:0}
+  .dtile{width:42px;height:46px;border-radius:12px;display:grid;place-items:center;align-content:center;flex:none;border:1px solid}
+  .dtile .m{font:500 10.5px 'Geist Mono',monospace;letter-spacing:.06em}
+  .dtile b{font-size:17px;line-height:1;letter-spacing:-.02em}
+  .dtile.off{background:var(--danger-soft);border-color:var(--danger-edge);color:var(--danger-text)}
+  .dtile.on{background:var(--ok-soft);border-color:var(--ok-edge);color:var(--ok-text)}
+  .ib{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;color:var(--danger-text);flex:none}
+  .ib:disabled{opacity:.45}
+  .notice{font-size:12.5px;color:var(--text2);padding:0 2px}
+
+  /* bar rows (weekly and dates) */
+  .rrow{display:flex;align-items:center;gap:10px;padding:9px 12px;width:100%;text-align:left;border-bottom:1px solid var(--border)}
+  .rrow:last-child{border-bottom:0}
+  .rrow .dn{width:38px;flex:none;display:grid;gap:1px}
+  .rrow .dn .mono{font-size:11px;letter-spacing:.04em;color:var(--text3)}
+  .rrow .dn b{font-size:17px;font-weight:700;letter-spacing:-.03em;line-height:1}
+  .rrow.today .dn b{color:var(--accent)}
+  .rrow.wk .dn b{font-size:15px;font-weight:600}
+  .rrow .chv{color:var(--text4);width:18px;height:18px}
+  .rbar{display:grid;grid-template-columns:repeat(14,minmax(0,1fr));gap:2px;height:12px;margin-bottom:5px}
+  .rbar i{border-radius:3px;background:var(--sunken);display:block}
+  .rbar i.on{background:var(--ok)}.rbar i.part{background:linear-gradient(90deg,var(--ok) 50%,var(--sunken) 50%)}.rbar i.bk{background:var(--accent)}
+  .rbar i.chg{outline:1.5px dashed var(--accent);outline-offset:1px}
+  .rbar.off i{background:var(--danger-soft);box-shadow:none}
+  .sl{display:flex;flex-wrap:wrap;align-items:center;gap:3px 8px;font-size:12.5px;color:var(--text3);line-height:1.35}
+  .trow{display:flex;gap:10px;padding:7px 12px 5px;border-bottom:1px solid var(--border);background:var(--bg)}
+  .trow .sp{width:38px;flex:none}.trow .sp2{width:18px;flex:none}
+  .trow .tk{flex:1;display:flex;justify-content:space-between;font:500 11px 'Geist Mono',monospace;color:var(--text3)}
+  .key{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:12px;color:var(--text3);padding:0 4px}
+  .key span{display:inline-flex;align-items:center;gap:6px}
+  .key i{width:12px;height:12px;border-radius:5px;border:1px solid var(--border);background:var(--sunken);display:inline-block}
+  .key i.on{background:var(--ok);border-color:var(--ok)}
+  .key i.part{background:linear-gradient(90deg,var(--ok) 50%,var(--sunken) 50%);border-color:var(--ok-edge)}
+  .key i.bk{background:var(--accent);border-color:var(--accent)}
+  .key i.chg{border:1.5px dashed var(--accent);background:var(--surface)}
+
+  /* ---------- sheet ---------- */
+  .scrim{position:absolute;inset:0;background:rgba(11,15,26,.4);z-index:50}
+  .sheet{position:absolute;left:0;right:0;bottom:0;max-height:92%;background:var(--bg);border-radius:24px 24px 0 0;z-index:51;display:flex;flex-direction:column;overflow:hidden;animation:up .3s cubic-bezier(.2,.8,.2,1)}
+  @keyframes up{from{transform:translateY(40px);opacity:0}}
+  .sheet .grab{width:40px;height:4px;border-radius:4px;background:var(--border-strong);margin:10px auto 0;flex:none}
+  .sheet .sh{display:flex;align-items:center;gap:12px;padding:10px 16px 6px;flex:none}
+  .sheet .sh b{font-size:18px;letter-spacing:-.025em;display:block}
+  .sheet .sh span{font-size:12.5px;color:var(--text3)}
+  .sheet .x{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--muted);margin-left:auto;flex:none}
+  .sheet .body{padding:4px 16px 16px;overflow-y:auto;display:grid;gap:12px;align-content:start;scrollbar-width:none}
+  .sheet .foot{padding:10px 16px 22px;background:var(--surface);border-top:1px solid var(--border);display:grid;gap:8px;flex:none}
+  .fld{display:grid;gap:6px}
+  .fld>.lbl,.lbl{font-size:13px}
+  .fld>.lbl{padding-left:2px}
+  select.sel{appearance:none;-webkit-appearance:none;width:100%;height:46px;border-radius:12px;border:1px solid var(--border-strong);background:var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%236B7385' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center;padding:0 40px 0 14px;font:500 15px 'Geist',sans-serif;color:var(--text)}
+  select.sel:disabled{background-color:var(--muted);color:var(--text3)}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .ferr{font-size:12px;color:var(--danger-text);padding-left:2px}
+  .shead2{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:10px 12px}
+  .today-b{font:600 11px 'Geist',sans-serif;background:var(--accent-soft);color:var(--accent-hover);border-radius:99px;padding:2px 9px;margin-left:8px;vertical-align:2px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="intro">
+  <div class="mono" style="color:var(--accent)">Interviewer app · Availability · final · next 21 days</div>
+  <h1>Availability, in the approved Home and Interviews language</h1>
+  <p class="lede">The Availability tab of the interviewer persona (<span class="mono" style="letter-spacing:.04em;font-size:12px">AvailabilityScreen</span> and <span class="mono" style="letter-spacing:.04em;font-size:12px">OverridesScreen</span>, reading <span class="mono" style="letter-spacing:.04em;font-size:12px">GET /interviewers/me/availability</span> and <span class="mono" style="letter-spacing:.04em;font-size:12px">/availability/overview</span>, saving with <span class="mono" style="letter-spacing:.04em;font-size:12px">PUT /availability</span>). One screen with three views: Weekly hours, Next 21 days, Overrides. Switch the state, then tap hours, dates, overrides and Publish.</p>
+  <div class="legend">
+    <div><span class="ptag">PROPOSAL</span>&nbsp; Dashed tag: a structure the app does not have today. The app today is one day at a time: a Monday to Sunday strip, a switch, two-column hour tiles, override chips and Publish. Only the 21-date list (and the date sheet behind it) is tagged; weekly hours, the hour tiles, Publish and the overrides operations are real.</div>
+    <div><b>Config-driven values</b> (slot length, the 8 AM to 10 PM page range, the booking horizon) come from <span class="mono" style="letter-spacing:.04em;font-size:11.5px">/config</span> and the availability payload; 30-minute slots and 21 days are samples. Candidate names are placeholder-shaped samples; sample “today” is Fri 2 Oct 2026.</div>
+    <div><b>Next 21 days = the admin setting.</b> 21 is <span class="mono" style="letter-spacing:.04em;font-size:11.5px">supply.horizonDays</span>, returned as <span class="mono" style="letter-spacing:.04em;font-size:11.5px">horizonDays</span>; the app reads it (“next N days”) and never hardcodes it. If the server setting is another number today, an admin must set supply.horizonDays=21 for this to match. Weeks are 7 rolling days from today (2–8, 9–15, 16–22 Oct).</div>
+  </div>
+</div>
+
+<div class="states" id="sBar" aria-label="State"></div>
+<div class="layout">
+  <div id="ph"></div>
+  <div class="notes side" id="notes"></div>
+</div>
+</div>
+
+<script>
+/* ---------- icons ---------- */
+const I={
+ home:'<svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z"/></svg>',
+ cal:'<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
+ clock:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+ wallet:'<svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M3 10h18M16 15h2"/></svg>',
+ user:'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>',
+ alert:'<svg viewBox="0 0 24 24"><path d="M12 3l10 18H2zM12 10v5M12 18v.5"/></svg>',
+ chev:'<svg class="chv" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>',
+ x:'<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+ trash:'<svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
+ plus:'<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
+ lock:'<svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>'
+};
+const TABS=[['home','Home'],['cal','Interviews'],['clock','Availability'],['wallet','Wallet'],['user','Account']];
+const tab=()=>`<nav class="tab" aria-label="Main">${TABS.map(t=>`<button data-act="toast:Opens ${t[1]}" class="${t[1]==='Availability'?'on':''}" ${t[1]==='Availability'?'aria-current="page"':''}>${I[t[0]]}<span>${t[1]}</span></button>`).join('')}</nav>`;
+const status=()=>`<div class="status"><span>9:41</span><i></i><span>5G ▮▮▮</span></div>`;
+const ptag=()=>`<span class="ptag">PROPOSAL</span>`;
+const brandBar=`<div class="brandbar"><div class="brand"><div class="mark">’</div>Apostrophe</div><button class="disc" data-act="toast:Opens Account" aria-label="Account">RK</button></div>`;
+const errBlock=(t,b,act)=>`<div class="center"><div class="ic">${I.alert}</div><b>${t}</b><p>${b}</p><button class="btn out" data-act="${act}">Try again</button></div>`;
+const bandHTML=`<div class="band" role="alert">${I.alert}<div><b>Account suspended.</b> Reason text from the server.</div></div>`;
+const sk=(h,w,r)=>`<div class="skel" style="height:${h}px;${w?`width:${w};`:''}${r?`border-radius:${r}px`:''}"></div>`;
+
+/* ---------- sample data ---------- */
+const SLOT=30, PER=2, FULLM=(1<<PER)-1, H0=8, H1=22, HORIZON=21;   /* slotMinutes; the page's 8 AM–10 PM range; horizonDays (admin supply.horizonDays), 21 is a sample */
+const DOWS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'], DOWL=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const TODAY=2, LAST=TODAY+HORIZON-1, WKEND=4;       /* Oct 2026; WKEND = Sun 4 Oct, the end of this IST week (the week overview's reach) */
+const wdOfDay=d=>(d+3)%7;
+const WKORD=[1,2,3,4,5,6,0];
+const DAYS=Array.from({length:HORIZON},(_,i)=>TODAY+i);
+const WEEKS=[0,1,2].map(w=>{const a=TODAY+7*w,b=Math.min(a+6,LAST);return{i:w,a,b,name:w===0?'This week':w===1?'Next week':'Week 3',rng:`${a}–${b} Oct`}});
+const HRS=Array.from({length:H1-H0},(_,i)=>H0+i);
+const pc=m=>{let n=0;while(m){n+=m&1;m>>=1}return n};
+function mkBase(){const b={};const set=(wd,hs,m=FULLM)=>{b[wd]=b[wd]||{};hs.forEach(h=>b[wd][h]=m)};
+ set(1,[18,19]);set(2,[18,19]);set(3,[18]);set(3,[19],1);set(4,[18,19]);set(5,[16,17,18,19]);set(6,[10,11,12,13]);return b}
+const BKD0={'2-16':'Aarav J.','3-11':'Neha K.','5-18':'Sana I.','12-18':'Tara M.'};   /* bookings by date-hour (the booked slot is the first of its hour); sample */
+const OV0=[{d:9,off:1},{d:14,from:600,to:780},{d:21,from:840,to:1080}];
+const clone=o=>JSON.parse(JSON.stringify(o));
+const AV={mode:'idle',base:mkBase(),slots:mkBase(),bkd:{...BKD0},bk:{},ov:clone(OV0),susp:false,notice:'',synced:'2 Oct, 9:12 AM'};
+const P={ui:{seg:'w'},sheet:null,f:null};
+let timer=0;
+/* weekly lock map: weekday-hour -> candidate, from this IST week's overview only (as the screen does) */
+function buildBk(){const b={};Object.keys(AV.bkd).forEach(k=>{const[d,h]=k.split('-').map(Number);if(d<=WKEND){const key=wdOfDay(d)+'-'+h;if(!b[key])b[key]=AV.bkd[k]}});AV.bk=b}
+const gm=(o,wd,h)=>(o[wd]&&o[wd][h])||0;
+const sm=(wd,h,m)=>{AV.slots[wd]=AV.slots[wd]||{};AV.slots[wd][h]=m};
+const bkm=(wd,h)=>AV.bk[wd+'-'+h]?1:0;
+function changes(){let n=0;for(let wd=0;wd<7;wd++)for(let h=0;h<24;h++)n+=pc(gm(AV.slots,wd,h)^gm(AV.base,wd,h));return n}
+const hrsTxt=s=>{const h=s*SLOT/60;return Number.isInteger(h)?String(h):h.toFixed(1)};
+function openSlots(wd){let n=0;for(let h=0;h<24;h++)n+=pc(gm(AV.slots,wd,h)&~bkm(wd,h));return n}
+function dayInfo(wd){let any=false,bk=0;for(let h=0;h<24;h++){if(gm(AV.slots,wd,h))any=true;if(bkm(wd,h))bk++}return{any,bk,off:!any&&bk===0,open:openSlots(wd)}}
+const weeklySlots=()=>{let n=0;for(let wd=0;wd<7;wd++)for(let h=0;h<24;h++)n+=pc(gm(AV.slots,wd,h));return n};
+const T=min=>{const h=Math.floor(min/60)%24,m=min%60,p=h>=12?'PM':'AM',hh=h%12===0?12:h%12;return m?`${hh}:${String(m).padStart(2,'0')} ${p}`:`${hh} ${p}`};
+function blocks(wd){const st=[];for(let h=0;h<24;h++)for(let i=0;i<PER;i++)if(gm(AV.slots,wd,h)&(1<<i))st.push(h*60+i*SLOT);
+ const out=[];st.forEach(s=>{const l=out[out.length-1];if(l&&l[1]===s)l[1]=s+SLOT;else out.push([s,s+SLOT])});return out}
+const blocksTxt=wd=>{const b=blocks(wd);return b.length?b.map(x=>`${T(x[0])}–${T(x[1])}`).join(', '):'No hours'};
+const ovOf=d=>AV.ov.find(o=>o.d===d);
+const ovTxt=o=>o.off?'Whole day off':`${T(o.from)}–${T(o.to)}`;
+const dayLab=d=>`${DOWS[wdOfDay(d)]} ${d} Oct`;
+const sus=()=>AV.susp;
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* per-date state: weekly rules + overrides, bookings from the overview (next14Days.bookedSlots per date) */
+const dBk=d=>Object.keys(AV.bkd).filter(k=>k.startsWith(d+'-')).length;
+const ovMask=(o,h)=>{if(!o||o.off)return 0;let m=0;for(let i=0;i<PER;i++){const s=h*60+i*SLOT;if(s>=o.from&&s+SLOT<=o.to)m|=1<<i}return m};
+const dMask=(d,h)=>{const o=ovOf(d);return o?ovMask(o,h):gm(AV.slots,wdOfDay(d),h)};
+function dSlots(d){let n=0;for(let h=0;h<24;h++)n+=pc(dMask(d,h));return n}
+const dOpen=d=>Math.max(0,dSlots(d)-dBk(d));
+const dOn=d=>{const o=ovOf(d);return o?!o.off:dayInfo(wdOfDay(d)).any};
+const totalOpen=()=>DAYS.reduce((n,d)=>n+dOpen(d),0);
+const totalBooked=()=>DAYS.reduce((n,d)=>n+dBk(d),0);
+const dBooked=d=>Object.keys(AV.bkd).filter(k=>k.startsWith(d+'-')).map(k=>({h:+k.split('-')[1],n:AV.bkd[k]}));
+function dPlain(d){const o=ovOf(d),bk=dBk(d),b=bk?` · ${bk} booked`:'';
+ if(o&&o.off)return 'Day off'+b;if(o)return ovTxt(o)+b;if(!dOn(d))return 'No hours'+b;return `${hrsTxt(dOpen(d))}h open${b}`}
+function dSubHTML(d){const o=ovOf(d),bk=dBk(d),p=[];
+ if(d===TODAY)p.push('<span class="bd violet">Today</span>');
+ if(o)p.push(`<span class="bd ${o.off?'red':'green'}">${o.off?'Day off':'Own hours'}</span>`);
+ let t='';if(o)t=o.off?'':ovTxt(o);else t=dOn(d)?`${hrsTxt(dOpen(d))}h open`:'No hours';
+ if(bk)t+=(t?' · ':'')+`${bk} booked`;
+ if(t)p.push(`<span>${t}</span>`);return p.join('')}
+/* bookings outside an override's hours would be moved to another interviewer (server rebuild, SC-15) */
+function orphaned(d,f){if(f.kind==='weekly')return 0;return dBooked(d).filter(x=>f.kind==='off'||!(f.from!==''&&f.to!==''&&x.h*60>=+f.from&&x.h*60+SLOT<=+f.to)).length}
+
+/* ---------- edits (the app's rules) ---------- */
+function edit(){if(AV.mode==='published'||AV.mode==='saveerr'||AV.mode==='empty')AV.mode='idle'}
+function toggleHour(wd,h){
+ const b=bkm(wd,h),non=FULLM&~b,m=gm(AV.slots,wd,h),allOn=(m&non)===non;
+ sm(wd,h,allOn?(m&b):(m|non));edit()}
+function toggleDay(wd){
+ const di=dayInfo(wd);
+ if(di.any){for(let h=0;h<24;h++){const m=gm(AV.slots,wd,h);if(m)sm(wd,h,m&bkm(wd,h))}}
+ else{let any=false;for(let h=0;h<24;h++){const m=gm(AV.base,wd,h);if(m){sm(wd,h,m);any=true}}if(!any)return false}
+ edit();return true}
+function setOv(o){AV.ov=AV.ov.filter(x=>x.d!==o.d);AV.ov.push(o);AV.ov.sort((p,q)=>p.d-q.d)}
+
+/* ---------- pieces ---------- */
+const tg=(on,act,dis,label)=>`<button class="tg ${on?'on':''}" role="switch" aria-checked="${on}" aria-label="${label}" data-act="${act}" ${dis?'disabled':''}><i></i></button>`;
+const bookedTile=(h,b)=>`<div class="hcell bk" aria-label="${T(h*60)}, booked, ${esc(b)}, can’t be changed"><span class="t">${T(h*60)}</span><small>${esc(b)}</small>${I.lock}</div>`;
+function tileCore(h,m,chg,act,dis,ro){
+ const on=pc(m),all=on===PER,part=on>0&&!all;
+ return `<button class="hcell ${all?'on':part?'part':''} ${chg?'chg':''} ${ro?'ro':''}" ${act?`data-act="${act}"`:''} ${dis?'disabled':''} aria-pressed="${all}" aria-label="${T(h*60)}, ${all?'open':part?'partly open':'closed'}"><span class="t">${T(h*60)}</span>${on?`<small>${all?PER+' slots':on+' of '+PER}</small>`:''}</button>`}
+function hourTile(wd,h){
+ const b=AV.bk[wd+'-'+h];if(b)return bookedTile(h,b);
+ const m=gm(AV.slots,wd,h);return tileCore(h,m,m!==gm(AV.base,wd,h),`hr:${wd}:${h}`,sus())}
+const hourGrid=wd=>`<div class="hgrid">${HRS.map(h=>hourTile(wd,h)).join('')}</div>`;
+/* a date's tiles: booked hours (any week) lock; override dates are read-only; weekly dates edit that weekday's weekly hours */
+function dTile(d,h){
+ const b=AV.bkd[d+'-'+h];if(b)return bookedTile(h,b);
+ const wd=wdOfDay(d),o=ovOf(d);
+ if(o)return tileCore(h,ovMask(o,h),false,'',true,true);
+ const m=gm(AV.slots,wd,h);return tileCore(h,m,m!==gm(AV.base,wd,h),`hr:${wd}:${h}`,sus())}
+const dateGrid=d=>`<div class="hgrid">${HRS.map(h=>dTile(d,h)).join('')}</div>`;
+const statTile=(ic,cls,lab,fig,figCls)=>`<div class="tile"><div class="top"><span class="chipi ${cls}">${ic}</span><span class="lbl">${lab}</span></div><div class="fig ${figCls||''}">${fig}</div></div>`;
+const strip=()=>`<div class="pad"><div class="strip3">${statTile(I.clock,'ok','Open',`${hrsTxt(totalOpen())}<small>h</small>`,totalOpen()?'ok':'')}${statTile(I.user,'acc','Booked',totalBooked())}${statTile(I.cal,'acc','Weekly',`${hrsTxt(weeklySlots())}<small>h</small>`)}</div></div>`;
+function head(){return `<div class="head"><div class="title">Availability</div><span class="mono">${TODAY}–${LAST} OCT · NEXT ${HORIZON} DAYS</span></div>`}
+const emptyHint=()=>AV.mode==='empty'?`<div class="hint"><b>No hours yet.</b><p>Publish hours so students can book you. Open a weekday and tap an hour to open it.</p></div>`:'';
+function pubBar(){
+ const n=changes(),m=AV.mode;let lab,cls,act='',pre='';
+ if(AV.susp){lab='Publishing is paused while suspended';cls='off'}
+ else if(m==='saving'){lab='Publishing…';cls='off';pre='<span class="spin"></span>'}
+ else if(m==='published'){lab='✓ Published to students';cls='ok'}
+ else if(n){lab=`Publish ${n} change${n>1?'s':''}`;cls='on';act='publish'}
+ else{lab='No unsaved changes';cls='off'}
+ return `<div class="pubbar">${m==='saveerr'?'<div class="errtxt" role="alert">Not published. Check your connection and try again.</div>':''}<button class="pbtn ${cls}" ${act?`data-act="${act}"`:'disabled'}>${pre}${lab}</button></div>`}
+const addBar=()=>`<div class="pubbar"><button class="pbtn ${sus()?'off':'on'}" ${sus()?'disabled':'data-act="ovsheet:new"'}>${I.plus}Add an override</button></div>`;
+function ovRows(){return AV.ov.map(o=>`<div class="orow"><button class="grow" style="display:flex;align-items:center;gap:10px;text-align:left;min-height:48px" data-act="ovsheet:${o.d}" aria-label="Edit the override on ${dayLab(o.d)}"><div class="dtile ${o.off?'off':'on'}"><span class="m">OCT</span><b>${o.d}</b></div><div class="grow"><div class="nmx">${DOWS[wdOfDay(o.d)]} · ${o.off?'Day off':'Own hours'}</div><div class="sub">${ovTxt(o)}${dBk(o.d)?` · ${dBk(o.d)} booked`:''}</div></div></button><button class="ib" data-act="ovdel:${o.d}" ${sus()?'disabled':''} aria-label="Remove the override on ${dayLab(o.d)}">${I.trash}</button></div>`).join('')}
+const ovEmpty=`<div class="hint plain"><b>No overrides.</b><p>Take a whole day off, or set different hours for one date. Your weekly hours stay as they are.</p></div>`;
+const grpHead=W=>`<div class="oh"><h3 style="font-size:15px">${W.name}</h3><span class="sub">${W.rng}</span></div>`;
+const ticks=`<div class="trow" aria-hidden="true"><span class="sp"></span><div class="tk"><span>8 AM</span><span>3 PM</span><span>10 PM</span></div><span class="sp2"></span></div>`;
+const barOf=(f,off)=>`<div class="rbar ${off?'off':''}" aria-hidden="true">${HRS.map(f).join('')}</div>`;
+
+/* ---------- the three views ---------- */
+function body(){
+ const seg=P.ui.seg;
+ const sg=`<div class="pad"><div class="seg" role="tablist"><button class="${seg==='w'?'on':''}" role="tab" aria-selected="${seg==='w'}" data-act="seg:w">Weekly hours</button><button class="${seg==='n'?'on':''}" role="tab" aria-selected="${seg==='n'}" data-act="seg:n">Next ${HORIZON} days</button><button class="${seg==='e'?'on':''}" role="tab" aria-selected="${seg==='e'}" data-act="seg:e">Overrides${AV.ov.length?` <span class="ct">${AV.ov.length}</span>`:''}</button></div></div>`;
+ const horizon=`<div class="note">Students can book you up to ${LAST} Oct (the next ${HORIZON} days). Hours last synced ${AV.synced}.</div>`;
+ if(seg==='e'){
+  return `<div class="stack">${strip()}${sg}<div class="pad stack"><div class="sub" style="padding:0 2px">Exceptions to your weekly hours · next ${HORIZON} days</div>${AV.notice?`<div class="notice" role="status">${AV.notice}</div>`:''}${AV.ov.length?`<div class="ow">${ovRows()}</div>`:ovEmpty}</div></div>`}
+ if(seg==='n'){
+  const row=d=>{const o=ovOf(d),off=o&&o.off||(!o&&!dOn(d)&&!dBk(d));
+   const bar=barOf(h=>{const m=dMask(d,h),on=pc(m),chg=!o&&m!==gm(AV.base,wdOfDay(d),h);return `<i class="${AV.bkd[d+'-'+h]?'bk':on===PER?'on':on?'part':''} ${chg?'chg':''}"></i>`},false);
+   return `<button class="rrow ${d===TODAY?'today':''}" data-act="ovsheet:${d}" aria-label="${dayLab(d)}${d===TODAY?', today':''}, ${dPlain(d)}${o?', override':''}; open"><div class="dn"><span class="mono">${DOWS[wdOfDay(d)].toUpperCase()}</span><b>${d}</b></div><div class="grow">${bar}<div class="sl">${dSubHTML(d)}</div></div>${I.chev}</button>`};
+  return `<div class="stack">${strip()}${sg}<div class="pad stack">${emptyHint()}${horizon}${changes()?`<div class="note">${changes()} unpublished weekly change${changes()>1?'s':''} show here and go out with Publish.</div>`:''}<div class="oh"><h3>Next ${HORIZON} days ${ptag()}</h3><span class="sub">${AV.ov.length} override${AV.ov.length===1?'':'s'}</span></div>
+   ${WEEKS.map(W=>`${grpHead(W)}<div class="ow">${ticks}${DAYS.filter(d=>d>=W.a&&d<=W.b).map(row).join('')}</div>`).join('')}
+   <div class="key"><span><i class="on"></i>Open</span><span><i class="part"></i>Part of an hour</span><span><i class="bk"></i>Booked</span><span><i class="chg"></i>Edited</span><span><span class="bd red">Day off</span></span><span><span class="bd green">Own hours</span></span></div></div></div>`}
+ const rows=WKORD.map(wd=>{const di=dayInfo(wd);
+  const bar=barOf(h=>{const m=gm(AV.slots,wd,h),on=pc(m),chg=m!==gm(AV.base,wd,h);return `<i class="${AV.bk[wd+'-'+h]?'bk':on===PER?'on':on?'part':''} ${chg?'chg':''}"></i>`},false);
+  const edited=HRS.some(h=>gm(AV.slots,wd,h)!==gm(AV.base,wd,h));
+  return `<button class="rrow wk" data-act="wk:${wd}" aria-label="Every ${DOWL[wd]}, ${di.off?'no hours':blocksTxt(wd)}"><div class="dn"><b>${DOWS[wd]}</b></div><div class="grow">${bar}<div class="sl">${edited?'<span class="bd violet">Edited</span>':''}<span>${di.off?'Day off':`${hrsTxt(di.open)}h open${di.bk?` · ${di.bk} booked`:''}`}</span></div></div>${I.chev}</button>`}).join('');
+ return `<div class="stack">${strip()}${sg}<div class="pad stack">${emptyHint()}${horizon}<div class="oh"><h3>Every week</h3><span class="sub">${weeklySlots()} slots · ${hrsTxt(weeklySlots())}h</span></div><div class="ow">${ticks}${rows}</div>
+  <div class="key"><span><i class="on"></i>Open</span><span><i class="part"></i>Part of an hour</span><span><i class="bk"></i>Booked</span><span><i class="chg"></i>Edited</span></div>
+  <div class="note">Tap a weekday to open its hours. Weekly hours repeat every week; an hour that is booked this week is locked.</div></div></div>`}
+
+function guard(){
+ const m=AV.mode;
+ if(m==='loading')return{body:`${brandBar}<div class="head"><div class="title">Availability</div></div><div class="pad stack" style="margin-top:2px">${sk(92,'100%',18)}${sk(300,'100%',20)}${sk(120,'100%',20)}</div>`,fixed:'',pb:130};
+ if(m==='error')return{body:`${brandBar}<div class="head"><div class="title">Availability</div></div>${errBlock('Couldn’t load your availability.','Error message from the server.','retry')}`,fixed:'',pb:130};
+ return{body:`${brandBar}${AV.susp?bandHTML:''}${head()}${body()}`,fixed:P.ui.seg==='e'?addBar():pubBar(),pb:P.ui.seg==='e'?130:150}}
+
+/* ---------- sheets ---------- */
+function timeOpts(sel,from){let s='<option value="">Choose a time</option>';for(let m=from;m<=1440;m+=SLOT)s+=`<option value="${m}" ${String(sel)===String(m)?'selected':''}>${m===1440?'12 AM (midnight)':T(m)}</option>`;return s}
+function sheetHTML(){
+ const s=P.sheet;if(!s)return '';
+ let title,sub,bd,foot;
+ if(s.k==='wk'){
+  const wd=s.wd,di=dayInfo(wd);
+  title=`Every ${DOWL[wd]}`;
+  sub=di.off?'Day off · students can’t book':`${hrsTxt(di.open)}h open · ${di.bk} booked`;
+  bd=`<div class="shead2"><div class="grow"><div class="nmx">${DOWL[wd]} open</div><div class="sub">Repeats every week · goes out with Publish</div></div>${tg(di.any,'day:'+wd,sus(),DOWL[wd]+' open')}</div>${hourGrid(wd)}`;
+  foot=`<button class="pbtn on" data-act="close">Done</button>`;
+ }else{
+  const f=P.f,lk=f.locked,d=+f.date,wd=lk?wdOfDay(d):0,o=lk?ovOf(d):null;
+  let dopts='<option value="">Choose a date</option>';for(let x=TODAY;x<=LAST;x++)dopts+=`<option value="${x}" ${String(f.date)===String(x)?'selected':''}>${dayLab(x)}</option>`;
+  const bad=f.kind==='hours'&&f.from!==''&&f.to!==''&&+f.to<=+f.from;
+  const ok=f.date!==''&&(f.kind==='off'||(f.from!==''&&f.to!==''&&+f.to>+f.from));
+  const orph=(f.date!==''&&!bad)?orphaned(d,f):0;
+  title=lk?`${DOWL[wd]} ${d} Oct${d===TODAY?'<span class="today-b">Today</span>':''}`:'Add an override';
+  sub=lk?`${dPlain(d)}${o?' · override':' · weekly hours'}`:'For one date only.';
+  const kinds=lk?`<button class="${f.kind==='weekly'?'on':''}" data-act="kind:weekly">Weekly</button><button class="${f.kind==='off'?'on':''}" data-act="kind:off">Day off</button><button class="${f.kind==='hours'?'on':''}" data-act="kind:hours">Own hours</button>`:`<button class="${f.kind==='off'?'on':''}" data-act="kind:off">Whole day off</button><button class="${f.kind==='hours'?'on':''}" data-act="kind:hours">Own hours</button>`;
+  const repl=!lk&&f.date!==''&&ovOf(d);
+  const grid=lk?`<div class="fld"><span class="lbl">${o?(o.off?'Day off · hours that day':'Own hours · '+ovTxt(o)):`Weekly hours on ${DOWL[wd]} · ${blocksTxt(wd)}`}</span>${dateGrid(d)}<div class="note">${o?'The override hours, read only. The weekly hours stay as they are.':`Tap an hour to change every ${DOWL[wd]} (goes out with Publish). Booked hours stay locked.`}</div></div>`:'';
+  bd=`${lk?'':`<div class="fld"><span class="lbl">Date</span><select class="sel" data-f="date" aria-label="Date">${dopts}</select></div>`}
+   <div class="fld"><span class="lbl">${lk?'This date':'On that date'}</span><div class="seg">${kinds}</div></div>
+   ${f.kind==='hours'?`<div class="two"><div class="fld"><span class="lbl">From</span><select class="sel" data-f="from" aria-label="From">${timeOpts(f.from,0).replace(/<option value="1440".*?<\/option>/,'')}</select></div><div class="fld"><span class="lbl">To</span><select class="sel" data-f="to" aria-label="To">${timeOpts(f.to,SLOT)}</select>${bad?'<span class="ferr">Ends before it starts.</span>':''}</div></div>`:''}
+   ${orph?`<div class="warnbox" role="status">${f.kind==='off'?'':'Outside these hours: '}${orph} booked interview${orph>1?'s':''} on this date would move to another interviewer.</div>`:''}
+   ${repl?`<div class="note">This date already has an override; saving replaces it.</div>`:''}
+   ${f.err?`<div class="ferr" role="alert">${f.err}</div>`:''}
+   ${grid}
+   ${lk?`<button class="btn out sm" style="justify-self:start" data-act="wk:${wd}">Edit every ${DOWS[wd]} instead</button>`:''}
+   <div class="note">${f.kind==='weekly'?`Removes the override: this date follows your weekly hours again. `:''}Overrides save on their own; your weekly hours stay as they are.</div>`;
+  if(lk&&f.kind==='weekly')foot=`<button class="pbtn ${o&&!sus()?'on':'off'}" ${o&&!sus()?`data-act="ovback:${d}"`:'disabled'}>${o?'Back to weekly':'Already on weekly hours'}</button>`;
+  else foot=`<button class="pbtn ${ok&&!sus()?'on':'off'}" ${ok&&!sus()?'data-act="ovsave"':'disabled'}>Save override</button>`;
+ }
+ return `<div class="scrim" data-act="close"></div><div class="sheet" role="dialog" aria-label="${esc(title.replace(/<[^>]*>/g,''))}"><div class="grab"></div><div class="sh"><div><b>${title}</b><span>${sub}</span></div><button class="x" data-act="close" aria-label="Close">${I.x}</button></div><div class="body">${bd}</div><div class="foot">${foot}</div></div>`}
+
+/* ---------- phone ---------- */
+function phoneHTML(){
+ const r=guard();
+ return `<div class="phone">${status()}<div class="compact"><b>Availability</b><span class="mono">${hrsTxt(totalOpen())}H OPEN</span></div><div class="scroll" style="padding-bottom:${r.pb}px">${r.body}</div>${r.fixed}${tab()}${sheetHTML()}<div class="toast" role="status"></div></div>`}
+function wire(ph){const sc=ph.querySelector('.scroll'),cp=ph.querySelector('.compact');sc.addEventListener('scroll',()=>cp.classList.toggle('on',sc.scrollTop>90))}
+function renderPhone(){
+ const root=document.getElementById('ph'),old=root.firstElementChild;
+ const y=old?old.querySelector('.scroll').scrollTop:0;
+ const sh=old&&old.querySelector('.sheet .body'),sy=sh?sh.scrollTop:0;
+ root.innerHTML=phoneHTML();
+ const nu=root.firstElementChild;nu.querySelector('.scroll').scrollTop=y;const nb=nu.querySelector('.sheet .body');if(nb)nb.scrollTop=sy;wire(nu)}
+
+/* ---------- notes ---------- */
+const NOTES={
+ real:['Weekly hours: one row per weekday (Mon to Sun) over the page’s 8 AM to 10 PM range, widened around any open slot. A weekday opens its day switch and the app’s two-column hour tiles: open (“2 slots”), part (“1 of 2”), closed, or booked with the candidate’s short name and a lock (not tappable).','The switch off clears the weekday’s open hours (booked ones stay); on restores the hours last published. “Day off · students can’t book” when nothing is open or booked.','Publish: “Publish N change(s)” counts changed slots, “No unsaved changes”, “Publishing…”, “✓ Published to students”, “Publishing is paused while suspended”, the save error line. It saves the weekly hours with the overrides untouched.','Overrides save on their own, never through Publish: Date, On that date (Whole day off or Own hours), From, To, “Ends before it starts.”, Save override, a trash button per row, “No overrides.”, and the inline “Override saved.” / “Override removed.” line. Saving an existing date replaces it.'],
+ prop:['The “Next 21 days” view: 21 date rows in three weekly groups (This week, Next week, Week 3), each with the date, a Today badge, an hours bar, “Xh open · N booked” and, on override dates, a red “Day off” or green “Own hours” badge with the hours. Tapping a date opens the date sheet: that day’s hour tiles (booked ones with the candidate and lock), Weekly / Day off / Own hours, From, To, and “Back to weekly” to remove the override.','The 21 is the admin setting supply.horizonDays; the app reads horizonDays and never hardcodes it. If the server setting is another number today, an admin must set supply.horizonDays=21.'],
+ states:'saved, unsaved (Publish N changes), publishing, published (✓), save error (“Not published. Check your connection and try again.”), loading, no hours yet (the hint is new copy, not in the app), load error (“Couldn’t load your availability.” with Try again), suspended (band, switches, tiles, add and trash off).',
+ cov:[
+  ['rules[].weekday, blocks','Weekly tab rows; weekday sheet tiles'],
+  ['slotMinutes (slots per hour)','“2 slots” / “1 of 2” on tiles; From and To steps'],
+  ['booked cell, candidateShortName','Locked tiles in weekday and date sheets, bar segment, “N booked”'],
+  ['day switch, “Day off · students can’t book”','Weekday sheet'],
+  ['changedCount, Publish labels, saving, published','Sticky Publish bar (Weekly and Next 21 days)'],
+  ['saveError, suspended, paused label','Error line above Publish; band; disabled controls'],
+  ['overrides[] date, available, blocks','Overrides tab rows; badges on date rows; date sheet'],
+  ['override add / replace / remove','Add an override bar, sheet, trash; “Back to weekly”'],
+  ['Date, On that date, From, To, “Ends before it starts.”','Add / date sheet'],
+  ['“No overrides.”, “Override saved/removed.”','Overrides tab'],
+  ['horizonDays','“Next 21 days”, sub line, date list, date picker, horizon note'],
+  ['next14Days (total, booked, open per date)','Date rows (needs the series to reach 21 days)'],
+  ['overview totals (open, booked)','Open and Booked tiles'],
+  ['weeklySlots','Weekly tile; “N slots” beside Every week'],
+  ['lastMaterialisedAt','“Hours last synced …” note'],
+  ['load error, loading, no hours','States 6, 7, 8']
+ ],
+ gaps:['Not shown: the save response (saved, weeklySlots, slots) and the weekdays name list: the app ignores them; labels come from the date.','Not shown: overrides in the past (the app lists upcoming only), the 90-override and 7-rule caps (server limits), the IST timezone label and the upcoming-6 footer chips (the Overrides tab replaces them).','To check in the real app: the date picker allows up to today + horizonDays (22 dates for 21); this page lists 21. The week overview returns one week, so booked names for later weeks and a 21-day series need extra reads (weekOf, next14Days to horizonDays). The server does not refuse a booked slot: it reassigns the interview, so the date sheet warns instead.']
+};
+function notesHTML(){const n=NOTES;return `<span class="mono">In the app today</span><ul>${n.real.map(x=>`<li>${x}</li>`).join('')}</ul><span class="mono">${ptag()} what is new</span><ul>${n.prop.map(x=>`<li>${x}</li>`).join('')}</ul><span class="mono">States</span><ul><li>${n.states}</li></ul><span class="mono">Coverage checklist (real field or action → where)</span><ul class="cov">${n.cov.map(c=>`<li><b>${c[0]}</b><span>${c[1]}</span></li>`).join('')}</ul><span class="mono">Not represented, and why</span><ul>${n.gaps.map(x=>`<li>${x}</li>`).join('')}</ul>`}
+
+/* ---------- states ---------- */
+const SW=[['saved','Saved'],['unsaved','Unsaved'],['saving','Publishing'],['published','Published'],['saveerr','Save error'],['loading','Loading'],['empty','No hours yet'],['error','Load error'],['suspended','Suspended']];
+const cur=()=>AV.susp?'suspended':AV.mode==='idle'?(changes()?'unsaved':'saved'):AV.mode;
+function applyEdits(){sm(1,20,FULLM);sm(3,19,FULLM);sm(6,13,0)}   /* +2, +1, −2 = 5 changes */
+function setState(k){
+ clearTimeout(timer);
+ AV.base=mkBase();AV.slots=mkBase();AV.bkd={...BKD0};AV.ov=clone(OV0);AV.susp=false;AV.mode='idle';AV.notice='';AV.synced='2 Oct, 9:12 AM';
+ if(k==='unsaved')applyEdits();
+ if(k==='saving'){applyEdits();AV.mode='saving'}
+ if(k==='published'){applyEdits();AV.base=clone(AV.slots);AV.mode='published'}
+ if(k==='saveerr'){applyEdits();AV.mode='saveerr'}
+ if(k==='loading')AV.mode='loading';
+ if(k==='error')AV.mode='error';
+ if(k==='empty'){AV.base={};AV.slots={};AV.bkd={};AV.ov=[];AV.mode='empty'}
+ if(k==='suspended')AV.susp=true;
+ buildBk();P.sheet=null;P.f=null;P.ui={seg:'w'};
+ drawBars();renderPhone()}
+function drawBars(){document.getElementById('sBar').innerHTML=SW.map(o=>`<button class="${o[0]===cur()?'on':''}" data-s="${o[0]}">${o[1]}</button>`).join('')}
+document.getElementById('sBar').addEventListener('click',e=>{const b=e.target.closest('[data-s]');if(b)setState(b.dataset.s)});
+
+/* ---------- interaction ---------- */
+let tt=0;
+function toast(m){const t=document.querySelector('.phone .toast');if(!t)return;t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),1600)}
+function openOv(v){
+ const d=v==='new'||v===''?'':+v,o=d===''?null:ovOf(d);
+ P.f={date:d,kind:d===''?'off':'weekly',from:'',to:'',locked:d!=='',err:''};
+ if(o){P.f.kind=o.off?'off':'hours';if(!o.off){P.f.from=o.from;P.f.to=o.to}}
+ P.sheet={k:'ov'};renderPhone()}
+function afterChange(msg,keepNotice){drawBars();renderPhone();if(msg){if(P.ui.seg!=='e')toast(msg)}}
+document.addEventListener('click',e=>{
+ const a=e.target.closest('[data-act]');const ph=a&&a.closest('.phone');if(!ph)return;
+ const x=a.dataset.act,i=x.indexOf(':'),k=i<0?x:x.slice(0,i),v=i<0?'':x.slice(i+1);
+ if(a.disabled)return;
+ if(k==='toast')return toast(v);
+ if(k==='hr'){const[wd,h]=v.split(':').map(Number);toggleHour(wd,h);return afterChange()}
+ if(k==='day'){const ok=toggleDay(+v);afterChange(ok?'':'Tap an hour to open it');return}
+ if(k==='seg'){P.ui.seg=v;AV.notice='';return renderPhone()}
+ if(k==='wk'){P.sheet={k:'wk',wd:+v};return renderPhone()}
+ if(k==='ovsheet')return openOv(v);
+ if(k==='kind'){P.f.kind=v;P.f.err='';return renderPhone()}
+ if(k==='close'){P.sheet=null;return renderPhone()}
+ if(k==='ovsave'){const f=P.f,d=+f.date;
+  setOv(f.kind==='off'?{d,off:1}:{d,from:+f.from,to:+f.to});AV.notice='Override saved.';P.sheet=null;return afterChange('Override saved.')}
+ if(k==='ovback'){AV.ov=AV.ov.filter(o=>o.d!==+v);AV.notice='Override removed.';P.sheet=null;return afterChange('Override removed.')}
+ if(k==='ovdel'){AV.ov=AV.ov.filter(o=>o.d!==+v);AV.notice='Override removed.';return afterChange('Override removed.')}
+ if(k==='publish'){if(AV.mode==='saving')return;AV.mode='saving';drawBars();renderPhone();clearTimeout(timer);timer=setTimeout(()=>{AV.base=clone(AV.slots);AV.mode='published';AV.synced='just now';drawBars();renderPhone()},1100);return}
+ if(k==='retry'){AV.mode='loading';drawBars();renderPhone();clearTimeout(timer);timer=setTimeout(()=>{AV.mode='idle';drawBars();renderPhone()},900)}
+});
+document.addEventListener('change',e=>{
+ const s=e.target.closest('select[data-f]');if(!s||!s.closest('.phone'))return;
+ P.f[s.dataset.f]=s.value;P.f.err='';renderPhone()});
+
+/* ---------- start (hash: #s=unsaved&seg=n&sh=ov:5&kind=hours&y=300) ---------- */
+(function(){
+ let q={};try{q=Object.fromEntries(new URLSearchParams(location.hash.slice(1)))}catch(e){}
+ document.getElementById('notes').innerHTML=notesHTML();
+ setState(q.s||'saved');
+ if(q.seg)P.ui.seg=q.seg;
+ if(q.sh){const[a,b]=q.sh.split(':');if(a==='ov'){openOv(b===undefined?'new':b);if(q.kind==='hours'){P.f.kind='hours';P.f.from=600;P.f.to=780}if(q.kind==='weekly')P.f.kind='weekly';if(q.kind==='off')P.f.kind='off'}else P.sheet={k:'wk',wd:+b}}
+ renderPhone();
+ if(q.y){const el=document.querySelector('.scroll');el.scrollTop=+q.y;el.dispatchEvent(new Event('scroll'))}
+})();
+</script>
+</body>
+</html>

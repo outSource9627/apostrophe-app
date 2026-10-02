@@ -1,0 +1,671 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apostrophe App – Interviewer Account (final)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FAFAFC; --surface:#fff; --muted:#F1F3F7; --sunken:#E6E8EE;
+    --text:#0B0F1A; --text2:#3A4256; --text3:#6B7385; --text4:#8A91A2;
+    --border:#E3E6ED; --border-strong:#C9CED9;
+    --accent:#5B3DF5; --accent-hover:#4A2FE0; --accent-soft:#EFEBFF; --accent-wash:#F7F6FF;
+    --accent-muted:#C4B8FF; --accent-bright:#7258FF; --accent-deep:#3B2A8F;
+    --ink:#0B0F1A; --ink-raised:#151B2B;
+    --ok:#0E9F6E; --ok-text:#0B7A55; --ok-soft:#E6F7F0; --ok-edge:#BFE8D6;
+    --danger:#E5484D; --danger-text:#C22A30; --danger-soft:#FDECEC; --danger-edge:#F2B8BA;
+    --warn:#935F00; --warn-soft:#FFF5E1; --warn-edge:#F5E2B8; --info:#2F6BFF; --info-soft:#E8EFFF;
+    --r-md:14px; --r-lg:16px; --r-xl:28px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{font-family:'Geist',system-ui,sans-serif;background:#E9EAF2;color:var(--text);padding:40px 24px 90px}
+  button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;text-align:inherit}
+  button:focus-visible,[tabindex]:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex:none}
+  .mono{font:500 11.5px 'Geist Mono',monospace;letter-spacing:.14em;text-transform:uppercase}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+  /* ---------- page ---------- */
+  .wrap{max-width:1040px;margin:0 auto}
+  .intro{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:28px 32px;margin-bottom:20px}
+  .intro h1{font-size:30px;letter-spacing:-.035em;line-height:1.1}
+  .intro .lede{font-size:16px;color:var(--text3);margin-top:8px;line-height:1.5;max-width:900px}
+  .legend{display:grid;gap:10px;margin-top:16px;font-size:14px;color:var(--text2);line-height:1.45}
+  .states{display:flex;flex-wrap:wrap;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:22px;padding:4px;margin-bottom:12px;width:fit-content;max-width:100%}
+  .states button{padding:8px 14px;border-radius:99px;font-size:14px;font-weight:600;color:var(--text3);white-space:nowrap}
+  .states button.on{background:var(--accent);color:#fff}
+  .bars{margin-bottom:10px}
+  .bars .mono{color:var(--text3);font-size:11px;margin:0 0 6px 6px;display:block}
+  .layout{display:flex;flex-wrap:wrap;gap:40px;align-items:flex-start;margin-top:22px}
+  .notes{width:520px;max-width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:22px 24px}
+  .notes ul{padding-left:18px;font-size:13.5px;line-height:1.55;color:var(--text2)}
+  .notes li{margin-bottom:5px}
+  .notes .mono{color:var(--accent);margin:14px 0 6px;display:block;font-size:11px}
+  .notes .mono:first-child{margin-top:0}
+  .notes.side{position:sticky;top:20px}
+  .notes table{width:100%;border-collapse:collapse;font-size:12.5px;line-height:1.45;color:var(--text2)}
+  .notes th{font:500 10.5px 'Geist Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);text-align:left;padding:4px 6px 6px 0;border-bottom:1px solid var(--border-strong)}
+  .notes td{padding:7px 8px 7px 0;border-bottom:1px solid var(--border);vertical-align:top}
+  .notes td:first-child{font-weight:600;color:var(--text);width:30%}
+  .st{display:inline-block;font:600 11.5px 'Geist',sans-serif;border-radius:99px;padding:1px 8px;white-space:nowrap;margin-bottom:3px}
+  .st.real{background:var(--ok-soft);color:var(--ok-text)}.st.new{background:var(--accent-soft);color:var(--accent-hover)}.st.need{background:var(--warn-soft);color:var(--warn)}.st.omit{background:var(--muted);color:var(--text3)}
+  .rt{font:500 11.5px 'Geist Mono',monospace;color:var(--text2);overflow-wrap:anywhere}
+  .ptag{display:inline-block;font:500 10px 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase;border:1px dashed var(--accent);color:var(--accent);border-radius:99px;padding:1px 7px;background:var(--accent-wash);white-space:nowrap;vertical-align:middle;line-height:1.5}
+
+  /* ---------- phone ---------- */
+  .phone{width:390px;height:812px;background:var(--bg);border-radius:44px;border:10px solid #0B0F1A;overflow:hidden;position:relative;flex:none}
+  .status{height:44px;display:flex;justify-content:space-between;align-items:center;padding:0 26px;font-size:14px;font-weight:600;position:absolute;top:0;left:0;right:0;z-index:80;pointer-events:none}
+  .status i{width:90px;height:24px;background:#0B0F1A;border-radius:14px;position:absolute;left:50%;top:8px;transform:translateX(-50%)}
+  .scroll{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none;padding-top:44px;padding-bottom:110px}
+  .scroll::-webkit-scrollbar{display:none}
+  .compact{position:absolute;top:0;left:0;right:0;height:96px;padding:44px 20px 0;display:flex;align-items:center;background:rgba(250,250,252,.96);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);z-index:30;opacity:0;transform:translateY(-8px);pointer-events:none;transition:.2s}
+  .compact.on{opacity:1;transform:none}
+  .compact b{font-size:17px;letter-spacing:-.02em}
+  .tab{position:absolute;left:14px;right:14px;bottom:14px;height:68px;background:rgba(255,255,255,.96);backdrop-filter:blur(14px);border:1px solid var(--border);border-radius:24px;display:flex;justify-content:space-around;align-items:center;z-index:25}
+  .tab button{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10.5px;font-weight:600;color:var(--text4);padding:7px 2px;border-radius:14px;min-width:60px;min-height:48px;justify-content:center}
+  .tab button.on{color:var(--accent);background:var(--accent-soft)}
+  .toast{position:absolute;left:14px;right:14px;bottom:100px;background:var(--ink);color:#fff;border-radius:var(--r-md);padding:12px 14px;z-index:95;font-size:14px;font-weight:600;transform:translateY(20px);opacity:0;pointer-events:none;transition:.25s}
+  .toast.on{transform:none;opacity:1}
+  [data-act]{cursor:pointer}
+
+  /* ---------- shared (compact scale) ---------- */
+  .grow{flex:1;min-width:0}
+  .ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pad{padding:0 20px}
+  .stack{display:grid;gap:12px;grid-template-columns:minmax(0,1fr)}
+  .stack>*{min-width:0}
+  .head{padding:6px 20px 12px}
+  .title{font-size:28px;font-weight:700;letter-spacing:-.04em;line-height:1.1}
+  .sub{font-size:13px;color:var(--text3);line-height:1.4}
+  .brandbar{height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 20px}
+  .brand{display:flex;align-items:center;gap:10px;font-size:17px;font-weight:700;letter-spacing:-.01em}
+  .mark{width:28px;height:28px;border-radius:9px;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:800;font-size:18px;line-height:1;padding-bottom:3px}
+  .disc{width:40px;height:40px;border-radius:50%;background:var(--ink-raised);color:#fff;display:grid;place-items:center;font-size:13.5px;font-weight:600;flex:none;overflow:hidden}
+  .disc.lg{width:52px;height:52px;font-size:17px}
+  .disc.xl{width:84px;height:84px;font-size:26px}
+  .disc.ph{background:linear-gradient(135deg,var(--accent),var(--accent-bright))}
+  .disc.xl svg{width:40px;height:40px}
+  .btn{height:46px;min-width:44px;border-radius:var(--r-md);font-weight:600;font-size:15px;padding:0 16px;display:inline-flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap}
+  .btn.pri{background:var(--accent);color:#fff}.btn.out{border:1px solid var(--border-strong);background:var(--surface)}
+  .btn.sm{height:36px;font-size:13.5px;padding:0 12px;border-radius:11px}
+  .pbtn{height:48px;border-radius:99px;width:100%;font-weight:600;font-size:15px;display:flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap}
+  .pbtn svg{width:18px;height:18px}
+  .pbtn.on{background:var(--accent);color:#fff}.pbtn.off{background:var(--sunken);color:var(--text3);cursor:default}.pbtn.outl{background:var(--surface);color:var(--text);border:1px solid var(--border-strong)}
+  .pbtn.dng{background:var(--danger);color:#fff}
+  .bd{font:600 12.5px 'Geist',sans-serif;letter-spacing:-.005em;border-radius:99px;padding:2px 9px;display:inline-block;white-space:nowrap;line-height:1.4}
+  .bd.green{background:var(--ok-soft);color:var(--ok-text)}.bd.red{background:var(--danger-soft);color:var(--danger-text)}.bd.gray{background:var(--muted);color:var(--text3)}
+  .bd.amber{background:var(--warn-soft);color:var(--warn)}.bd.blue{background:var(--info-soft);color:#1F4FD1}
+  .bd.green::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--ok);margin-right:6px;vertical-align:1px}
+  .oh{display:flex;align-items:center;justify-content:space-between;padding:8px 2px 0;gap:8px}
+  .oh h3{font-size:16px;font-weight:700;letter-spacing:-.02em;display:flex;align-items:center;gap:8px}
+  .ow{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;display:grid;gap:10px;min-width:0}
+  .lbl{font:500 13px 'Geist',sans-serif;color:var(--text3)}
+  .note{font-size:12.5px;color:var(--text3);line-height:1.4;padding:0 4px}
+  .nonetxt{padding:22px 4px;text-align:center;font-size:14px;color:var(--text3)}
+  .skel{background:linear-gradient(90deg,var(--muted) 0%,#E9ECF2 50%,var(--muted) 100%);background-size:200% 100%;animation:sh 1.3s infinite linear;border-radius:10px}
+  @keyframes sh{to{background-position:-200% 0}}
+  .center{display:grid;place-items:center;text-align:center;padding:60px 32px 0}
+  .center .ic{width:60px;height:60px;border-radius:20px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;margin-bottom:14px}
+  .center .ic svg{width:28px;height:28px}
+  .center b{font-size:19px;font-weight:700;letter-spacing:-.025em;display:block}
+  .center p{font-size:14px;color:var(--text3);margin:8px 0 18px;line-height:1.5}
+  .band{display:flex;gap:10px;align-items:flex-start;padding:10px 20px;background:var(--danger-soft);border-top:1px solid var(--danger-edge);border-bottom:1px solid var(--danger-edge);color:var(--danger-text);font-size:13px;line-height:1.45;margin-bottom:12px}
+  .band svg{width:18px;height:18px;margin-top:1px}
+  .rsn{background:var(--danger-soft);border:1px solid var(--danger-edge);color:var(--danger-text);border-radius:12px;padding:9px 12px;font-size:13px;line-height:1.4;margin-top:10px}
+  .pnote{display:flex;gap:10px;align-items:flex-start;border:1px dashed var(--accent);background:var(--accent-wash);border-radius:14px;padding:11px 13px;font-size:13px;line-height:1.4;color:var(--text2)}
+  .pnote svg{width:18px;height:18px;color:var(--accent);margin-top:1px}
+  .errbox{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--danger-edge);background:var(--danger-soft);color:var(--danger-text);border-radius:14px;padding:11px 13px;font-size:13px;line-height:1.4}
+  .errbox svg{width:18px;height:18px;margin-top:1px}
+  .okbox{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--ok-edge);background:var(--ok-soft);color:var(--ok-text);border-radius:14px;padding:11px 13px;font-size:13px;line-height:1.4;font-weight:600}
+  .okbox svg{width:18px;height:18px;margin-top:1px}
+  .idrow{display:flex;align-items:center;gap:12px;min-width:0}
+  .nm{font-size:19px;font-weight:700;letter-spacing:-.03em;line-height:1.2}
+  .fl{display:flex;align-items:center;gap:8px;font:500 13px 'Geist',sans-serif;color:var(--text3)}
+  .fl svg{width:16px;height:16px}
+  .kv{padding:9px 16px 10px;border-bottom:1px solid var(--border)}
+  .kv:last-child{border-bottom:0}
+  .kv .v{font-size:15px;font-weight:500;letter-spacing:-.01em;margin-top:3px;overflow-wrap:anywhere}
+  .fees{display:flex}
+  .fees>div{flex:1;min-width:0;padding:11px 16px 12px;border-right:1px solid var(--border)}
+  .fees>div:last-child{border-right:0}
+  .fees .tr{font:500 12px 'Geist Mono',monospace;color:var(--text3);letter-spacing:.04em}
+  .fees .fv{font-size:22px;font-weight:700;letter-spacing:-.03em;margin-top:3px}
+  .g2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+  .tile{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:12px 14px 13px;min-width:0}
+  .fig{font-size:25px;font-weight:700;letter-spacing:-.04em;line-height:1.05;margin-top:5px}
+  .fig.ok{color:var(--ok-text)}.fig.dim{color:var(--text4)}
+  .lk{display:flex;align-items:center;gap:12px;padding:9px 14px 9px 14px;min-height:58px;border-bottom:1px solid var(--border);width:100%;text-align:left}
+  .lk:last-child{border-bottom:0}
+  .lk .li{width:34px;height:34px;border-radius:11px;background:var(--muted);color:var(--text2);display:grid;place-items:center;flex:none}
+  .lk .li svg{width:18px;height:18px}
+  .lk b{font-size:15px;font-weight:600;letter-spacing:-.015em;display:flex;align-items:center;gap:7px;line-height:1.25;flex-wrap:wrap}
+  .lk span.s{font-size:12.5px;color:var(--text3);display:block;line-height:1.3}
+  .lk>svg{width:17px;height:17px;color:var(--text4)}
+  .lk .rv{font:500 13px 'Geist Mono',monospace;color:var(--text3)}
+  .lk.static{cursor:default}
+  .so{height:48px;border-radius:99px;width:100%;font-weight:600;font-size:15px;display:flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--border-strong);background:var(--surface)}
+  .so svg{width:18px;height:18px}
+  .so[disabled]{color:var(--text3);cursor:default}
+  .spin{width:16px;height:16px;border-radius:50%;border:2.5px solid rgba(255,255,255,.4);border-top-color:#fff;animation:rot .8s linear infinite;flex:none}
+  .so .spin,.pbtn.outl .spin{border-color:var(--border-strong);border-top-color:var(--accent)}
+  @keyframes rot{to{transform:rotate(360deg)}}
+  .busy{opacity:.55;pointer-events:none}
+
+  /* ---------- pushed screens ---------- */
+  .pv{position:absolute;inset:0;background:var(--bg);z-index:60;display:flex;flex-direction:column;padding-top:44px}
+  .pv .bd2{flex:1;overflow-y:auto;padding:4px 20px 22px;display:grid;gap:14px;align-content:start;grid-auto-rows:max-content;scrollbar-width:none}
+  .pv .bd2::-webkit-scrollbar{display:none}
+  .pv .ft{padding:12px 20px 18px;border-top:1px solid var(--border);background:var(--surface);display:grid;gap:8px}
+  .screenhead{display:flex;align-items:center;gap:12px;padding:6px 20px 8px}
+  .screenhead b{font-size:18px;font-weight:700;letter-spacing:-.03em;display:block;line-height:1.3}
+  .screenhead span.ptag{font-size:10px;letter-spacing:.06em;color:var(--accent);margin-right:2px}
+  .screenhead span{font-size:13px;color:var(--text3)}
+  .back{width:40px;height:40px;border-radius:13px;border:1px solid var(--border);background:var(--surface);display:grid;place-items:center;flex:none}
+  .back svg{width:20px;height:20px}
+  .pv h2{font-size:24px;font-weight:700;letter-spacing:-.035em;line-height:1.15}
+  .fld{display:grid;gap:6px}
+  .fld>label,.fld>.lb{font:500 13px 'Geist',sans-serif;color:var(--text2);display:flex;align-items:center;gap:6px;justify-content:space-between}
+  .inp{display:flex;align-items:center;min-height:48px;border:1px solid var(--border-strong);border-radius:13px;background:var(--surface);padding:0 6px 0 14px}
+  .inp:focus-within{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+  .inp.bad{border-color:var(--danger);box-shadow:0 0 0 1px var(--danger)}
+  .inp input,.inp textarea{flex:1;min-width:0;border:0;outline:0;background:none;font:500 15px 'Geist',sans-serif;color:var(--text);height:100%;resize:none}
+  .inp input{height:46px}
+  .inp textarea{padding:12px 0;line-height:1.4;min-height:92px}
+  .inp button{width:38px;height:38px;display:grid;place-items:center;color:var(--text3)}
+  .inp button svg{width:19px;height:19px}
+  .inp.ro{background:var(--muted);border-color:var(--border);padding-right:14px;gap:10px;color:var(--text2)}
+  .inp.ro span{flex:1;min-width:0;font-size:15px;font-weight:500;overflow-wrap:anywhere;padding:11px 0}
+  .inp.ro svg{width:16px;height:16px;color:var(--text4)}
+  .fh{font-size:12.5px;color:var(--text3)} .fh.er{color:var(--danger-text);font-weight:500}
+  .ct{font:500 12px 'Geist Mono',monospace;color:var(--text3)} .ct.er{color:var(--danger-text)}
+  .chipsel{display:flex;flex-wrap:wrap;gap:8px}
+  .chipsel button{height:38px;padding:0 14px;border-radius:99px;border:1px solid var(--border-strong);background:var(--surface);font-size:14px;font-weight:600;color:var(--text2);display:inline-flex;align-items:center;gap:6px}
+  .chipsel button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .chipsel button svg{width:15px;height:15px}
+  .cx{display:inline-block;padding:3px 10px;border-radius:99px;background:var(--muted);font-size:13px;font-weight:500;color:var(--text2);white-space:nowrap}
+  .cxs{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+  .mg{display:flex;gap:8px;align-items:center;font-size:12.5px;color:var(--text3);line-height:1.4}
+  .mg svg{width:15px;height:15px}
+  .done{display:grid;justify-items:center;text-align:center;gap:10px;padding:70px 28px}
+  .done .ic{width:64px;height:64px;border-radius:22px;background:var(--ok-soft);color:var(--ok-text);display:grid;place-items:center}
+  .done .ic svg{width:30px;height:30px}
+  .done b{font-size:21px;letter-spacing:-.03em}
+  .done p{font-size:14px;color:var(--text3);line-height:1.5}
+  /* notification grid */
+  .nh{display:flex;align-items:center;padding:12px 12px 4px 16px}
+  .nh span{width:56px;text-align:center;font:500 10.5px 'Geist Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--text4)}
+  .nr{display:flex;align-items:center;padding:0 12px 0 16px;border-top:1px solid var(--border)}
+  .nr .lab{flex:1;min-width:0;padding:11px 6px 11px 0}
+  .nr .lab b{font-size:15px;font-weight:600;letter-spacing:-.015em;display:block}
+  .nr .lab span{font-size:12.5px;color:var(--text3);line-height:1.35;display:block;margin-top:1px}
+  .nr .col{width:56px;display:grid;place-items:center;min-height:44px}
+  .ar{display:flex;align-items:center;gap:12px;padding:10px 16px;min-height:58px;border-top:1px solid var(--border)}
+  .ar:first-child{border-top:0}
+  .ar b{font-size:15px;font-weight:600;letter-spacing:-.015em;display:block}
+  .ar span.s{font-size:12.5px;color:var(--text3);display:block;line-height:1.35;margin-top:1px}
+  .tg{width:44px;height:26px;border-radius:99px;background:var(--border-strong);position:relative;transition:.15s;flex:none}
+  .tg::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.15s}
+  .tg.on{background:var(--accent)}.tg.on::after{left:21px}
+  .tg:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  /* overlays */
+  .scrim{position:absolute;inset:0;background:rgba(11,15,26,.45);z-index:90;display:grid;place-items:center;padding:24px}
+  .scrim.bot{place-items:end center;padding:0}
+  .dlg{background:var(--surface);border-radius:22px;padding:20px 20px 12px;width:100%}
+  .dlg b{font-size:17px;font-weight:700;letter-spacing:-.025em;display:block}
+  .dlg p{font-size:14px;color:var(--text2);margin-top:8px;line-height:1.45}
+  .dlg .ab{display:flex;justify-content:flex-end;gap:6px;margin-top:12px}
+  .dlg .ab button{height:44px;padding:0 16px;border-radius:12px;font-weight:600;font-size:15px}
+  .dlg .ab .dn{color:var(--danger-text)}
+  .dlg .ab button[disabled]{color:var(--text4);cursor:default}
+  .sheet{background:var(--surface);border-radius:22px 22px 0 0;padding:10px 18px 24px;width:100%;display:grid;gap:8px}
+  .sheet .grab{width:38px;height:4px;border-radius:4px;background:var(--border-strong);margin:0 auto 6px}
+  .sheet h3{font-size:16px;font-weight:700;letter-spacing:-.02em}
+  .sheet .kvs{border:1px solid var(--border);border-radius:13px;overflow:hidden;font-size:13px}
+  .sheet .kvs div{padding:8px 12px;border-bottom:1px solid var(--border);display:flex;gap:10px}
+  .sheet .kvs div:last-child{border-bottom:0}
+  .sheet .kvs span{width:56px;color:var(--text3);flex:none}
+  .sheet .kvs b{font-weight:500;overflow-wrap:anywhere}
+  .sheet .opt{display:flex;align-items:center;gap:12px;height:50px;border-radius:13px;padding:0 6px;font-size:15px;font-weight:600;width:100%}
+  .sheet .opt svg{width:19px;height:19px;color:var(--text2)}
+  .sheet .opt.dn,.sheet .opt.dn svg{color:var(--danger-text)}
+  .pill-mini{font:500 10px 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase;border:1px dashed var(--accent-muted);color:var(--accent);border-radius:99px;padding:1px 6px;background:var(--accent-wash)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="intro">
+  <div class="mono" style="color:var(--accent)">Interviewer app · Account (profile tab) · final</div>
+  <h1>Account, grouped, with the profile and settings production apps carry</h1>
+  <p class="lede">The Account tab of the interviewer persona (<span class="mono" style="letter-spacing:.04em;font-size:12px">InterviewerAccountScreen</span>, reading <span class="mono" style="letter-spacing:.04em;font-size:12px">GET /interviewers/me</span> and <span class="mono" style="letter-spacing:.04em;font-size:12px">GET /auth/me</span>), in the approved compact language. Everything the real screen draws today is untagged; every new row and screen carries the dashed tag. Switch the state, jump to a screen, or tap through the phone: Edit profile (validation, saving, saved, error), Contact and verification, Notification settings, Change password, Help and support, Your data, Sign out.</p>
+  <div class="legend">
+    <div><span class="ptag">Proposal</span>&nbsp; Dashed tag: not in the app today. The notes card lists, for each, whether the server route already exists or must be built. A row with no tag is in the real screen.</div>
+    <div><b>Config-driven values</b> (fee per tier, load caps, the window of days, tiers, the language master list) come from the server per interviewer or from admin settings; every number and name here is a sample.</div>
+  </div>
+</div>
+
+<div class="bars"><span class="mono">State</span><div class="states" id="sSw"></div></div>
+<div class="bars"><span class="mono">Jump to a screen</span><div class="states" id="jSw"></div></div>
+<div class="bars"><span class="mono">Sample server result when saving a profile</span><div class="states" id="fSw"></div></div>
+
+<div class="layout">
+  <div id="ph"></div>
+  <div class="notes side" id="notes"></div>
+</div>
+</div>
+
+<script>
+const I={
+ home:'<svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z"/></svg>',
+ cal:'<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
+ clock:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+ wallet:'<svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M3 10h18M16 15h2"/></svg>',
+ user:'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>',
+ alert:'<svg viewBox="0 0 24 24"><path d="M12 3l10 18H2zM12 10v5M12 18v.5"/></svg>',
+ lock:'<svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>',
+ check:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/></svg>',
+ tick:'<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+ back:'<svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>',
+ chevR:'<svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>',
+ note:'<svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/></svg>',
+ bell:'<svg viewBox="0 0 24 24"><path d="M6 17V11a6 6 0 0112 0v6l2 2H4zM10 21h4"/></svg>',
+ sliders:'<svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>',
+ chat:'<svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg>',
+ out:'<svg viewBox="0 0 24 24"><path d="M10 4H5v16h5M15 8l4 4-4 4M19 12H9"/></svg>',
+ mail:'<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>',
+ phone:'<svg viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M11 18.5h2"/></svg>',
+ tag:'<svg viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1"/></svg>',
+ globe:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg>',
+ gauge:'<svg viewBox="0 0 24 24"><path d="M4 18a8 8 0 1116 0M12 18l4-6"/></svg>',
+ done:'<svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 12.5l3 3 5-6"/></svg>',
+ pct:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 12V3M12 12l6.4 6.4"/></svg>',
+ noshow:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg>',
+ eye:'<svg viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+ eyeoff:'<svg viewBox="0 0 24 24"><path d="M3 3l18 18M10 6.2A9.6 9.6 0 0112 6c6 0 10 6 10 6a17 17 0 01-3.2 3.7M6.2 7.6A17 17 0 002 12s4 7 10 7a9 9 0 004-1"/></svg>',
+ edit:'<svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4"/></svg>',
+ shield:'<svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2.2 2.2L15.5 10"/></svg>',
+ help:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 114 2c-.9.6-1.5 1.1-1.5 2.2M12 17v.5"/></svg>',
+ doc:'<svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5"/></svg>',
+ ext:'<svg viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v6H4V6h6"/></svg>',
+ info:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg>',
+ camera:'<svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>',
+ image:'<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M4 18l5-5 4 4 3-3 4 4"/></svg>',
+ trash:'<svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>',
+ download:'<svg viewBox="0 0 24 24"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg>',
+ key:'<svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3"/></svg>'
+};
+const TABS=[['home','Home','home'],['cal','Interviews','interviews'],['clock','Availability','availability'],['wallet','Wallet','wallet'],['user','Account','account']];
+const tab=a=>`<nav class="tab" aria-label="Main">${TABS.map(t=>`<button data-act="toast:Opens ${t[1]}" class="${t[2]===a?'on':''}" ${t[2]===a?'aria-current="page"':''}>${I[t[0]]}<span>${t[1]}</span></button>`).join('')}</nav>`;
+const status=()=>`<div class="status"><span>9:41</span><i></i><span>5G ▮▮▮</span></div>`;
+const ptag=t=>`<span class="ptag">${t||'Proposal'}</span>`;
+const SUPPORT='support@apostrophe.work';
+const LANG_MASTER=['English','Hindi','Tamil','Telugu','Bengali','Marathi'];
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ---------- sample data (the shapes of /interviewers/me and /auth/me) ---------- */
+const BASE={name:'Ravi Kumar',email:'ravi.kumar@example.com',mobile:'+91 98000 00001',status:'Active',susp:false,reason:null,
+ domains:['Frontend','Data','Backend'],languages:['English','Hindi'],cap:'4 a day · 15 a week',
+ fees:[['T1','₹150'],['T2','₹250'],['T3','₹400']],
+ win:30,conducted:'42',comp:'96%',ontime:'91%',noshows:'1',owed:3,unread:2};
+const initials=n=>n?n.trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase():'';
+let S={st:'normal',scr:null,sheet:null,dlg:null,failSave:false,
+ prof:{name:'Ravi Kumar',bio:'',langs:['English','Hindi'],photo:false},
+ ed:null,ct:{variant:'mobile',email:'idle'},nt:{PUSH_MESSAGE:true,EMAIL_MESSAGE:false,IN_APP_MESSAGE:true,PUSH_MARKETING:false,EMAIL_MARKETING:false,IN_APP_MARKETING:true,fail:false,saving:null},
+ dt:{exp:'none',del:'none',confirm:''},help:{topic:null},
+ pw:{cur:'',nw:'',cf:'',show:false,err:{},stage:'form',busy:false}};
+function mkD(){
+ const D={...BASE,name:S.prof.name||BASE.name,languages:S.prof.langs.length?S.prof.langs:null,init:initials(S.prof.name||BASE.name)};
+ if(S.st==='partial')Object.assign(D,{mobile:null,domains:null,languages:null,cap:null,fees:null,conducted:'12',comp:null,ontime:null,noshows:null,owed:0,unread:0});
+ if(S.st==='suspended')Object.assign(D,{status:'Suspended',susp:true,reason:'Reason text from the server.',owed:2});
+ if(S.st==='error')Object.assign(D,{name:'Interviewer',init:null,status:null,email:null,mobile:null,domains:null,languages:null,cap:null,fees:null,conducted:null,comp:null,ontime:null,noshows:null,owed:0,unread:0});
+ return D;
+}
+const bdg=D=>D.status?`<span class="bd ${D.susp?'red':'green'}">${D.status}</span>`:'';
+const disc=(D,cls)=>S.prof.photo&&S.st!=='error'?`<div class="disc ph ${cls||''}">${I.user}</div>`:`<div class="disc ${cls||''}">${D.init||I.user}</div>`;
+const kv=(ic,l,v)=>`<div class="kv"><div class="fl">${I[ic]}${l}</div><div class="v">${v}</div></div>`;
+const hd=t=>`<div class="oh"><h3>${t}</h3></div>`;
+const figs=D=>{if(D.conducted==null)return null;
+ const a=[['done','Conducted',D.conducted,''],['pct','Completion',D.comp||'—',D.comp?'ok':'dim'],['clock','On-time',D.ontime||'—',D.ontime?'ok':'dim']];
+ if(D.noshows!=null)a.push(['noshow','No-shows',D.noshows,'']);return a};
+const tile=f=>`<div class="tile"><div class="fl">${I[f[0]]}${f[1]}</div><div class="fig ${f[3]}">${f[2]}</div></div>`;
+const sk=(h,w,r)=>`<div class="skel" style="height:${h}px;${w?`width:${w};`:''}${r?`border-radius:${r}px`:''}"></div>`;
+const lkRow=l=>l.static
+ ?`<div class="lk static"><span class="li">${I[l.i]}</span><div class="grow"><b>${l.t}${l.p&&!l.s?ptag():''}</b>${l.s?`<span class="s">${l.p?ptag()+' ':''}${l.s}</span>`:''}</div><span class="rv">${l.rv}</span></div>`
+ :`<button class="lk" data-act="${l.a}"><span class="li">${I[l.i]}</span><div class="grow"><b>${l.t}${l.p&&!l.s?ptag():''}</b>${l.s?`<span class="s">${l.p?ptag()+' ':''}${l.s}</span>`:''}</div>${l.ext?I.ext:I.chevR}</button>`;
+const card=rows=>`<div class="ow">${rows.map(lkRow).join('')}</div>`;
+const sout=()=>S.st==='signing'?`<button class="so" disabled aria-busy="true"><span class="spin"></span>Signing out…</button>`:`<button class="so" data-act="so">${I.out}Sign out</button>`;
+const errNote=()=>S.st==='error'?`<div class="pnote" role="alert">${I.alert}<div><b>Couldn’t load your account.</b> Nothing was changed. <button style="color:var(--accent);font-weight:700" data-act="retry">Try again</button><div style="margin-top:4px">${ptag()} The app draws no error here: the page just shows “Interviewer” and the rows below.</div></div></div>`:'';
+const bandHTML=`<div class="band" role="alert">${I.alert}<div><b>Account suspended.</b> Reason text from the server. New interviews and withdrawals are paused; you can still submit owed scorecards.</div></div>`;
+const loading=()=>`<div class="head"><div class="title">Account</div></div><div class="pad stack"><div class="card" style="display:flex;gap:12px;align-items:center">${sk(52,'52px',99)}<div class="grow" style="display:grid;gap:8px">${sk(18,'55%')}${sk(18,'28%',99)}</div></div><div class="ow">${[0,1,2].map(()=>`<div class="kv" style="display:grid;gap:8px">${sk(12,'30%')}${sk(16,'70%')}</div>`).join('')}</div><div class="g2">${sk(78,'',16)}${sk(78,'',16)}</div><div class="ow">${[0,1,2].map(()=>`<div class="lk">${sk(34,'34px',11)}<div class="grow">${sk(16,'50%')}</div></div>`).join('')}</div></div>`;
+
+/* ================= the Account tab (grouped, in the app's order) ================= */
+function main(D){
+ const f=figs(D);
+ const work=[
+  {i:'note',t:'Scorecards owed',s:D.owed?`${D.owed} open`:'',a:'toast:Opens Scorecards owed'},
+  {i:'cal',t:'Date overrides',s:'Days off and one-off hours',a:'toast:Opens Date overrides'},
+  {i:'bell',t:'Notifications',s:D.unread?`${D.unread} unread`:'',a:'toast:Opens Notifications'},
+  {i:'chat',t:'Messages',s:'Chats with your candidates',a:'toast:Opens Messages'}];
+ const mine=[
+  {i:'edit',t:'Edit profile',s:'Name, photo, languages, bio',a:'scr:edit',p:1},
+  {i:'shield',t:'Contact and verification',s:'Email and mobile',a:'scr:contact',p:1}];
+ const sets=[
+  {i:'sliders',t:'Notification settings',s:'Push, email and in-app',a:'scr:notif',p:1},
+  {i:'lock',t:'Change password',s:'',a:'scr:pw'},
+  {i:'download',t:'Your data',s:'Export or delete my data',a:'scr:data',p:1}];
+ const help=[
+  {i:'help',t:'Help and support',s:'Talk to support',a:'scr:help',p:1},
+  {i:'doc',t:'Terms of Service',s:'',a:'toast:Opens the Terms in your browser',ext:1,p:1},
+  {i:'eye',t:'Privacy Policy',s:'',a:'toast:Opens the Privacy Policy in your browser',ext:1,p:1},
+  {i:'info',t:'App version',s:'',static:1,rv:'0.0.1',p:1}];
+ const idc=`<div class="card" style="gap:0"><div class="idrow">${disc(D,'lg')}<div class="grow"><div class="nm ell">${esc(D.name)}</div><div style="margin-top:4px">${bdg(D)}</div></div></div>${D.susp&&D.reason?`<div class="rsn">${D.reason}</div>`:''}</div>`;
+ return `<div class="head"><div class="title">Account</div></div><div class="pad stack">
+ ${errNote()}${idc}
+ ${(D.email||D.mobile||D.domains||D.languages||D.cap)?`<div class="ow">${D.email?kv('mail','Email',D.email):''}${D.mobile?kv('phone','Mobile',D.mobile):''}${D.domains?kv('tag','Domains',D.domains.join(', ')):''}${D.languages?kv('globe','Languages',D.languages.join(', ')):''}${D.cap?kv('gauge','Load cap',D.cap):''}</div>`:''}
+ ${D.fees?`${hd('Your fee per interview')}<div class="ow"><div class="fees">${D.fees.map(x=>`<div><div class="tr">${x[0]}</div><div class="fv">${x[1]}</div></div>`).join('')}</div></div>`:''}
+ ${f?`${hd(`Last ${D.win} days`)}<div class="g2">${f.map(tile).join('')}</div>`:''}
+ ${hd('Your profile')}${card(mine)}
+ ${hd('Work')}${card(work)}
+ ${hd('Settings')}${card(sets)}
+ ${hd('Help')}${card(help)}
+ ${sout()}</div>`;
+}
+
+/* ================= pushed-screen frame ================= */
+const frame=(title,subtitle,body,foot,backAct)=>`<div class="pv" data-scr><div class="screenhead"><button class="back" data-act="${backAct||'close'}" aria-label="Back">${I.back}</button><div><b>${title}</b>${title&&S.scr&&S.scr!=='pw'?`<span>${ptag()}${subtitle?' '+subtitle:''}</span>`:subtitle?`<span>${subtitle}</span>`:''}</div></div><div class="bd2">${body}</div>${foot?`<div class="ft">${foot}</div>`:''}</div>`;
+
+/* ---------- (1) Edit profile ---------- */
+const edDirty=()=>{const e=S.ed,p=S.prof;return e.name!==p.name||e.bio!==p.bio||e.photo!==p.photo||[...e.langs].sort().join()!==[...p.langs].sort().join()};
+function edFoot(){
+ const e=S.ed;
+ if(e.stage==='saving')return `<button class="pbtn on" disabled aria-busy="true" id="edSave"><span class="spin"></span>Saving…</button>`;
+ if(e.stage==='saved')return `<button class="pbtn" style="background:var(--ok-soft);color:var(--ok-text);cursor:default" disabled id="edSave">${I.check}Saved</button>`;
+ return `<button class="pbtn ${edDirty()?'on':'off'}" data-act="edsave" id="edSave" ${edDirty()?'':'aria-disabled="true"'}>Save changes</button>`;
+}
+function edHTML(){
+ const e=S.ed,er=e.err||{};
+ const ro=(ic,l,v)=>`<div class="fld"><div class="lb">${l}</div><div class="inp ro">${I.lock}<span>${v}</span></div></div>`;
+ const bioLen=e.bio.length;
+ const body=`
+ ${e.stage==='error'?`<div class="errbox" role="alert">${I.alert}<div><b>Couldn’t save your profile.</b> Nothing was changed. Check your connection and try again.</div></div>`:''}
+ ${e.stage==='saved'?`<div class="okbox" role="status">${I.check}<div>Profile saved.</div></div>`:''}
+ <div style="display:grid;justify-items:center;gap:10px;padding:4px 0 2px">
+   ${e.photo?`<div class="disc xl ph">${I.user}</div>`:`<div class="disc xl">${initials(e.name)||I.user}</div>`}
+   <button class="btn out sm" data-act="photo">${I.camera}${e.photo?'Change photo':'Add photo'}</button>
+ </div>
+ <div class="fld"><label for="ed_name">Display name</label><div class="inp ${er.name?'bad':''}"><input id="ed_name" data-k="ed.name" value="${esc(e.name)}" autocomplete="off" placeholder="Your full name" ${er.name?'aria-invalid="true"':''}></div>${er.name?`<div class="fh er" role="alert" id="ed_name_e">${er.name}</div>`:`<div class="fh">As candidates and admins see it. 2 to 80 characters.</div>`}</div>
+ <div class="fld"><div class="lb">Languages you interview in <span class="fh" style="font-weight:400">Pick at least one</span></div><div class="chipsel" id="ed_langs">${LANG_MASTER.map(l=>`<button data-act="lang:${l}" class="${e.langs.includes(l)?'on':''}" aria-pressed="${e.langs.includes(l)}">${e.langs.includes(l)?I.tick:''}${l}</button>`).join('')}</div>${er.langs?`<div class="fh er" role="alert">${er.langs}</div>`:`<div class="fh">From the master list the server sends.</div>`}</div>
+ <div class="fld"><label for="ed_bio"><span>Short bio</span><span class="ct ${bioLen>280?'er':''}" id="ed_bio_c">${bioLen}/280</span></label><div class="inp ${er.bio?'bad':''}" style="align-items:flex-start"><textarea id="ed_bio" data-k="ed.bio" placeholder="One or two lines about your interviewing background (optional)" ${er.bio?'aria-invalid="true"':''}>${esc(e.bio)}</textarea></div>${er.bio?`<div class="fh er" role="alert" id="ed_bio_e">${er.bio}</div>`:''}</div>
+ <div class="hd" style="display:grid;gap:12px;padding-top:6px;border-top:1px solid var(--border)">
+   <div class="lb" style="font:600 13px 'Geist',sans-serif;color:var(--text);display:flex;align-items:center;gap:8px">Managed by Apostrophe</div>
+   ${ro('tag','Domains',(BASE.domains||[]).join(', '))}
+   ${ro('rupee','Fee per interview',BASE.fees.map(x=>x[0]+' '+x[1]).join(' · '))}
+   ${ro('gauge','Load cap',BASE.cap)}
+   <div class="mg">${I.info}<span>These are set by Apostrophe. To change one, <button style="color:var(--accent);font-weight:600" data-act="supp:Profile change request">talk to support</button>.</span></div>
+ </div>
+ <div class="mg" style="padding-top:2px">${ptag()}<span>Email and mobile are your sign-in: see Contact and verification.</span></div>`;
+ return frame('Edit profile','',body,edFoot(),'edback');
+}
+
+/* ---------- (2) Contact and verification ---------- */
+function contactHTML(){
+ const v=S.ct.variant,em=S.ct.email;
+ const emailOk=v!=='email',mobOk=v!=='mobile';
+ const emailRight=emailOk?`<span class="bd green">Verified</span>`:em==='sent'?`<span class="bd blue">Link sent</span>`:em==='sending'?`<span class="bd gray">Sending…</span>`:`<button class="btn out sm" data-act="verify">Verify</button>`;
+ const mobRight=mobOk?`<span class="bd green">Verified</span>`:`<span class="bd amber">Not verified</span>`;
+ const body=`
+ <div class="sub" style="font-size:14px">The address and number you sign in with. They can’t be edited here.</div>
+ <div class="ow">
+  <div class="lk static" style="min-height:64px"><span class="li">${I.mail}</span><div class="grow"><b style="display:block;letter-spacing:-.02em;font-size:13.5px;white-space:nowrap">${BASE.email}</b><span class="s">${emailOk?'Email':'Email · verify it so we can reach you about payouts'}</span></div>${emailRight}</div>
+  <div class="lk static" style="min-height:64px"><span class="li">${I.phone}</span><div class="grow"><b style="display:block">${BASE.mobile}</b><span class="s">Mobile · how you sign in</span></div>${mobRight}</div>
+ </div>
+ ${em==='sent'?`<div class="okbox" role="status">${I.check}<div>We sent a verification link to ${BASE.email}. You can ask for another in 30 seconds.</div></div>`:''}
+ ${!mobOk?`<div class="pnote">${I.info}<div>A mobile that isn’t verified can’t be verified from the app yet: <button style="color:var(--accent);font-weight:700" data-act="supp:Verify my mobile number">talk to support</button>.</div></div>`:''}
+ <div class="ow"><button class="lk" data-act="supp:Change my email or mobile"><span class="li">${I.help}</span><div class="grow"><b>Need to change your email or mobile?</b><span class="s">Support does it after checking it is you</span></div>${I.chevR}</button></div>
+ <div style="display:grid;gap:6px;padding-top:6px"><span class="mono" style="color:var(--text3);font-size:10.5px">Preview only: which one is not verified</span>
+  <div class="states" style="margin:0;border-radius:16px;width:100%">${[['mobile','Mobile'],['email','Email'],['ok','Neither']].map(x=>`<button class="${v===x[0]?'on':''}" data-act="ctv:${x[0]}" style="padding:6px 10px;font-size:12.5px;flex:1;text-align:center">${x[1]}</button>`).join('')}</div></div>`;
+ return frame('Contact and verification','',body,'');
+}
+
+/* ---------- (3) Notification settings ---------- */
+const NLOCK=[['Account and security','Sign-ins and changes to your account.'],['Payments and receipts','Payouts, credits and statements.'],['Interview scheduling','Interviews assigned or moved, and scorecards due.']];
+const NCHOOSE=[['MESSAGE','Messages','New messages in an open chat'],['MARKETING','News and offers','Occasional, never more than monthly']];
+const CH=[['PUSH','Push'],['EMAIL','Email'],['IN_APP','In-app']];
+function notifHTML(){
+ let body;
+ if(S.st==='loading')body=`<div style="display:grid;gap:10px">${[0,1,2,3].map(()=>sk(86,'',16)).join('')}</div>`;
+ else if(S.st==='error')body=`<div class="center" style="padding-top:36px"><div class="ic">${I.alert}</div><b>Could not load your settings.</b><p>Nothing was changed. Try again in a moment.</p><button class="btn pri" data-act="retry">Try again</button></div>`;
+ else body=`<div class="sub" style="font-size:14px">Choose how each kind of message reaches you.</div>
+ ${S.nt.fail?`<div class="errbox" role="alert">${I.alert}<div><b>Couldn’t save that change.</b> The switch went back. Try again.</div></div>`:''}
+ ${hd('Always on')}
+ <div class="ow">${NLOCK.map(r=>`<div class="ar"><div class="grow"><b>${r[0]}</b><span class="s">${r[1]}</span></div><span class="bd gray">All channels</span></div>`).join('')}</div>
+ <div class="note">We always send these. They carry money, a booked time, or your account’s security, so they aren’t ours to switch off.</div>
+ ${hd('You choose')}
+ <div class="ow"><div class="nh"><span style="flex:1"></span>${CH.map(c=>`<span>${c[1]}</span>`).join('')}</div>
+ ${NCHOOSE.map(r=>`<div class="nr"><div class="lab"><b>${r[1]}</b><span>${r[2]}</span></div>${CH.map(c=>{const k=c[0]+'_'+r[0],on=S.nt[k];return `<div class="col"><button class="tg ${on?'on':''}" role="switch" aria-checked="${on}" aria-label="${c[1]} for ${r[1]}" data-act="nt:${k}"></button></div>`}).join('')}</div>`).join('')}</div>
+ <div class="mg">${ptag()}<span>Interviewer categories only. Interests, applications and job posts have no interviewer events, so they aren’t listed.</span></div>
+ <div style="display:grid;gap:6px;padding-top:2px"><span class="mono" style="color:var(--text3);font-size:10.5px">Preview only: next toggle</span><div class="states" style="margin:0;border-radius:16px"><button class="${!S.nt.nextFail?'on':''}" data-act="ntf:0" style="padding:6px 10px;font-size:12.5px">Saves</button><button class="${S.nt.nextFail?'on':''}" data-act="ntf:1" style="padding:6px 10px;font-size:12.5px">Fails</button></div></div>`;
+ return frame('Notification settings','Push, email and in-app',body,'');
+}
+
+/* ---------- (4) Help and support ---------- */
+const TOPICS=[['wallet','Payouts and wallet','Payout or wallet question'],['note','Interviews and scorecards','Interview or scorecard question'],['user','My account','My interviewer account'],['chat','Something else','Interviewer app question']];
+function helpHTML(){
+ const body=`<div class="card"><div class="idrow"><span class="li" style="width:40px;height:40px;border-radius:13px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center">${I.mail}</span><div class="grow"><b style="font-size:16px;letter-spacing:-.02em">Talk to support</b><div class="sub">Opens your mail app, addressed to ${SUPPORT}.</div></div></div><button class="pbtn on" data-act="supp:Interviewer app question">Email support</button></div>
+ ${hd('Or start from a topic')}
+ <div class="ow">${TOPICS.map(t=>`<button class="lk" data-act="supp:${t[2]}"><span class="li">${I[t[0]]}</span><div class="grow"><b>${t[1]}</b></div>${I.chevR}</button>`).join('')}</div>
+ <div class="note">A topic only fills in the subject line.</div>`;
+ return frame('Help and support','',body,'');
+}
+const suppSheet=()=>`<div class="scrim bot" data-act="sheetx"><div class="sheet" data-stop role="dialog" aria-label="Email support"><div class="grab"></div><h3>Open your mail app</h3><div class="kvs"><div><span>To</span><b>${SUPPORT}</b></div><div><span>Subject</span><b>${esc(S.sheet.subject)}</b></div></div><button class="pbtn on" data-act="mailgo">Open mail app</button><button class="pbtn outl" data-act="sheetx">Cancel</button></div></div>`;
+const photoSheet=()=>`<div class="scrim bot" data-act="sheetx"><div class="sheet" data-stop role="dialog" aria-label="Profile photo"><div class="grab"></div><h3>Profile photo</h3><button class="opt" data-act="phset:cam">${I.camera}Take a photo</button><button class="opt" data-act="phset:lib">${I.image}Choose from library</button>${S.ed&&S.ed.photo?`<button class="opt dn" data-act="phset:none">${I.trash}Remove photo</button>`:''}<button class="pbtn outl" data-act="sheetx">Cancel</button></div></div>`;
+
+/* ---------- (5) Your data (export and delete) ---------- */
+function dataHTML(){
+ const x=S.dt.exp,d=S.dt.del;
+ const exp=x==='none'?`<button class="pbtn outl" data-act="dexp">${I.download}Request my data</button>`
+  :x==='pending'?`<div class="okbox" style="background:var(--info-soft);border-color:#C9D8FF;color:#1F4FD1" role="status">${I.clock}<div>We’re preparing your export. It is due by 1 Nov 2026 (sample). We’ll tell you when it’s ready.<div style="margin-top:4px"><button style="font-weight:700;text-decoration:underline" data-act="dready">Preview: it’s ready</button></div></div></div>`
+  :`<div class="okbox" role="status">${I.check}<div>Your export is ready. The link works for a short while.</div></div><button class="pbtn on" data-act="toast:Downloads your data (JSON)">${I.download}Download</button>`;
+ const del=d==='pending'?`<div class="card"><div class="idrow"><span class="bd amber">Deletion scheduled</span></div><div style="font-size:14px;line-height:1.5;color:var(--text2)">Your account is already hidden. It will be erased on <b>1 Nov 2026</b> (sample), 30 days after you asked. Until then you can change your mind.</div><button class="pbtn outl" data-act="dcancel">Cancel deletion</button></div>`
+  :`<button class="pbtn outl" data-act="ddel" style="color:var(--text)">${I.trash}Delete my account</button>`;
+ const body=`
+ ${hd('Export my data')}
+ <div style="font-size:14px;line-height:1.5;color:var(--text2)">A machine-readable copy of what we hold about you. It is prepared in the background and can take up to 30 days.</div>${exp}
+ ${hd('Delete my account')}
+ <div style="font-size:14px;line-height:1.5;color:var(--text2)">Your account is hidden at once and erased after a 30-day grace period. What we must keep for the books stays: earnings and payout records, which carry no name, and the interviews you conducted. You can’t sign in again afterwards.</div>${del}
+ <div class="mg">${ptag()}<span>The routes exist for every role. This screen is new for interviewers.</span></div>`;
+ return frame('Your data','Export or delete',body,'');
+}
+function delDlg(){
+ const m=[BASE.name,BASE.mobile.replace(/\s/g,''),BASE.mobile,BASE.email].some(v=>v.toLowerCase()===S.dt.confirm.trim().toLowerCase());
+ return `<div class="scrim"><div class="dlg" role="alertdialog" aria-label="Delete my account"><b>Delete my account?</b><p>Type your name, mobile or email to confirm. This starts the 30-day countdown; you can cancel until it ends.</p><div class="fld" style="margin-top:10px"><div class="inp"><input id="dt_c" data-k="dt.confirm" value="${esc(S.dt.confirm)}" placeholder="${BASE.name}" autocomplete="off" aria-label="Confirm"></div></div><div class="ab"><button data-act="dx">Cancel</button><button class="dn" id="dtGo" data-act="dgo" ${m?'':'disabled'}>Delete</button></div></div></div>`;
+}
+
+/* ---------- (6) Change password (real flow) ---------- */
+function pwHTML(){
+ const e=S.pw.err,v=S.pw,sh=v.show;
+ const fld=(k,l,h)=>`<div class="fld"><label for="pw_${k}">${l}</label><div class="inp ${e[k]?'bad':''}"><input id="pw_${k}" data-k="pw.${k}" type="${sh?'text':'password'}" value="${esc(v[k])}" autocomplete="off"><button data-act="eye" aria-label="${sh?'Hide':'Show'} password">${sh?I.eyeoff:I.eye}</button></div>${e[k]?`<div class="fh er" role="alert">${e[k]}</div>`:h?`<div class="fh">${h}</div>`:''}</div>`;
+ if(v.stage==='done')return `<div class="pv" data-scr><div class="done"><div class="ic">${I.check}</div><b>Password changed.</b><p>Sign in with your new password. Every device, this one included, was signed out.</p><button class="pbtn on" style="margin-top:14px" data-act="pwdone">Sign in</button></div></div>`;
+ const body=`<div><div class="mono" style="color:var(--accent);font-size:11px">Interviewer</div><h2 style="margin-top:4px">Change password</h2><div class="sub" style="margin-top:6px;font-size:14px">Every device you are signed in on will be signed out.</div></div>
+ <div style="display:grid;gap:14px">${fld('cur','Current password')}${fld('nw','New password','At least 10 characters')}${fld('cf','Confirm new password')}</div>
+ <div class="note">Rules from the app: the current password is required, the new one is 10 to 128 characters, differs from the current, and both entries match.</div>`;
+ return frame('','',body,`<button class="pbtn on" data-act="pwsave" ${v.busy?'aria-busy="true"':''}>${v.busy?'<span class="spin"></span>Saving…':'Save new password'}</button>`,'close').replace('<div><b></b></div>','<div></div>');
+}
+const soHTML=()=>`<div class="scrim"><div class="dlg" role="alertdialog" aria-label="Sign Out"><b>Sign Out</b><p>Are you sure you want to sign out?</p><div class="ab"><button data-act="soc">Cancel</button><button class="dn" data-act="sok">Sign Out</button></div></div></div>`;
+const discDlg=()=>`<div class="scrim"><div class="dlg" role="alertdialog" aria-label="Discard changes"><b>Discard your changes?</b><p>What you edited on this screen hasn’t been saved.</p><div class="ab"><button data-act="dkeep">Keep editing</button><button class="dn" data-act="ddisc">Discard</button></div></div></div>`;
+
+/* ---------- phone ---------- */
+function phoneHTML(){
+ const D=mkD();
+ const inner=S.st==='loading'?loading():main(D);
+ const band=S.st==='suspended'?bandHTML:'';
+ let scr='';
+ if(S.scr==='edit')scr=edHTML();else if(S.scr==='contact')scr=contactHTML();else if(S.scr==='notif')scr=notifHTML();
+ else if(S.scr==='help')scr=helpHTML();else if(S.scr==='data')scr=dataHTML();else if(S.scr==='pw')scr=pwHTML();
+ let dlg='';
+ if(S.dlg==='so')dlg=soHTML();else if(S.dlg==='disc')dlg=discDlg();else if(S.dlg==='del')dlg=delDlg();
+ else if(S.sheet&&S.sheet.kind==='supp')dlg=suppSheet();else if(S.sheet&&S.sheet.kind==='photo')dlg=photoSheet();
+ return `<div class="phone" id="phone">${status()}<div class="compact"><b>Account</b></div><div class="scroll ${S.st==='signing'?'busy':''}"><div class="brandbar"><div class="brand"><div class="mark">’</div>Apostrophe</div><button class="disc" data-act="toast:You are on Account" aria-label="Account">${S.prof.photo&&S.st!=='error'?I.user:(D.init||I.user)}</button></div>${band}${inner}</div>${tab('account')}${scr}${dlg}<div class="toast" role="status" aria-live="polite"></div></div>`;
+}
+function notesHTML(){
+ return `<span class="mono">In the app today (untagged)</span><ul>
+  <li>Initials disc, name, Active or Suspended badge, the server’s reason when suspended. Email, mobile (+91 xxxxx xxxxx), domains, languages, load cap, each only when sent. Fee per tier (only tiers with a fee). The last N days: Conducted, Completion, On-time scorecards, No-shows (only when assigned &gt; 0).</li>
+  <li>Scorecards owed (“n open”), Date overrides, Notifications (“n unread”), Messages, Change password (the real flow: current password required; new one 10 to 128 characters, different from the current, both entries match; every device is signed out), then Sign out with its confirmation.</li>
+  <li>Moved, not new: Change password now sits in Settings; the other four shortcuts form Work. Bank account, statements and the ledger stay on Wallet.</li></ul>
+ <span class="mono">States</span><ul><li>Normal, loading (skeleton), partial (only what the server sent), suspended (band plus the reason), signing out (button busy), error. Notification settings also follows loading and error.</li></ul>
+ <span class="mono">Real today / New (proposal) / needs backend</span>
+ <table><thead><tr><th>Item</th><th>Status and route</th></tr></thead><tbody>
+ <tr><td>Edit profile (name, photo, languages, bio)</td><td><span class="st need">Needs backend</span><br>No profile write exists: <span class="rt">/interviewers/me</span> is GET only and carries no name; <span class="rt">/auth/me</span> is GET only. The model has languages and domains (admin-set) but no bio or photo, and <span class="rt">POST /me/uploads</span> signs chat attachments only. Build: <span class="rt">PATCH /interviewers/me/profile</span> for name, languages (1 to 12, master list), bio, and a signed photo upload. Domains, fees and load caps stay admin-only, drawn read-only.</td></tr>
+ <tr><td>Contact and verification</td><td><span class="st real">Read exists</span> <span class="rt">GET /auth/me</span> returns <span class="rt">emailVerified</span>, <span class="rt">mobileVerified</span>. <span class="st real">Verify email exists</span> <span class="rt">POST /auth/email/resend</span> (30 s between sends).<br><span class="st need">Needs backend</span> verifying an existing mobile (<span class="rt">/auth/otp/send</span> is for registration) and any change of email or mobile: drawn as a hand-off to support.</td></tr>
+ <tr><td>Notification settings</td><td><span class="st real">Backend ready</span> <span class="rt">GET</span> and <span class="rt">PUT /me/notification-prefs</span>, every role. Account, payment and interview are locked (a disable is a 400). Screen is new on the interviewer side (the student one can be reused).</td></tr>
+ <tr><td>Help and support</td><td><span class="st new">App only</span> the student <span class="rt">openSupport()</span> mailto to <span class="rt">support@apostrophe.work</span>, subject prefilled. Alternative that exists on the server: in-app support chat <span class="rt">GET</span> and <span class="rt">POST /me/support</span> (INTERVIEWER allowed).</td></tr>
+ <tr><td>Terms, Privacy, version</td><td><span class="st need">Needs content</span> No Terms or Privacy URL exists in the app or the web repo; the links need the published pages. Version is read from the build (0.0.1 in package.json); no backend.</td></tr>
+ <tr><td>Your data (export, delete)</td><td><span class="st real">Backend ready</span> <span class="rt">GET</span> and <span class="rt">POST /me/data-export</span>; <span class="rt">GET</span>, <span class="rt">POST</span>, <span class="rt">DELETE /me/deletion</span> (30-day grace, confirm with own name, mobile or email). The privacy domain already handles an INTERVIEWER subject. Screen is new here.</td></tr>
+ <tr><td>Active sessions, sign out of all devices</td><td><span class="st omit">Omitted</span> No route lists sessions: <span class="rt">/me/devices</span> only registers or removes a push token, <span class="rt">/auth/logout</span> ends this device’s token family, and changing the password already signs out everywhere (stated on that screen).</td></tr>
+ </tbody></table>
+ <span class="mono">Not verified</span><ul><li>That a delete request is accepted for an interviewer with a wallet balance or a pending withdrawal; the manifest keeps the money trail but I did not run the route. Where a bio would be shown (candidate side, room, admin) is a product call.</li></ul>`;
+}
+
+/* ---------- wiring ---------- */
+function rerender(){
+ const old=document.getElementById('phone'),y=old?old.querySelector('.scroll').scrollTop:0;
+ const holder=document.getElementById('ph');
+ holder.innerHTML=phoneHTML();
+ const sc=holder.querySelector('.scroll'),cp=holder.querySelector('.compact');
+ sc.scrollTop=y;sc.addEventListener('scroll',()=>cp.classList.toggle('on',sc.scrollTop>90));
+}
+const STATES=[['normal','Normal'],['loading','Loading'],['partial','Partial data'],['suspended','Suspended'],['signing','Signing out'],['error','Error']];
+const JUMPS=[['main','Account'],['edit','Edit profile'],['contact','Contact'],['notif','Notification settings'],['pw','Change password'],['help','Help and support'],['data','Your data'],['so','Sign-out dialog']];
+function openScr(s){
+ S.sheet=null;S.dlg=null;
+ if(s==='main'){S.scr=null}
+ else if(s==='so'){S.scr=null;S.dlg='so'}
+ else{S.scr=s;
+  if(s==='edit')S.ed={name:S.prof.name,bio:S.prof.bio,langs:[...S.prof.langs],photo:S.prof.photo,err:{},stage:'idle'};
+  if(s==='pw')S.pw={cur:'',nw:'',cf:'',show:false,err:{},stage:'form',busy:false};
+  if(s==='contact')S.ct.email='idle';
+  if(s==='data'){S.dt={exp:'none',del:'none',confirm:''}}
+ }
+ rerender();drawSw();
+}
+function drawSw(){
+ const a=document.getElementById('sSw'),b=document.getElementById('jSw'),c=document.getElementById('fSw');
+ a.innerHTML=STATES.map(x=>`<button class="${x[0]===S.st?'on':''}" data-s="${x[0]}">${x[1]}</button>`).join('');
+ const cur=S.dlg==='so'?'so':(S.scr||'main');
+ b.innerHTML=JUMPS.map(x=>`<button class="${x[0]===cur?'on':''}" data-j="${x[0]}">${x[1]}</button>`).join('');
+ c.innerHTML=[[false,'Succeeds'],[true,'Fails']].map(x=>`<button class="${S.failSave===x[0]?'on':''}" data-f="${x[0]}">${x[1]}</button>`).join('');
+ a.querySelectorAll('button').forEach(k=>k.onclick=()=>{S.st=k.dataset.s;S.dlg=null;S.sheet=null;rerender();drawSw()});
+ b.querySelectorAll('button').forEach(k=>k.onclick=()=>openScr(k.dataset.j));
+ c.querySelectorAll('button').forEach(k=>k.onclick=()=>{S.failSave=k.dataset.f==='true';drawSw()});
+}
+let tt;
+function toast(m){const t=document.querySelector('#phone .toast');if(!t)return;t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),1600)}
+function pwValidate(){
+ const p=S.pw,e={};
+ if(!p.cur)e.cur='Enter your current password';
+ if(p.nw.length<10)e.nw='Use at least 10 characters';
+ else if(p.nw.length>128)e.nw='Use at most 128 characters';
+ else if(p.cur&&p.nw===p.cur)e.nw='Choose a password you have not used here before';
+ if(!e.nw&&p.cf!==p.nw)e.cf='The two passwords don’t match';
+ p.err=e;return !Object.keys(e).length;
+}
+function edValidate(){
+ const e=S.ed,er={},n=e.name.trim();
+ if(n.length<2)er.name='Enter your name (at least 2 characters)';
+ else if(n.length>80)er.name='Use at most 80 characters';
+ if(e.langs.length<1)er.langs='Pick at least one language';
+ else if(e.langs.length>12)er.langs='Pick at most 12 languages';
+ if(e.bio.length>280)er.bio='Keep your bio to 280 characters or fewer';
+ e.err=er;return !Object.keys(er).length;
+}
+function edSync(){
+ const e=S.ed;if(!e)return;
+ const c=document.getElementById('ed_bio_c');if(c){c.textContent=e.bio.length+'/280';c.classList.toggle('er',e.bio.length>280)}
+ const bb=document.getElementById('edSave');if(bb&&(e.stage==='idle'||e.stage==='error')){const d=edDirty();bb.className='pbtn '+(d?'on':'off');if(d)bb.removeAttribute('aria-disabled');else bb.setAttribute('aria-disabled','true')}
+}
+document.addEventListener('input',e=>{
+ const k=e.target.dataset&&e.target.dataset.k;if(!k)return;
+ const [o,f]=k.split('.');S[o][f]=e.target.value;
+ if(o==='pw'||o==='ed'){const er=S[o].err;if(er&&er[f.replace('nw','nw')]){delete er[f];const fl=e.target.closest('.fld'),inp=fl.querySelector('.inp'),m=fl.querySelector('.fh.er');inp.classList.remove('bad');if(m)m.remove()}}
+ if(o==='ed'){if(S.ed.stage==='error'||S.ed.stage==='saved'){S.ed.stage='idle';document.querySelectorAll('.pv .errbox,.pv .okbox').forEach(n=>n.remove())}edSync()}
+ if(o==='dt'){const m=[BASE.name,BASE.mobile.replace(/\s/g,''),BASE.mobile,BASE.email].some(v=>v.toLowerCase()===S.dt.confirm.trim().toLowerCase());const g=document.getElementById('dtGo');if(g){if(m)g.removeAttribute('disabled');else g.setAttribute('disabled','')}}
+});
+document.addEventListener('click',e=>{
+ const a=e.target.closest('[data-act]');if(!a||!a.closest('#phone'))return;
+ if(e.target.closest('[data-stop]')&&a.hasAttribute('data-act')&&a.classList.contains('scrim'))return;
+ const x=a.dataset.act,k=x.split(':')[0],v=x.slice(x.indexOf(':')+1);
+ if(k==='toast')return toast(v);
+ if(k==='scr')return openScr(v);
+ if(x==='close'){S.scr=null;S.sheet=null;rerender();return drawSw()}
+ if(x==='retry'){const was=S.st;S.st='loading';rerender();drawSw();return setTimeout(()=>{S.st=was==='error'?'normal':was;rerender();drawSw()},900)}
+ /* support hand-off */
+ if(k==='supp'){S.sheet={kind:'supp',subject:v};return rerender()}
+ if(x==='sheetx'){S.sheet=null;return rerender()}
+ if(x==='mailgo'){S.sheet=null;rerender();return toast('Opens your mail app')}
+ /* edit profile */
+ if(x==='photo'){S.sheet={kind:'photo'};return rerender()}
+ if(k==='phset'){S.ed.photo=v!=='none';S.ed.stage='idle';S.sheet=null;rerender();return toast(v==='none'?'Photo removed':'Photo added (sample)')}
+ if(k==='lang'){const l=S.ed.langs,i=l.indexOf(v);if(i>=0)l.splice(i,1);else l.push(v);delete S.ed.err.langs;if(S.ed.stage!=='saving')S.ed.stage='idle';return rerender()}
+ if(x==='edback'){if(edDirty()&&S.ed.stage!=='saved'){S.dlg='disc';return rerender()}S.scr=null;return rerender()}
+ if(x==='dkeep'){S.dlg=null;return rerender()}
+ if(x==='ddisc'){S.dlg=null;S.scr=null;return rerender()}
+ if(x==='edsave'){
+  if(!edDirty())return;
+  if(!edValidate())return rerender();
+  S.ed.stage='saving';rerender();
+  return setTimeout(()=>{
+   if(S.failSave){S.ed.stage='error';return rerender()}
+   S.prof={name:S.ed.name.trim(),bio:S.ed.bio,langs:[...S.ed.langs],photo:S.ed.photo};S.ed.name=S.prof.name;S.ed.stage='saved';rerender();
+   setTimeout(()=>{if(S.scr==='edit'&&S.ed.stage==='saved'){S.scr=null;rerender();toast('Profile saved')}},900);
+  },700);
+ }
+ /* contact */
+ if(k==='ctv'){S.ct.variant=v;S.ct.email='idle';return rerender()}
+ if(x==='verify'){S.ct.email='sending';rerender();return setTimeout(()=>{S.ct.email='sent';rerender()},700)}
+ /* notifications */
+ if(k==='ntf'){S.nt.nextFail=v==='1';return rerender()}
+ if(k==='nt'){
+  if(S.nt.nextFail){S.nt.fail=true;return rerender()}
+  S.nt.fail=false;S.nt[v]=!S.nt[v];return rerender();
+ }
+ /* data */
+ if(x==='dexp'){S.dt.exp='pending';return rerender()}
+ if(x==='dready'){S.dt.exp='ready';return rerender()}
+ if(x==='ddel'){S.dt.confirm='';S.dlg='del';return rerender()}
+ if(x==='dx'){S.dlg=null;return rerender()}
+ if(x==='dgo'){if(a.hasAttribute('disabled'))return;S.dlg=null;S.dt.del='pending';return rerender()}
+ if(x==='dcancel'){S.dt.del='none';rerender();return toast('Deletion cancelled')}
+ /* password */
+ if(x==='eye'){S.pw.show=!S.pw.show;return rerender()}
+ if(x==='pwsave'){if(S.pw.busy)return;if(!pwValidate())return rerender();S.pw.busy=true;rerender();return setTimeout(()=>{S.pw.busy=false;S.pw.stage='done';rerender()},700)}
+ if(x==='pwdone'){S.scr=null;rerender();return toast('Opens Sign in')}
+ /* sign out */
+ if(x==='so'){S.dlg='so';return rerender()}
+ if(x==='soc'){S.dlg=null;return rerender()}
+ if(x==='sok'){S.dlg=null;S.st='signing';rerender();drawSw();return setTimeout(()=>{S.st='normal';rerender();drawSw();toast('Signed out: returns to Welcome')},1800)}
+});
+(function init(){
+ try{const q=new URLSearchParams(location.hash.slice(1));
+  if(q.get('s'))S.st=q.get('s');
+  if(q.get('f'))S.failSave=true;
+  if(q.get('ct'))S.ct.variant=q.get('ct');
+  const scr=q.get('scr');
+  document.getElementById('notes').innerHTML=notesHTML();
+  drawSw();rerender();
+  if(scr){openScr(scr);
+   if(scr==='pw'&&q.get('v')){S.pw.nw='short';S.pw.cf='other';pwValidate();rerender()}
+   if(scr==='edit'&&q.get('v')){S.ed.name='R';S.ed.bio='x'.repeat(300);S.ed.langs=[];S.ed.stage='idle';edValidate();rerender()}
+   if(scr==='edit'&&q.get('stage')){S.ed.name='Ravi K. Kumar';S.ed.stage=q.get('stage');rerender()}
+   if(scr==='data'&&q.get('d')==='pending'){S.dt.del='pending';S.dt.exp='pending';rerender()}
+   if(q.get('dlg')){S.dlg=q.get('dlg');rerender()}
+   if(q.get('sheet')){S.sheet={kind:q.get('sheet'),subject:'Payout or wallet question'};rerender()}
+  }
+  const y=+q.get('y');if(y){const sc=document.querySelector('.scroll');sc.scrollTop=y;sc.dispatchEvent(new Event('scroll'))}
+ }catch(e){document.getElementById('notes').innerHTML=notesHTML();drawSw();rerender()}
+})();
+</script>
+</body>
+</html>

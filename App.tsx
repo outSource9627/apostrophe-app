@@ -94,6 +94,11 @@ import {
   InterviewerAccountScreen,
   InterviewerNotificationsScreen,
   InterviewerChatsScreen,
+  InterviewerEditProfileScreen,
+  InterviewerContactScreen,
+  InterviewerNotifSettingsScreen,
+  InterviewerHelpScreen,
+  InterviewerDataScreen,
 } from './src/screens/interviewer'
 import { threadIdForConnection } from './src/lib/api/chat'
 import { getMe } from './src/lib/api/account'
@@ -198,6 +203,11 @@ export type RootStackParamList = {
   InterviewerBankAccount: undefined
   InterviewerStatements: undefined
   InterviewerAccount: undefined
+  InterviewerEditProfile: undefined
+  InterviewerContact: undefined
+  InterviewerNotifSettings: undefined
+  InterviewerHelp: undefined
+  InterviewerData: undefined
   InterviewerNotifications: undefined
   InterviewerChats: undefined
   InterviewerThread: { id: string }
@@ -909,6 +919,26 @@ export default function App() {
 
             <Stack.Screen name="InterviewerAccount">
               {() => <InterviewerAccountScreen />}
+            </Stack.Screen>
+
+            <Stack.Screen name="InterviewerEditProfile">
+              {() => <InterviewerEditProfileScreen />}
+            </Stack.Screen>
+
+            <Stack.Screen name="InterviewerContact">
+              {() => <InterviewerContactScreen />}
+            </Stack.Screen>
+
+            <Stack.Screen name="InterviewerNotifSettings">
+              {() => <InterviewerNotifSettingsScreen />}
+            </Stack.Screen>
+
+            <Stack.Screen name="InterviewerHelp">
+              {() => <InterviewerHelpScreen />}
+            </Stack.Screen>
+
+            <Stack.Screen name="InterviewerData">
+              {() => <InterviewerDataScreen />}
             </Stack.Screen>
 
             <Stack.Screen name="InterviewerThread">

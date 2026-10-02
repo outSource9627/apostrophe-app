@@ -17,6 +17,8 @@ const DEV_API = `http://${DEV_HOST}:3000`
 
 export const API_BASE_URL = DEV_API + '/api/v1'
 export const SOCKET_URL = `http://${DEV_HOST}:4001`
+/** The web host (public /terms and /privacy pages), derived from the same dev host as the API. */
+export const WEB_BASE_URL = DEV_API
 
 // --- payments -------------------------------------------------- [P2] TODO
 // Razorpay key id public hai. Secret NAHI.
