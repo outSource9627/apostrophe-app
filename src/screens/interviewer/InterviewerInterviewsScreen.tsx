@@ -1,30 +1,103 @@
 import React, { useMemo, useState } from 'react'
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native'
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
+import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { borderWidth, color, height, opacity, radius, space, spaceHalf, trackingNative } from '../../theme'
-import { Button, text } from '../../components/ui'
+import { borderWidth, color, fontFamilyNative as FF, opacity, space } from '../../theme'
 import { InterviewerShell } from '../../components/interviewer/InterviewerShell'
-import { IvLabel } from '../../components/interviewer/iv'
-import { EmBadge, EmEmpty, EmError, EmPills, type EmTone } from '../../components/employer/em'
+import { Skel, StateBlock } from '../../components/tab/kit'
 import type { InterviewerInterviewDto } from '../../lib/api/interviewer'
 import { formatPaise } from '../../lib/format/money'
 import { useNow } from '../../lib/employer/useNow'
 import {
-  clock, groupOf, hms, interviewClock, istTime, istWeekday, joinState, pastLabel, sessionLine, type InterviewGroup,
+  clock, groupOf, hms, interviewClock, istTime, istWeekday, joinState, owedClock, pastLabel, sessionLine, type InterviewGroup,
 } from '../../lib/interviewer/state'
 import { reasonOf, useAppConfig, useInterviewerInterviews, useInterviewerMe } from '../../lib/interviewer/useInterviewer'
 import type { RootStackParamList } from '../../../App'
 
 type Tab = 'all' | InterviewGroup
+type Tone = 'green' | 'violet' | 'amber' | 'red' | 'gray'
 const ORDER: Record<InterviewGroup, number> = { live: 0, owed: 1, upcoming: 2, past: 3 }
+const GROUP_NAME: Record<InterviewGroup, string> = { live: 'Live', owed: 'Scorecards owed', upcoming: 'Upcoming', past: 'Past' }
+const TONE: Record<Tone, { bg: string; fg: string }> = {
+  green: { bg: color.successSoft, fg: color.success },
+  violet: { bg: color.accentSoft, fg: color.accentHover },
+  amber: { bg: color.warningSoft, fg: color.warning },
+  red: { bg: color.dangerSoft, fg: color.danger },
+  gray: { bg: color.surfaceMuted, fg: color.textMuted },
+}
+
+/** An urgent row's soft red wash, fading out to the right. */
+function UrgentWash() {
+  return (
+    <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
+      <Defs>
+        <LinearGradient id="ivWash" x1="0" y1="0" x2="1" y2="0">
+          <Stop offset="0" stopColor={color.dangerSoft} stopOpacity={1} />
+          <Stop offset="0.55" stopColor={color.dangerSoft} stopOpacity={0} />
+        </LinearGradient>
+      </Defs>
+      <Rect x="0" y="0" width="100%" height="100%" fill="url(#ivWash)" />
+    </Svg>
+  )
+}
+
+/** The sentence-case status pill; green carries a dot. */
+function Pill({ label, tone }: { label: string; tone: Tone }) {
+  const t = TONE[tone]
+  return (
+    <View style={[styles.bd, { backgroundColor: t.bg }]}>
+      {tone === 'green' && <View style={styles.bdDot} />}
+      <Text style={[styles.bdText, { color: t.fg }]} numberOfLines={1}>{label}</Text>
+    </View>
+  )
+}
+
+/** The slim 34px action: violet (Join, Rejoin) or outline (Scorecard). */
+function RowBtn({ label, variant, disabled, onPress }: { label: string; variant: 'pri' | 'out'; disabled?: boolean; onPress: () => void }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ disabled: !!disabled }}
+      disabled={disabled}
+      onPress={onPress}
+      style={({ pressed }) => [styles.btn, variant === 'pri' ? styles.btnPri : styles.btnOut, disabled && styles.btnOff, pressed && styles.pressed]}
+    >
+      <Text style={[styles.btnText, variant === 'pri' && styles.btnTextOn, disabled && styles.btnTextOff]} numberOfLines={1}>{label}</Text>
+    </Pressable>
+  )
+}
+
+/** A count chip: violet, or red when something owed is urgent. */
+function Count({ n, red }: { n: number; red?: boolean }) {
+  return (
+    <View style={[styles.ct, red && { backgroundColor: color.dangerSoft }]}>
+      <Text style={[styles.ctText, red && { color: color.danger }]}>{n}</Text>
+    </View>
+  )
+}
+
+function Chip({ label, count, on, onPress }: { label: string; count: number; on: boolean; onPress: () => void }) {
+  return (
+    <Pressable accessibilityRole="tab" accessibilityState={{ selected: on }} onPress={onPress} style={({ pressed }) => [styles.chip, on && styles.chipOn, pressed && styles.pressed]}>
+      <Text style={[styles.chipText, on && styles.chipTextOn]}>{label}</Text>
+      <View style={[styles.chipCt, on && styles.chipCtOn]}><Text style={[styles.chipCtText, on && styles.chipTextOn]}>{count}</Text></View>
+    </Pressable>
+  )
+}
+
+/** A rounded pulsing block for the loading state (the kit's Skel, clipped). */
+function SkelBox({ w, h, round }: { w: number | `${number}%`; h: number; round?: boolean }) {
+  return <View style={styles.clip}><Skel w={w} h={h} round={round} /></View>
+}
 
 /**
- * Interviews (no artboard — the drawn screens' language). Pills with counts
- * over the server's list, grouped by what the interviewer can do: live (the
- * join window is open), scorecard owed, upcoming, past. Each row: the date and
- * time, the candidate, the session line, the status, the fee, and the one
- * action — Join, Scorecard, or Details.
+ * Interviews (approved design: docs/interviewer-interviews-mockup.html, option
+ * A). Pills with counts over the server's list, grouped by what the interviewer
+ * can do: Live (the join window is open), Scorecards owed, Upcoming, Past. Each
+ * row: the date and time on the left (an hh:mm:ss clock under it when a
+ * scorecard is owed), the candidate and fee, the session line, then the status,
+ * the join countdown and the one action — Join or Rejoin, Scorecard.
  *
  * Statuses and fees are the server's own (each interview's `feePaise`; "Paid"
  * only when the scorecard is in and the interview is payable). While suspended
@@ -48,129 +121,212 @@ export function InterviewerInterviewsScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [interviews, config, Math.floor(now / 60_000)])
   const count = (g: InterviewGroup) => rows.filter((r) => r.g === g).length
-  const shown = tab === 'all' ? rows : rows.filter((r) => r.g === tab)
   const suspendedList = reasonOf(error) === 'ACCOUNT_SUSPENDED'
 
   const open = (i: InterviewerInterviewDto) => navigation.navigate('InterviewerDetail', { id: i.id })
+
+  const renderRow = ({ i, g }: { i: InterviewerInterviewDto; g: InterviewGroup }, last: boolean) => {
+    let badge: { label: string; tone: Tone }
+    let opens: string | null = null
+    let aside: { text: string; red: boolean } | null = null
+    let urgent = false
+    let action: React.ReactNode = null
+    if (g === 'live') {
+      const j = joinState(i, config, now)
+      badge = { label: i.status === 'IN_PROGRESS' ? 'In progress' : 'Join open', tone: 'green' }
+      action = <RowBtn variant="pri" label={j.kind === 'open' && j.rejoin ? 'Rejoin' : 'Join'} disabled={!!me && me.status === 'SUSPENDED'} onPress={() => navigation.navigate('InterviewerRoom', { id: i.id })} />
+    } else if (g === 'upcoming') {
+      const j = joinState(i, config, now)
+      badge = { label: 'Booked', tone: 'violet' }
+      if (j.kind === 'locked' && j.opensInSec != null && j.opensInSec < 6 * 3600) opens = `Opens in ${clock(j.opensInSec)}`
+    } else if (g === 'owed') {
+      const c = interviewClock(i, config, now)
+      urgent = c.status === 'URGENT'
+      badge = { label: 'Scorecard due', tone: urgent ? 'red' : 'violet' }
+      if (c.status === 'OPEN' || c.status === 'URGENT') aside = { text: hms(c.secondsLeft), red: urgent }
+      action = <RowBtn variant="out" label="Scorecard" onPress={() => navigation.navigate('ScorecardDraft', { id: i.id })} />
+    } else {
+      const p = pastLabel(i, config, now)
+      badge = { label: p.text, tone: p.tone }
+    }
+    const feeShown = g !== 'past' || pastLabel(i, config, now).text === 'Paid'
+    return (
+      <Pressable
+        key={i.id}
+        accessibilityRole="button"
+        accessibilityLabel={g === 'owed' ? `${i.student.name}, scorecard due` : undefined}
+        onPress={() => open(i)}
+        style={({ pressed }) => [styles.ir, !last && styles.irRule, pressed && styles.pressed]}
+      >
+        {urgent && <UrgentWash />}
+        <View style={styles.wh}>
+          <Text style={styles.dy} numberOfLines={1}>{istWeekday(i.slotStart).toUpperCase()}</Text>
+          <Text style={styles.whTime} numberOfLines={1}>{istTime(i.slotStart)}</Text>
+          {aside && <Text accessibilityLabel="Left to submit" style={[styles.ck, aside.red && { color: color.danger }]} numberOfLines={1}>{aside.text}</Text>}
+        </View>
+        <View style={styles.grow}>
+          <View style={styles.nl}>
+            <Text style={styles.nmx} numberOfLines={1}>{i.student.name}</Text>
+            <Text style={styles.fe}>{feeShown ? formatPaise(i.feePaise) : '—'}</Text>
+          </View>
+          <Text style={styles.sub} numberOfLines={1}>{sessionLine({ tier: i.tier, domain: i.domain, languages: i.student.languages, language: i.language })}</Text>
+          <View style={styles.mt}>
+            <Pill label={badge.label} tone={badge.tone} />
+            {!!opens && <Text style={styles.ln} numberOfLines={1}>{opens.toUpperCase()}</Text>}
+            {action}
+          </View>
+        </View>
+      </Pressable>
+    )
+  }
+
+  const card = (list: typeof rows) => <View style={styles.ow}>{list.map((r, k) => renderRow(r, k === list.length - 1))}</View>
 
   let body: React.ReactNode
   if (suspendedList) {
     const owed = me?.scorecardsOwed?.rows ?? []
     body = (
-      <View style={styles.pad}>
-        <IvLabel>SCORECARDS OWED</IvLabel>
-        {owed.length === 0 ? <Text style={[text.uiSm, styles.muted]}>None to write.</Text> : owed.map((r) => (
-          <Pressable key={r.interviewId} accessibilityRole="button" onPress={() => navigation.navigate('ScorecardDraft', { id: r.interviewId })} style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
-            <View style={styles.grow}>
-              <Text style={text.uiBaseSemi}>{r.student.name}</Text>
-              <Text style={[text.uiXs, styles.muted]}>{[r.tier, r.domain].filter(Boolean).join(' · ')}</Text>
-            </View>
-            <EmBadge label={r.overdue ? 'Closed' : 'Scorecard due'} tone={r.overdue ? 'red' : 'violet'} small />
-          </Pressable>
-        ))}
+      <View style={styles.stack}>
+        <View style={styles.oh}><Text accessibilityRole="header" style={styles.ohTitle}>Scorecards owed</Text></View>
+        {owed.length === 0 ? <Text style={styles.nonetxt}>None to write.</Text> : (
+          <View style={styles.ow}>
+            {owed.map((r, k) => {
+              const urgent = owedClock(r, config, now).status === 'URGENT'
+              return (
+                <Pressable key={r.interviewId} accessibilityRole="button" onPress={() => navigation.navigate('ScorecardDraft', { id: r.interviewId })} style={({ pressed }) => [styles.ir, styles.irFlex, k < owed.length - 1 && styles.irRule, pressed && styles.pressed]}>
+                  {urgent && <UrgentWash />}
+                  <View style={styles.grow}>
+                    <Text style={[styles.nmx, r.overdue && { color: color.textSecondary }]} numberOfLines={1}>{r.student.name}</Text>
+                    <Text style={styles.sub} numberOfLines={1}>{[r.tier, r.domain].filter(Boolean).join(' · ')}</Text>
+                  </View>
+                  <Pill label={r.overdue ? 'Closed' : 'Scorecard due'} tone={r.overdue ? 'red' : urgent ? 'red' : 'violet'} />
+                </Pressable>
+              )
+            })}
+          </View>
+        )}
+        <Text style={styles.note}>While suspended the server refuses the interview list, so the page falls back to the owed scorecards.</Text>
       </View>
     )
   } else if (interviews === null && !error) {
-    body = <ActivityIndicator color={color.textSubtle} style={styles.loading} />
-  } else if (error && !interviews) {
-    body = <View style={styles.pad}><EmError title="Couldn’t load your interviews." body={error.message} action={<Button variant="secondary" size="pair" icon="refresh" label="Try again" onPress={() => { refresh() }} />} /></View>
-  } else if (rows.length === 0) {
     body = (
-      <View style={[styles.pad, styles.center]}>
-        <EmEmpty icon="cal" title="No interviews yet." body="Students book the hours you publish. Open more hours to be booked sooner." action={<Button variant="primary" size="pair" label="Open more hours" onPress={() => navigation.navigate('InterviewerAvailability')} />} />
-      </View>
+      <>
+        <View style={styles.chips}>{[0, 1, 2, 3].map((k) => <SkelBox key={k} w={96} h={40} round />)}</View>
+        <View style={[styles.stack, styles.padTop]} accessibilityLabel="Loading your interviews">
+          <View style={styles.ow}>
+            {[0, 1, 2, 3].map((k) => (
+              <View key={k} style={[styles.ir, k < 3 && styles.irRule]}>
+                <View style={[styles.wh, styles.skelWh]}><Skel w="90%" h={11} /><Skel w="100%" h={15} /></View>
+                <View style={[styles.grow, styles.skelGrow]}><Skel w="55%" h={16} /><Skel w="75%" h={13} /><Skel w="40%" h={20} round /></View>
+              </View>
+            ))}
+          </View>
+        </View>
+      </>
     )
+  } else if (error && !interviews) {
+    body = <StateBlock icon="alert" title="Couldn’t load your interviews." body={error.message} action="Try again" onAction={() => { refresh() }} />
+  } else if (rows.length === 0) {
+    body = <StateBlock icon="cal" title="No interviews yet." body="Students book the hours you publish. Open more hours to be booked sooner." action="Open more hours" onAction={() => navigation.navigate('InterviewerAvailability')} />
   } else {
+    const items: { key: Tab; label: string; n: number }[] = [
+      { key: 'all', label: 'All', n: rows.length },
+      ...(count('live') ? [{ key: 'live' as Tab, label: 'Live', n: count('live') }] : []),
+      { key: 'upcoming', label: 'Upcoming', n: count('upcoming') },
+      { key: 'owed', label: 'Owed', n: count('owed') },
+      { key: 'past', label: 'Past', n: count('past') },
+    ]
+    const groups = (['live', 'owed', 'upcoming', 'past'] as InterviewGroup[]).filter((g) => count(g))
+    const owedUrgent = rows.some((r) => r.g === 'owed' && interviewClock(r.i, config, now).status === 'URGENT')
+    const shown = rows.filter((r) => r.g === tab)
     body = (
-      <FlatList
-        data={shown}
-        keyExtractor={(r) => r.i.id}
-        contentContainerStyle={styles.list}
-        ItemSeparatorComponent={Gap}
-        ListHeaderComponent={
-          <EmPills<Tab>
-            items={[
-              { key: 'all', label: 'All', count: rows.length },
-              ...(count('live') ? [{ key: 'live' as Tab, label: 'Live', count: count('live') }] : []),
-              { key: 'upcoming', label: 'Upcoming', count: count('upcoming') },
-              { key: 'owed', label: 'Owed', count: count('owed') },
-              { key: 'past', label: 'Past', count: count('past') },
-            ]}
-            value={tab}
-            onChange={setTab}
-          />
-        }
-        ListHeaderComponentStyle={styles.pillsWrap}
-        ListEmptyComponent={<Text style={[text.uiMd, styles.muted, styles.none]}>Nothing here.</Text>}
-        refreshControl={<RefreshControl refreshing={refreshing} tintColor={color.textSubtle} onRefresh={async () => { setRefreshing(true); await refresh(); setRefreshing(false) }} />}
-        renderItem={({ item: { i, g } }) => {
-          let badge: { label: string; tone: EmTone }
-          let line: string | null = null
-          let action: React.ReactNode = null
-          if (g === 'live') {
-            const j = joinState(i, config, now)
-            badge = { label: i.status === 'IN_PROGRESS' ? 'In progress' : 'Join open', tone: 'green' }
-            action = <Button variant="primary" size="sm" label={j.kind === 'open' && j.rejoin ? 'Rejoin' : 'Join'} disabled={!!me && me.status === 'SUSPENDED'} onPress={() => navigation.navigate('InterviewerRoom', { id: i.id })} />
-          } else if (g === 'upcoming') {
-            const j = joinState(i, config, now)
-            badge = { label: 'Booked', tone: 'violet' }
-            if (j.kind === 'locked' && j.opensInSec != null && j.opensInSec < 6 * 3600) line = `Join opens in ${clock(j.opensInSec)}`
-          } else if (g === 'owed') {
-            const c = interviewClock(i, config, now)
-            badge = { label: 'Scorecard due', tone: c.status === 'URGENT' ? 'red' : 'violet' }
-            if (c.status === 'OPEN' || c.status === 'URGENT') line = `${hms(c.secondsLeft)} left to submit`
-            action = <Button variant="secondary" size="sm" label="Scorecard" onPress={() => navigation.navigate('ScorecardDraft', { id: i.id })} />
-          } else {
-            const p = pastLabel(i, config, now)
-            badge = { label: p.text, tone: p.tone }
-          }
-          const feeShown = g !== 'past' || pastLabel(i, config, now).text === 'Paid'
-          return (
-            <Pressable accessibilityRole="button" onPress={() => open(i)} style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
-              <View style={styles.when}>
-                <Text style={[text.metaSm, styles.muted, styles.mono]}>{istWeekday(i.slotStart).toUpperCase()}</Text>
-                <Text style={text.uiMdSemi}>{istTime(i.slotStart)}</Text>
+      <>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} accessibilityRole="tablist">
+          {items.map((it) => <Chip key={it.key} label={it.label} count={it.n} on={it.key === tab} onPress={() => setTab(it.key)} />)}
+        </ScrollView>
+        <View style={[styles.stack, styles.padTop]}>
+          {tab === 'all' ? groups.map((g) => (
+            <React.Fragment key={g}>
+              <View style={styles.oh}>
+                <Text accessibilityRole="header" style={styles.ohTitle}>{GROUP_NAME[g]}</Text>
+                <Count n={count(g)} red={g === 'owed' && owedUrgent} />
               </View>
-              <View style={styles.grow}>
-                <Text style={text.uiBaseSemi} numberOfLines={1}>{i.student.name}</Text>
-                <Text style={[text.uiXs, styles.muted]} numberOfLines={1}>{sessionLine({ tier: i.tier, domain: i.domain, languages: i.student.languages, language: i.language })}</Text>
-                {!!line && <Text style={[text.metaSm, styles.accentText, styles.mono]}>{line.toUpperCase()}</Text>}
-                <View style={styles.meta}>
-                  <EmBadge label={badge.label} tone={badge.tone} small />
-                  <Text style={[text.metaBase, styles.muted]}>{feeShown ? formatPaise(i.feePaise) : '—'}</Text>
-                </View>
-              </View>
-              {action}
-            </Pressable>
-          )
-        }}
-      />
+              {card(rows.filter((r) => r.g === g))}
+            </React.Fragment>
+          )) : shown.length ? card(shown) : <Text style={styles.nonetxt}>Nothing here.</Text>}
+        </View>
+      </>
     )
   }
 
   return (
-    <InterviewerShell title="Interviews" sub={interviews ? `${count('upcoming') + count('live')} UPCOMING · ${count('owed')} SCORECARDS OWED` : undefined} scroll={false}>
-      {body}
+    <InterviewerShell bar="brand" scroll={false}>
+      <ScrollView
+        style={styles.grow}
+        contentContainerStyle={styles.page}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} tintColor={color.textSubtle} onRefresh={async () => { setRefreshing(true); await refresh(); setRefreshing(false) }} />}
+      >
+        <View style={styles.head}><Text accessibilityRole="header" style={styles.title}>Interviews</Text></View>
+        {body}
+      </ScrollView>
     </InterviewerShell>
   )
 }
 
-const Gap = () => <View style={styles.gap} />
-
 const styles = StyleSheet.create({
-  grow: { flex: 1, minWidth: 0, gap: space['2xs'] + 1 },
   pressed: { opacity: opacity.pressed },
-  muted: { color: color.textMuted },
-  accentText: { color: color.accentText },
-  mono: { letterSpacing: trackingNative.eyebrow },
-  pad: { flex: 1, paddingHorizontal: space.lg, gap: space.sm },
-  center: { justifyContent: 'center' },
-  loading: { paddingVertical: space['3xl'] },
-  none: { paddingVertical: space.xl, textAlign: 'center' },
-  pillsWrap: { marginHorizontal: -space.lg },
-  list: { paddingHorizontal: space.lg, paddingBottom: space.lg },
-  gap: { height: space.sm },
-  row: { flexDirection: 'row', alignItems: 'center', gap: space.md, borderRadius: radius.panel, backgroundColor: color.surface, borderWidth: borderWidth.thin, borderColor: color.border, paddingVertical: space.md, paddingHorizontal: spaceHalf['3.5'] },
-  when: { width: height.fab + space.md, gap: space['2xs'] },
-  meta: { flexDirection: 'row', alignItems: 'center', gap: space.sm, marginTop: space['2xs'] },
+  clip: { overflow: 'hidden' },
+  grow: { flex: 1, minWidth: 0 },
+  page: { paddingBottom: space.lg },
+  head: { paddingHorizontal: 20, paddingTop: 6, paddingBottom: 14 },
+  title: { fontFamily: FF.bodyBold, fontSize: 30, lineHeight: 31.5, letterSpacing: -1.2, color: color.text },
+  stack: { paddingHorizontal: 20, gap: 14 },
+  padTop: { marginTop: 14 },
+
+  chips: { flexDirection: 'row', gap: 8, paddingHorizontal: 20, paddingBottom: 4 },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 7, height: 40, paddingLeft: 13, paddingRight: 7, borderRadius: 99, backgroundColor: color.surface, borderWidth: borderWidth.thin, borderColor: color.border },
+  chipOn: { backgroundColor: color.accent, borderColor: color.accent },
+  chipText: { fontFamily: FF.bodySemiBold, fontSize: 14.5, color: color.textSecondary },
+  chipTextOn: { color: color.textInverse },
+  chipCt: { minWidth: 22, height: 22, paddingHorizontal: 6, borderRadius: 99, backgroundColor: color.surfaceMuted, alignItems: 'center', justifyContent: 'center' },
+  chipCtOn: { backgroundColor: 'rgba(255, 255, 255, 0.2)' },
+  chipCtText: { fontFamily: FF.bodySemiBold, fontSize: 12.5, color: color.textMuted },
+
+  oh: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, paddingTop: 6, paddingHorizontal: 2 },
+  ohTitle: { fontFamily: FF.bodyBold, fontSize: 19, letterSpacing: -0.57, color: color.text },
+  ct: { minWidth: 28, height: 28, borderRadius: 14, paddingHorizontal: 10, backgroundColor: color.accentSoft, alignItems: 'center', justifyContent: 'center' },
+  ctText: { fontFamily: FF.bodySemiBold, fontSize: 13, color: color.accentHover },
+
+  ow: { backgroundColor: color.surface, borderWidth: borderWidth.thin, borderColor: color.border, borderRadius: 20, overflow: 'hidden' },
+  ir: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingVertical: 8, paddingHorizontal: 16 },
+  irFlex: { alignItems: 'center' },
+  irRule: { borderBottomWidth: borderWidth.thin, borderBottomColor: color.border },
+  wh: { width: 86, gap: 2, paddingTop: 1 },
+  skelWh: { gap: 6 },
+  skelGrow: { gap: 8 },
+  dy: { fontFamily: FF.monoMedium, fontSize: 11.5, letterSpacing: 0, color: color.textMuted },
+  whTime: { fontFamily: FF.bodySemiBold, fontSize: 14.5, letterSpacing: -0.145, color: color.text },
+  ck: { fontFamily: FF.monoMedium, fontSize: 13, marginTop: 1, color: color.accentHover },
+  nl: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 },
+  nmx: { flexShrink: 1, fontFamily: FF.bodySemiBold, fontSize: 16.5, lineHeight: 20.6, letterSpacing: -0.33, color: color.text },
+  fe: { fontFamily: FF.monoMedium, fontSize: 13, color: color.textSecondary },
+  sub: { fontFamily: FF.body, fontSize: 14, lineHeight: 19, color: color.textMuted },
+  mt: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 3, minHeight: 26 },
+  ln: { flexShrink: 1, fontFamily: FF.monoMedium, fontSize: 13, letterSpacing: 0.52, color: color.accentHover },
+
+  bd: { flexDirection: 'row', alignItems: 'center', borderRadius: 99, paddingVertical: 3, paddingHorizontal: 10 },
+  bdDot: { width: 6, height: 6, borderRadius: 3, marginRight: 6, backgroundColor: color.successFill },
+  bdText: { fontFamily: FF.bodySemiBold, fontSize: 13, lineHeight: 17, letterSpacing: -0.065 },
+
+  btn: { marginLeft: 'auto', height: 34, borderRadius: 11, paddingHorizontal: 14, alignItems: 'center', justifyContent: 'center' },
+  btnPri: { backgroundColor: color.accent },
+  btnOut: { backgroundColor: color.surface, borderWidth: 1.5, borderColor: color.borderStrong },
+  btnOff: { backgroundColor: color.surfaceMuted, borderColor: color.surfaceMuted },
+  btnText: { fontFamily: FF.bodyBold, fontSize: 14, color: color.text },
+  btnTextOn: { color: color.textInverse },
+  btnTextOff: { color: color.textSubtle },
+
+  nonetxt: { paddingVertical: 26, paddingHorizontal: 4, textAlign: 'center', fontFamily: FF.body, fontSize: 16, color: color.textMuted },
+  note: { paddingHorizontal: 4, fontFamily: FF.body, fontSize: 13, lineHeight: 18.2, color: color.textMuted },
 })

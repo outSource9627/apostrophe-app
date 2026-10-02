@@ -1,7 +1,8 @@
 import React from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { color, space, spaceHalf, radius, borderWidth, height, opacity, trackingNative } from '../../theme'
-import { Body, Button, ErrorState, text } from '../../components/ui'
+import { color, borderWidth, fontFamilyNative as FF, opacity } from '../../theme'
+import { Btn, StateBlock } from '../../components/tab/kit'
+import { Eyebrow } from '../../components/tab/flow'
 import {
   type DaySlots,
   dayChip,
@@ -31,6 +32,7 @@ export function SlotPicker({
   nextAvailableIso,
   onJumpToNext,
   loading = false,
+  bleed = 20,
   error = false,
   onRetry,
 }: {
@@ -46,27 +48,20 @@ export function SlotPicker({
   nextAvailableIso?: string | null
   onJumpToNext?: () => void
   loading?: boolean
+  /** The screen's side padding, so the day strip can run to the screen edges. */
+  bleed?: number
   /** The capacity fetch itself failed — replaces the strip and grid with the shared error state. */
   error?: boolean
   onRetry?: () => void
 }) {
   if (error) {
     return (
-      <ErrorState
+      <StateBlock
+        icon="alert"
         title="Could not load open slots."
         body="Check your connection and try again."
-        action={
-          onRetry ? (
-            <Button
-              variant="outline"
-              size="sm"
-              label="Try again"
-              // The error state's small button is 40 tall; the slop brings its tap box to the 44 floor.
-              hitSlop={(height.tap - height['control-xs']) / 2}
-              onPress={onRetry}
-            />
-          ) : undefined
-        }
+        action={onRetry ? 'Try again' : undefined}
+        onAction={onRetry}
       />
     )
   }
@@ -78,9 +73,9 @@ export function SlotPicker({
   return (
     <View style={styles.wrap}>
       {/* Day strip */}
-      <View style={styles.dayBlock}>
-        <Text style={[text.metaMd, styles.eyebrow]}>{windowLabel.toUpperCase()}</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dayStrip}>
+      <View style={[styles.dayBlock, { marginHorizontal: -bleed }]}>
+        <Eyebrow style={{ paddingHorizontal: bleed }}>{windowLabel.toUpperCase()}</Eyebrow>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.dayStrip, { paddingHorizontal: bleed }]} style={styles.dayScroll}>
           {days.map((d) => {
             const { dow, num } = dayChip(d.anchorIso)
             const on = d.key === selectedDayKey
@@ -90,11 +85,11 @@ export function SlotPicker({
                 accessibilityRole="button"
                 accessibilityState={{ selected: on }}
                 onPress={() => onSelectDay(d.key)}
-                style={({ pressed }) => [styles.day, on ? styles.dayOn : styles.dayOff, pressed && { opacity: opacity.pressed }]}
+                style={({ pressed }) => [styles.day, on ? styles.dayOn : styles.dayOff, !on && d.slots.length === 0 && styles.dayZero, pressed && { opacity: opacity.pressed }]}
               >
-                <Text style={[text.ui2xs, styles.dayDow, on && styles.onInk]}>{dow}</Text>
-                <Text style={[text.displayCard, on && styles.onInk]}>{num}</Text>
-                <Text style={[text.metaPill, styles.dayCount, on && styles.onInk]}>{d.slots.length} FREE</Text>
+                <Text style={[styles.dayDow, on && styles.onInk]}>{dow}</Text>
+                <Text style={[styles.dayNum, on && styles.onInk]}>{num}</Text>
+                <Text style={[styles.dayCount, on && styles.onInk]}>{loading ? '…' : `${d.slots.length} FREE`}</Text>
               </Pressable>
             )
           })}
@@ -103,11 +98,11 @@ export function SlotPicker({
 
       <View style={styles.slots}>
         <View style={styles.gridHead}>
-          <Text style={text.uiMdSemi}>{headingIso ? `${fmtLongDate(headingIso)}` : 'Choose a day'}</Text>
-          <Text style={[text.metaMd, styles.subtle]}>IST</Text>
+          <Text style={styles.gridTitle}>{headingIso ? `${fmtLongDate(headingIso)}` : 'Choose a day'}</Text>
+          <Text style={styles.mono}>IST</Text>
         </View>
 
-        {note ? <Body size="xs" tone="muted">{note}</Body> : null}
+        {note ? <Text style={styles.xs}>{note}</Text> : null}
 
         {loading ? (
           <View style={styles.grid}>
@@ -119,8 +114,8 @@ export function SlotPicker({
           groups.map((g) => (
             <View key={g.name} style={styles.group}>
               <View style={styles.groupHead}>
-                <Text style={text.uiMdSemi}>{g.name}</Text>
-                <Text style={[text.metaMd, styles.subtle]}>{g.range}</Text>
+                <Text style={styles.groupName}>{g.name}</Text>
+                <Text style={styles.monoSm}>{g.range}</Text>
               </View>
               <View style={styles.grid}>
                 {g.slots.map((s) => {
@@ -136,19 +131,19 @@ export function SlotPicker({
           ))
         ) : (
           <View style={styles.emptyDay}>
-            <Text style={text.displayXs}>Nobody is free on {headingIso ? weekdayLong(headingIso) : 'that day'}.</Text>
-            <Body size="sm" tone="muted">
+            <Text style={styles.emptyTitle}>Nobody is free on {headingIso ? weekdayLong(headingIso) : 'that day'}.</Text>
+            <Text style={styles.emptyBody}>
               Every interviewer who matches your tier, your language and your field is already booked
               {headingIso ? ' that day' : ' in range'}.
-            </Body>
+            </Text>
             {nextAvailableIso ? (
               <View style={styles.next}>
-                <Text style={[text.metaMd, styles.subtle]}>NEXT AVAILABLE</Text>
-                <Text style={text.uiMdSemi}>{fmtShortDate(nextAvailableIso)} · {fmtTime(nextAvailableIso)} IST</Text>
+                <Eyebrow>NEXT AVAILABLE</Eyebrow>
+                <Text style={styles.nextText}>{fmtShortDate(nextAvailableIso)} · {fmtTime(nextAvailableIso)} IST</Text>
               </View>
             ) : null}
             {nextAvailableIso && onJumpToNext ? (
-              <Button variant="outline" size="block" full label={`Show ${fmtLongDate(nextAvailableIso)}`} onPress={onJumpToNext} />
+              <Btn variant="outline" label={`Show ${fmtLongDate(nextAvailableIso)}`} onPress={onJumpToNext} />
             ) : null}
           </View>
         )}
@@ -172,7 +167,7 @@ function SlotBlock({
   if (state === 'gone') {
     return (
       <View style={[styles.slot, styles.slotGone]}>
-        <Text style={[text.uiMd, styles.timeGone]}>{fmtTime(iso)}</Text>
+        <Text style={styles.timeGone}>{fmtTime(iso)}</Text>
       </View>
     )
   }
@@ -184,38 +179,46 @@ function SlotBlock({
       onPress={onPress}
       style={({ pressed }) => [styles.slot, on ? styles.slotOn : state === 'nearest' ? styles.slotNear : styles.slotOpen, pressed && { opacity: opacity.pressed }]}
     >
-      <Text style={[on ? text.uiMdSemi : text.uiMd, { color: on ? color.accentText : color.text }]}>{fmtTime(iso)}</Text>
+      <Text style={on ? styles.timeOn : styles.time}>{fmtTime(iso)}</Text>
     </Pressable>
   )
 }
 
 const styles = StyleSheet.create({
-  wrap: { gap: space.xl },
-  dayBlock: { gap: space.sm },
-  eyebrow: { color: color.textMuted, letterSpacing: trackingNative.eyebrow },
-  dayStrip: { gap: space.sm },
-  day: { width: height['day-card'], borderRadius: radius.panel, padding: spaceHalf['2.5'], gap: space['2xs'] },
-  dayOn: { backgroundColor: color.ink, borderWidth: borderWidth.medium, borderColor: color.ink },
+  wrap: { gap: 14 },
+  dayBlock: { gap: 8 },
+  dayScroll: { flexGrow: 0 },
+  dayStrip: { gap: 8, paddingBottom: 2 },
+  day: { width: 72, borderRadius: 18, padding: 10, gap: 2 },
+  dayOn: { backgroundColor: color.ink, borderWidth: borderWidth.medium, borderColor: color.ink, padding: 9 },
   dayOff: { backgroundColor: color.surface, borderWidth: borderWidth.thin, borderColor: color.border },
-  dayDow: { color: color.textMuted },
-  dayCount: { color: color.textSubtle },
+  dayZero: { opacity: 0.55 },
+  dayDow: { fontFamily: FF.body, fontSize: 11, color: color.textMuted },
+  dayNum: { fontFamily: FF.bodySemiBold, fontSize: 20, lineHeight: 25, color: color.text },
+  dayCount: { fontFamily: FF.monoMedium, fontSize: 9.5, letterSpacing: 0.76, color: color.textSubtle },
   onInk: { color: color.textInverse },
-  slots: { gap: spaceHalf['3.5'] },
-  gridHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: space.md },
-  subtle: { color: color.textSubtle },
-  group: { gap: spaceHalf['2.5'] },
-  groupHead: { flexDirection: 'row', alignItems: 'baseline', gap: space.sm },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
-  slot: { width: '31.5%', flexGrow: 1, height: height.control, borderRadius: radius.tile, alignItems: 'center', justifyContent: 'center' },
+  slots: { gap: 14 },
+  gridHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 },
+  gridTitle: { fontFamily: FF.bodySemiBold, fontSize: 16, letterSpacing: -0.16, color: color.text },
+  mono: { fontFamily: FF.monoMedium, fontSize: 11, letterSpacing: 0.88, textTransform: 'uppercase', color: color.textMuted },
+  monoSm: { fontFamily: FF.monoMedium, fontSize: 10.5, letterSpacing: 0.84, textTransform: 'uppercase', color: color.textMuted },
+  xs: { fontFamily: FF.body, fontSize: 12.5, lineHeight: 17.5, color: color.textMuted },
+  group: { gap: 8 },
+  groupHead: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
+  groupName: { fontFamily: FF.bodySemiBold, fontSize: 15, color: color.text },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  slot: { width: '31.5%', flexGrow: 1, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   slotOpen: { backgroundColor: color.surface, borderWidth: borderWidth.thin, borderColor: color.borderStrong },
   slotOn: { backgroundColor: color.accentSoft, borderWidth: borderWidth.medium, borderColor: color.accent },
   slotNear: { backgroundColor: color.surface, borderWidth: borderWidth.medium, borderColor: color.borderStrong },
-  slotGone: { borderWidth: borderWidth.thin, borderColor: color.border, borderStyle: 'dashed' },
-  slotSkeleton: { backgroundColor: color.surfaceSunken },
-  timeGone: { color: color.textDisabled, textDecorationLine: 'line-through' },
-  next: { gap: space.xs },
-  emptyDay: {
-    borderRadius: radius.lg, borderWidth: borderWidth.thin, borderColor: color.border,
-    backgroundColor: color.surface, padding: space.xl, gap: space.md,
-  },
+  slotGone: { borderWidth: borderWidth.thin, borderColor: color.borderStrong, borderStyle: 'dashed' },
+  slotSkeleton: { backgroundColor: color.surfaceMuted },
+  time: { fontFamily: FF.body, fontSize: 15, color: color.text },
+  timeOn: { fontFamily: FF.bodySemiBold, fontSize: 15, color: color.accentText },
+  timeGone: { fontFamily: FF.body, fontSize: 15, color: color.textDisabled, textDecorationLine: 'line-through' },
+  emptyDay: { gap: 10, paddingVertical: 6 },
+  emptyTitle: { fontFamily: FF.bodySemiBold, fontSize: 20, lineHeight: 25, color: color.text },
+  emptyBody: { fontFamily: FF.body, fontSize: 14, lineHeight: 20, color: color.textMuted },
+  next: { backgroundColor: color.surfaceMuted, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, gap: 3 },
+  nextText: { fontFamily: FF.bodySemiBold, fontSize: 15, color: color.text },
 })

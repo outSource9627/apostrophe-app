@@ -11,7 +11,7 @@ import type { IconName } from '../components/ui/Icon'
  * deliberately full-screen regardless of which tab they were entered from.
  */
 
-export type TabKey = 'home' | 'interviews' | 'jobs' | 'interests' | 'chat' | 'account' | 'availability' | 'wallet' | 'feed' | 'shortlist' | 'none'
+export type TabKey = 'home' | 'interviews' | 'jobs' | 'interests' | 'chat' | 'profile' | 'account' | 'availability' | 'wallet' | 'feed' | 'shortlist' | 'none'
 
 export type TabDef = {
   key: TabKey
@@ -30,7 +30,7 @@ export const STUDENT_TABS: TabDef[] = [
   { key: 'interviews', label: 'Interviews', root: 'Interviews', icon: 'calendar' },
   { key: 'jobs', label: 'Jobs', root: 'JobFeed', icon: 'briefcase' },
   { key: 'interests', label: 'Interests', root: 'Interests', icon: 'heart' },
-  { key: 'chat', label: 'Chat', root: 'Chats', icon: 'chat' },
+  { key: 'profile', label: 'Profile', root: 'Account', icon: 'person' },
 ]
 
 export const INTERVIEWER_TABS: TabDef[] = [
@@ -41,13 +41,13 @@ export const INTERVIEWER_TABS: TabDef[] = [
   { key: 'account', label: 'Account', root: 'InterviewerAccount', icon: 'person' },
 ]
 
-/** The Employer Android design's five (EM-04..29): Home lands under Feed; Account and Notifications sit behind the header. */
+/** The Employer Android design's five (EM-04..29): Home lands under Feed; Chats and Notifications sit behind the header; Profile (Account) is the last tab and never locked. */
 export const EMPLOYER_TABS: TabDef[] = [
   { key: 'feed', label: 'Feed', root: 'EmployerFeed', icon: 'feed', glyph: 'play' },
   { key: 'shortlist', label: 'Shortlist', root: 'EmployerShortlist', icon: 'star', glyph: 'bookmark', gated: true },
   { key: 'interests', label: 'Interests', root: 'EmployerInterests', icon: 'heart', glyph: 'heart', gated: true },
   { key: 'jobs', label: 'Jobs', root: 'EmployerJobs', icon: 'briefcase', glyph: 'brief', gated: true },
-  { key: 'chat', label: 'Chats', root: 'EmployerChats', icon: 'chat', glyph: 'chat', gated: true },
+  { key: 'profile', label: 'Profile', root: 'EmployerAccount', icon: 'person', glyph: 'user' },
 ]
 
 type Persona = 'student' | 'interviewer' | 'employer'
@@ -63,22 +63,21 @@ const STUDENT_ROUTES: Partial<Record<keyof RootStackParamList, TabKey>> = {
   JobApply: 'jobs',
   SavedJobs: 'jobs',
   Applications: 'jobs',
-  Chats: 'chat',
-  Thread: 'chat',
-  Connections: 'chat',
+  // Chat now opens from the header button on Home and Jobs, so it has no tab of its own: the bar stays, nothing is lit.
+  Chats: 'none',
+  Thread: 'none',
+  Connections: 'none',
   Interests: 'interests',
-  // The Student bar has no Profile tab (the design's five are Home, Interviews,
-  // Jobs, Interests, Chat) — Account is reached from the header avatar, and its
-  // routes keep the bar visible with no tab lit.
-  Account: 'account',
-  ProfileView: 'account',
-  Visibility: 'account',
-  Videos: 'account',
-  Stats: 'account',
-  DataRights: 'account',
-  Receipts: 'account',
-  NotificationSettings: 'account',
-  Notifications: 'account',
+  // Profile is the last tab (the Account screen), so it is one tap away on every page.
+  Account: 'profile',
+  ProfileView: 'profile',
+  Visibility: 'profile',
+  Videos: 'profile',
+  Stats: 'profile',
+  DataRights: 'profile',
+  Receipts: 'profile',
+  NotificationSettings: 'profile',
+  Notifications: 'profile',
 }
 
 const INTERVIEWER_ROUTES: Partial<Record<keyof RootStackParamList, TabKey>> = {
@@ -99,7 +98,7 @@ const INTERVIEWER_ROUTES: Partial<Record<keyof RootStackParamList, TabKey>> = {
   InterviewerChats: 'account',
 }
 
-// Routes the design draws without a tab bar (Account, Notifications, the job
+// Routes the design draws without a tab bar (Notifications, the job
 // editor, the applicant, a chat thread, documents and status) are left out, so
 // the bar hides there. Company profile draws the bar with nothing lit.
 const EMPLOYER_ROUTES: Partial<Record<keyof RootStackParamList, TabKey>> = {
@@ -112,8 +111,10 @@ const EMPLOYER_ROUTES: Partial<Record<keyof RootStackParamList, TabKey>> = {
   EmployerJobs: 'jobs',
   EmployerJobDetail: 'jobs',
   JobApplications: 'jobs',
-  EmployerChats: 'chat',
-  EmployerConnections: 'chat',
+  EmployerAccount: 'profile',
+  // Chat opens from the header button, so it has no tab of its own: the bar stays, nothing is lit.
+  EmployerChats: 'none',
+  EmployerConnections: 'none',
 }
 
 /** Which persona's bar, and which tab, a given route name activates — or `null` to hide the bar entirely. */

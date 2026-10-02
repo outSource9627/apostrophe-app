@@ -268,6 +268,22 @@ export async function postSwipe(candidateId: string, direction: 'RIGHT' | 'LEFT'
   return api.post<SwipeResult>('/employers/swipes', { candidateId, direction })
 }
 
+/** Fresh signed film, poster and photo links for one card the feed already dealt today. */
+export interface CardMedia {
+  id: string
+  streamUrl: string | null
+  posterUrl: string | null
+  photoUrl: string | null
+}
+
+/**
+ * POST /employers/feed/media — re-signs the films of cards dealt TODAY, free (no
+ * card is charged). A card that was not dealt today is simply absent. At most 40 ids.
+ */
+export async function fetchCardMedia(ids: string[]): Promise<{ items: CardMedia[] }> {
+  return api.post<{ items: CardMedia[] }>('/employers/feed/media', { ids: ids.slice(0, 40) })
+}
+
 export async function undoLastSwipe(): Promise<{ undone: boolean }> {
   return api.del<{ undone: boolean }>('/employers/swipes')
 }

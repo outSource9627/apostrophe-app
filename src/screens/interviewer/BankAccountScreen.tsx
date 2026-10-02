@@ -3,11 +3,8 @@ import { StyleSheet, Text } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useQueryClient } from '@tanstack/react-query'
-import { color, space } from '../../theme'
-import { Input, text } from '../../components/ui'
-import { InterviewerShell } from '../../components/interviewer/InterviewerShell'
-import { IvAction, IvCard, IvLabel } from '../../components/interviewer/iv'
-import { EmField } from '../../components/employer/form'
+import { color, fontFamilyNative as FF } from '../../theme'
+import { PageFrame, PBtn, WCard, WField, WInput, k } from './walletKit'
 import { ApiClientError } from '../../lib/api'
 import { getBank, saveBank, type BankDto } from '../../lib/api/interviewer'
 import { INTERVIEWER_KEY } from '../../lib/interviewer/useInterviewer'
@@ -77,38 +74,38 @@ export function BankAccountScreen() {
     }
   }
 
-  const err = (k: keyof typeof errs) => (tried ? errs[k] : undefined)
+  const err = (key: keyof typeof errs) => (tried ? errs[key] : undefined)
 
   return (
-    <InterviewerShell back={() => navigation.goBack()} title="Payout account" sub="Where withdrawals are paid" contentGap="lg" footer={<IvAction label={busy ? 'Saving…' : current ? 'Replace account' : 'Save account'} tone={busy ? 'off' : 'accent'} onPress={busy ? undefined : () => { save() }} />}>
+    <PageFrame onBack={() => navigation.goBack()} title="Payout account" sub="Where withdrawals are paid" footer={<PBtn on={!busy} label={busy ? 'Saving…' : current ? 'Replace account' : 'Save account'} onPress={busy ? undefined : () => { save() }} />}>
       {!!current && (
-        <IvCard>
-          <IvLabel>SAVED NOW</IvLabel>
-          <Text style={text.uiMdSemi}>{`${current.accountHolder} · •••• ${current.accountNumberLast4}`}</Text>
-          <Text style={[text.uiXs, styles.muted]}>{`IFSC ${current.ifsc}${current.panLast4 ? ` · PAN •••• ${current.panLast4}` : ''}`}</Text>
-        </IvCard>
+        <WCard gap={4}>
+          <Text style={s.lbl}>Saved now</Text>
+          <Text style={k.nmx}>{`${current.accountHolder} · •••• ${current.accountNumberLast4}`}</Text>
+          <Text style={k.sub}>{`IFSC ${current.ifsc}${current.panLast4 ? ` · PAN •••• ${current.panLast4}` : ''}`}</Text>
+        </WCard>
       )}
-      {!!notice && <Text style={[text.uiSm, styles.secondary]}>{notice}</Text>}
-      <EmField label="Name on the account" error={err('holder')}>
-        <Input value={holder} onChangeText={setHolder} autoCapitalize="words" invalid={!!err('holder')} />
-      </EmField>
-      <EmField label="Account number" error={err('account')}>
-        <Input value={account} onChangeText={(v) => setAccount(v.replace(/\D/g, ''))} keyboardType="number-pad" secureTextEntry invalid={!!err('account')} />
-      </EmField>
-      <EmField label="Confirm the account number" error={err('confirm')}>
-        <Input value={confirm} onChangeText={(v) => setConfirm(v.replace(/\D/g, ''))} keyboardType="number-pad" invalid={!!err('confirm')} />
-      </EmField>
-      <EmField label="IFSC" error={err('ifsc')}>
-        <Input value={ifsc} onChangeText={(v) => setIfsc(v.toUpperCase().replace(/[^A-Z0-9]/g, ''))} autoCapitalize="characters" maxLength={11} invalid={!!err('ifsc')} />
-      </EmField>
-      <EmField label="PAN" hint="Asked every time: the platform stores it encrypted and never shows it back." error={err('pan')}>
-        <Input value={pan} onChangeText={(v) => setPan(v.toUpperCase().replace(/[^A-Z0-9]/g, ''))} autoCapitalize="characters" maxLength={10} invalid={!!err('pan')} />
-      </EmField>
-    </InterviewerShell>
+      {!!notice && <Text style={s.notice}>{notice}</Text>}
+      <WField label="Name on the account" error={err('holder')}>
+        <WInput value={holder} onChangeText={setHolder} autoCapitalize="words" bad={!!err('holder')} />
+      </WField>
+      <WField label="Account number" error={err('account')}>
+        <WInput value={account} onChangeText={(v) => setAccount(v.replace(/\D/g, ''))} keyboardType="number-pad" secureTextEntry bad={!!err('account')} />
+      </WField>
+      <WField label="Confirm the account number" error={err('confirm')}>
+        <WInput value={confirm} onChangeText={(v) => setConfirm(v.replace(/\D/g, ''))} keyboardType="number-pad" bad={!!err('confirm')} />
+      </WField>
+      <WField label="IFSC" error={err('ifsc')}>
+        <WInput value={ifsc} onChangeText={(v) => setIfsc(v.toUpperCase().replace(/[^A-Z0-9]/g, ''))} autoCapitalize="characters" maxLength={11} bad={!!err('ifsc')} />
+      </WField>
+      <WField label="PAN" hint="Asked every time: the platform stores it encrypted and never shows it back." error={err('pan')}>
+        <WInput value={pan} onChangeText={(v) => setPan(v.toUpperCase().replace(/[^A-Z0-9]/g, ''))} autoCapitalize="characters" maxLength={10} bad={!!err('pan')} />
+      </WField>
+    </PageFrame>
   )
 }
 
-const styles = StyleSheet.create({
-  muted: { color: color.textMuted },
-  secondary: { color: color.textSecondary, marginTop: space['2xs'] },
+const s = StyleSheet.create({
+  lbl: { fontFamily: FF.bodyMedium, fontSize: 14, color: color.textMuted },
+  notice: { fontFamily: FF.body, fontSize: 14.5, lineHeight: 20, color: color.textSecondary },
 })

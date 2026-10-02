@@ -3,8 +3,9 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../../lib/api'
-import { borderWidth, color, height, radius, space, spaceHalf, trackingNative } from '../../theme'
-import { Button, ErrorState, ScreenHeader, Skeleton, StickyFooter, text } from '../../components/ui'
+import { borderWidth, color, fontFamilyNative as FF, radius } from '../../theme'
+import { Btn, Skel, StateBlock } from '../../components/tab/kit'
+import { Big, Eyebrow, FlowFooter, FlowHeader } from '../../components/tab/flow'
 
 interface Me { paid: boolean; qualification?: string; unusedCount?: number }
 interface Config { tiers: { tier: string; amountPaise: number; durationMin: number }[]; qualifications: { value: string; tier: string }[] }
@@ -23,17 +24,17 @@ export function PricingScreen({ onBack, onPay, onBook }: { onBack: () => void; o
   const cfg = useQuery({ queryKey: ['config'], queryFn: () => api.get<Config>('/config') })
 
   const frame = (child: React.ReactNode) => (
-    <View style={[styles.page, { paddingTop: insets.top }]}><ScreenHeader title="Buy an interview" onBack={onBack} />{child}</View>
+    <View style={[styles.page, { paddingTop: insets.top }]}><FlowHeader title="Buy an interview" onBack={onBack} />{child}</View>
   )
-  if (me.isPending || cfg.isPending) return frame(<View style={styles.body}><Skeleton lines={4} /></View>)
+  if (me.isPending || cfg.isPending) return frame(<View style={styles.body}><Skel w="70%" h={12} /><Skel w="100%" h={72} /><Skel w="100%" h={72} /><Skel w="100%" h={72} /></View>)
   if (me.isError || cfg.isError) return frame(
-    <View style={styles.centre}>
-      <ErrorState
-        title="Could not load pricing."
-        body="Nothing was charged. Check your connection and try again."
-        action={<Button variant="outline" size="sm" label="Try again" onPress={() => { me.refetch(); cfg.refetch() }} />}
-      />
-    </View>,
+    <StateBlock
+      icon="alert"
+      title="Could not load pricing."
+      body="Nothing was charged. Check your connection and try again."
+      action="Try again"
+      onAction={() => { me.refetch(); cfg.refetch() }}
+    />,
   )
 
   const myTier = cfg.data!.qualifications.find((q) => q.value === me.data!.qualification)?.tier
@@ -46,7 +47,7 @@ export function PricingScreen({ onBack, onPay, onBook }: { onBack: () => void; o
   return frame(
     <>
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
-        <Text style={[text.metaMd, styles.eyebrow]}>YOUR TIER IS SET BY YOUR HIGHEST QUALIFICATION</Text>
+        <Eyebrow style={styles.eyebrow}>YOUR TIER IS SET BY YOUR HIGHEST QUALIFICATION</Eyebrow>
 
         {cfg.data!.tiers.map((t) => {
           const on = t.tier === myTier
@@ -57,81 +58,73 @@ export function PricingScreen({ onBack, onPay, onBook }: { onBack: () => void; o
               </View>
               <View style={styles.tierText}>
                 <View style={styles.tierTitle}>
-                  <Text style={text.uiBaseSemi}>{t.tier} · {TIER_NAME[t.tier] ?? t.tier}</Text>
+                  <Text style={styles.tierName}>{t.tier} · {TIER_NAME[t.tier] ?? t.tier}</Text>
                   {on && (
                     <View style={styles.yours}>
-                      <Text style={[text.metaXs, styles.yoursText]}>YOURS</Text>
+                      <Text style={styles.yoursText}>YOURS</Text>
                     </View>
                   )}
                 </View>
-                <Text style={[text.uiXs, styles.tierNote]}>{t.durationMin}-minute interview</Text>
+                <Text style={styles.tierNote}>{t.durationMin}-minute interview</Text>
               </View>
-              <Text style={text.displaySm}>{rupees(t.amountPaise)}</Text>
+              <Big>{rupees(t.amountPaise)}</Big>
             </View>
           )
         })}
 
         {mine && (
           <View style={styles.sum}>
-            <Text style={[text.uiMd, styles.tierNote]}>Interview credit</Text>
-            <Text style={[text.metaMd, styles.sumValue]}>{rupees(mine.amountPaise)}</Text>
+            <Text style={styles.sumLabel}>Interview credit</Text>
+            <Text style={styles.sumValue}>{rupees(mine.amountPaise)}</Text>
           </View>
         )}
       </ScrollView>
 
-      <StickyFooter>
+      <FlowFooter>
         <View style={styles.total}>
-          <Text style={text.uiMdSemi}>Total</Text>
-          <Text style={text.displaySm}>{mine ? rupees(mine.amountPaise) : '—'}</Text>
+          <Text style={styles.totalLabel}>Total</Text>
+          {mine ? <Big>{rupees(mine.amountPaise)}</Big> : <Big>—</Big>}
         </View>
         {needsCredit ? (
           <>
-            <Button variant="primary" size="lg" full label="Pay and book my interview" onPress={onPay} />
-            <Text style={[text.metaXs, styles.secured]}>Secured by Razorpay · UPI, cards, netbanking</Text>
+            <Btn label="Pay and book my interview" onPress={onPay} />
+            <Text style={styles.secured}>Secured by Razorpay · UPI, cards, netbanking</Text>
           </>
         ) : (
-          <Button
-            variant="primary"
-            size="lg"
-            full
-            label="Book an interview"
-            onPress={onBook}
-            reason="You already have an interview to book — nothing to pay."
-          />
+          <>
+            <Btn label="Book an interview" onPress={onBook} disabled={!onBook} />
+            <Text style={styles.secured}>You already have an interview to book — nothing to pay.</Text>
+          </>
         )}
-      </StickyFooter>
+      </FlowFooter>
     </>,
   )
 }
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.background },
-  centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  body: { paddingHorizontal: space.xl, paddingTop: space.xs, paddingBottom: space.xl, gap: spaceHalf['3.5'] },
-  eyebrow: { color: color.textMuted, letterSpacing: trackingNative.eyebrow, marginTop: space.xs },
+  body: { paddingHorizontal: 20, paddingTop: 4, paddingBottom: 20, gap: 10 },
+  eyebrow: { marginTop: 4 },
   tier: {
-    minHeight: height['tier-row'],
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spaceHalf['3.5'],
-    paddingHorizontal: space.lg,
-    paddingVertical: space.md,
-    borderRadius: radius.panel,
-    backgroundColor: color.surface,
+    minHeight: 72, flexDirection: 'row', alignItems: 'center', gap: 14,
+    paddingHorizontal: 16, paddingVertical: 12, borderRadius: 18, backgroundColor: color.surface,
   },
-  tierOn: { borderWidth: borderWidth.medium, borderColor: color.accent },
+  tierOn: { borderWidth: borderWidth.medium, borderColor: color.accent, paddingHorizontal: 15, paddingVertical: 11 },
   tierOff: { borderWidth: borderWidth.thin, borderColor: color.border },
-  radio: { width: height['radio'], height: height['radio'], borderRadius: radius.pill, borderWidth: borderWidth.accent, alignItems: 'center', justifyContent: 'center' },
+  radio: { width: 20, height: 20, borderRadius: 10, borderWidth: borderWidth.medium, alignItems: 'center', justifyContent: 'center' },
   radioOn: { borderColor: color.accent },
   radioOff: { borderColor: color.borderStrong },
-  radioDot: { width: height['status-dot'], height: height['status-dot'], borderRadius: radius.pill, backgroundColor: color.accent },
-  tierText: { flex: 1, gap: space['2xs'] },
-  tierTitle: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  tierNote: { color: color.textMuted },
-  yours: { paddingHorizontal: spaceHalf['1.5'], paddingVertical: space['2xs'], borderRadius: radius.pill, backgroundColor: color.accentSoft },
-  yoursText: { color: color.accentText },
-  sum: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: space.xs, paddingTop: spaceHalf['1.5'] },
-  sumValue: { color: color.text },
-  total: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
-  secured: { color: color.textMuted, textAlign: 'center', textTransform: 'none' },
+  radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: color.accent },
+  tierText: { flex: 1, gap: 2 },
+  tierTitle: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  tierName: { fontFamily: FF.bodySemiBold, fontSize: 15, color: color.text },
+  tierNote: { fontFamily: FF.body, fontSize: 12.5, lineHeight: 17.5, color: color.textMuted },
+  yours: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.pill, backgroundColor: color.accentSoft },
+  yoursText: { fontFamily: FF.monoMedium, fontSize: 10, letterSpacing: 1, color: color.accentText },
+  sum: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 4, paddingTop: 6 },
+  sumLabel: { fontFamily: FF.body, fontSize: 15, color: color.textMuted },
+  sumValue: { fontFamily: FF.monoMedium, fontSize: 13, color: color.text },
+  total: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  totalLabel: { fontFamily: FF.bodySemiBold, fontSize: 15, color: color.text },
+  secured: { fontFamily: FF.body, fontSize: 12, color: color.textMuted, textAlign: 'center' },
 })

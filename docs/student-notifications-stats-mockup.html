@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apostrophe App – Notifications, Settings & Your stats (4 options)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FAFAFC; --surface:#fff; --muted:#F1F3F7; --sunken:#E6E8EE;
+    --text:#0B0F1A; --text2:#3A4256; --text3:#6B7385; --text4:#8A91A2;
+    --border:#E3E6ED; --border-strong:#C9CED9;
+    --accent:#5B3DF5; --accent-soft:#EFEBFF; --accent-wash:#F7F6FF; --accent-muted:#C4B8FF; --accent-bright:#7258FF; --accent-deep:#3B2A8F;
+    --ink:#0B0F1A; --ink-raised:#151B2B;
+    --ok:#0E9F6E; --ok-text:#0B7A55; --ok-soft:#E6F7F0; --danger:#E5484D; --danger-text:#C22A30; --danger-soft:#FDECEC; --warn:#935F00; --warn-soft:#FFF5E1; --info-soft:#E8EFFF;
+    --r-md:14px; --r-lg:20px; --r-xl:28px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;box-shadow:none}
+  body{font-family:'Geist',system-ui,sans-serif;background:#E9EAF2;color:var(--text);padding:0 24px 90px}
+  button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+  button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex:none}
+  .mono{font:500 11px 'Geist Mono',monospace;letter-spacing:.14em;text-transform:uppercase}
+  .chooser{position:sticky;top:0;z-index:100;background:var(--surface);border-bottom:1px solid var(--border);margin:0 -24px 28px;padding:12px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;justify-content:center}
+  .chooser .opts{display:flex;gap:4px;background:var(--muted);border-radius:var(--r-md);padding:4px}
+  .chooser .opts button{height:40px;padding:0 22px;border-radius:11px;font-weight:700;font-size:15px;color:var(--text3)}
+  .chooser .opts button.on{background:var(--accent);color:#fff}
+  .intro{max-width:1240px;margin:0 auto 28px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:26px 30px}
+  .intro h1{font-size:28px;letter-spacing:-.035em}
+  .intro p{font-size:15px;color:var(--text3);margin-top:8px;line-height:1.5;max-width:900px}
+  .intro ul{margin:14px 0 0 18px;font-size:14px;line-height:1.7;color:var(--text2)}
+  .wrap{display:flex;flex-wrap:wrap;gap:48px;justify-content:center;max-width:1300px;margin:0 auto}
+  .cell{width:390px}.states{min-height:90px;align-content:flex-start}
+  .states{display:flex;flex-wrap:wrap;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:22px;padding:4px;margin-bottom:14px}
+  .states button{padding:8px 12px;border-radius:99px;font-size:13.5px;font-weight:600;color:var(--text3);white-space:nowrap}
+  .states button.on{background:var(--accent);color:#fff}
+  .cap{margin-top:14px}.cap b{font-size:17px;letter-spacing:-.02em;display:block}.cap span{font-size:14px;color:var(--text3);line-height:1.45;display:block;margin-top:3px}
+
+  .phone{width:390px;height:812px;background:var(--bg);border-radius:44px;border:10px solid #0B0F1A;overflow:hidden;position:relative}
+  .status{height:44px;display:flex;justify-content:space-between;align-items:center;padding:0 26px;font-size:14px;font-weight:600;position:absolute;top:0;left:0;right:0;z-index:40;pointer-events:none}
+  .status i{width:90px;height:24px;background:#0B0F1A;border-radius:14px;position:absolute;left:50%;top:8px;transform:translateX(-50%)}
+  .scroll{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none;padding-top:44px;padding-bottom:40px}
+  .scroll::-webkit-scrollbar{display:none}
+  .pill{font:500 10.5px 'Geist Mono',monospace;letter-spacing:.1em;text-transform:uppercase;border-radius:99px;padding:5px 10px;display:inline-block;white-space:nowrap}
+  .pill.ok{background:var(--ok-soft);color:var(--ok-text)}.pill.acc{background:var(--accent-soft);color:#4A2FE0}
+  .pill.warn{background:var(--warn-soft);color:var(--warn)}.pill.neutral{background:var(--muted);color:var(--text3)}
+  .pill.info{background:var(--info-soft);color:#1F4FD1}.pill.danger{background:var(--danger-soft);color:var(--danger-text)}
+  .rowc{display:flex;align-items:center;gap:12px}.grow{flex:1;min-width:0}
+  .sub{font-size:14px;color:var(--text3);line-height:1.4}
+  .pad{padding:0 20px}
+  .btn{height:46px;min-width:44px;border-radius:var(--r-md);font-weight:700;font-size:15px;padding:0 18px;display:inline-flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap}
+  .btn.pri{background:var(--accent);color:#fff}.btn.ink{background:var(--ink);color:#fff}.btn.out{border:1.5px solid var(--border-strong);background:var(--surface)}
+  .btn.full{width:100%}.btn.sm{height:40px;font-size:14px;padding:0 16px;border-radius:12px}.btn svg{width:18px}
+  .vhead{display:flex;align-items:center;gap:12px;padding:8px 14px}
+  .vhead .back{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--border);background:var(--surface);flex:none}
+  .vhead .t{flex:1;min-width:0}.vhead b{font-size:19px;letter-spacing:-.025em;display:block}
+  .vhead small{display:block;font-size:13px;color:var(--text3);margin-top:1px}
+  .link{font-size:14.5px;font-weight:600;color:var(--accent);padding:10px 4px;white-space:nowrap}
+  .seg{display:flex;background:var(--muted);border-radius:var(--r-md);padding:4px;margin:6px 20px 0}
+  .seg button{flex:1;height:40px;border-radius:11px;font-size:14.5px;font-weight:600;color:var(--text3)}
+  .seg button.on{background:var(--surface);color:var(--accent);border:1px solid var(--border)}
+  .seg button em{font-style:normal;font:500 11px 'Geist Mono',monospace;margin-left:4px;opacity:.7}
+  .chips{display:flex;gap:8px;overflow-x:auto;padding:12px 20px 4px;scrollbar-width:none}.chips::-webkit-scrollbar{display:none}
+  .chip{height:40px;padding:0 14px;border-radius:99px;border:1.5px solid var(--border);background:var(--surface);font-size:14px;font-weight:600;color:var(--text2);white-space:nowrap;flex:none}
+  .chip em{font-style:normal;font:500 11px 'Geist Mono',monospace;margin-left:5px;opacity:.7}
+  .chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg)}
+  .eyebrow{font:500 11px 'Geist Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--text3);padding:22px 24px 8px;display:flex;justify-content:space-between;align-items:center}
+  .skel{background:linear-gradient(90deg,var(--muted) 0%,#E9ECF2 50%,var(--muted) 100%);background-size:200% 100%;animation:sh 1.3s infinite linear;border-radius:18px}
+  @keyframes sh{to{background-position:-200% 0}}
+  .center{display:grid;place-items:center;text-align:center;padding:60px 36px 0}
+  .center .ic{width:68px;height:68px;border-radius:22px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;margin-bottom:16px}
+  .center .ic svg{width:30px;height:30px}
+  .center b{font-size:22px;letter-spacing:-.03em;display:block}
+  .center p{font-size:15px;color:var(--text3);margin:8px 0 20px;line-height:1.5}
+  [data-act]{cursor:pointer}
+  .toast{position:absolute;left:14px;right:14px;bottom:24px;background:var(--ink);color:#fff;border-radius:var(--r-md);padding:13px 14px;z-index:60;font-size:14px;font-weight:600;transform:translateY(20px);opacity:0;pointer-events:none;transition:.25s}
+  .toast.on{transform:none;opacity:1}
+  .foot{font-size:13px;color:var(--text4);padding:14px 24px 0;line-height:1.45}
+
+  /* toggle: ink track when on (Toggle tone ink) */
+  .tg{width:48px;height:28px;border-radius:99px;background:var(--sunken);position:relative;flex:none;transition:.15s}
+  .tg::after{content:'';position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:.15s}
+  .tg.on{background:var(--ink)}.tg.on::after{left:23px}
+  .tgwrap{min-width:44px;min-height:44px;display:grid;place-items:center}
+
+  /* notifications */
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex:none}
+  .gut{width:8px;flex:none;padding-top:7px}
+  .nrow{display:flex;gap:10px;align-items:flex-start;padding:14px 16px;border-bottom:1px solid var(--border)}
+  .nrow:last-child{border-bottom:0}
+  .nrow.u{background:var(--accent-wash)}
+  .nrow h5{font-size:16px;letter-spacing:-.01em;line-height:1.3;font-weight:500;color:var(--text3)}
+  .nrow.u h5{font-weight:600;color:var(--text)}
+  .nrow p{font-size:14px;color:var(--text3);line-height:1.4;margin-top:2px}
+  .time{font:500 11px 'Geist Mono',monospace;color:var(--text4);white-space:nowrap}
+  .ntile{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;flex:none;background:var(--muted);color:var(--text3)}
+  .ntile.u{background:var(--accent-soft);color:var(--accent)}
+  .ncard{padding:16px;display:grid;gap:12px;margin:0 20px 10px}
+  .ncard.read{background:var(--muted);border-color:transparent}
+  .ncard h5{font-size:17px;letter-spacing:-.02em;line-height:1.25;font-weight:700}
+  .ncard.read h5{font-weight:500;color:var(--text3)}
+  .ncard p{font-size:14.5px;color:var(--text2);line-height:1.45;margin-top:3px}
+  .ncard.read p{color:var(--text3)}
+  .crow{display:flex;gap:10px;align-items:center;padding:9px 20px;border-bottom:1px solid var(--border);min-height:56px}
+  .crow .k{font:500 10px 'Geist Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--text4)}
+  .crow b{font-size:15px;letter-spacing:-.01em;font-weight:600;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .crow.r b{font-weight:500;color:var(--text3)}
+  .grp{display:flex;align-items:center;gap:12px;padding:6px 20px 0}
+  .grp .gi{width:36px;height:36px;border-radius:12px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center}
+  .grp .gi svg{width:18px}
+  .grp b{font-size:17px;letter-spacing:-.02em;flex:1}
+
+  /* settings */
+  .mrow{display:flex;align-items:center;gap:14px;padding:12px 16px;min-height:64px;border-bottom:1px solid var(--border)}
+  .mrow:last-child{border-bottom:0}
+  .mrow b{font-size:16px;display:block;letter-spacing:-.01em;font-weight:600}
+  .mrow svg.chev{width:18px;color:var(--text4)}.mrow span.s{font-size:13.5px;color:var(--text3);display:block;margin-top:1px;line-height:1.35}
+  .mat{display:grid;grid-template-columns:1fr repeat(3,56px);align-items:center;padding:0 12px 0 16px;border-top:1px solid var(--border)}
+  .mat.h{border-top:0;padding-top:14px;padding-bottom:4px}
+  .mat.h span{font:500 10.5px 'Geist Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--text4);text-align:center}
+  .mat .tg{transform:scale(.88)}
+  .mat .l{padding:12px 6px 12px 0}
+  .mat b{font-size:16px;font-weight:600;letter-spacing:-.01em;display:block}
+  .mat small{font-size:12.5px;color:var(--text3);display:block;line-height:1.35;margin-top:1px}
+  .xcard{margin:0 20px 10px;overflow:hidden}
+  .xhead{display:flex;align-items:center;gap:12px;padding:14px 16px;min-height:68px}
+  .xhead b{font-size:16px;font-weight:600;display:block;letter-spacing:-.01em}.xhead span.s{font-size:13.5px;color:var(--text3);display:block;margin-top:1px}
+  .xhead svg.chev{width:18px;color:var(--text4);transition:.15s}.xcard.open .chev{transform:rotate(90deg)}
+  .xbody{display:none;padding:0 16px 14px;gap:8px;grid-template-columns:repeat(3,1fr)}.xcard.open .xbody{display:grid}
+  .cch{border:1.5px solid var(--border);border-radius:var(--r-md);min-height:64px;display:grid;place-items:center;gap:2px;padding:8px 4px;font-size:13.5px;font-weight:600;color:var(--text3);background:var(--surface)}
+  .cch svg{width:20px}.cch.on{border-color:var(--ink);background:var(--ink);color:#fff}
+  .cch small{font:500 10px 'Geist Mono',monospace;letter-spacing:.08em;text-transform:uppercase}
+  .sum{display:grid;grid-template-columns:repeat(3,1fr);margin:6px 20px 0;border:1px solid var(--border);border-radius:var(--r-lg);background:var(--surface)}
+  .sum div{padding:12px 14px;border-right:1px solid var(--border)}.sum div:last-child{border-right:0}
+  .sum small{display:block;font:500 10px 'Geist Mono',monospace;letter-spacing:.1em;color:var(--text3)}
+  .sum b{display:block;font-size:22px;margin-top:4px;letter-spacing:-.03em}
+  .sheetbg{position:absolute;inset:0;background:rgba(11,15,26,.45);z-index:70;display:none}
+  .sheetbg.on{display:block}
+  .sheet{position:absolute;left:0;right:0;bottom:0;background:var(--surface);border-radius:28px 28px 0 0;padding:18px 20px 28px;z-index:71;display:none}
+  .sheet.on{display:block}
+  .sheet .grab{width:40px;height:4px;border-radius:4px;background:var(--border-strong);margin:0 auto 14px}
+  .sheet h4{font-size:20px;letter-spacing:-.03em}
+  .srow{display:flex;align-items:center;gap:12px;padding:6px 0;border-top:1px solid var(--border);min-height:60px}
+  .srow:first-of-type{border-top:0}
+  .srow b{font-size:16px;font-weight:600;flex:1}
+  .ci{display:inline-flex;align-items:center;gap:4px;font:500 10.5px 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--text3)}
+  .ci svg{width:13px}.ci.off{color:var(--text4);text-decoration:line-through}
+
+  /* stats */
+  .figure{font-size:64px;font-weight:800;letter-spacing:-.05em;line-height:1}
+  .figure.dim{color:var(--text4)}
+  .statcard{padding:18px;display:grid;gap:6px}
+  .well{margin:14px 20px 0;background:var(--muted);border-radius:var(--r-md);padding:14px;display:grid;gap:4px}
+  .well small{font:500 11px 'Geist Mono',monospace;letter-spacing:.14em;color:var(--text3)}
+  .well span{font-size:14px;line-height:1.45;color:var(--text3)}
+  .inkcard{margin:14px 20px 0;background:var(--ink);color:#fff;border-radius:var(--r-xl);padding:22px 20px;display:grid;gap:12px;justify-items:start}
+  .inkcard h3{font-size:24px;letter-spacing:-.035em;line-height:1.1}
+  .inkcard p{font-size:14.5px;line-height:1.5;color:#B4BAC9}
+  .inkcard .pill{background:var(--ink-raised);color:var(--accent-muted)}
+  .inkcard .btn.w{background:#fff;color:var(--ink)}
+  .inkcard a{font-size:14.5px;font-weight:600;color:#B4BAC9;padding:10px 0;cursor:pointer}
+  .srow2{display:flex;align-items:center;gap:12px;padding:14px 16px;min-height:68px;border-bottom:1px solid var(--border)}
+  .srow2:last-child{border-bottom:0}.srow2 b.n{font-size:28px;font-weight:800;letter-spacing:-.04em;min-width:48px;text-align:right}
+  .srow2 .ic{width:40px;height:40px;border-radius:12px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;flex:none}
+  .srow2 .ic svg{width:20px}
+  .srow2 .lab{font-size:16px;font-weight:600;letter-spacing:-.01em}
+</style>
+</head>
+<body>
+<div class="chooser"><span class="mono" style="color:var(--accent)">Design option</span><div class="opts" id="chooser"></div><span class="sub" id="optname" style="font-size:14px"></span></div>
+
+<div class="intro">
+  <div class="mono" style="color:var(--accent)">Student app · four options per screen</div>
+  <h1>Notifications · Notification settings · Your stats</h1>
+  <p>Pick A, B, C or D at the top: all three phones switch to that layout approach. Use the switches above each phone for loading, empty and error. Everything is built from what the app already has; titles, bodies, times and counts are sample values for real fields.</p>
+  <ul>
+    <li><b>Notifications</b> (<code>NotificationRow</code>: kind, category, title, body, meta, read, createdAt; Mark all read; unread-only and category filter exist on the API; kept ninety days). Rows open their subject (chat, video resume, interview, applications, interests).</li>
+    <li><b>Settings</b> (<code>PrefRow</code>: 8 categories, Job posts hidden; Account, Payments and Interview are locked and show “All channels”, never a disabled switch; Interests, Messages, Applications and News are per-channel switches over Push, Email and In app).</li>
+    <li><b>Your stats</b> (<code>Audience</code>: shortlistCount, profileViews, openInterests, hiddenFromFeed, published). Rule 3 stays: only counts, never which employer; no chart, trend, ring, streak or badge, so the four options differ in layout and voice, not in charting.</li>
+  </ul>
+</div>
+
+<div class="wrap">
+  <div class="cell"><div class="states" id="nStates"></div><div class="phone" id="n"></div><div class="cap"><b>Notifications</b><span id="nCap"></span></div></div>
+  <div class="cell"><div class="states" id="sStates"></div><div class="phone" id="s"></div><div class="cap"><b>Notification settings</b><span id="sCap"></span></div></div>
+  <div class="cell"><div class="states" id="tStates"></div><div class="phone" id="t"></div><div class="cap"><b>Your stats</b><span id="tCap"></span></div></div>
+</div>
+
+<script>
+const I={
+ back:'<svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>',
+ alert:'<svg viewBox="0 0 24 24"><path d="M12 3l10 18H2zM12 10v5M12 18v.5"/></svg>',
+ bell:'<svg viewBox="0 0 24 24"><path d="M6 17V11a6 6 0 0112 0v6l2 2H4zM10 21h4"/></svg>',
+ chat:'<svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg>',
+ cal:'<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
+ clip:'<svg viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6zM14 3v4h4"/></svg>',
+ heart:'<svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 017-2.6A4 4 0 0119 10c0 5.6-7 10-7 10z"/></svg>',
+ user:'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>',
+ card:'<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/></svg>',
+ tag:'<svg viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1"/></svg>',
+ video:'<svg viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></svg>',
+ mail:'<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>',
+ phone:'<svg viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>',
+ inapp:'<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 9h18"/></svg>',
+ chev:'<svg class="chev" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>',
+ eye:'<svg viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+ star:'<svg viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg>',
+ lock:'<svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>'
+};
+const status=()=>`<div class="status"><span>9:41</span><i></i><span>5G ▮▮▮</span></div>`;
+const shell=el=>el.insertAdjacentHTML('beforeend','<div class="toast"></div>');
+const tts=new WeakMap();const toast=(el,m)=>{const t=el.querySelector('.toast');t.textContent=m;t.classList.add('on');clearTimeout(tts.get(el));tts.set(el,setTimeout(()=>t.classList.remove('on'),1700))};
+const switcher=(host,opts,get,set)=>{host.innerHTML=opts.map(o=>`<button class="${o[0]===get()?'on':''}" data-s="${o[0]}">${o[1]}</button>`).join('');host.querySelectorAll('button').forEach(b=>b.onclick=()=>{set(b.dataset.s);host.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b))})};
+const resync=(host,v)=>host.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.s===v));
+const skel=(n,h)=>Array.from({length:n},()=>`<div class="skel" style="height:${h}px"></div>`).join('');
+const errBlock=(t,b)=>`<div class="center"><div class="ic">${I.alert}</div><b>${t}</b><p>${b}</p><button class="btn out" data-act="retry">Try again</button></div>`;
+const head=(title,sub,right)=>`<div class="vhead"><button class="back" data-act="toast:Back" aria-label="Back">${I.back}</button><div class="t"><b>${title}</b>${sub?`<small>${sub}</small>`:''}</div>${right||''}</div>`;
+const tg=(on,act,label)=>`<span class="tgwrap" role="switch" aria-checked="${on}" aria-label="${label}" data-act="${act}"><span class="tg ${on?'on':''}"></span></span>`;
+
+let OPT=(location.hash.slice(1)||'A').toUpperCase();
+const OPTS={A:'Day-grouped',B:'By type',C:'Action cards',D:'Compact'};
+const NAMES={
+ A:{n:'A · Grouped by day (today’s structure, refined). One card per day, unread dot, Mark all read in the header.',s:'A · Matrix. Always-on group, then one grid: categories down, Push / Email / In app across.',t:'A · Big-number cards. Each count in its own card, as built today, with the “all time” line and the anonymity well.'},
+ B:{n:'B · Grouped by type with category filter chips (the API’s category filter) and per-type unread counts.',s:'B · One channel at a time. Segmented Push / Email / In app, each category has a single switch.',t:'B · A list. One panel of rows: icon, label, number. Quiet, scannable, easy to extend.'},
+ C:{n:'C · Action cards. Unread / All switch (unreadOnly), each card ends in the one action it opens.',s:'C · Per-category cards that expand to three channel buttons, with a summary strip on top.',t:'C · One sentence. The headline number is a sentence; the others follow as plain lines.'},
+ D:{n:'D · Compact list. One line per notification with a category tag; unread first, then earlier, with a count on each.',s:'D · Summary rows. Each category says which channels are on; tap for a bottom sheet of switches.',t:'D · Ink summary. A dark hero for the shortlist count, a strip for views and interests, and visibility status.'}
+};
+const ch=document.getElementById('chooser');
+ch.innerHTML=Object.keys(OPTS).map(k=>`<button data-o="${k}" class="${k===OPT?'on':''}">${k}</button>`).join('');
+ch.querySelectorAll('button').forEach(b=>b.onclick=()=>{OPT=b.dataset.o;ch.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));renderAll()});
+
+/* ====================== NOTIFICATIONS ====================== */
+const CAT={ACCOUNT:['Account and security',I.lock],PAYMENT:['Payments and receipts',I.card],INTERVIEW:['Interview scheduling',I.cal],CONNECTION:['Interests and connections',I.heart],MESSAGE:['Messages',I.chat],APPLICATION:['Job applications',I.clip],MARKETING:['News and offers',I.tag]};
+/* titles/bodies are placeholder copy: real copy comes pre-rendered from the server */
+const NOTES=[
+ {id:'n1',kind:'interview.reminder.1h',cat:'INTERVIEW',day:'Today',at:'9:12 AM',read:false,go:['InterviewDetail','View interview']},
+ {id:'n2',kind:'interview.video.published',cat:'INTERVIEW',day:'Today',at:'8:40 AM',read:false,go:['VideoResume','View video resume']},
+ {id:'n3',kind:'connection.interest.received',cat:'CONNECTION',day:'Today',at:'7:05 AM',read:false,go:['Interests','View interest']},
+ {id:'n4',kind:'message.new',cat:'MESSAGE',day:'Yesterday',at:'6:30 PM',read:true,go:['Thread','Open chat']},
+ {id:'n5',kind:'payment.failed',cat:'PAYMENT',day:'Yesterday',at:'11:02 AM',read:false,go:['Account','Open']},
+ {id:'n6',kind:'profile.video.approved',cat:'ACCOUNT',day:'28 September',at:'4:15 PM',read:true,go:['Videos','View videos']},
+ {id:'n7',kind:'application.updated',cat:'APPLICATION',day:'28 September',at:'10:20 AM',read:true,go:['Applications','View application']},
+];
+const N={state:'list',unreadOnly:false,cat:'ALL',rows:NOTES.map(x=>({...x}))};
+const ttl=r=>'Sample title';
+const bdy='Sample body line, already rendered by the server.';
+const unreadCount=()=>N.rows.filter(r=>!r.read).length;
+const nHeader=()=>head('Notifications',null,(N.state==='list'&&unreadCount())?`<button class="link" data-act="markall">Mark all read</button>`:'');
+const foot='<div class="foot">Notifications are kept for ninety days · nothing before 3 Jul 2026</div>';
+function nBody(){
+  const rows=N.rows;
+  if(N.state==='loading')return `<div class="pad" style="display:grid;gap:10px;margin-top:16px">${skel(5,86)}</div>`;
+  if(N.state==='error')return errBlock('Could not load your notifications.','Pull down or come back in a moment.');
+  if(N.state==='empty'||!rows.length)return `<div class="center"><div class="ic">${I.bell}</div><b>Nothing yet.</b><p>When an employer is interested, or your interview moves, it lands here.</p></div>`;
+  if(OPT==='A'){
+    const days=[...new Set(rows.map(r=>r.day))];
+    return days.map(d=>`<div class="eyebrow">${d}</div><div class="pad"><div class="card" style="overflow:hidden">${rows.filter(r=>r.day===d).map(r=>`<div class="nrow ${r.read?'':'u'}" data-act="open:${r.id}"><div class="gut">${r.read?'':'<div class="dot"></div>'}</div><div class="grow"><div class="rowc" style="align-items:baseline;gap:10px"><h5 class="grow">${ttl(r)}</h5><span class="time">${r.at}</span></div><p>${bdy}</p><span class="time" style="display:block;margin-top:6px;font-size:10px">${r.kind}</span></div></div>`).join('')}</div></div>`).join('')+foot;
+  }
+  if(OPT==='B'){
+    const cats=Object.keys(CAT).filter(k=>rows.some(r=>r.cat===k));
+    const cnt=k=>rows.filter(r=>r.cat===k&&!r.read).length;
+    const show=N.cat==='ALL'?cats:cats.filter(k=>k===N.cat);
+    return `<div class="chips"><button class="chip ${N.cat==='ALL'?'on':''}" data-act="cat:ALL">All<em>${unreadCount()}</em></button>${cats.map(k=>`<button class="chip ${N.cat===k?'on':''}" data-act="cat:${k}">${CAT[k][0]}${cnt(k)?`<em>${cnt(k)}</em>`:''}</button>`).join('')}</div>`
+    +show.map(k=>`<div class="grp" style="margin-top:18px"><div class="gi">${CAT[k][1]}</div><b>${CAT[k][0]}</b>${cnt(k)?`<span class="pill acc">${cnt(k)} new</span>`:''}</div><div class="pad" style="margin-top:10px"><div class="card" style="overflow:hidden">${rows.filter(r=>r.cat===k).map(r=>`<div class="nrow ${r.read?'':'u'}" data-act="open:${r.id}"><div class="gut">${r.read?'':'<div class="dot"></div>'}</div><div class="grow"><div class="rowc" style="align-items:baseline;gap:10px"><h5 class="grow">${ttl(r)}</h5><span class="time">${r.day==='Today'||r.day==='Yesterday'?r.day+' · ':r.day.replace(' September',' Sep')+' · '}${r.at}</span></div><p>${bdy}</p></div></div>`).join('')}</div></div>`).join('')+foot;
+  }
+  if(OPT==='C'){
+    const list=N.unreadOnly?rows.filter(r=>!r.read):rows;
+    return `<div class="seg"><button class="${N.unreadOnly?'':'on'}" data-act="uo:0">All<em>${rows.length}</em></button><button class="${N.unreadOnly?'on':''}" data-act="uo:1">Unread<em>${unreadCount()}</em></button></div><div style="height:14px"></div>`
+    +(list.length?list.map(r=>`<div class="card ncard ${r.read?'read':''}" data-act="open:${r.id}"><div class="rowc" style="align-items:flex-start"><div class="ntile ${r.read?'':'u'}">${CAT[r.cat][1]}</div><div class="grow"><div class="rowc" style="gap:8px;justify-content:space-between"><span class="time" style="text-transform:uppercase;letter-spacing:.06em">${CAT[r.cat][0]}</span><span class="time">${r.at}</span></div><h5 style="margin-top:4px">${ttl(r)}</h5><p>${bdy}</p></div></div><div class="rowc"><span class="btn ${r.read?'out':'ink'} sm full">${r.go[1]}</span></div></div>`).join(''):`<div class="center" style="padding-top:40px"><div class="ic">${I.check||I.bell}</div><b>You are up to date.</b><p>Switch to All to see earlier notifications.</p></div>`)+foot;
+  }
+  const un=rows.filter(r=>!r.read),rd=rows.filter(r=>r.read);
+  const row=r=>`<div class="crow ${r.read?'r':''}" data-act="open:${r.id}"><div class="gut" style="padding-top:0">${r.read?'':'<div class="dot"></div>'}</div><div class="grow"><span class="k">${CAT[r.cat][0]}</span><b>${ttl(r)}</b></div><span class="time">${r.day==='Today'?r.at:r.day==='Yesterday'?'Yest.':r.day.replace(' September',' Sep')}</span></div>`;
+  return `<div style="border-top:1px solid var(--border);margin-top:6px">${un.length?`<div class="eyebrow" style="padding:14px 20px 8px;background:var(--bg)"><span>Unread</span><span>${un.length}</span></div>${un.map(row).join('')}`:''}${rd.length?`<div class="eyebrow" style="padding:14px 20px 8px;background:var(--bg)"><span>Earlier</span><span>${rd.length}</span></div>${rd.map(row).join('')}`:''}</div>`+foot;
+}
+I.check='<svg viewBox="0 0 24 24"><path d="M5 12l4 4 10-10"/></svg>';
+const nEl=document.getElementById('n');
+function renderN(){const sc=nEl.querySelector('.scroll');const y=sc?sc.scrollTop:0;nEl.innerHTML=`${status()}<div class="scroll">${nHeader()}${nBody()}</div>`;shell(nEl);nEl.querySelector('.scroll').scrollTop=y}
+switcher(document.getElementById('nStates'),[['list','List'],['loading','Loading'],['empty','Empty'],['error','Error']],()=>N.state,s=>{N.state=s;renderN()});
+nEl.addEventListener('click',e=>{const a=e.target.closest('[data-act]');if(!a)return;const x=a.dataset.act;
+ if(x==='retry'){N.state='loading';renderN();return setTimeout(()=>{N.state='list';renderN();resync(document.getElementById('nStates'),'list')},900)}
+ if(x==='markall'){N.rows.forEach(r=>r.read=true);renderN();return toast(nEl,'All marked read')}
+ if(x.startsWith('cat:')){N.cat=x.slice(4);return renderN()}
+ if(x.startsWith('uo:')){N.unreadOnly=x==='uo:1';return renderN()}
+ if(x.startsWith('open:')){const r=N.rows.find(v=>v.id===x.slice(5));r.read=true;renderN();return toast(nEl,'Opens '+r.go[0]+' →')}
+ if(x.startsWith('toast:'))toast(nEl,x.slice(6))});
+
+/* ====================== SETTINGS ====================== */
+const CHS=[['PUSH','Push',I.phone],['EMAIL','Email',I.mail],['IN_APP','In app',I.inapp]];
+const LOCKED=[['ACCOUNT','Account and security'],['PAYMENT','Payments and receipts'],['INTERVIEW','Interview scheduling']];
+const SUBLINE={CONNECTION:'When an employer sends an Interest',MESSAGE:'New messages in an open chat',APPLICATION:'Updates on jobs you applied to',MARKETING:'Occasional, never more than monthly'};
+const PREFS=[['CONNECTION','Interests and connections'],['MESSAGE','Messages'],['APPLICATION','Job applications'],['MARKETING','News and offers']];
+const S={state:'list',ch:'PUSH',open:'CONNECTION',sheet:null,v:{CONNECTION:{PUSH:true,EMAIL:true,IN_APP:true},MESSAGE:{PUSH:true,EMAIL:false,IN_APP:true},APPLICATION:{PUSH:true,EMAIL:true,IN_APP:true},MARKETING:{PUSH:false,EMAIL:false,IN_APP:true}}};
+const lockedNote='<div class="foot" style="padding-top:10px">We always send these. They carry money, a booked time, or your account’s security, so they aren’t ours to switch off.</div>';
+const lockedGroup=`<div class="eyebrow">Always on</div><div class="pad"><div class="card" style="overflow:hidden">${LOCKED.map(l=>`<div class="mrow"><div class="grow"><b>${l[1]}</b></div><span class="pill neutral">All channels</span></div>`).join('')}</div></div>${lockedNote}`;
+const onList=c=>CHS.filter(x=>S.v[c][x[0]]);
+function sBody(){
+  if(S.state==='loading')return `<div class="pad" style="display:grid;gap:10px;margin-top:16px">${skel(4,90)}</div>`;
+  if(S.state==='error')return errBlock('Could not load your settings.','Nothing was changed. Try again in a moment.');
+  const intro='<div class="foot" style="padding-top:6px;font-size:15px;color:var(--text3)">Choose how each kind of message reaches you.</div>';
+  if(OPT==='A')return intro+lockedGroup+`<div class="eyebrow">You choose</div><div class="pad"><div class="card" style="overflow:hidden"><div class="mat h"><span></span>${CHS.map(c=>`<span>${c[1]}</span>`).join('')}</div>${PREFS.map(p=>`<div class="mat"><div class="l"><b>${p[1]}</b><small>${SUBLINE[p[0]]}</small></div>${CHS.map(c=>`<div class="tgwrap" style="justify-self:center">${tg(S.v[p[0]][c[0]],`t:${p[0]}:${c[0]}`,c[1]+' for '+p[1])}</div>`).join('')}</div>`).join('')}</div></div>`;
+  if(OPT==='B'){const cur=CHS.find(c=>c[0]===S.ch);
+    return `<div class="seg" style="margin-top:10px">${CHS.map(c=>`<button class="${c[0]===S.ch?'on':''}" data-act="ch:${c[0]}">${c[1]}</button>`).join('')}</div><div class="foot" style="padding-top:12px">${cur[1]} for each kind of message.</div>
+    <div class="eyebrow">You choose</div><div class="pad"><div class="card" style="overflow:hidden">${PREFS.map(p=>`<div class="mrow"><div class="grow"><b>${p[1]}</b><span class="s">${SUBLINE[p[0]]}</span></div>${tg(S.v[p[0]][S.ch],`t:${p[0]}:${S.ch}`,cur[1]+' for '+p[1])}</div>`).join('')}</div></div>${lockedGroup}`;}
+  if(OPT==='C')return `<div class="sum">${CHS.map(c=>`<div><small>${c[1].toUpperCase()}</small><b>${PREFS.filter(p=>S.v[p[0]][c[0]]).length}<span style="font-size:14px;color:var(--text4);font-weight:600"> of ${PREFS.length}</span></b></div>`).join('')}</div>
+   <div class="eyebrow">You choose</div>${PREFS.map(p=>`<div class="card xcard ${S.open===p[0]?'open':''}"><div class="xhead" data-act="x:${p[0]}"><div class="grow"><b>${p[1]}</b><span class="s">${SUBLINE[p[0]]}</span></div>${I.chev}</div><div class="xbody">${CHS.map(c=>`<button class="cch ${S.v[p[0]][c[0]]?'on':''}" data-act="t:${p[0]}:${c[0]}" aria-pressed="${S.v[p[0]][c[0]]}">${c[2]}<span>${c[1]}</span></button>`).join('')}</div></div>`).join('')}${lockedGroup}`;
+  return intro+`<div class="eyebrow">You choose</div><div class="pad"><div class="card" style="overflow:hidden">${PREFS.map(p=>{const on=onList(p[0]);return `<div class="mrow" data-act="sheet:${p[0]}"><div class="grow"><b>${p[1]}</b><span class="s">${on.length?on.map(x=>x[1]).join(' · '):'Off everywhere'}</span></div>${I.chev}</div>`}).join('')}</div></div>${lockedGroup}`;
+}
+function sSheet(){if(OPT!=='D'||!S.sheet||S.state!=='list')return '';const p=PREFS.find(x=>x[0]===S.sheet);return `<div class="sheetbg on" data-act="sheetx"></div><div class="sheet on"><div class="grab"></div><h4>${p[1]}</h4><div class="sub" style="margin:2px 0 8px">${SUBLINE[p[0]]}</div>${CHS.map(c=>`<div class="srow"><b>${c[1]}</b>${tg(S.v[p[0]][c[0]],`t:${p[0]}:${c[0]}`,c[1]+' for '+p[1])}</div>`).join('')}<span class="btn ink full" style="margin-top:10px" data-act="sheetx">Done</span></div>`}
+const sEl=document.getElementById('s');
+function renderS(){const sc=sEl.querySelector('.scroll');const y=sc?sc.scrollTop:0;sEl.innerHTML=`${status()}<div class="scroll">${head('Notification settings','Push, email and in-app')}${sBody()}</div>${sSheet()}`;shell(sEl);sEl.querySelector('.scroll').scrollTop=y}
+switcher(document.getElementById('sStates'),[['list','Loaded'],['loading','Loading'],['error','Error']],()=>S.state,s=>{S.state=s;renderS()});
+sEl.addEventListener('click',e=>{const a=e.target.closest('[data-act]');if(!a)return;const x=a.dataset.act;
+ if(x==='retry'){S.state='loading';renderS();return setTimeout(()=>{S.state='list';renderS();resync(document.getElementById('sStates'),'list')},900)}
+ if(x.startsWith('t:')){const[,c,h]=x.split(':');S.v[c][h]=!S.v[c][h];return renderS()}
+ if(x.startsWith('ch:')){S.ch=x.slice(3);return renderS()}
+ if(x.startsWith('x:')){const c=x.slice(2);S.open=S.open===c?null:c;return renderS()}
+ if(x.startsWith('sheet:')){S.sheet=x.slice(6);return renderS()}
+ if(x==='sheetx'){S.sheet=null;return renderS()}
+ if(x.startsWith('toast:'))toast(sEl,x.slice(6))});
+
+/* ====================== STATS ====================== */
+const T={state:'live',data:{live:{s:3,v:41,o:2,hidden:false,pub:true},early:{s:0,v:0,o:0,hidden:false,pub:true},unpub:{s:0,v:0,o:0,hidden:false,pub:false},hidden:{s:3,v:41,o:2,hidden:true,pub:true}}};
+const stamp='All time · as of 1 Oct 2026, 9:41 AM';
+const anon=`<div class="well"><small>ANONYMOUS BY DESIGN</small><span>You see how many employers shortlisted you, never which ones — and they aren’t told you saw the number.</span></div>`;
+const early=d=>d.s===0&&d.v===0;
+const earlyCard=d=>`<div class="inkcard"><span class="pill">${d.pub?'It’s early':'Not live yet'}</span><h3>${d.pub?'Employers are only just finding you.':'Nobody can see you yet.'}</h3><p>${d.pub?'A new profile usually gets its first views within a week or two of joining the feed.':'Your profile joins the employer feed when your interview film is published.'}</p><span class="btn w" data-act="toast:Opens ${d.pub?'Add another video':'your profile'}">${d.pub?'Add another video':'See your profile'}</span><a data-act="toast:Opens Visibility">Check who can see you →</a></div>`;
+const hiddenNote=d=>d.hidden?`<div class="well" style="background:var(--warn-soft)"><small style="color:var(--warn)">HIDDEN FROM THE FEED</small><span style="color:var(--warn)">Employers can’t find you in the feed right now, so these numbers won’t move. <a data-act="toast:Opens Visibility" style="font-weight:600;text-decoration:underline">Check who can see you →</a></span></div>`:'';
+function tBody(){
+  if(T.state==='loading')return `<div class="pad" style="display:grid;gap:10px;margin-top:16px;grid-template-columns:1fr 1fr">${skel(1,130).repeat(2)}<div style="grid-column:1/3" class="skel"><div style="height:80px"></div></div></div>`;
+  if(T.state==='error')return errBlock('Could not load your stats.','Try again in a moment.');
+  const d=T.data[T.state],dim=early(d)?'dim':'';
+  const lab={s:'employers shortlisted you',v:'profile views',o:'open interests'};
+  let main;
+  if(OPT==='A')main=`<div class="pad" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px"><div class="card statcard"><div class="figure ${dim}">${d.s}</div><div class="sub" style="font-size:14.5px">${lab.s}</div></div><div class="card statcard"><div class="figure ${dim}">${d.v}</div><div class="sub" style="font-size:14.5px">${lab.v}</div></div><div class="card statcard" style="grid-column:1/3"><div class="rowc" style="justify-content:space-between"><div><div class="figure ${dim}" style="font-size:40px">${d.o}</div><div class="sub" style="font-size:14.5px;margin-top:6px">${lab.o}</div></div><span class="btn out sm" data-act="toast:Opens Interests">View interests</span></div></div></div><div class="foot" style="padding-top:10px">${stamp}</div>`;
+  else if(OPT==='B')main=`<div class="pad" style="margin-top:6px"><div class="card" style="overflow:hidden"><div class="srow2"><div class="ic">${I.star}</div><div class="grow"><div class="lab">Employers shortlisted you</div></div><b class="n ${d.s===0?'':''}" style="${d.s===0?'color:var(--text4)':''}">${d.s}</b></div><div class="srow2"><div class="ic">${I.eye}</div><div class="grow"><div class="lab">Profile views</div></div><b class="n" style="${d.v===0?'color:var(--text4)':''}">${d.v}</b></div><div class="srow2" data-act="toast:Opens Interests"><div class="ic">${I.heart}</div><div class="grow"><div class="lab">Open interests</div></div><b class="n" style="${d.o===0?'color:var(--text4)':''}">${d.o}</b>${I.chev}</div></div></div><div class="foot" style="padding-top:10px">${stamp}</div>`;
+  else if(OPT==='C')main=`<div class="pad" style="margin-top:14px"><div class="mono" style="color:var(--text3)">Your profile, all time</div><div style="font-size:34px;font-weight:800;letter-spacing:-.045em;line-height:1.08;margin-top:10px;${dim?'color:var(--text4)':''}">${d.s===1?'1 employer has':d.s+' employers have'} shortlisted you.</div><div style="font-size:22px;font-weight:600;letter-spacing:-.03em;line-height:1.2;margin-top:18px;color:var(--text2);${dim?'color:var(--text4)':''}">Your profile has been viewed ${d.v} ${d.v===1?'time':'times'}.</div><div style="font-size:18px;font-weight:500;letter-spacing:-.02em;line-height:1.3;margin-top:14px;color:var(--text3)">${d.o} ${d.o===1?'interest is':'interests are'} open. <a data-act="toast:Opens Interests" style="color:var(--accent);font-weight:600">View →</a></div><div class="foot" style="padding:18px 0 0">${stamp}</div></div>`;
+  else main=`<div class="inkcard" style="margin-top:6px;gap:6px;${dim?'':''}"><span class="pill">Shortlisted by</span><div class="figure" style="font-size:80px;color:${dim?'#6B7385':'#fff'}">${d.s}</div><p>employers, all time</p></div><div class="sum" style="margin-top:10px"><div><small>PROFILE VIEWS</small><b style="${d.v===0?'color:var(--text4)':''}">${d.v}</b></div><div><small>OPEN INTERESTS</small><b style="${d.o===0?'color:var(--text4)':''}">${d.o}</b></div><div><small>FEED</small><b style="font-size:15px;margin-top:9px;line-height:1.2">${!d.pub?'Not live':d.hidden?'Hidden':'Live'}</b></div></div><div class="foot" style="padding-top:10px">${stamp}</div>`;
+  return main+hiddenNote(d)+anon+(early(d)&&OPT!=='D'||(OPT==='D'&&early(d))?earlyCard(d):'');
+}
+const tEl=document.getElementById('t');
+function renderT(){tEl.innerHTML=`${status()}<div class="scroll">${head('Your stats')}${tBody()}</div>`;shell(tEl)}
+switcher(document.getElementById('tStates'),[['live','Live'],['early','It’s early'],['unpub','Not live yet'],['hidden','Hidden'],['loading','Loading'],['error','Error']],()=>T.state,s=>{T.state=s;renderT()});
+tEl.addEventListener('click',e=>{const a=e.target.closest('[data-act]');if(!a)return;const x=a.dataset.act;
+ if(x==='retry'){T.state='loading';renderT();return setTimeout(()=>{T.state='live';renderT();resync(document.getElementById('tStates'),'live')},900)}
+ if(x.startsWith('toast:'))toast(tEl,x.slice(6))});
+
+function renderAll(){
+  document.getElementById('optname').textContent='Option '+OPT+' · '+OPTS[OPT];
+  document.getElementById('nCap').textContent=NAMES[OPT].n;document.getElementById('sCap').textContent=NAMES[OPT].s;document.getElementById('tCap').textContent=NAMES[OPT].t;
+  S.sheet=null;renderN();renderS();renderT();
+}
+renderAll();
+</script>
+</body>
+</html>

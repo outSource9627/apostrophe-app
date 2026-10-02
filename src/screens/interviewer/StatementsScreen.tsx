@@ -1,19 +1,17 @@
 import React, { useCallback, useEffect, useState } from 'react'
-import { ActivityIndicator, Linking, StyleSheet, Text, View } from 'react-native'
+import { Linking, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { borderWidth, color, space, spaceHalf } from '../../theme'
-import { Button, text } from '../../components/ui'
-import { InterviewerShell } from '../../components/interviewer/InterviewerShell'
-import { IvCard } from '../../components/interviewer/iv'
-import { EmBadge, EmEmpty, EmError, EmSheet } from '../../components/employer/em'
-import { EmDateField, EmField, todayIst, type Ymd } from '../../components/employer/form'
+import { borderWidth, color, fontFamilyNative as FF } from '../../theme'
+import { EmSheet } from '../../components/employer/em'
+import { EmDateField, todayIst, type Ymd } from '../../components/employer/form'
 import { ApiClientError } from '../../lib/api'
 import { listStatements, requestStatement, type StatementDto } from '../../lib/api/interviewer'
 import { formatPaise } from '../../lib/format/money'
 import { istDay, istStamp } from '../../lib/interviewer/state'
 import { useAppConfig } from '../../lib/interviewer/useInterviewer'
+import { EmptyBlock, ErrBlock, k, OutBtn, PageFrame, PBtn, SkelBox, WBadge, WCard, WField } from './walletKit'
 import type { RootStackParamList } from '../../../App'
 
 const pad = (n: number) => String(n).padStart(2, '0')
@@ -84,32 +82,32 @@ export function StatementsScreen() {
   }
 
   return (
-    <InterviewerShell
-      back={() => navigation.goBack()}
+    <PageFrame
+      onBack={() => navigation.goBack()}
       title="Earnings statements"
       sub="Interview fees and payouts, for a date range"
-      footer={<Button variant="primary" size="lg" full icon="plus" label="Request a statement" onPress={() => setOpen(true)} />}
+      footer={<PBtn on icon="plus" label="Request a statement" onPress={() => setOpen(true)} />}
     >
       {rows === null && !error ? (
-        <ActivityIndicator color={color.textSubtle} style={styles.loading} />
+        <View style={s.stack} accessibilityLabel="Loading your statements">{[0, 1, 2].map((i) => <SkelBox key={i} h={96} r={20} />)}</View>
       ) : error && !rows ? (
-        <EmError title="Couldn’t load your statements." body={error} action={<Button variant="secondary" size="pair" icon="refresh" label="Try again" onPress={() => { load() }} />} />
+        <ErrBlock title="Couldn’t load your statements." body={error} onRetry={() => { load() }} />
       ) : (rows ?? []).length === 0 ? (
-        <EmEmpty icon="file" title="No statements yet." body="Request one for any range; it is prepared in the background." />
+        <EmptyBlock title="No statements yet." body="Request one for any range; it is prepared in the background." />
       ) : (
-        (rows ?? []).map((s) => (
-          <IvCard key={s.id}>
-            <View style={styles.top}>
-              <Text style={text.uiMdSemi}>{`${istDay(`${s.from}T00:00:00+05:30`)} – ${istDay(`${s.to}T00:00:00+05:30`)}`}</Text>
-              <EmBadge label={STATUS[s.status].label} tone={STATUS[s.status].tone} small />
+        (rows ?? []).map((st) => (
+          <WCard key={st.id} gap={6}>
+            <View style={s.top}>
+              <Text style={[k.nmx, k.grow]}>{`${istDay(`${st.from}T00:00:00+05:30`)} – ${istDay(`${st.to}T00:00:00+05:30`)}`}</Text>
+              <WBadge label={STATUS[st.status].label} tone={STATUS[st.status].tone} />
             </View>
-            {s.status === 'READY' && (
-              <Text style={[text.uiXs, styles.muted]}>{`${s.rowCount} entries · ${formatPaise(s.creditedPaise)} credited · ${formatPaise(s.paidOutPaise)} paid out`}</Text>
+            {st.status === 'READY' && (
+              <Text style={k.sub}>{`${st.rowCount} entries · ${formatPaise(st.creditedPaise)} credited · ${formatPaise(st.paidOutPaise)} paid out`}</Text>
             )}
-            {s.status === 'FAILED' && !!s.error && <Text style={[text.uiXs, styles.danger]}>{s.error}</Text>}
-            <Text style={[text.uiXs, styles.subtle]}>{`Requested ${istStamp(s.requestedAt)}`}</Text>
-            {s.status === 'READY' && !!s.url && <Button variant="outline" size="sm" icon="download" label="Open" onPress={() => Linking.openURL(s.url!).catch(() => {})} style={styles.start} />}
-          </IvCard>
+            {st.status === 'FAILED' && !!st.error && <Text style={[k.sub, { color: color.danger }]}>{st.error}</Text>}
+            <Text style={[k.sub, { color: color.textSubtle }]}>{`Requested ${istStamp(st.requestedAt)}`}</Text>
+            {st.status === 'READY' && !!st.url && <OutBtn sm icon="download" label="Open" onPress={() => Linking.openURL(st.url!).catch(() => {})} />}
+          </WCard>
         ))
       )}
 
@@ -119,29 +117,26 @@ export function StatementsScreen() {
         title="Request a statement"
         sub={maxDays ? `Up to ${maxDays} days at a time.` : undefined}
         foot={
-          <View style={[styles.foot, { paddingBottom: space.md + insets.bottom }]}>
-            {!!notice && <Text style={[text.uiSm, styles.danger]}>{notice}</Text>}
-            <Button variant="primary" size="lg" full label="Request" busy={busy} disabled={busy || !from || !to || !!rangeError} onPress={() => { request() }} />
+          <View style={[s.foot, { paddingBottom: 24 + insets.bottom }]}>
+            {!!notice && <Text style={s.notice}>{notice}</Text>}
+            <PBtn on={!busy && !!from && !!to && !rangeError} label={busy ? 'Requesting…' : 'Request'} onPress={() => { request() }} />
           </View>
         }
       >
-        <EmField label="From">
+        <WField label="From">
           <EmDateField title="From" value={from} onChange={setFrom} min={{ y: today.y - 5, m: 0, d: 1 }} max={today} placeholder="Choose a date" clearable={false} />
-        </EmField>
-        <EmField label="To" error={rangeError}>
-          <EmDateField title="To" value={to} onChange={setTo} min={from ?? { y: today.y - 5, m: 0, d: 1 }} max={today} placeholder="Choose a date" clearable={false} />
-        </EmField>
+        </WField>
+        <WField label="To" error={rangeError}>
+          <EmDateField title="To" value={to} onChange={setTo} min={from ?? { y: today.y - 5, m: 0, d: 1 }} max={today} placeholder="Choose a date" clearable={false} invalid={!!rangeError} />
+        </WField>
       </EmSheet>
-    </InterviewerShell>
+    </PageFrame>
   )
 }
 
-const styles = StyleSheet.create({
-  muted: { color: color.textMuted },
-  subtle: { color: color.textSubtle },
-  danger: { color: color.danger },
-  loading: { paddingVertical: space['3xl'] },
-  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.sm },
-  start: { alignSelf: 'flex-start', paddingHorizontal: space.md },
-  foot: { paddingHorizontal: space.lg, paddingTop: space.md, gap: spaceHalf['1.5'], borderTopWidth: borderWidth.thin, borderTopColor: color.border, backgroundColor: color.surface },
+const s = StyleSheet.create({
+  stack: { gap: 14 },
+  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  notice: { fontFamily: FF.body, fontSize: 14, color: color.danger },
+  foot: { paddingHorizontal: 20, paddingTop: 12, gap: 8, borderTopWidth: borderWidth.thin, borderTopColor: color.border, backgroundColor: color.surface },
 })

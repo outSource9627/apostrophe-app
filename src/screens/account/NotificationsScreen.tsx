@@ -4,8 +4,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { getNotifications, markNotificationsRead, type NotificationRow } from '../../lib/api/account'
 import { fmtClock, fmtDayDivider, fmtDayMonthYear } from '../../lib/chat/format'
-import { borderWidth, color, height, radius, space, spaceHalf, trackingNative } from '../../theme'
-import { EmptyState, ErrorState, ScreenHeader, Skeleton, text } from '../../components/ui'
+import { borderWidth, color, fontFamilyNative as FF } from '../../theme'
+import { DetailHeader, GroupLabel, Skel, StateBlock } from '../../components/tab/kit'
 
 /**
  * ST-46 — a day-grouped list kept for NINETY DAYS. Read/unread are a MARKER and
@@ -25,19 +25,27 @@ export function NotificationsScreen({ onBack, onNavigate }: {
   const rows = q.data?.rows
   const unread = rows?.some((n) => !n.read) ?? false
   const bar = (
-    <ScreenHeader
+    <DetailHeader
       title="Notifications"
       onBack={onBack}
       right={unread ? (
-        <Pressable accessibilityRole="button" onPress={() => markAll.mutate()} hitSlop={space.sm} style={styles.markAll}>
-          <Text style={[text.uiSmSemi, styles.accent]}>Mark all read</Text>
+        <Pressable accessibilityRole="button" onPress={() => markAll.mutate()} hitSlop={8} style={styles.markAll}>
+          <Text style={styles.link}>Mark all read</Text>
         </Pressable>
       ) : undefined}
     />
   )
   const frame = (c: React.ReactNode) => <View style={[styles.page, { paddingTop: insets.top }]}>{bar}{c}</View>
-  if (q.isPending) return frame(<View style={styles.loading}><Skeleton lines={3} /></View>)
-  if (q.isError) return frame(<View style={styles.centre}><ErrorState title="Could not load your notifications." body="Pull down or come back in a moment." /></View>)
+  if (q.isPending) {
+    return frame(
+      <View style={styles.skels}>
+        {[0, 1, 2, 3, 4].map((i) => <Skel key={i} w="100%" h={86} />)}
+      </View>,
+    )
+  }
+  if (q.isError) {
+    return frame(<StateBlock icon="alert" title="Could not load your notifications." body="Pull down or come back in a moment." action="Try again" onAction={() => { void q.refetch() }} />)
+  }
 
   function open(n: NotificationRow) {
     if (!n.read) void markNotificationsRead([n.id]).then(() => qc.invalidateQueries({ queryKey: ['notifications'] })).catch(() => {})
@@ -56,36 +64,36 @@ export function NotificationsScreen({ onBack, onNavigate }: {
         refreshControl={<RefreshControl refreshing={q.isRefetching} onRefresh={() => q.refetch().then(() => undefined)} tintColor={color.textSubtle} />}
       >
         {rows!.length === 0 ? (
-          <View style={styles.empty}>
-            <EmptyState title="Nothing yet." body="When an employer is interested, or your interview moves, it lands here." />
-          </View>
+          <StateBlock icon="bell" title="Nothing yet." body="When an employer is interested, or your interview moves, it lands here." />
         ) : (
           <>
             {groups.map((g) => (
-              <View key={g.key} style={styles.group}>
-                <Text style={[text.metaMd, styles.eyebrow]}>{g.label.toUpperCase()}</Text>
-                <View style={styles.card}>
-                  {g.items.map((n, i) => (
-                    <Pressable
-                      key={n.id}
-                      accessibilityRole="button"
-                      onPress={() => open(n)}
-                      style={({ pressed }) => [styles.row, i < g.items.length - 1 && styles.rule, !n.read && styles.unreadRow, pressed && styles.pressed]}
-                    >
-                      <View style={styles.gutter}>{!n.read && <View style={styles.dot} />}</View>
-                      <View style={styles.rowText}>
-                        <View style={styles.rowTop}>
-                          <Text style={[n.read ? text.uiMd : text.uiMdSemi, styles.title, n.read && styles.muted]}>{n.title}</Text>
-                          <Text style={[text.metaSm, styles.subtle]}>{fmtClock(n.createdAt)}</Text>
+              <View key={g.key}>
+                <GroupLabel style={styles.eyebrow}>{g.label}</GroupLabel>
+                <View style={styles.pad}>
+                  <View style={styles.card}>
+                    {g.items.map((n, i) => (
+                      <Pressable
+                        key={n.id}
+                        accessibilityRole="button"
+                        onPress={() => open(n)}
+                        style={({ pressed }) => [styles.row, i < g.items.length - 1 && styles.rule, !n.read && styles.unreadRow, pressed && styles.pressed]}
+                      >
+                        <View style={styles.gutter}>{!n.read && <View style={styles.dot} />}</View>
+                        <View style={styles.rowText}>
+                          <View style={styles.rowTop}>
+                            <Text style={[styles.title, !n.read && styles.titleUnread]}>{n.title}</Text>
+                            <Text style={styles.time}>{fmtClock(n.createdAt)}</Text>
+                          </View>
+                          {!!n.body && <Text style={styles.bodyText}>{n.body}</Text>}
                         </View>
-                        {!!n.body && <Text style={[text.uiSm, styles.muted]}>{n.body}</Text>}
-                      </View>
-                    </Pressable>
-                  ))}
+                      </Pressable>
+                    ))}
+                  </View>
                 </View>
               </View>
             ))}
-            <Text style={[text.uiXs, styles.subtle, styles.footNote]}>{`Notifications are kept for ninety days · nothing before ${fmtDayMonthYear(now - 90 * 86_400_000)}`}</Text>
+            <Text style={styles.foot}>{`Notifications are kept for ninety days · nothing before ${fmtDayMonthYear(now - 90 * 86_400_000)}`}</Text>
           </>
         )}
       </ScrollView>
@@ -128,25 +136,24 @@ function groupByDay(rows: NotificationRow[], now: number): { key: string; label:
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.background },
-  centre: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.xl },
-  loading: { padding: space.xl },
-  empty: { paddingTop: space['3xl'] },
-  body: { paddingHorizontal: space.lg, paddingTop: space.xs, gap: space.lg, paddingBottom: space.xl },
-  markAll: { height: height.tap, justifyContent: 'center', paddingRight: space.sm },
-  accent: { color: color.accent },
-  group: { gap: space.sm },
-  eyebrow: { color: color.textMuted, letterSpacing: trackingNative.eyebrow, paddingHorizontal: space.xs },
-  card: { backgroundColor: color.surface, borderRadius: radius.lg, borderWidth: borderWidth.thin, borderColor: color.border, overflow: 'hidden' },
-  row: { flexDirection: 'row', alignItems: 'flex-start', gap: spaceHalf['2.5'], paddingHorizontal: spaceHalf['3.5'], paddingVertical: space.md },
-  rule: { borderBottomWidth: borderWidth.thin, borderBottomColor: color.borderSoft },
+  skels: { paddingHorizontal: 20, paddingTop: 16, gap: 10 },
+  body: { paddingBottom: 40 },
+  pad: { paddingHorizontal: 20 },
+  markAll: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 4 },
+  link: { fontFamily: FF.bodySemiBold, fontSize: 14.5, color: color.accent },
+  eyebrow: { paddingHorizontal: 24, paddingTop: 22, paddingBottom: 8 },
+  card: { backgroundColor: color.surface, borderRadius: 20, borderWidth: borderWidth.thin, borderColor: color.border, overflow: 'hidden' },
+  row: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingHorizontal: 16, paddingVertical: 14 },
+  rule: { borderBottomWidth: borderWidth.thin, borderBottomColor: color.border },
   unreadRow: { backgroundColor: color.accentWash },
   pressed: { backgroundColor: color.surfaceMuted },
-  gutter: { width: space.sm, alignItems: 'center', paddingTop: spaceHalf['1.5'] },
-  dot: { width: space.sm, height: space.sm, borderRadius: radius.pill, backgroundColor: color.accent },
-  rowText: { flex: 1, minWidth: 0, gap: space['2xs'] },
-  rowTop: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: space.md },
-  title: { flex: 1 },
-  muted: { color: color.textMuted },
-  subtle: { color: color.textSubtle },
-  footNote: { paddingHorizontal: space.xs },
+  gutter: { width: 8, paddingTop: 7 },
+  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: color.accent },
+  rowText: { flex: 1, minWidth: 0, gap: 2 },
+  rowTop: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 },
+  title: { flex: 1, fontFamily: FF.bodyMedium, fontSize: 16, lineHeight: 21, letterSpacing: -0.16, color: color.textMuted },
+  titleUnread: { fontFamily: FF.bodySemiBold, color: color.text },
+  time: { fontFamily: FF.monoMedium, fontSize: 11, color: color.textSubtle },
+  bodyText: { fontFamily: FF.body, fontSize: 14, lineHeight: 19.6, color: color.textMuted },
+  foot: { fontFamily: FF.body, fontSize: 13, lineHeight: 19, color: color.textSubtle, paddingHorizontal: 24, paddingTop: 14 },
 })

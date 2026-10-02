@@ -110,15 +110,14 @@ describe('VideoResumeScreen', () => {
     expect(players).toHaveLength(1)
     expect(players[0].props.source).toEqual({ uri: 'https://cdn.example/x.m3u8' })
     expect(players[0].props.poster).toMatchObject({ source: { uri: 'https://cdn.example/p.jpg' } })
-    expect(texts).toContain('Your video resume')
-    expect(texts).toContain('The film from your interview. Employers watch this first; any videos you add yourself appear below it, marked as not verified.')
+    expect(texts).toContain('Video resume')
     expect(texts.join(' ')).not.toMatch(/only video employers see/)
     expect(texts).toContain('0:46')
     expect(texts.join(' ')).toMatch(/26 September 2026/)
     expect(texts).not.toContain('Processing')
     // Live, and only one interview: no notice and no list.
     expect(texts.join(' ')).not.toMatch(/not live yet|previewing/i)
-    expect(texts).not.toContain('Your interview videos')
+    expect(texts).not.toContain('Interview videos')
   })
 
   it('PROCESSING: says it is being prepared and offers Check again — no player, no promised time', async () => {
@@ -178,7 +177,7 @@ describe('VideoResumeScreen', () => {
   describe('your interview videos', () => {
     it('is not drawn for a single interview', async () => {
       const { texts } = await render(playable(), { videos: [row({ primary: true, selectable: false })], pinned: false })
-      expect(texts).not.toContain('Your interview videos')
+      expect(texts).not.toContain('Interview videos')
     })
 
     it('lists each interview with its date, length and state, and offers Make primary only where the API says selectable', async () => {
@@ -190,8 +189,8 @@ describe('VideoResumeScreen', () => {
         ],
         pinned: false,
       })
-      expect(texts).toContain('Your interview videos')
-      expect(texts).toContain('Employers see the video marked Primary. Your most recent interview is primary until you choose another.')
+      expect(texts).toContain('Interview videos')
+      expect(texts).toContain('Employers see the Primary one.')
       expect(texts).toContain('26 September 2026')
       expect(texts).toContain('20 September 2026')
       expect(texts).toContain('10 September 2026')

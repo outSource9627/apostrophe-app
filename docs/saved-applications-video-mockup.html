@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apostrophe App – Saved jobs, Applications & Video resume mockups</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FAFAFC; --surface:#fff; --muted:#F1F3F7; --sunken:#E6E8EE;
+    --text:#0B0F1A; --text2:#3A4256; --text3:#6B7385; --text4:#8A91A2;
+    --border:#E3E6ED; --border-strong:#C9CED9;
+    --accent:#5B3DF5; --accent-hover:#4A2FE0; --accent-soft:#EFEBFF; --accent-wash:#F7F6FF;
+    --accent-muted:#C4B8FF; --accent-bright:#7258FF; --accent-deep:#3B2A8F; --accent-edge:#DCD3FF;
+    --ink:#0B0F1A; --ink-raised:#151B2B;
+    --ok:#0E9F6E; --ok-text:#0B7A55; --ok-soft:#E6F7F0; --danger:#E5484D; --danger-text:#C22A30; --danger-soft:#FDECEC; --warn:#935F00; --warn-soft:#FFF5E1; --warn-edge:#F5E2B8; --info:#2F6BFF; --info-soft:#E8EFFF;
+    --r-md:14px; --r-lg:18px; --r-xl:28px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{font-family:'Geist',system-ui,sans-serif;background:#E9EAF2;color:var(--text);padding:40px 24px 90px}
+  button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+  button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex:none}
+  .mono{font:500 11px 'Geist Mono',monospace;letter-spacing:.14em;text-transform:uppercase}
+
+  .intro{max-width:1240px;margin:0 auto 36px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:28px 32px}
+  .intro h1{font-size:30px;letter-spacing:-.035em;line-height:1.1}
+  .intro .lede{font-size:16px;color:var(--text3);margin-top:8px;line-height:1.5;max-width:840px}
+  .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-top:22px}
+  .box{background:var(--bg);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px 18px}
+  .box h3{font-size:16px;margin:6px 0 8px;letter-spacing:-.01em}
+  .box ul{padding-left:18px;font-size:14px;line-height:1.55;color:var(--text2)}
+  .box.good{background:var(--accent-soft);border-color:var(--accent-edge)}
+  .section{max-width:1760px;margin:0 auto 70px}
+  .section>h2{font-size:28px;letter-spacing:-.035em}
+  .section>p{font-size:15px;color:var(--text3);margin:4px 0 18px;max-width:840px;line-height:1.5}
+  .states{display:flex;flex-wrap:wrap;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:22px;padding:4px;margin-bottom:22px;width:fit-content;max-width:100%}
+  .states button{padding:8px 12px;border-radius:99px;font-size:13.5px;font-weight:600;color:var(--text3);white-space:nowrap}
+  .states button.on{background:var(--accent);color:#fff}
+  .row{display:flex;flex-wrap:wrap;gap:40px;align-items:flex-start}
+  .cell{width:390px}
+  .cap{margin-top:16px}
+  .cap b{font-size:17px;letter-spacing:-.02em;display:block}
+  .cap span{font-size:14px;color:var(--text3);line-height:1.45;display:block;margin-top:4px}
+  .cap .tag{color:var(--accent);margin-bottom:6px}
+
+  .phone{width:390px;height:812px;background:var(--bg);border-radius:44px;border:10px solid #0B0F1A;overflow:hidden;position:relative}
+  .status{height:44px;display:flex;justify-content:space-between;align-items:center;padding:0 26px;font-size:14px;font-weight:600;position:absolute;top:0;left:0;right:0;z-index:40;pointer-events:none}
+  .status i{width:90px;height:24px;background:#0B0F1A;border-radius:14px;position:absolute;left:50%;top:8px;transform:translateX(-50%)}
+  .status.light{color:#fff}
+  .scroll{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none;padding-top:44px}
+  .scroll::-webkit-scrollbar{display:none}
+  .tab{position:absolute;left:14px;right:14px;bottom:14px;height:68px;background:rgba(255,255,255,.96);backdrop-filter:blur(14px);border:1px solid var(--border);border-radius:24px;display:flex;justify-content:space-around;align-items:center;z-index:25}
+  .tab button{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11.5px;font-weight:600;color:var(--text4);padding:7px 8px;border-radius:14px;min-width:60px;min-height:48px;justify-content:center}
+  .tab button.on{color:var(--accent);background:var(--accent-soft)}
+
+  .pill{font:500 10.5px 'Geist Mono',monospace;letter-spacing:.1em;text-transform:uppercase;border-radius:99px;padding:5px 10px;display:inline-block;white-space:nowrap}
+  .pill.ok{background:var(--ok-soft);color:var(--ok-text)}.pill.acc{background:var(--accent-soft);color:var(--accent-hover)}
+  .pill.warn{background:var(--warn-soft);color:var(--warn)}.pill.neutral{background:var(--muted);color:var(--text3)}
+  .pill.info{background:var(--info-soft);color:#1F4FD1}.pill.danger{background:var(--danger-soft);color:var(--danger-text)}
+  .pill.onink{background:rgba(255,255,255,.14);color:#fff}
+  .rowc{display:flex;align-items:center;gap:14px}
+  .grow{flex:1;min-width:0}
+  .sub{font-size:14px;color:var(--text3);line-height:1.4}
+  .title{font-size:30px;font-weight:800;letter-spacing:-.04em;line-height:1.05}
+  .head{padding:12px 20px 12px}
+  .pad{padding:0 20px}
+  .btn{height:46px;min-width:44px;border-radius:var(--r-md);font-weight:700;font-size:15px;padding:0 18px;display:inline-flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap}
+  .btn.pri{background:var(--accent);color:#fff}.btn.ink{background:var(--ink);color:#fff}
+  .btn.out{border:1.5px solid var(--border-strong);background:var(--surface)}
+  .btn.dis{background:var(--muted);color:var(--text4)}.btn.full{width:100%}.btn.sm{height:40px;font-size:14px;padding:0 16px;border-radius:12px}
+  .btn.quiet{color:var(--text2)}.btn.white{background:#fff;color:var(--accent-deep)}
+  .seg{display:flex;background:var(--muted);border-radius:var(--r-md);padding:4px;margin:0 20px}
+  .seg button{flex:1;height:40px;border-radius:11px;font-size:14.5px;font-weight:600;color:var(--text3)}
+  .seg button.on{background:var(--surface);color:var(--accent);border:1px solid var(--border)}
+  .chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:0 20px 4px}
+  .chips::-webkit-scrollbar{display:none}
+  .chip{white-space:nowrap;padding:0 14px;height:40px;display:inline-flex;align-items:center;border-radius:99px;font-size:14px;font-weight:600;background:var(--surface);border:1px solid var(--border);color:var(--text2)}
+  .chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px}
+  .chev{width:18px;color:var(--text4)}
+  .logo{width:46px;height:46px;border-radius:13px;display:grid;place-items:center;color:#fff;font-weight:800;font-size:17px;flex:none}
+  .skel{background:linear-gradient(90deg,var(--muted) 0%,#E9ECF2 50%,var(--muted) 100%);background-size:200% 100%;animation:sh 1.3s infinite linear;border-radius:10px}
+  @keyframes sh{to{background-position:-200% 0}}
+  .center{display:grid;place-items:center;text-align:center;padding:56px 36px 0}
+  .center .ic{width:64px;height:64px;border-radius:20px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;margin-bottom:16px}
+  .center .ic svg{width:30px;height:30px}
+  .center b{font-size:22px;letter-spacing:-.03em;display:block}
+  .center p{font-size:15px;color:var(--text3);margin:8px 0 18px;line-height:1.5}
+  .meta{font:500 10.5px 'Geist Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--text4);line-height:1.6}
+  .grp{font:500 11px 'Geist Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--text3);padding:18px 24px 8px}
+  [data-act]{cursor:pointer}
+  .scrim{position:absolute;inset:0;background:rgba(11,15,26,.4);z-index:50;opacity:0;pointer-events:none;transition:.25s}
+  .scrim.on{opacity:1;pointer-events:auto}
+  .toast{position:absolute;left:14px;right:14px;bottom:100px;background:var(--ink);color:#fff;border-radius:var(--r-md);padding:13px 14px;z-index:60;font-size:14px;font-weight:600;transform:translateY(20px);opacity:0;pointer-events:none;transition:.25s}
+  .toast.on{transform:none;opacity:1}
+  .banner{display:flex;gap:10px;border-radius:var(--r-md);padding:12px 14px;font-size:14px;line-height:1.4;background:var(--warn-soft);border:1px solid var(--warn-edge);color:var(--warn)}
+
+  /* ---------- SAVED ---------- */
+  .dim{opacity:.55}
+  .applybtn{height:40px}
+  .remove{height:40px;padding:0 14px;border-radius:99px;border:1px solid var(--border);font-size:14px;font-weight:600;color:var(--text3);display:inline-flex;align-items:center}
+  .sv h4{font-size:18px;font-weight:700;letter-spacing:-.02em;line-height:1.2}
+  .tile{border-radius:var(--r-lg);overflow:hidden;background:var(--surface);border:1px solid var(--border);display:flex;flex-direction:column}
+  .tile .art{height:96px;display:grid;place-items:center;color:#fff;position:relative}
+  .tile .art .logoBig{width:44px;height:44px;border-radius:13px;background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.4);display:grid;place-items:center;font-weight:800}
+  .tile .art .pill{position:absolute;left:8px;top:8px}
+  .tile .tb{padding:12px;display:grid;gap:4px;flex:1}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px 20px 0}
+
+  /* ---------- APPLICATIONS ---------- */
+  .pipe{display:flex;align-items:center;margin-top:2px}
+  .pipe i{width:12px;height:12px;border-radius:50%;background:var(--border-strong);flex:none}.pipe i.on{background:var(--accent)}
+  .pipe u{flex:1;height:2px;background:var(--border)}.pipe u.on{background:var(--accent)}
+  .pipeL{display:flex;justify-content:space-between;font-size:12px;color:var(--text3);margin-top:6px}
+  .pipeL span.on{color:var(--text);font-weight:600}
+  .note{background:var(--muted);border-radius:var(--r-md);padding:12px 14px}
+  .note b{font:500 10.5px 'Geist Mono',monospace;letter-spacing:.1em;color:var(--text3);display:block;margin-bottom:4px}
+  .note span{font-size:14.5px;line-height:1.45}
+  .vstep{display:grid;gap:0;padding-left:4px}
+  .vstep div{display:flex;gap:12px;align-items:flex-start;position:relative;padding-bottom:12px;font-size:14px;color:var(--text4)}
+  .vstep div::before{content:"";position:absolute;left:5px;top:16px;bottom:0;width:2px;background:var(--border)}
+  .vstep div:last-child::before{display:none}
+  .vstep i{width:12px;height:12px;border-radius:50%;background:var(--border-strong);margin-top:4px;flex:none;position:relative;z-index:1}
+  .vstep div.on{color:var(--text);font-weight:600}.vstep div.on i{background:var(--accent)}
+  .vstep div.cur i{box-shadow:0 0 0 4px var(--accent-soft)}
+  .seg4{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:6px}
+  .seg4 i{height:5px;border-radius:5px;background:var(--sunken)}.seg4 i.on{background:var(--accent)}
+
+  /* ---------- VIDEO ---------- */
+  .player{aspect-ratio:9/16;border-radius:var(--r-lg);overflow:hidden;position:relative;background:linear-gradient(170deg,var(--accent-bright),var(--accent-deep) 55%,var(--ink-raised));color:#fff}
+  .player .play{position:absolute;left:50%;top:48%;transform:translate(-50%,-50%);width:70px;height:70px;border-radius:50%;background:rgba(255,255,255,.18);border:1.5px solid rgba(255,255,255,.4);display:grid;place-items:center}
+  .player .play svg{width:30px;fill:#fff;stroke:none}
+  .seal{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.94);color:var(--ok-text);border-radius:99px;padding:6px 11px;font:500 10.5px 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase;width:fit-content}
+  .seal svg{width:14px;stroke:var(--ok);stroke-width:2.8}
+  .player .seal{position:absolute;left:12px;top:12px;max-width:calc(100% - 24px)}
+  .player .ctrl{position:absolute;left:12px;right:12px;bottom:12px;display:flex;align-items:center;gap:10px;font:500 11px 'Geist Mono',monospace}
+  .player .bar{flex:1;height:4px;border-radius:4px;background:rgba(255,255,255,.3)}.player .bar i{display:block;height:100%;width:24%;background:#fff;border-radius:4px}
+  .facts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .fact{background:var(--muted);border-radius:var(--r-md);padding:10px 12px}
+  .fact .k{font:500 10px 'Geist Mono',monospace;letter-spacing:.1em;color:var(--text3)}
+  .fact .v{font-size:14.5px;font-weight:600;margin-top:3px}
+  .vrow{display:flex;align-items:center;gap:12px;padding:14px;border:1px solid var(--border);border-radius:var(--r-lg);background:var(--surface)}
+  .vrow .th{width:44px;aspect-ratio:9/16;border-radius:9px;background:linear-gradient(160deg,var(--accent-deep),var(--ink-raised));flex:none;display:grid;place-items:center;color:#fff}
+  .vrow .th svg{width:14px;fill:#fff;stroke:none}
+  .notice{display:grid;gap:8px;border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;background:var(--surface);font-size:14.5px;line-height:1.45}
+  .stateCard{display:grid;justify-items:center;text-align:center;gap:12px;padding:22px 18px;border:1px solid var(--border);border-radius:var(--r-lg);background:var(--surface)}
+  .stateCard .th{width:96px;aspect-ratio:9/16;border-radius:14px;display:grid;place-items:center;color:#fff}
+  .stateCard b{font-size:21px;letter-spacing:-.03em}
+  .stateCard p{font-size:15px;color:var(--text3);line-height:1.5}
+  .reason{width:100%;text-align:left;background:var(--muted);border-radius:var(--r-md);padding:12px 14px}
+  .reason b{font:500 10.5px 'Geist Mono',monospace;letter-spacing:.1em;color:var(--text3);display:block;font-size:10.5px}
+  .onink-state .reason{background:rgba(255,255,255,.1)}.onink-state .reason b{color:#A6ACBA}.onink-state .reason span{color:#fff}
+  .onink-state .btn.ink{background:#fff;color:var(--ink)}
+  .hscroll{display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;padding:0 20px}
+  .hscroll::-webkit-scrollbar{display:none}
+  .mini{flex:none;width:112px}
+  .mini .th{aspect-ratio:9/16;border-radius:14px;background:linear-gradient(160deg,var(--accent-bright),var(--ink-raised));position:relative;display:grid;place-items:center;color:#fff}
+  .mini .th.dimv{background:var(--muted);color:var(--text4)}
+  .mini .th .pill{position:absolute;left:6px;top:6px}
+  .mini .th svg{width:18px;fill:#fff;stroke:none}
+  .mini .th.dimv svg{fill:var(--text4)}
+  .mini b{display:block;font-size:13.5px;margin-top:6px}.mini span{font-size:12.5px;color:var(--text3)}
+  .sheetV{position:absolute;left:0;right:0;bottom:0;background:var(--bg);border-radius:28px 28px 0 0;padding:10px 20px 24px;z-index:20;max-height:56%;overflow-y:auto;scrollbar-width:none;border-top:1px solid var(--border)}
+  .sheetV .grab{width:40px;height:4px;border-radius:4px;background:var(--border-strong);margin:0 auto 12px}
+  .tilesV{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .tileV{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px}
+  .tileV .k{font:500 10.5px 'Geist Mono',monospace;letter-spacing:.1em;color:var(--text3)}
+  .tileV .v{font-size:19px;font-weight:700;letter-spacing:-.02em;margin-top:4px}
+</style>
+</head>
+<body>
+
+<div class="intro">
+  <div class="mono" style="color:var(--accent)">Saved jobs · Applications · Video resume</div>
+  <h1>Four options for each screen</h1>
+  <p class="lede">Same system as the screens you approved: Geist, 14-radius controls, bordered cards, mono labels, no shadows, floating tab bar. Every field and sentence comes from what the app already shows; names, dates and numbers are sample values. Tap the state switch above each row, then tap into the phones.</p>
+  <div class="cols">
+    <div class="box good"><div class="mono" style="color:var(--accent)">Saved jobs</div><h3>What it has today</h3><ul><li>Title, company, location, type, salary, deadline</li><li>Apply while the job is open, Remove always</li><li>Closed jobs stay with a “Closed” pill; applied ones show “Applied”</li><li>Empty: “Nothing saved yet.”</li></ul></div>
+    <div class="box"><div class="mono" style="color:var(--text3)">Applications</div><h3>Read-only pipeline</h3><ul><li>Applied → Viewed → Shortlisted → Connected</li><li>“Not selected” shows the employer’s note verbatim</li><li>Connected rows open the chat</li><li>Empty: “No applications yet.”</li></ul></div>
+    <div class="box"><div class="mono" style="color:var(--text3)">Video resume</div><h3>The film employers watch</h3><ul><li>9:16 player, verified seal with the interview date</li><li>Duration, published and interviewed dates</li><li>Notices: not live yet, preview</li><li>States: being prepared, could not be made, taken down, none yet</li><li>With two or more interviews: Watch and Make primary</li></ul></div>
+  </div>
+</div>
+
+<div class="section"><h2>Saved jobs</h2><p>Options A–D. Use the switch to see loading, empty and error. Remove drops a row; Apply opens the apply screen.</p>
+  <div class="states" id="svStates"></div><div class="row" id="sv"></div></div>
+<div class="section"><h2>Applications</h2><p>The pipeline is read-only: nothing here lets the candidate move a stage.</p>
+  <div class="states" id="apStates"></div><div class="row" id="ap"></div></div>
+<div class="section"><h2>Video resume</h2><p>Switch the film’s state to see every case. With the film published, the interview videos list lets you Watch or Make primary.</p>
+  <div class="states" id="vrStates"></div><div class="row" id="vr"></div></div>
+
+<script>
+const I={
+ home:'<svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z"/></svg>',
+ cal:'<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
+ brief:'<svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V4h6v3M3 12h18"/></svg>',
+ heart:'<svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 017-2.6A4 4 0 0119 10c0 5.6-7 10-7 10z"/></svg>',
+ user:'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>',
+ chev:'<svg class="chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>',
+ back:'<svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>',
+ alert:'<svg viewBox="0 0 24 24"><path d="M12 3l10 18H2zM12 10v5M12 18v.5"/></svg>',
+ play:'<svg viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z"/></svg>',
+ check:'<svg viewBox="0 0 24 24"><path d="M5 12l4 4 10-10"/></svg>',
+ save:'<svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 017-2.5A4 4 0 0119 10c0 5.6-7 10-7 10z"/></svg>',
+ clip:'<svg viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6zM14 3v4h4"/></svg>',
+ video:'<svg viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></svg>',
+ x:'<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+ chat:'<svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg>'
+};
+const status=l=>`<div class="status ${l?'light':''}"><span>9:41</span><i></i><span>5G ▮▮▮</span></div>`;
+const TABS=[['home','Home','home'],['cal','Interviews','interviews'],['brief','Jobs','jobs'],['heart','Interests','interests'],['user','Profile','profile']];
+const tab=a=>`<nav class="tab">${TABS.map(t=>`<button data-act="toast:Opens ${t[1]}" class="${t[2]===a?'on':''}">${I[t[0]]}<span>${t[1]}</span></button>`).join('')}</nav>`;
+const shell=el=>el.insertAdjacentHTML('beforeend','<div class="toast"></div>');
+let tt;const toast=(el,m)=>{const t=el.querySelector('.toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),1700)};
+const cell=(id,tag,t,d)=>`<div class="cell"><div class="phone" id="${id}"></div><div class="cap"><span class="mono tag">${tag}</span><b>${t}</b><span>${d}</span></div></div>`;
+const switcher=(host,opts,get,set)=>{host.innerHTML=opts.map(o=>`<button class="${o[0]===get()?'on':''}" data-s="${o[0]}">${o[1]}</button>`).join('');host.querySelectorAll('button').forEach(b=>b.onclick=()=>{set(b.dataset.s);host.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b))})};
+const jobsHead=active=>`<div class="head"><div class="title">Jobs</div></div><div class="seg">${['For you','Saved','Applied'].map(t=>`<button class="${t===active?'on':''}" data-act="toast:Opens ${t}">${t}</button>`).join('')}</div>`;
+const skel=(n,h)=>Array.from({length:n},()=>`<div class="skel" style="height:${h}px;border-radius:18px"></div>`).join('');
+const errBlock=(t,b)=>`<div class="center"><div class="ic">${I.alert}</div><b>${t}</b><p>${b}</p><button class="btn out" data-act="retry">Try again</button></div>`;
+const COL=['#5B3DF5','#0E9F6E','#E0366B','#2F6BFF','#C77D00','#6B7385','#0B7A55','#3B2A8F','#E5484D'];
+const GR=['linear-gradient(160deg,#7258FF,#3B2A8F)','linear-gradient(160deg,#0E9F6E,#0B5B47)','linear-gradient(160deg,#E0366B,#7A1F46)','linear-gradient(160deg,#2F6BFF,#1B3A8F)'];
+
+/* =============================== SAVED JOBS =============================== */
+const SAVED=[
+ {id:'s1',t:'UI/UX Designer',co:'Company A',l:'CA',loc:'Bengaluru',type:'Full-time',pay:'₹12 – 18 LPA',dl:'Closes 15 Oct',open:true,video:true},
+ {id:'s2',t:'Frontend Engineer',co:'Company B',l:'CB',loc:'Remote',type:'Full-time',pay:'₹15 – 24 LPA',dl:'Closes 20 Oct',open:true},
+ {id:'s3',t:'Brand Strategist',co:'Company C',l:'CC',loc:'Mumbai',type:'Contract',pay:'₹8 – 12 LPA',dl:'Closed',open:false},
+ {id:'s4',t:'Data Analyst',co:'Company D',l:'CD',loc:'Pune',type:'Full-time',pay:'₹9 – 14 LPA',dl:'Closes 30 Oct',open:true,applied:true},
+];
+const SV={state:'list',removed:new Set()};
+const svRows=()=>SAVED.filter(r=>!SV.removed.has(r.id));
+const metaL=r=>[r.loc,r.type,r.pay,r.dl].join(' · ');
+const svPill=r=>r.applied?'<span class="pill neutral">Applied</span>':!r.open?'<span class="pill neutral">Closed</span>':'';
+const svBody=(rows,render,headHtml)=>{
+  if(SV.state==='loading')return `<div class="pad" style="display:grid;gap:10px;margin-top:14px">${skel(4,120)}</div>`;
+  if(SV.state==='error')return errBlock('Could not load your saved jobs.','Nothing was changed. Pull down to try again.');
+  if(SV.state==='empty'||!rows.length)return `<div class="center"><div class="ic">${I.save}</div><b>Nothing saved yet.</b><p>Swipe right on the feed to keep a job here. Applying starts from this list.</p><button class="btn pri" data-act="toast:Opens the feed">Open the feed</button></div>`;
+  return render(rows)};
+/* A · cards */
+const svA=()=>`${status()}<div class="scroll" style="padding-bottom:130px">${jobsHead('Saved')}${svBody(svRows(),rows=>`<div class="pad" style="display:grid;gap:10px;margin-top:16px">${rows.map(r=>`<div class="card sv ${!r.open&&!r.applied?'dim':''}" style="display:grid;gap:10px"><div class="rowc" style="align-items:flex-start" data-act="toast:Opens ${r.t}"><div class="grow"><h4>${r.t}</h4><div class="sub">${r.co}</div></div>${svPill(r)}</div><div class="meta">${metaL(r)}</div><div class="rowc" style="gap:8px"><span class="remove" data-act="rm:${r.id}">Remove</span>${r.applied?'':`<span class="btn ${r.open?'ink':'dis'} sm grow" data-act="${r.open?'toast:Opens Apply':'noop'}">Apply</span>`}</div>${!r.open&&!r.applied?'<div class="sub" style="font-size:13px">Applications for this job have closed.</div>':''}</div>`).join('')}</div>`)}</div>${tab('jobs')}`;
+/* B · dense list */
+const svB=()=>`${status()}<div class="scroll" style="padding-bottom:130px">${jobsHead('Saved')}${svBody(svRows(),rows=>`<div class="pad" style="margin-top:12px"><div class="grp" style="padding:8px 0 10px">${rows.length} saved</div><div class="card" style="padding:4px 16px">${rows.map((r,i)=>`<div class="${!r.open&&!r.applied?'dim':''}" style="padding:14px 0;border-top:${i?'1px solid var(--border)':'0'};display:grid;gap:8px"><div class="rowc" style="align-items:flex-start;gap:12px" data-act="toast:Opens ${r.t}"><div class="logo" style="background:${COL[i%9]}">${r.l}</div><div class="grow"><div class="rowc" style="gap:8px;justify-content:space-between;align-items:flex-start"><b style="font-size:16px;letter-spacing:-.01em;line-height:1.25">${r.t}</b>${svPill(r)}</div><div class="sub" style="font-size:13.5px">${r.co} · ${r.loc}</div></div></div><div class="rowc" style="gap:10px;padding-left:58px"><span style="font-size:14px;font-weight:600;white-space:nowrap">${r.pay}</span><span class="meta">${r.dl}</span></div><div class="rowc" style="gap:8px;justify-content:flex-end"><span class="remove" style="height:36px;font-size:13px" data-act="rm:${r.id}">Remove</span>${r.applied?'':`<span class="btn ${r.open?'ink':'dis'} sm" style="height:36px" data-act="${r.open?'toast:Opens Apply':'noop'}">Apply</span>`}</div></div>`).join('')}</div></div>`)}</div>${tab('jobs')}`;
+/* C · grouped by what you can do */
+const svC=()=>`${status()}<div class="scroll" style="padding-bottom:130px">${jobsHead('Saved')}${svBody(svRows(),rows=>{const open=rows.filter(r=>r.open&&!r.applied),applied=rows.filter(r=>r.applied),closed=rows.filter(r=>!r.open&&!r.applied);
+ const g=(t,list,mode)=>list.length?`<div class="grp">${t} · ${list.length}</div><div class="pad" style="display:grid;gap:10px">${list.map(r=>`<div class="card sv ${mode==='closed'?'dim':''}" style="display:grid;gap:8px;padding:14px"><div class="rowc" style="gap:12px;align-items:flex-start" data-act="toast:Opens ${r.t}"><div class="logo" style="background:${COL[SAVED.indexOf(r)%9]};width:42px;height:42px">${r.l}</div><div class="grow"><h4 style="font-size:17px">${r.t}</h4><div class="sub" style="font-size:13.5px">${r.co}</div></div>${I.chev}</div><div class="meta">${metaL(r)}</div><div class="rowc" style="gap:8px"><span class="remove" data-act="rm:${r.id}">Remove</span>${mode==='open'?`<span class="btn ink sm grow" data-act="toast:Opens Apply">Apply</span>`:mode==='applied'?'<span class="pill neutral">Applied</span>':'<span class="sub" style="font-size:13px">Applications have closed.</span>'}</div></div>`).join('')}</div>`:'';
+ return g('Open to apply',open,'open')+g('Applied',applied,'applied')+g('Closed',closed,'closed')})}</div>${tab('jobs')}`;
+/* D · grid tiles */
+const svD=()=>`${status()}<div class="scroll" style="padding-bottom:130px">${jobsHead('Saved')}${svBody(svRows(),rows=>`<div class="grid2">${rows.map(r=>`<div class="tile ${!r.open&&!r.applied?'dim':''}"><div class="art" style="background:${GR[SAVED.indexOf(r)%4]}" data-act="toast:Opens ${r.t}"><div class="logoBig">${r.l}</div>${r.video?'<span class="pill onink">Video</span>':''}</div><div class="tb"><b style="font-size:15.5px;line-height:1.2;letter-spacing:-.01em">${r.t}</b><div class="sub" style="font-size:13px">${r.co}</div><div style="font-size:13.5px;font-weight:600;margin-top:4px">${r.pay}</div><div class="meta">${r.dl}</div><div style="margin-top:8px;display:grid;gap:6px">${r.applied?'<span class="pill neutral" style="justify-self:start">Applied</span>':`<span class="btn ${r.open?'ink':'dis'} sm" data-act="${r.open?'toast:Opens Apply':'noop'}">Apply</span>`}<span class="remove" style="height:36px;justify-content:center" data-act="rm:${r.id}">Remove</span></div></div></div>`).join('')}</div>`)}</div>${tab('jobs')}`;
+const SVFN={A:svA,B:svB,C:svC,D:svD};
+document.getElementById('sv').innerHTML=cell('svA','A · Cards','Today’s cards, tightened','Title, company, mono meta line, Remove and Apply. Closed and applied states in place.')+cell('svB','B · Dense list','Naukri-style rows in one card','Logo, title, company · place, pay and deadline on one line, small Apply and Remove.')+cell('svC','C · Grouped','Open to apply · Applied · Closed','Groups what you can act on first, so closed jobs stop cluttering the top.')+cell('svD','D · Tiles','Two-column grid','Visual tiles with a colour block and a Video tag for jobs that have a film.');
+const renderSv=k=>{const el=document.getElementById('sv'+k);el.innerHTML=SVFN[k]();shell(el)};
+const renderSvAll=()=>['A','B','C','D'].forEach(renderSv);renderSvAll();
+switcher(document.getElementById('svStates'),[['list','List'],['loading','Loading'],['empty','Empty'],['error','Error']],()=>SV.state,s=>{SV.state=s;SV.removed=new Set();renderSvAll()});
+['A','B','C','D'].forEach(k=>document.getElementById('sv'+k).addEventListener('click',e=>{const a=e.target.closest('[data-act]');if(!a)return;const x=a.dataset.act,el=document.getElementById('sv'+k);
+ if(x==='noop')return toast(el,'Applications for this job have closed.');
+ if(x==='retry'){SV.state='loading';renderSvAll();return setTimeout(()=>{SV.state='list';renderSvAll();document.querySelectorAll('#svStates button').forEach(b=>b.classList.toggle('on',b.dataset.s==='list'))},900)}
+ if(x.startsWith('rm:')){SV.removed.add(x.slice(3));renderSvAll();return toast(document.getElementById('sv'+k),'Removed from saved')}
+ if(x.startsWith('toast:'))toast(el,x.slice(6))}));
+
+/* =============================== APPLICATIONS =============================== */
+const STEPS=['Applied','Viewed','Shortlisted','Connected'];
+const MARK={APPLIED:['Applied','neutral'],VIEWED:['Viewed','info'],SHORTLISTED:['Shortlisted','acc'],CONNECTED:['Connected','ok'],REJECTED:['Not selected','neutral']};
+const APPS=[
+ {id:'a1',t:'Operations Analyst',co:'Company G',l:'CG',loc:'Pune',type:'Full-time',st:'CONNECTED',on:'20 Sep',conn:true},
+ {id:'a2',t:'Content Writer',co:'Company E',l:'CE',loc:'Delhi',type:'Full-time',st:'SHORTLISTED',on:'26 Sep'},
+ {id:'a3',t:'QA Engineer',co:'Company I',l:'CI',loc:'Remote',type:'Full-time',st:'VIEWED',on:'28 Sep'},
+ {id:'a4',t:'Product Designer',co:'Company H',l:'CH',loc:'Mumbai',type:'Contract',st:'APPLIED',on:'30 Sep'},
+ {id:'a5',t:'Support Associate',co:'Company F',l:'CF',loc:'Remote',type:'Full-time',st:'REJECTED',on:'22 Sep',note:'Sample note: thank you for applying. We moved ahead with another candidate.'},
+];
+const AP={state:'list',f:'All'};
+const reached=a=>a.st==='REJECTED'?0:STEPS.map(s=>s.toUpperCase()).indexOf(a.st)+1;
+const apMeta=a=>`${a.loc} · ${a.type} · Applied ${a.on}`;
+const apPill=a=>`<span class="pill ${MARK[a.st][1]}">${MARK[a.st][0]}</span>`;
+const dots=a=>a.st==='REJECTED'?'':`<div><div class="pipe">${STEPS.map((_,i)=>`<i class="${i<reached(a)?'on':''}"></i>${i<3?`<u class="${i<reached(a)-1?'on':''}"></u>`:''}`).join('')}</div><div class="pipeL">${STEPS.map((s,i)=>`<span class="${i===reached(a)-1?'on':''}">${s}</span>`).join('')}</div></div>`;
+const noteBox=a=>a.st==='REJECTED'&&a.note?`<div class="note"><b>THEIR NOTE</b><span>${a.note}</span></div>`:'';
+const chatBtn=(a,cls='')=>a.st==='CONNECTED'?`<span class="btn ink sm ${cls}" data-act="toast:Opens the chat">Open chat</span>`:'';
+const apBody=render=>{
+  if(AP.state==='loading')return `<div class="pad" style="display:grid;gap:10px;margin-top:14px">${skel(4,150)}</div>`;
+  if(AP.state==='error')return errBlock('Could not load your applications.','Nothing was changed. Pull down to try again.');
+  if(AP.state==='empty')return `<div class="center"><div class="ic">${I.clip}</div><b>No applications yet.</b><p>Applications you send land here, and you will see every move an employer makes.</p><button class="btn pri" data-act="toast:Opens the feed">Find a job</button></div>`;
+  return render()};
+/* A · pipeline cards */
+const apA=()=>`${status()}<div class="scroll" style="padding-bottom:130px">${jobsHead('Applied')}${apBody(()=>`<div class="pad" style="display:grid;gap:10px;margin-top:16px">${APPS.map(a=>`<div class="card sv" style="display:grid;gap:12px"><div class="rowc" style="align-items:flex-start"><div class="grow"><h4>${a.t}</h4><div class="sub">${a.co}</div></div>${apPill(a)}</div>${dots(a)}<div class="sub" style="font-size:13px">${apMeta(a)}</div>${noteBox(a)}${a.st==='CONNECTED'?`<div style="display:flex;justify-content:flex-end">${chatBtn(a)}</div>`:''}</div>`).join('')}</div>`)}</div>${tab('jobs')}`;
+/* B · vertical steps */
+const apB=()=>`${status()}<div class="scroll" style="padding-bottom:130px">${jobsHead('Applied')}${apBody(()=>`<div class="pad" style="display:grid;gap:10px;margin-top:16px">${APPS.map((a,i)=>`<div class="card" style="display:grid;gap:12px"><div class="rowc" style="align-items:flex-start;gap:12px"><div class="logo" style="background:${COL[(i+4)%9]}">${a.l}</div><div class="grow"><b style="font-size:17px;letter-spacing:-.02em;line-height:1.2">${a.t}</b><div class="sub" style="font-size:13.5px">${a.co} · ${a.loc}</div></div></div>${a.st==='REJECTED'?`<div class="rowc" style="gap:8px">${apPill(a)}<span class="meta">Applied ${a.on}</span></div>${noteBox(a)}`:`<div class="vstep">${STEPS.map((s,k)=>`<div class="${k<reached(a)?'on':''} ${k===reached(a)-1?'cur':''}"><i></i><span>${s}</span></div>`).join('')}</div><div class="meta">Applied ${a.on}</div>${chatBtn(a,'full')}`}</div>`).join('')}</div>`)}</div>${tab('jobs')}`;
+/* C · grouped by stage */
+const apC=()=>`${status()}<div class="scroll" style="padding-bottom:130px">${jobsHead('Applied')}${apBody(()=>{const g=(t,list)=>list.length?`<div class="grp">${t} · ${list.length}</div><div class="pad"><div class="card" style="padding:4px 16px">${list.map((a,i)=>`<div style="padding:14px 0;border-top:${i?'1px solid var(--border)':'0'};display:grid;gap:6px"><div class="rowc" style="gap:10px;align-items:flex-start"><div class="grow"><b style="font-size:16px;letter-spacing:-.01em">${a.t}</b><div class="sub" style="font-size:13.5px">${a.co}</div></div>${apPill(a)}</div><div class="meta">${apMeta(a)}</div>${noteBox(a)}${chatBtn(a)}</div>`).join('')}</div></div>`:'';
+ const by=s=>APPS.filter(a=>a.st===s);return g('Connected',by('CONNECTED'))+g('Shortlisted',by('SHORTLISTED'))+g('Viewed',by('VIEWED'))+g('Applied',by('APPLIED'))+g('Not selected',by('REJECTED'))})}</div>${tab('jobs')}`;
+/* D · filter chips + compact rows with segment bar */
+const FF={All:()=>APPS,Active:()=>APPS.filter(a=>a.st!=='REJECTED'),Connected:()=>APPS.filter(a=>a.st==='CONNECTED'),'Not selected':()=>APPS.filter(a=>a.st==='REJECTED')};
+const apD=()=>`${status()}<div class="scroll" style="padding-bottom:130px">${jobsHead('Applied')}${apBody(()=>`<div class="chips" style="margin-top:14px">${Object.keys(FF).map(k=>`<button class="chip ${k===AP.f?'on':''}" data-act="f:${k}">${k} (${FF[k]().length})</button>`).join('')}</div><div class="pad" style="display:grid;gap:10px;margin-top:12px">${FF[AP.f]().map(a=>`<div class="card" style="display:grid;gap:8px;padding:14px"><div class="rowc" style="gap:10px;align-items:flex-start"><div class="grow"><b style="font-size:16.5px;letter-spacing:-.01em;line-height:1.2">${a.t}</b><div class="sub" style="font-size:13.5px">${a.co} · ${a.loc}</div></div>${apPill(a)}</div>${a.st==='REJECTED'?'':`<div class="seg4">${STEPS.map((_,i)=>`<i class="${i<reached(a)?'on':''}"></i>`).join('')}</div>`}<div class="rowc" style="justify-content:space-between"><span class="meta">${a.type} · Applied ${a.on}</span>${chatBtn(a)}</div>${noteBox(a)}</div>`).join('')}</div>`)}</div>${tab('jobs')}`;
+const APFN={A:apA,B:apB,C:apC,D:apD};
+document.getElementById('ap').innerHTML=cell('apA','A · Pipeline cards','Four dots with labels','Today’s idea with the current stage named under the dots, the employer’s note and Open chat.')+cell('apB','B · Steps','Vertical stepper per application','The ladder as a vertical list, current rung ringed. Rejections show only the pill and the note.')+cell('apC','C · By stage','Grouped: Connected, Shortlisted, Viewed…','The best news first. Each stage is a group with compact rows.')+cell('apD','D · Filters','Chips + segmented progress bar','Filter chips with counts and a slim four-segment bar per row.');
+const renderAp=k=>{const el=document.getElementById('ap'+k);el.innerHTML=APFN[k]();shell(el)};
+const renderApAll=()=>['A','B','C','D'].forEach(renderAp);renderApAll();
+switcher(document.getElementById('apStates'),[['list','List'],['loading','Loading'],['empty','Empty'],['error','Error']],()=>AP.state,s=>{AP.state=s;renderApAll()});
+['A','B','C','D'].forEach(k=>document.getElementById('ap'+k).addEventListener('click',e=>{const a=e.target.closest('[data-act]');if(!a)return;const x=a.dataset.act,el=document.getElementById('ap'+k);
+ if(x==='retry'){AP.state='loading';renderApAll();return setTimeout(()=>{AP.state='list';renderApAll();document.querySelectorAll('#apStates button').forEach(b=>b.classList.toggle('on',b.dataset.s==='list'))},900)}
+ if(x.startsWith('f:')){AP.f=x.slice(2);return renderApAll()}
+ if(x.startsWith('toast:'))toast(el,x.slice(6))}));
+
+/* =============================== VIDEO RESUME =============================== */
+const VR={s:'live',watching:null,primary:'v1',outcome:false};
+const VIDS=[{id:'v1',date:'24 Sep 2026',len:'3:12',st:'READY'},{id:'v2',date:'15 Sep 2026',len:'2:48',st:'READY'},{id:'v3',date:'2 Sep 2026',len:'',st:'FAILED'},{id:'v4',date:'6 Aug 2026',len:'3:30',st:'ARCHIVED'}];
+const VPILL={READY:['Ready','ok'],PROCESSING:['Being made','warn'],FAILED:['Could not be made','danger'],UNPUBLISHED:['Taken down','danger'],ARCHIVED:['Archived','neutral']};
+const sealHtml=d=>`<div class="seal">${I.check}Verified interview · ${d}</div>`;
+const playerHtml=()=>{const w=VR.watching&&VR.watching!==VR.primary;const v=VIDS.find(x=>x.id===(VR.watching||VR.primary));return `<div class="player" data-act="toast:Plays your film"><div class="play">${I.play}</div>${sealHtml(v.date)}<div class="ctrl"><span>0:46</span><div class="bar"><i></i></div><span>${v.len}</span></div></div>`};
+const factsHtml=()=>{const v=VIDS.find(x=>x.id===(VR.watching||VR.primary));return `<div class="facts"><div class="fact"><div class="k">DURATION</div><div class="v">${v.len}</div></div><div class="fact"><div class="k">PUBLISHED</div><div class="v">${v.date.replace(' 2026',' 2026')}</div></div><div class="fact"><div class="k">INTERVIEWED</div><div class="v">${v.date}</div></div></div>`};
+const noticeHtml=()=>{if(VR.s==='held')return `<div class="notice"><span class="pill warn" style="justify-self:start">Not live yet</span>Your video resume is not live yet. A top-up on your interview is outstanding — employers cannot see it until it is settled.</div>`;
+ if(VR.watching&&VR.watching!==VR.primary)return `<div class="notice"><span class="pill neutral" style="justify-self:start">Preview</span>You are previewing a video that is not your primary one.</div>`;return ''};
+const vrIntro=`<div class="sub" style="margin-top:6px">The film from your interview. Employers watch this first; any videos you add yourself appear below it, marked as not verified.</div>`;
+const notPlayable=()=>{const s=VR.s;
+ const m={processing:{th:'linear-gradient(160deg,#C77D00,#5C4200)',pill:'<span class="pill warn">Processing</span>',t:'Your film is being prepared',b:'Your interview is done and your film is being made. It will appear here when it is ready.',act:'<span class="btn out" data-act="toast:Checking again…">Check again</span>'},
+  failed:{th:'linear-gradient(160deg,#E5484D,#7A1F1F)',pill:'<span class="pill danger">Could not be made</span>',t:'Your film could not be made',b:'Something went wrong while making the film from your interview. Talk to support and we will look into it.',act:'<span class="btn ink" data-act="toast:Opens Support">Talk to support</span>'},
+  taken:{th:'linear-gradient(160deg,#6B7385,#2A3042)',pill:'<span class="pill danger">Taken down</span>',t:'Your film has been taken down',b:'Employers cannot see it while it is down. If you think this is a mistake, talk to support.',reason:'Sample reason from the team.',act:'<span class="btn ink" data-act="toast:Opens Support">Talk to support</span>'},
+  none:{th:'linear-gradient(160deg,#8A91A2,#3A4256)',pill:'',t:'You do not have a video resume yet',b:'The interview you book becomes your video resume — the one thing employers watch before they read a word.',act:'<span class="btn pri" data-act="toast:Opens Book an interview">Book an interview</span>'}}[s];
+ return `<div class="stateCard"><div class="th" style="background:${m.th}">${I.video}</div>${m.pill}<b>${m.t}</b><p>${m.b}</p>${m.reason?`<div class="reason"><b>REASON GIVEN</b><span style="font-size:14.5px">${m.reason}</span></div>`:''}${m.act}</div>`};
+const playable=()=>VR.s==='live'||VR.s==='held';
+const vidRow=v=>{const m=VPILL[v.st],prim=v.id===VR.primary,shown=(VR.watching||VR.primary)===v.id,sel=!prim&&v.st==='READY';
+ return `<div class="vrow"><div class="th">${I.play}</div><div class="grow"><b style="font-size:15.5px">${v.date}</b>${v.len?`<div class="sub" style="font-size:13.5px">${v.len}</div>`:''}<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">${prim?'<span class="pill acc">Primary</span>':''}${(!prim||v.st!=='READY')?`<span class="pill ${m[1]}">${m[0]}</span>`:''}</div>${!prim&&!sel&&v.st!=='READY'?'<div class="sub" style="font-size:12.5px;margin-top:6px">This video cannot be made primary.</div>':''}</div><div style="display:grid;gap:6px">${v.st==='READY'?`<span class="btn out sm ${shown?'dis':''}" data-act="${shown?'noop':'watch:'+v.id}">${shown?'Watching':'Watch'}</span>`:''}${sel?`<span class="btn ink sm" data-act="prim:${v.id}">Make primary</span>`:''}</div></div>`};
+const vidSection=()=>`<div style="display:grid;gap:10px"><b style="font-size:19px;letter-spacing:-.025em">Your interview videos</b><div class="sub">Employers see the video marked Primary. Your most recent interview is primary until you choose another.</div>${VR.outcome?'<div class="notice">This is now your primary video.</div>':''}${VIDS.map(vidRow).join('')}</div>`;
+const vrHead=(t='Your video resume')=>`<div class="head" style="display:flex;align-items:center;gap:12px;padding-top:8px"><button class="btn out" style="width:44px;height:44px;padding:0;border-radius:50%" data-act="toast:Back">${I.back}</button></div>`;
+/* A · player first */
+const vrA=()=>`${status()}<div class="scroll" style="padding-bottom:130px">${vrHead()}<div class="pad" style="display:grid;gap:14px"><div><div class="mono" style="color:var(--text3)">YOUR PROFILE</div><div class="title" style="font-size:28px;margin-top:6px">Your video resume</div>${playable()?vrIntro:''}</div>${noticeHtml()}${playable()?`${playerHtml()}${factsHtml()}${vidSection()}`:notPlayable()}</div></div>${tab('profile')}`;
+/* B · dark hero + thumbnails carousel */
+const vrB=()=>`${status(true)}<div class="scroll" style="padding-top:0;padding-bottom:130px;background:var(--bg)"><div style="background:var(--ink);color:#fff;padding:62px 20px 22px;border-radius:0 0 30px 30px"><div class="mono" style="color:var(--accent-muted)">YOUR PROFILE</div><div class="title" style="font-size:28px;margin-top:6px">Your video resume</div>${playable()?`<div style="margin:16px auto 0;width:210px">${playerHtml()}</div><div class="rowc" style="justify-content:center;gap:8px;margin-top:14px"><span class="pill onink">${VIDS.find(x=>x.id===(VR.watching||VR.primary)).len}</span><span class="pill onink">Interviewed ${VIDS.find(x=>x.id===(VR.watching||VR.primary)).date}</span></div>`:`<div class="onink-state" style="margin-top:16px;color:#C9CED9;font-size:15px;line-height:1.5">${notPlayable().replace(/class="stateCard"/,'class="stateCard" style="background:transparent;border-color:rgba(255,255,255,.15);color:#fff"').replace(/color:var\(--text3\)/g,'')}</div>`}</div>
+  <div class="pad" style="display:grid;gap:14px;margin-top:16px">${noticeHtml()}${playable()?`<div style="font-size:19px;font-weight:700;letter-spacing:-.025em">Your interview videos</div><div class="sub" style="margin-top:-6px">Employers see the video marked Primary.</div>`:''}</div>
+  ${playable()?`<div class="hscroll" style="margin-top:12px">${VIDS.map(v=>{const m=VPILL[v.st],prim=v.id===VR.primary;return `<div class="mini" data-act="${v.st==='READY'?'watch:'+v.id:'noop'}"><div class="th ${v.st==='READY'?'':'dimv'}">${I.play}<span class="pill ${prim?'acc':m[1]}">${prim?'Primary':m[0]}</span></div><b>${v.date.replace(' 2026','')}</b><span>${v.len||'—'}</span></div>`}).join('')}</div>
+  <div class="pad" style="margin-top:14px;display:grid;gap:10px">${VR.watching&&VR.watching!==VR.primary?`<span class="btn ink full" data-act="prim:${VR.watching}">Make primary</span>`:'<div class="sub">Tap a video to watch it. Watching never changes what employers see; only Make primary does.</div>'}</div>`:''}</div>${tab('profile')}`;
+/* C · full-bleed player + sheet */
+const vrC=()=>playable()?`${status(true)}<div style="position:absolute;inset:0;background:linear-gradient(170deg,var(--accent-bright),var(--accent-deep) 50%,#0B0F1A)"><div class="play" style="position:absolute;left:50%;top:26%;transform:translate(-50%,-50%);width:84px;height:84px;border-radius:50%;background:rgba(255,255,255,.18);border:1.5px solid rgba(255,255,255,.4);display:grid;place-items:center" data-act="toast:Plays your film"><svg viewBox="0 0 24 24" style="fill:#fff;stroke:none;width:34px">${I.play.replace(/<\/?svg[^>]*>/g,'')}</svg></div><div style="position:absolute;left:14px;top:58px;display:flex;gap:10px;align-items:center"><button class="btn out" style="width:44px;height:44px;padding:0;border-radius:50%;background:rgba(11,15,26,.4);border-color:rgba(255,255,255,.3);color:#fff" data-act="toast:Back">${I.back}</button></div><div style="position:absolute;left:14px;right:14px;top:112px">${sealHtml(VIDS.find(x=>x.id===(VR.watching||VR.primary)).date).replace('class="seal"','class="seal" style="position:static;display:inline-flex"')}</div></div>
+  <div class="sheetV"><div class="grab"></div><div class="title" style="font-size:24px">Your video resume</div><div style="margin:12px 0">${noticeHtml()}</div>${factsHtml()}<div style="margin-top:16px">${vidSection()}</div></div>${tab('profile')}`
+ :`${status()}<div class="scroll" style="padding-bottom:130px">${vrHead()}<div class="pad" style="display:grid;gap:14px"><div class="title" style="font-size:28px">Your video resume</div>${notPlayable()}</div></div>${tab('profile')}`;
+/* D · status first + tiles */
+const vrD=()=>`${status()}<div class="scroll" style="padding-bottom:130px">${vrHead()}<div class="pad" style="display:grid;gap:14px"><div class="title" style="font-size:28px">Your video resume</div>
+ <div class="card" style="display:grid;gap:8px;background:${VR.s==='live'?'var(--ok-soft)':VR.s==='held'?'var(--warn-soft)':'var(--muted)'};border-color:transparent"><div class="rowc" style="gap:10px"><span class="pill ${VR.s==='live'?'ok':VR.s==='held'?'warn':VR.s==='processing'?'warn':VR.s==='none'?'neutral':'danger'}">${{live:'Live',held:'Not live yet',processing:'Processing',failed:'Could not be made',taken:'Taken down',none:'No film yet'}[VR.s]}</span></div><div style="font-size:15px;line-height:1.45">${{live:'Live in employer feeds. Employers watch this first.',held:'A top-up on your interview is outstanding — employers cannot see it until it is settled.',processing:'Your interview is done and your film is being made.',failed:'Something went wrong while making the film from your interview.',taken:'Employers cannot see it while it is down.',none:'The interview you book becomes your video resume.'}[VR.s]}</div></div>
+ ${playable()?`<div style="display:grid;grid-template-columns:150px 1fr;gap:14px;align-items:start">${playerHtml().replace('aspect-ratio','aspect-ratio')}<div class="tilesV" style="grid-template-columns:1fr">${(()=>{const v=VIDS.find(x=>x.id===(VR.watching||VR.primary));return `<div class="tileV"><div class="k">DURATION</div><div class="v">${v.len}</div></div><div class="tileV"><div class="k">INTERVIEWED</div><div class="v" style="font-size:16px">${v.date}</div></div><div class="tileV"><div class="k">PUBLISHED</div><div class="v" style="font-size:16px">${v.date}</div></div>`})()}</div></div>${noticeHtml()}${vidSection()}`:notPlayable()}</div></div>${tab('profile')}`;
+const VRFN={A:vrA,B:vrB,C:vrC,D:vrD};
+document.getElementById('vr').innerHTML=cell('vrA','A · Player first','Title, 9:16 player, facts, videos','Today’s structure with the verified seal on the film and the interview videos list below.')+cell('vrB','B · Dark hero','Player on ink, videos as a carousel','The film on a dark hero; other interviews as thumbnails to watch or make primary.')+cell('vrC','C · Full-bleed','Film fills the screen, details in a sheet','Immersive: the player behind, facts and videos in a sheet in front.')+cell('vrD','D · Status first','Status card, small player, fact tiles','Leads with whether employers can see it, then the film beside its facts.');
+const renderVr=k=>{const el=document.getElementById('vr'+k);el.innerHTML=VRFN[k]();shell(el)};
+const renderVrAll=()=>['A','B','C','D'].forEach(renderVr);renderVrAll();
+switcher(document.getElementById('vrStates'),[['live','Published · live'],['held','Published · held'],['processing','Processing'],['failed','Failed'],['taken','Taken down'],['none','No film yet']],()=>VR.s,s=>{VR.s=s;VR.watching=null;VR.outcome=false;renderVrAll()});
+['A','B','C','D'].forEach(k=>document.getElementById('vr'+k).addEventListener('click',e=>{const a=e.target.closest('[data-act]');if(!a)return;const x=a.dataset.act,el=document.getElementById('vr'+k);
+ if(x==='noop')return;
+ if(x.startsWith('watch:')){VR.watching=x.slice(6)===VR.primary?null:x.slice(6);VR.outcome=false;return renderVrAll()}
+ if(x.startsWith('prim:')){VR.primary=x.slice(5);VR.watching=null;VR.outcome=true;return renderVrAll()}
+ if(x.startsWith('toast:'))toast(el,x.slice(6))}));
+</script>
+</body>
+</html>

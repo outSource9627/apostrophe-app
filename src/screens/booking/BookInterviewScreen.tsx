@@ -7,10 +7,11 @@ import {
   bookInterview, getCapacity, type CapacitySlot,
 } from '../../lib/api/interviews'
 import { bookingWindow, fmtShortDate, fmtStamp, fmtTime, groupByDay, type DaySlots } from '../../lib/interviews/slots'
-import { color, space, spaceHalf, radius, borderWidth, height, trackingNative } from '../../theme'
-import {
-  Banner, Button, Card, EmptyState, ErrorState, Eyebrow, ProgressBar, ScreenHeader, Skeleton, StickyFooter, text,
-} from '../../components/ui'
+import { borderWidth, color, fontFamilyNative as FF, radius } from '../../theme'
+import { Banner } from '../../components/ui'
+import { Icon } from '../../components/ui/Icon'
+import { Btn, Panel, Skel, StateBlock } from '../../components/tab/kit'
+import { Eyebrow, FlowFooter, FlowHeader, Lead, Sub } from '../../components/tab/flow'
 import { SlotPicker } from './SlotPicker'
 import { hoursPhrase, nextDaysPhrase, useBookingRules, type BookingRules } from '../../lib/interviews/rules'
 
@@ -41,21 +42,21 @@ export function BookInterviewScreen({
   const pending = me.isPending || config.isPending || profile.isPending || booking.pending
   const frame = (child: React.ReactNode) => (
     <View style={[styles.page, { paddingTop: insets.top }]}>
-      <ScreenHeader title="Book an interview" onBack={onBack} />
+      <FlowHeader title="Book an interview" onBack={onBack} />
       {child}
     </View>
   )
 
-  if (pending) return frame(<View style={styles.body}><Skeleton lines={4} /></View>)
+  if (pending) return frame(<View style={styles.body}><Skel w="60%" h={14} /><Skel w="100%" h={28} /><Skel w="100%" h={90} /><Skel w="100%" h={60} /></View>)
   if (me.isError || config.isError || profile.isError || !booking.rules) {
     return frame(
-      <View style={styles.centre}>
-        <ErrorState
-          title="Could not open the calendar."
-          body={booking.error ?? 'Nothing was booked. Check your connection and try again.'}
-          action={<Button variant="outline" size="sm" label="Try again" onPress={() => { void me.refetch(); void profile.refetch(); booking.retry() }} />}
-        />
-      </View>,
+      <StateBlock
+        icon="alert"
+        title="Could not open the calendar."
+        body={booking.error ?? 'Nothing was booked. Check your connection and try again.'}
+        action="Try again"
+        onAction={() => { void me.refetch(); void profile.refetch(); booking.retry() }}
+      />,
     )
   }
   const rules = booking.rules
@@ -64,11 +65,9 @@ export function BookInterviewScreen({
   if (!m.paid) {
     return frame(
       <View style={styles.centre}>
-        <EmptyState
-          title="Buy an interview to open the calendar."
-          body="The calendar opens the moment your payment is confirmed."
-          action={<Button variant="primary" size="md" label="See pricing" onPress={onBuy} />}
-        />
+        <Text style={styles.centreTitle}>Buy an interview to open the calendar.</Text>
+        <Sub style={styles.centreBody}>The calendar opens the moment your payment is confirmed.</Sub>
+        <Btn label="See pricing" onPress={onBuy} style={styles.centreBtn} />
       </View>,
     )
   }
@@ -82,31 +81,34 @@ export function BookInterviewScreen({
         <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
           <View style={styles.head}>
             <Eyebrow tone="accent">{`Booking opens at ${gate}%`}</Eyebrow>
-            <Text style={text.displayLead}>{short.length === 1 ? 'One section to go.' : `${short.length} sections to go.`}</Text>
-            <Text style={[text.uiBase, styles.muted]}>{`Interviewers are matched on what your profile says. Below ${gate}% there is not enough of it to match on.`}</Text>
+            <Lead>{short.length === 1 ? 'One section to go.' : `${short.length} sections to go.`}</Lead>
+            <Sub>{`Interviewers are matched on what your profile says. Below ${gate}% there is not enough of it to match on.`}</Sub>
           </View>
 
-          <Card style={styles.gateCard}>
+          <Panel style={styles.gateCard}>
             <View style={styles.rowBetween}>
-              <Text style={[text.meta2xl, styles.pct]}>{`${comp.pct}%`}</Text>
-              <Text style={[text.uiSm, styles.muted]}>{`book at ${gate}% · ${toGo}% to go`}</Text>
+              <Text style={styles.pct}>{`${comp.pct}%`}</Text>
+              <Text style={styles.small}>{`book at ${gate}% · ${toGo}% to go`}</Text>
             </View>
-            <ProgressBar pct={comp.pct} gate={gate} tone="accent" />
-          </Card>
+            <View style={styles.track}>
+              <View style={[styles.fill, { width: `${Math.max(0, Math.min(100, comp.pct))}%` }]} />
+              <View style={[styles.gateMark, { left: `${Math.max(0, Math.min(100, gate))}%` }]} />
+            </View>
+          </Panel>
 
           {short.map((st) => (
-            <Card key={st.key} style={styles.stepCard}>
+            <Panel key={st.key} style={styles.stepCard}>
               <View style={styles.grow}>
-                <Text style={text.uiBaseSemi}>{st.label}</Text>
-                <Text style={[text.uiXs, styles.muted]}>{st.missing.join(' · ')}</Text>
+                <Text style={styles.t15s}>{st.label}</Text>
+                <Text style={styles.xs}>{st.missing.join(' · ')}</Text>
               </View>
-              <View style={styles.gain}><Text style={[text.metaSm, styles.gainText]}>{`+${Math.round(st.weight - st.earned)}%`}</Text></View>
-            </Card>
+              <View style={styles.gain}><Text style={styles.gainText}>{`+${Math.round(st.weight - st.earned)}%`}</Text></View>
+            </Panel>
           ))}
         </ScrollView>
-        <StickyFooter>
-          <Button variant="primary" size="lg" full label="Finish your profile" onPress={onFinishProfile} />
-        </StickyFooter>
+        <FlowFooter>
+          <Btn label="Finish your profile" onPress={onFinishProfile} />
+        </FlowFooter>
       </>,
     )
   }
@@ -127,41 +129,41 @@ export function BookInterviewScreen({
         <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
           <View style={styles.head}>
             <Eyebrow tone="accent">Nothing to book with</Eyebrow>
-            <Text style={text.displayLead}>You have no interview left.</Text>
-            <Text style={[text.uiBase, styles.muted]}>The one you bought has been used. Buy another and this calendar opens again straight away.</Text>
+            <Lead>You have no interview left.</Lead>
+            <Sub>The one you bought has been used. Buy another and this calendar opens again straight away.</Sub>
           </View>
 
           <View style={styles.tierRow}>
             <View style={styles.tierText}>
               <View style={styles.tierTitle}>
-                <Text style={text.uiBaseSemi}>{[tier, m.qualification ? QUAL[m.qualification] ?? m.qualification : null].filter(Boolean).join(' · ')}</Text>
-                <View style={styles.yours}><Text style={[text.metaXs, styles.yoursText]}>YOURS</Text></View>
+                <Text style={styles.t15s}>{[tier, m.qualification ? QUAL[m.qualification] ?? m.qualification : null].filter(Boolean).join(' · ')}</Text>
+                <View style={styles.yours}><Text style={styles.yoursText}>YOURS</Text></View>
               </View>
-              {!!minutes && <Text style={[text.uiXs, styles.muted]}>{minutes}-minute interview · one-time</Text>}
+              {!!minutes && <Text style={styles.xs}>{minutes}-minute interview · one-time</Text>}
             </View>
-            {rupees ? <Text style={text.displaySm}>{rupees}</Text> : null}
+            {rupees ? <Text style={styles.big}>{rupees}</Text> : null}
           </View>
 
           <View style={styles.included}>
-            <Text style={[text.metaMd, styles.eyebrow]}>WHAT YOU GET</Text>
+            <Eyebrow>WHAT YOU GET</Eyebrow>
             {included.map((line) => (
               <View key={line} style={styles.bullet}>
-                <Text style={[text.uiMd, styles.dash]}>—</Text>
-                <Text style={[text.uiMd, styles.grow]}>{line}</Text>
+                <Text style={[styles.bulletText, styles.dash]}>—</Text>
+                <Text style={[styles.bulletText, styles.grow]}>{line}</Text>
               </View>
             ))}
           </View>
         </ScrollView>
-        <StickyFooter>
+        <FlowFooter>
           {rupees ? (
             <View style={styles.rowBetween}>
-              <Text style={text.uiMdSemi}>Total</Text>
-              <Text style={text.displaySm}>{rupees}</Text>
+              <Text style={styles.t15s}>Total</Text>
+              <Text style={styles.big}>{rupees}</Text>
             </View>
           ) : null}
-          <Button variant="primary" size="lg" full label={rupees ? `Buy an interview · ${rupees}` : 'Buy an interview'} onPress={onBuy} />
-          <Text style={[text.metaXs, styles.secured]}>Secured by Razorpay · UPI, cards, netbanking</Text>
-        </StickyFooter>
+          <Btn label={rupees ? `Buy an interview · ${rupees}` : 'Buy an interview'} onPress={onBuy} />
+          <Text style={styles.secured}>Secured by Razorpay · UPI, cards, netbanking</Text>
+        </FlowFooter>
       </>,
     )
   }
@@ -261,17 +263,17 @@ function Picker({
 
   return (
     <View style={[styles.page, { paddingTop: insets.top }]}>
-      <ScreenHeader title={`Pick a ${durationMin}-min slot`} subtitle="IST · Asia/Kolkata" onBack={onBack} />
+      <FlowHeader title={`Pick a ${durationMin}-min slot`} subtitle="IST · Asia/Kolkata" onBack={onBack} />
       <ScrollView contentContainerStyle={styles.pickBody} showsVerticalScrollIndicator={false}>
-        <Card style={styles.match}>
-          <View style={styles.matchTick}><Text style={styles.matchTickText}>✓</Text></View>
+        <Panel style={styles.match}>
+          <View style={styles.matchTick}><Icon name="check" size={18} tint={color.successFill} weight={2.6} /></View>
           <View style={styles.matchText}>
-            <Text style={text.uiSmSemi}>{durationMin}-minute interview</Text>
-            <Text style={[text.uiXs, styles.muted]}>{`${tier}${qualLabel ? ` · ${qualLabel}` : ''} · spends the one interview you have`}</Text>
+            <Text style={styles.matchTitle}>{durationMin}-minute interview</Text>
+            <Text style={styles.xs}>{`${tier}${qualLabel ? ` · ${qualLabel}` : ''} · spends the one interview you have`}</Text>
           </View>
-        </Card>
+        </Panel>
 
-        <Text style={[text.uiXs, styles.muted]}>
+        <Text style={styles.xs}>
           It's {fmtStamp(now.toISOString())} right now. Earliest open slot is {fmtShortDate(win.fromIso)}, {fmtTime(win.fromIso)} — bookings need at least {hoursPhrase(rules.windowMinHours)}' notice.
         </Text>
 
@@ -293,13 +295,13 @@ function Picker({
         />
       </ScrollView>
 
-      <StickyFooter>
+      <FlowFooter>
         <View style={styles.rowBetween}>
-          <Text style={[text.uiSm, styles.muted]}>Selected</Text>
-          <Text style={text.uiSmSemi}>{slotIso ? fmtStamp(slotIso) : 'Pick a time'}</Text>
+          <Text style={styles.small}>Selected</Text>
+          <Text style={styles.selected}>{slotIso ? fmtStamp(slotIso) : 'Pick a time'}</Text>
         </View>
-        <Button variant="primary" size="lg" full busy={busy} disabled={!slotIso || loading} label="Confirm · uses 1 credit" onPress={confirm} />
-      </StickyFooter>
+        <Btn busy={busy} disabled={!slotIso || loading} label="Confirm · uses 1 credit" onPress={confirm} />
+      </FlowFooter>
     </View>
   )
 }
@@ -320,35 +322,44 @@ const istTime = (iso: string) => {
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.background },
-  centre: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.xl },
-  body: { paddingHorizontal: space.xl, paddingTop: space.xs, gap: space.xl, paddingBottom: space['4xl'] },
-  pickBody: { paddingHorizontal: space.lg, paddingTop: space.xs, gap: spaceHalf['3.5'], paddingBottom: space.xl },
-  muted: { color: color.textMuted },
-  grow: { flex: 1, gap: space['2xs'] },
-  gateCard: { padding: space.lg, gap: spaceHalf['2.5'] },
-  pct: { color: color.accent },
-  stepCard: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingHorizontal: space.lg, paddingVertical: space.md },
-  gain: { paddingHorizontal: space.sm, paddingVertical: space.xs, borderRadius: radius.pill, backgroundColor: color.accentSoft },
-  gainText: { color: color.accentText },
-  head: { gap: space.sm },
-  eyebrow: { color: color.textMuted, letterSpacing: trackingNative.eyebrow },
+  centre: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 36 },
+  centreTitle: { fontFamily: FF.bodyBold, fontSize: 22, letterSpacing: -0.66, color: color.text, textAlign: 'center' },
+  centreBody: { textAlign: 'center', marginTop: 8 },
+  centreBtn: { marginTop: 18, paddingHorizontal: 22 },
+  body: { paddingHorizontal: 20, paddingTop: 4, gap: 16, paddingBottom: 28 },
+  pickBody: { paddingHorizontal: 20, paddingTop: 2, gap: 14, paddingBottom: 20 },
+  grow: { flex: 1, gap: 2 },
+  gateCard: { padding: 16, gap: 10 },
+  pct: { fontFamily: FF.monoMedium, fontSize: 40, letterSpacing: -1.6, color: color.accent },
+  small: { fontFamily: FF.body, fontSize: 13, lineHeight: 19, color: color.textMuted },
+  xs: { fontFamily: FF.body, fontSize: 12.5, lineHeight: 17.5, color: color.textMuted },
+  t15s: { fontFamily: FF.bodySemiBold, fontSize: 15, color: color.text },
+  track: { height: 8, borderRadius: 8, backgroundColor: color.surfaceSunken },
+  fill: { position: 'absolute', left: 0, top: 0, bottom: 0, borderRadius: 8, backgroundColor: color.accent },
+  gateMark: { position: 'absolute', top: -4, bottom: -4, width: 2, backgroundColor: color.text },
+  stepCard: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 16, paddingVertical: 12 },
+  gain: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: radius.pill, backgroundColor: color.accentSoft },
+  gainText: { fontFamily: FF.monoMedium, fontSize: 11, letterSpacing: 0.88, color: color.accentText },
+  head: { gap: 8 },
   tierRow: {
-    minHeight: height['tier-row'], flexDirection: 'row', alignItems: 'center', gap: spaceHalf['3.5'],
-    paddingHorizontal: space.lg, paddingVertical: space.md, borderRadius: radius.panel,
+    minHeight: 72, flexDirection: 'row', alignItems: 'center', gap: 14,
+    paddingHorizontal: 15, paddingVertical: 11, borderRadius: 18,
     backgroundColor: color.surface, borderWidth: borderWidth.medium, borderColor: color.accent,
   },
-  tierText: { flex: 1, gap: space['2xs'] },
-  tierTitle: { flexDirection: 'row', alignItems: 'center', gap: space.sm, flexWrap: 'wrap' },
-  yours: { paddingHorizontal: spaceHalf['1.5'], paddingVertical: space['2xs'], borderRadius: radius.pill, backgroundColor: color.accentSoft },
-  yoursText: { color: color.accentText },
-  included: { gap: space.sm, paddingHorizontal: space.xs },
-  bullet: { flexDirection: 'row', gap: spaceHalf['2.5'] },
+  tierText: { flex: 1, gap: 2 },
+  tierTitle: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
+  yours: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.pill, backgroundColor: color.accentSoft },
+  yoursText: { fontFamily: FF.monoMedium, fontSize: 10, letterSpacing: 1, color: color.accentText },
+  big: { fontFamily: FF.bodySemiBold, fontSize: 22, letterSpacing: -0.33, color: color.text },
+  included: { gap: 10, paddingHorizontal: 4 },
+  bullet: { flexDirection: 'row', gap: 10 },
+  bulletText: { fontFamily: FF.body, fontSize: 15, lineHeight: 22, color: color.text },
   dash: { color: color.accent },
-  secured: { color: color.textMuted, textAlign: 'center', textTransform: 'none' },
-  rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.md },
-  match: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingHorizontal: spaceHalf['3.5'], paddingVertical: space.md, borderRadius: radius.panel },
-  matchTick: { width: height.avatar, height: height.avatar, borderRadius: radius.pill, backgroundColor: color.successSoft, alignItems: 'center', justifyContent: 'center' },
-  matchTickText: { color: color.successFill },
-  matchText: { flex: 1, gap: space['2xs'] },
-  stepRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space.md, borderTopWidth: borderWidth.thin, borderTopColor: color.border },
+  secured: { fontFamily: FF.body, fontSize: 12, color: color.textMuted, textAlign: 'center' },
+  rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  selected: { fontFamily: FF.bodySemiBold, fontSize: 14, color: color.text },
+  match: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 18 },
+  matchTick: { width: 40, height: 40, borderRadius: 20, backgroundColor: color.successSoft, alignItems: 'center', justifyContent: 'center' },
+  matchText: { flex: 1, gap: 2 },
+  matchTitle: { fontFamily: FF.bodySemiBold, fontSize: 14, color: color.text },
 })

@@ -5,9 +5,9 @@ import { api } from '../lib/api'
 import { color, height } from '../theme'
 import { Icon } from '../components/ui/Icon'
 import { useEmployerVerified } from '../lib/employer/useEmployer'
-import { useChatUnread } from '../lib/employer/useNavCounts'
 import { TabBar, type TabItem } from '../components/ui'
 import { tabBarInfoFor, type TabDef } from './tabConfig'
+import { useTabBarDark } from './tabBarTone'
 
 /**
  * A persistent bottom tab bar, added as an overlay on the existing flat
@@ -50,7 +50,8 @@ import { tabBarInfoFor, type TabDef } from './tabConfig'
 export function BottomTabBar({ routeName, onNavigate }: { routeName?: string; onNavigate: (root: string) => void }) {
   const info = tabBarInfoFor(routeName)
   const employerVerified = useEmployerVerified(info?.persona === 'employer')
-  const chatUnread = useChatUnread(info?.persona === 'employer' && employerVerified === true)
+  // The video feeds draw the bar on ink while a card is up (navigation/tabBarTone).
+  const dark = useTabBarDark(routeName)
   // ST-12: an unpaid student sees pricing and pays — no destinations to wander to.
   // Same `me` the screens read, so this costs no extra request once one has run.
   const me = useQuery({
@@ -66,15 +67,16 @@ export function BottomTabBar({ routeName, onNavigate }: { routeName?: string; on
     const on = tab.key === info.active
     // Gated tabs stay locked until the employer is known to be verified.
     const locked = !!tab.gated && employerVerified !== true
-    const tint = on ? color.accentText : locked ? color.textDisabled : color.textMuted
+    const tint = dark
+      ? (on ? color.accentMuted : color.textOnInkSubtle)
+      : on ? color.accentText : locked ? color.textDisabled : color.textMuted
     return {
       key: tab.key,
       label: tab.label,
       locked,
-      dot: info.persona === 'employer' && tab.key === 'chat' && chatUnread > 0,
       glyph: tab.glyph
         ? <Icon name={tab.glyph} size={height.glyph - 4} tint={tint} weight={on ? 2.1 : 1.8} />
-        : <TabIcon icon={tab.icon} color={on ? color.accent : color.textSubtle} />,
+        : <TabIcon icon={tab.icon} color={dark ? tint : on ? color.accent : color.textSubtle} size={info.persona === 'student' ? 22 : 18} />,
     }
   })
 
@@ -82,6 +84,8 @@ export function BottomTabBar({ routeName, onNavigate }: { routeName?: string; on
     <TabBar
       items={items}
       current={info.active}
+      floating={info.persona === 'student'}
+      dark={dark}
       onSelect={(key) => {
         const tab = info.tabs.find((t) => t.key === key)
         if (tab) onNavigate(tab.root)
@@ -90,19 +94,19 @@ export function BottomTabBar({ routeName, onNavigate }: { routeName?: string; on
   )
 }
 
-function TabIcon({ icon, color: tint }: { icon: TabDef['icon']; color: string }) {
+function TabIcon({ icon, color: tint, size = 18 }: { icon: TabDef['icon']; color: string; size?: number }) {
   const p = { fill: 'none' as const, stroke: tint, strokeWidth: 1.6, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const }
   switch (icon) {
     case 'home':
       return (
-        <Svg width={18} height={18} viewBox="0 0 20 20">
+        <Svg width={size} height={size} viewBox="0 0 20 20">
           <Path d="M3 9.5L10 3.5L17 9.5" {...p} />
           <Path d="M5 8V16.5H15V8" {...p} />
         </Svg>
       )
     case 'calendar':
       return (
-        <Svg width={18} height={18} viewBox="0 0 20 20">
+        <Svg width={size} height={size} viewBox="0 0 20 20">
           <Rect x={3} y={4} width={14} height={13} rx={2} {...p} />
           <Path d="M3 8H17" {...p} />
           <Path d="M7 2.5V5.5M13 2.5V5.5" {...p} />
@@ -110,14 +114,14 @@ function TabIcon({ icon, color: tint }: { icon: TabDef['icon']; color: string })
       )
     case 'briefcase':
       return (
-        <Svg width={18} height={18} viewBox="0 0 20 20">
+        <Svg width={size} height={size} viewBox="0 0 20 20">
           <Rect x={2.5} y={6} width={15} height={10} rx={2} {...p} />
           <Path d="M7 6V4.5C7 3.7 7.7 3 8.5 3H11.5C12.3 3 13 3.7 13 4.5V6" {...p} />
         </Svg>
       )
     case 'chat':
       return (
-        <Svg width={18} height={18} viewBox="0 0 20 20">
+        <Svg width={size} height={size} viewBox="0 0 20 20">
           <Path
             d="M3 5.5C3 4.4 3.9 3.5 5 3.5H15C16.1 3.5 17 4.4 17 5.5V11.5C17 12.6 16.1 13.5 15 13.5H8L4 16.5V13.5H5C3.9 13.5 3 12.6 3 11.5V5.5Z"
             {...p}
@@ -126,34 +130,34 @@ function TabIcon({ icon, color: tint }: { icon: TabDef['icon']; color: string })
       )
     case 'heart':
       return (
-        <Svg width={18} height={18} viewBox="0 0 20 20">
+        <Svg width={size} height={size} viewBox="0 0 20 20">
           <Path d="M10 16.5C10 16.5 3 12.3 3 7.6C3 5.5 4.6 4 6.5 4C8 4 9.3 4.9 10 6.2C10.7 4.9 12 4 13.5 4C15.4 4 17 5.5 17 7.6C17 12.3 10 16.5 10 16.5Z" {...p} />
         </Svg>
       )
     case 'person':
       return (
-        <Svg width={18} height={18} viewBox="0 0 20 20">
+        <Svg width={size} height={size} viewBox="0 0 20 20">
           <Circle cx={10} cy={7} r={3} {...p} />
           <Path d="M4 17C4 13.7 6.7 11.5 10 11.5C13.3 11.5 16 13.7 16 17" {...p} />
         </Svg>
       )
     case 'clock':
       return (
-        <Svg width={18} height={18} viewBox="0 0 20 20">
+        <Svg width={size} height={size} viewBox="0 0 20 20">
           <Circle cx={10} cy={10} r={7} {...p} />
           <Path d="M10 6V10L13 12" {...p} />
         </Svg>
       )
     case 'wallet':
       return (
-        <Svg width={18} height={18} viewBox="0 0 20 20">
+        <Svg width={size} height={size} viewBox="0 0 20 20">
           <Rect x={2.5} y={5.5} width={15} height={10} rx={2} {...p} />
           <Path d="M13.5 10.5H16" stroke={tint} strokeWidth={2} strokeLinecap="round" />
         </Svg>
       )
     case 'feed':
       return (
-        <Svg width={18} height={18} viewBox="0 0 20 20">
+        <Svg width={size} height={size} viewBox="0 0 20 20">
           <Rect x={3} y={4.3} width={14} height={2.2} rx={1.1} fill={tint} />
           <Rect x={3} y={8.9} width={14} height={2.2} rx={1.1} fill={tint} />
           <Rect x={3} y={13.5} width={14} height={2.2} rx={1.1} fill={tint} />
@@ -161,7 +165,7 @@ function TabIcon({ icon, color: tint }: { icon: TabDef['icon']; color: string })
       )
     case 'star':
       return (
-        <Svg width={18} height={18} viewBox="0 0 20 20">
+        <Svg width={size} height={size} viewBox="0 0 20 20">
           <Path d="M10 2.5L12 7.2L17 7.7L13.2 11L14.3 16L10 13.4L5.7 16L6.8 11L3 7.7L8 7.2L10 2.5Z" {...p} />
         </Svg>
       )

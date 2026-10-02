@@ -1,12 +1,13 @@
 import React, { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import {
-  KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View, type TextInput,
+  KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View, type TextInput,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { color, space } from '../../theme'
-import { Banner, Body, Button } from '../../components/ui'
-import { EmBar, EmFoot, EmTitle } from '../../components/employer/em'
-import { CodeRow, TextAction } from '../../components/employer'
+import { color, fontFamilyNative } from '../../theme'
+import { Banner } from '../../components/ui/Banner'
+import {
+  A, AButton, AuthSub, AuthTitle, AuthTop, BottomBar, Link, Note, NoteStrong, OtpBoxes, ResendLine, VerifyRow,
+} from '../../components/auth/kit'
 import { ApiClientError, ErrorCode } from '../../lib/api'
 import {
   attemptsLeft, registerEmployer, sendRegisterCodes, verifyRegisterCode,
@@ -253,17 +254,17 @@ export function EmployerVerifyScreen({
 
   function row(channel: CodeChannel) {
     const email = channel === 'EMAIL'
-    const label = email ? 'Work email' : 'Mobile'
+    const label = email ? 'Work email' : 'Mobile number'
     const value = email ? registration.email.trim() : displayMobile(registration.mobile)
 
     if (created || confirmed(channel)) {
-      return <CodeRow key={channel} label={label} value={value} code="" confirmed />
+      return <VerifyRow key={channel} icon={email ? 'mail' : 'phone'} title={label} sub={value} status="Confirmed" done />
     }
 
     const p = progressOf(channel)
     const state = rows[channel]
     const blocked = Boolean(p.blockedUntil && p.blockedUntil > now)
-    const resendReady = !(p.resendAt && p.resendAt > now)
+    const secondsLeft = p.resendAt && p.resendAt > now ? Math.ceil((p.resendAt - now) / 1000) : 0
     /** Confirmed once, but the 30-minute proof ran out while the other row waited. The code is spent, so: send a new one. */
     const lapsed = Boolean(p.proof)
 
@@ -272,48 +273,58 @@ export function EmployerVerifyScreen({
       : (state.note ?? (lapsed ? EXPIRED : null))
     const helper = state.verifying
       ? 'Checking the code…'
-      : resendReady && !state.code
-        ? email
-          ? 'Nothing yet? Check the address, then resend.'
-          : 'Nothing yet? Check the number, then resend.'
-        : email
-          ? 'Check your inbox. You can paste all six digits.'
-          : 'Sent by SMS. On most phones it fills in by itself.'
+      : email
+        ? 'Check your inbox. You can paste all six digits.'
+        : 'Sent by SMS. On most phones it fills in by itself.'
 
     return (
-      <CodeRow
-        key={channel}
-        label={label}
-        value={value}
-        code={state.code}
-        onChangeCode={
-          state.verifying
-            ? undefined
-            : (next) => {
-                patchRow(channel, {
-                  code: next,
-                  error: next.length < 6 ? null : state.error,
-                  note: next ? null : state.note,
-                })
-                if (next.length === 6 && next !== state.code) verify(channel, next)
-              }
-        }
-        helper={helper}
-        note={note}
-        error={state.error}
-        inert={blocked}
-        resendAvailableAt={p.resendAt}
-        onResend={() => resend(channel)}
-        resending={state.resending}
-        onEdit={() => {
-          returnToForm({ errors: {}, signIn: null, focus: email ? 'email' : 'mobile' })
-          onEdit()
-        }}
-        autoFocus={firstOpen === channel}
-        inputRef={(node) => {
-          inputs.current[channel] = node
-        }}
-      />
+      <View key={channel} style={styles.card}>
+        <View style={styles.cardHead}>
+          <View style={styles.cardText}>
+            <Text style={styles.cardLabel}>{label}</Text>
+            <Text style={styles.cardValue} numberOfLines={1}>{value}</Text>
+          </View>
+          <Link
+            onPress={() => {
+              returnToForm({ errors: {}, signIn: null, focus: email ? 'email' : 'mobile' })
+              onEdit()
+            }}
+          >
+            Edit
+          </Link>
+        </View>
+
+        <OtpBoxes
+          value={state.code}
+          editable={!state.verifying && !blocked}
+          invalid={!!state.error}
+          autoFocus={firstOpen === channel}
+          firstRef={(node) => { inputs.current[channel] = node }}
+          onChange={(next) => {
+            patchRow(channel, {
+              code: next,
+              error: next.length < 6 ? null : state.error,
+              note: next ? null : state.note,
+            })
+            if (next.length === 6 && next !== state.code) verify(channel, next)
+          }}
+        />
+
+        {state.error ? (
+          <Text style={styles.error}>{state.error}</Text>
+        ) : note ? (
+          <Text style={styles.note}>{note}</Text>
+        ) : (
+          <Text style={styles.helper}>{helper}</Text>
+        )}
+
+        {!blocked && (
+          <ResendLine
+            seconds={state.resending ? 1 : secondsLeft}
+            onResend={() => resend(channel)}
+          />
+        )}
+      </View>
     )
   }
 
@@ -322,37 +333,42 @@ export function EmployerVerifyScreen({
       style={[styles.page, { paddingTop: insets.top }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <EmBar onBack={onEdit} />
+      <AuthTop onBack={onEdit} />
 
-      <ScrollView
-        style={styles.grow}
-        contentContainerStyle={[styles.body, { paddingBottom: space['2xl'] + insets.bottom }]}
-        keyboardShouldPersistTaps="handled"
-      >
-        <EmTitle eyebrow="Step 2 of 3" title="Check two codes." sub="We sent a 6-digit code to your work email and another to your mobile. Both need to match." />
+      <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+        <View style={styles.gap} />
+        <AuthTitle>Check two codes</AuthTitle>
+        <AuthSub>We sent a 6-digit code to your work email and another to your mobile. Both need to match.</AuthSub>
 
-        {row('EMAIL')}
-        {row('MOBILE')}
+        <View style={styles.rows}>
+          {row('EMAIL')}
+          {row('MOBILE')}
+        </View>
 
         {!!createError && both && (
-          <Banner tone="danger">
-            <Body size="xs" style={styles.dangerInk}>
-              {createError}
-            </Body>
-            <TextAction label="Try again" onPress={() => setCreateError(null)} style={styles.start} />
-          </Banner>
+          <View style={styles.banner}>
+            <Banner tone="danger">{createError}</Banner>
+            <View style={styles.retry}>
+              <Link onPress={() => setCreateError(null)}>Try again</Link>
+            </View>
+          </View>
         )}
-        <Body size="sm" tone="muted">
-          {both ? 'Next is your home, where you send two documents to verify the company.' : 'When both are confirmed, we create your account and open your home.'}
-        </Body>
+
+        <Note>
+          <NoteStrong>What happens next?</NoteStrong>{' '}
+          {both
+            ? 'Next is your home, where you send two documents to verify the company.'
+            : 'When both are confirmed, we create your account and open your home.'}
+        </Note>
       </ScrollView>
-      <EmFoot>
-        <View style={styles.grow}>
-          {both && !createError
-            ? <Button variant="primary" size="lg" full busy label="Creating your account…" />
-            : <Button variant="primary" size="lg" full disabled label="Continue" />}
-        </View>
-      </EmFoot>
+
+      <BottomBar insetBottom={insets.bottom + 14}>
+        {both && !createError ? (
+          <AButton busy label="Creating your account…" />
+        ) : (
+          <AButton disabled label="Continue" />
+        )}
+      </BottomBar>
     </KeyboardAvoidingView>
   )
 }
@@ -369,11 +385,20 @@ function useClock() {
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.background },
-  grow: { flex: 1 },
-  start: { alignSelf: 'flex-start' },
-
-  body: { paddingHorizontal: space.lg, paddingTop: space.xs, gap: space.md },
-  title: { gap: space.sm },
-  handoff: { marginTop: space.sm, gap: space.sm },
-  dangerInk: { color: color.danger },
+  body: { paddingHorizontal: A.gutter, paddingBottom: 24 },
+  gap: { height: 12 },
+  rows: { marginTop: 8, gap: 12 },
+  card: {
+    marginTop: 14, padding: 14, backgroundColor: color.surface, borderRadius: A.radius,
+    borderWidth: 1, borderColor: color.border,
+  },
+  cardHead: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  cardText: { flex: 1 },
+  cardLabel: { fontFamily: fontFamilyNative.body, fontSize: 14, color: color.textMuted },
+  cardValue: { fontFamily: fontFamilyNative.bodySemiBold, fontSize: 16, color: color.text, marginTop: 2 },
+  error: { fontFamily: fontFamilyNative.body, color: A.danger, fontSize: 13, textAlign: 'center', marginTop: 12 },
+  note: { fontFamily: fontFamilyNative.body, color: color.warning, fontSize: 13, textAlign: 'center', marginTop: 12 },
+  helper: { fontFamily: fontFamilyNative.body, color: color.textSubtle, fontSize: 13, textAlign: 'center', marginTop: 12 },
+  banner: { marginTop: 16 },
+  retry: { marginTop: 8 },
 })

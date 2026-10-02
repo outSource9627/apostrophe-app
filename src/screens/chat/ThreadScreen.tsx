@@ -9,8 +9,8 @@ import {
 import { ApiClientError } from '../../lib/api'
 import { ChatSendError, useThreadSocket } from '../../lib/chat/socket'
 import { fmtClock, fmtDayDivider, fmtDayMon, fmtStampZone, newClientMessageId, originLabel, refusalCopy } from '../../lib/chat/format'
-import { color, space, borderWidth, height } from '../../theme'
-import { Body, EmptyState, Meta, text, Skeleton } from '../../components/ui'
+import { color, space, borderWidth, fontFamilyNative as FF } from '../../theme'
+import { Body, EmptyState, Skeleton } from '../../components/ui'
 import {
   BlockSheet, Bubble, ClosesLine, Composer, CounterpartyPlate, DayDivider,
   MaskInfoLine, MenuSheet, ReadOnlyFoot, ReconnectingStrip, RecordingPill, ReportSheet, SystemLine, TypingDots,
@@ -172,7 +172,7 @@ export function ThreadScreen({ id, onBack, onSupport }: { id: string; onBack: ()
 
   return (
     <KeyboardAvoidingView style={[styles.page, { paddingTop: insets.top }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={insets.top}>
-      <Header onBack={onBack} plate={<CounterpartyPlate thread={thread} size={36} />} title={thread.counterparty.name} subtitle={subtitle}
+      <Header onBack={onBack} plate={<CounterpartyPlate thread={thread} size={38} tinted />} title={thread.counterparty.name} subtitle={subtitle}
         right={recording ? <RecordingPill /> : <Pressable accessibilityLabel="More" hitSlop={8} onPress={() => setMenuOpen(true)} style={styles.headerBtn}><Dots /></Pressable>} />
       {!sock.connected && open && <ReconnectingStrip />}
       {masked && open && <MaskInfoLine />}
@@ -183,16 +183,30 @@ export function ThreadScreen({ id, onBack, onSupport }: { id: string; onBack: ()
         ) : (
           <>
             {groups.map((g) => (
-              <View key={g.key} style={{ gap: space.md }}>
-                <DayDivider label={g.label} />
-                {g.items.map((m) => (m.kind === 'SYSTEM'
-                  ? m.systemKind === 'IDENTITY_REVEALED'
-                    ? <SystemLine key={m.id} media={<CounterpartyPlate thread={thread} size={44} />} text={`Your session started · your interviewer is ${thread.counterparty.name}`} time={fmtClock(m.createdAt)} />
-                    : <SystemLine key={m.id} text={SYSTEM_TEXT[m.systemKind ?? ''] ?? 'Update'} time={fmtClock(m.createdAt)} />
-                  : <Bubble key={m.id} msg={m} now={now} />))}
+              <View key={g.key} style={{ gap: 3 }}>
+                <DayDivider label={g.label} ruled />
+                {g.items.map((m, k) => {
+                  if (m.kind === 'SYSTEM') {
+                    return (
+                      <View key={m.id} style={styles.sysGap}>
+                        {m.systemKind === 'IDENTITY_REVEALED'
+                          ? <SystemLine media={<CounterpartyPlate thread={thread} size={36} />} text={`Your session started · your interviewer is ${thread.counterparty.name}`} time={fmtClock(m.createdAt)} />
+                          : <SystemLine text={SYSTEM_TEXT[m.systemKind ?? ''] ?? 'Update'} time={fmtClock(m.createdAt)} />}
+                      </View>
+                    )
+                  }
+                  const prev = g.items[k - 1], next = g.items[k + 1]
+                  const sameP = !!prev && prev.kind !== 'SYSTEM' && prev.mine === m.mine
+                  const sameN = !!next && next.kind !== 'SYSTEM' && next.mine === m.mine
+                  return (
+                    <View key={m.id} style={sameP ? undefined : styles.runGap}>
+                      <Bubble msg={m} now={now} run={{ first: !sameP, last: !sameN }} />
+                    </View>
+                  )
+                })}
               </View>
             ))}
-            {peerTyping && <View style={{ paddingTop: space.xs }}><TypingDots /></View>}
+            {peerTyping && <View style={{ paddingTop: 9 }}><TypingDots /></View>}
           </>
         )}
       </ScrollView>
@@ -224,7 +238,7 @@ function groupByDay(messages: MessageDto[], now: number) {
 }
 
 function Dots() {
-  return <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={color.text} strokeWidth={1.5}><Circle cx={12} cy={5} r={1} /><Circle cx={12} cy={12} r={1} /><Circle cx={12} cy={19} r={1} /></Svg>
+  return <Svg width={22} height={22} viewBox="0 0 24 24" fill={color.text} stroke={color.text} strokeWidth={1.5}><Circle cx={5} cy={12} r={1.3} /><Circle cx={12} cy={12} r={1.3} /><Circle cx={19} cy={12} r={1.3} /></Svg>
 }
 
 function Header({ onBack, plate, title, subtitle, right }: {
@@ -232,14 +246,14 @@ function Header({ onBack, plate, title, subtitle, right }: {
 }) {
   return (
     <View style={styles.header}>
-      <Pressable accessibilityLabel="Back" hitSlop={8} onPress={onBack} style={styles.headerBtn}>
+      <Pressable accessibilityRole="button" accessibilityLabel="Back" hitSlop={8} onPress={onBack} style={styles.back}>
         <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={color.text} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="m15 18-6-6 6-6" /></Svg>
       </Pressable>
       {plate}
       {!!title && (
         <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={text.uiLgSemi} numberOfLines={1}>{title}</Text>
-          {!!subtitle && <Meta style={{ color: color.textSubtle }} numberOfLines={1}>{subtitle}</Meta>}
+          <Text style={styles.headTitle} numberOfLines={1}>{title}</Text>
+          {!!subtitle && <Text style={styles.headSub} numberOfLines={1}>{subtitle.toUpperCase()}</Text>}
         </View>
       )}
       {!title && <View style={{ flex: 1 }} />}
@@ -252,7 +266,15 @@ const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.background },
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   loading: { padding: space.xl },
-  header: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingHorizontal: space.md, backgroundColor: color.surface, borderBottomWidth: borderWidth.thin, borderBottomColor: color.border, height: height['chat-head'] - space.sm },
-  headerBtn: { width: height.tap, height: height.tap, alignItems: 'center', justifyContent: 'center' },
-  transcript: { padding: space.xl, gap: space.md, flexGrow: 1, justifyContent: 'flex-end' },
+  header: {
+    flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 10, paddingVertical: 10,
+    backgroundColor: color.surface, borderBottomWidth: borderWidth.thin, borderBottomColor: color.border,
+  },
+  back: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', borderWidth: borderWidth.thin, borderColor: color.border },
+  headerBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  headTitle: { fontFamily: FF.bodySemiBold, fontSize: 17, letterSpacing: -0.17, color: color.text },
+  headSub: { fontFamily: FF.monoMedium, fontSize: 10.5, letterSpacing: 0.63, color: color.textSubtle },
+  runGap: { marginTop: 6 },
+  sysGap: { marginVertical: 6 },
+  transcript: { paddingHorizontal: 16, paddingVertical: 14, gap: 3, flexGrow: 1, justifyContent: 'flex-end' },
 })

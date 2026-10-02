@@ -4,8 +4,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useQuery } from '@tanstack/react-query'
 import { api, ApiClientError } from '../../lib/api'
 import { createOrder, mockSettle, settleInDev } from '../../lib/api/payments'
-import { color, space, height } from '../../theme'
-import { Banner, Body, Button, Card, Divider, ErrorState, Eyebrow, ScreenHeader, Skeleton, StickyFooter, text } from '../../components/ui'
+import { color, fontFamilyNative as FF } from '../../theme'
+import { Banner } from '../../components/ui'
+import { Btn, Panel, Skel, StateBlock } from '../../components/tab/kit'
+import { Eyebrow, FlowFooter, FlowHeader, KV, Rule } from '../../components/tab/flow'
 
 interface Me { qualification?: string }
 const TIER_NAME: Record<string, string> = { T1: 'Class 12', T2: 'Graduation', T3: 'Post Graduation', T4: 'PhD' }
@@ -89,57 +91,48 @@ export function CheckoutScreen({ onBack, onConfirming }: { onBack: () => void; o
   const price = cfg.data?.tiers.find((t) => t.tier === tier)
 
   const frame = (child: React.ReactNode) => (
-    <View style={[styles.page, { paddingTop: insets.top }]}><ScreenHeader title="Checkout" onBack={onBack} />{child}</View>
+    <View style={[styles.page, { paddingTop: insets.top }]}><FlowHeader title="Checkout" onBack={onBack} />{child}</View>
   )
-  if (me.isPending || cfg.isPending) return frame(<View style={styles.body}><Skeleton lines={4} /></View>)
+  if (me.isPending || cfg.isPending) return frame(<View style={styles.body}><Skel w="40%" h={12} /><Skel w="70%" h={24} /><Skel w="100%" h={140} /></View>)
   if (me.isError || cfg.isError) return frame(
-    <View style={styles.centre}>
-      <ErrorState
-        title="Could not load your order."
-        body="Check your connection and try again."
-        action={
-          <Button
-            variant="outline"
-            size="sm"
-            label="Try again"
-            // The error state's small button is 40 tall; the slop brings its tap box to the 44 floor.
-            hitSlop={(height.tap - height['control-xs']) / 2}
-            onPress={() => { me.refetch(); cfg.refetch() }}
-          />
-        }
-      />
-    </View>,
+    <StateBlock
+      icon="alert"
+      title="Could not load your order."
+      body="Check your connection and try again."
+      action="Try again"
+      onAction={() => { me.refetch(); cfg.refetch() }}
+    />,
   )
 
   return frame(
     <>
       <ScrollView contentContainerStyle={styles.body}>
-        <View style={{ gap: space.sm }}>
+        <View style={{ gap: 8 }}>
           <Eyebrow tone="accent">Your order</Eyebrow>
-          <Text style={text.displayHeading}>One interview.</Text>
+          <Text style={styles.h24}>One interview.</Text>
         </View>
-        <Card style={styles.summary}>
-          <View style={styles.sumRow}><Body tone="muted">Tier</Body><Body weight="medium">{tier ? `${tier} · ${TIER_NAME[tier]}` : '—'}</Body></View>
-          <View style={styles.sumRow}><Body tone="muted">Length</Body><Body weight="medium">{price ? `${price.durationMin} minutes` : '—'}</Body></View>
-          <Divider />
-          <View style={styles.sumRow}><Body tone="muted">Amount</Body>{price ? <Text style={text.displaySm}>{rupees(price.amountPaise)}</Text> : <Body>—</Body>}</View>
-        </Card>
-        <Body size="sm" tone="muted">Pay by UPI, card, net banking or wallet — the gateway offers them next. One-time; nothing recurring.</Body>
+        <Panel style={styles.summary}>
+          <KV k="Tier" v={tier ? `${tier} · ${TIER_NAME[tier]}` : '—'} />
+          <KV k="Length" v={price ? `${price.durationMin} minutes` : '—'} />
+          <Rule />
+          <KV k="Amount" v={price ? rupees(price.amountPaise) : '—'} big />
+        </Panel>
+        <Text style={styles.note}>Pay by UPI, card, net banking or wallet — the gateway offers them next. One-time; nothing recurring.</Text>
         {error ? <Banner tone="danger">{error}</Banner> : null}
       </ScrollView>
-      <StickyFooter>
-        <Button variant="primary" size="lg" full busy={busy} label="Pay now" onPress={pay} />
-        <Text style={[text.metaXs, styles.secured]}>Secured by Razorpay · UPI, cards, netbanking</Text>
-      </StickyFooter>
+      <FlowFooter>
+        <Btn busy={busy} label="Pay now" onPress={pay} />
+        <Text style={styles.secured}>Secured by Razorpay · UPI, cards, netbanking</Text>
+      </FlowFooter>
     </>,
   )
 }
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.background },
-  centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  body: { paddingHorizontal: space.xl, paddingTop: space.xs, gap: space.xl },
-  summary: { padding: space.lg, gap: space.md },
-  sumRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
-  secured: { color: color.textMuted, textAlign: 'center', textTransform: 'none' },
+  body: { paddingHorizontal: 20, paddingTop: 4, paddingBottom: 20, gap: 20 },
+  h24: { fontFamily: FF.bodySemiBold, fontSize: 24, lineHeight: 29, letterSpacing: -0.48, color: color.text },
+  summary: { padding: 18, gap: 12 },
+  note: { fontFamily: FF.body, fontSize: 14, lineHeight: 20, color: color.textMuted },
+  secured: { fontFamily: FF.body, fontSize: 12, color: color.textMuted, textAlign: 'center' },
 })

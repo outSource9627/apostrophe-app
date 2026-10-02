@@ -1,22 +1,34 @@
 import React, { useEffect, useState } from 'react'
-import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { borderWidth, color, height, opacity, radius, space } from '../../theme'
-import { Button, text } from '../../components/ui'
+import { ActivityIndicator, Linking, StyleSheet, Text, View } from 'react-native'
+import { color, fontFamilyNative as FF, fontSize, leadingNative, space } from '../../theme'
 import { Icon } from '../../components/ui/Icon'
-import { EmSheet } from '../../components/employer/em'
-import { ClipPlayer, ProfileFacts, ProfileHead, ProfileSections } from '../../components/employer/profile'
+import {
+  FeedSheet, FeedSheetChips, FeedSheetCta, FeedSheetEntry, FeedSheetFace, FeedSheetFacts, FeedSheetFilm, FeedSheetHead, FeedSheetItem,
+  FeedSheetNote, FeedSheetPlay, FeedSheetRound, FeedSheetSection,
+} from '../../components/ui/feed-deck'
+import { availabilityOf, ClipPlayer, expectedSalaryOf, experienceShort, linkUrl } from '../../components/employer/profile'
 import { ApiClientError } from '../../lib/api'
 import {
   fetchCandidateDetail, fetchCandidateDocument, playSelfVideo, type CandidateCard, type CandidateDetail,
 } from '../../lib/api/employerFeed'
+import {
+  clipLength, fileSize, joinsLine, monthYear, nameInitials, salaryLine, tierLine,
+} from '../../lib/employer/candidateFormat'
+import { label } from '../../lib/profile/labels'
 import { SendInterestSheet } from './SendInterestModal'
 
 /**
- * The feed's profile sheet (Employer Android, the EM-08 profile sheet): the
- * film thumb and the facts, Watch full interview, and the profile's sections —
- * self-uploaded clips play here, documents download through a 15-minute link.
- * The foot passes, shortlists or opens Send an Interest.
+ * The feed's profile sheet (docs/feed-details-mockups.html · A, "Twin + dark
+ * sheet"): dark like the feed, it rises over the card the employer opened it
+ * from.
+ *
+ * Top to bottom: the face, name and tier line; the verified-interview film with
+ * Watch full interview; Expected · Joins · Experience · Based in; then
+ * experience, education, what they are looking for, skills, languages, the
+ * self-uploaded clips (they play here), documents (a 15-minute link) and links.
+ * The foot passes, shortlists or opens Send an Interest. The head and the facts
+ * draw at once from the card; the rest loads behind them. A section with
+ * nothing in it is not drawn.
  */
 export function CandidateProfileSheet({
   open, card, passDays, onClose, onPass, onShortlist, onOpenFull, onInterestSent,
@@ -30,7 +42,6 @@ export function CandidateProfileSheet({
   onOpenFull: () => void
   onInterestSent?: (candidateId: string) => void
 }) {
-  const insets = useSafeAreaInsets()
   const [detail, setDetail] = useState<CandidateDetail | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [interestOpen, setInterestOpen] = useState(false)
@@ -75,58 +86,57 @@ export function CandidateProfileSheet({
     }
   }
 
-  const who = detail ?? card
+  const verified = !!(detail?.verifiedInterview ?? card.verifiedInterview)?.verified
   const interestSent = (detail?.interest ?? card.interest) === 'SENT'
+  const sub = [tierLine(detail?.tier ?? card.tier, detail?.qualification ?? card.qualification), detail?.city ?? card.city].filter(Boolean).join(' · ')
+  const facts = [
+    { label: 'Expected', value: salaryLine(detail ? expectedSalaryOf(detail, card) : card.expectedSalary), pink: true },
+    { label: 'Joins', value: joinsLine(detail ? availabilityOf(detail, card) : card.availability) },
+    { label: 'Experience', value: experienceShort(detail?.experienceYears ?? card.experienceYears) },
+    { label: 'Based in', value: detail?.city ?? card.city },
+  ].filter((f): f is { label: string; value: string; pink?: boolean } => !!f.value)
 
   return (
     <>
-      <EmSheet
+      <FeedSheet
         open={open && !interestOpen && !clip}
         onClose={onClose}
-        tall
+        head={
+          <FeedSheetHead
+            lead={<FeedSheetFace initials={nameInitials(card.name)} photo={detail?.photoUrl ?? card.photoUrl} />}
+            title={detail?.name ?? card.name}
+            sub={sub}
+            verified={verified}
+            onClose={onClose}
+          />
+        }
         foot={
-          <View style={[styles.foot, { paddingBottom: space.md + insets.bottom }]}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={passDays ? `Pass, hidden for ${passDays} days` : 'Pass'}
-              onPress={onPass}
-              style={({ pressed }) => [styles.round, styles.pass, pressed && styles.pressed]}
-            >
-              <Icon name="x" size={space.xl + 2} tint={color.dangerFill} weight={2.2} />
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Shortlist"
-              onPress={onShortlist}
-              style={({ pressed }) => [styles.round, styles.save, pressed && styles.pressed]}
-            >
-              <Icon name="bookmark" size={space.xl} tint={color.textInverse} weight={2} />
-            </Pressable>
-            <Button
-              variant="primary"
-              size="lg"
-              label={interestSent ? 'Interest sent' : 'Send Interest'}
-              disabled={interestSent}
-              style={styles.grow}
-              onPress={() => setInterestOpen(true)}
-            />
-          </View>
+          <>
+            <FeedSheetRound kind="pass" label={passDays ? `Pass, hidden for ${passDays} days` : 'Pass'} onPress={onPass} />
+            <FeedSheetRound kind="like" label="Shortlist" onPress={onShortlist} />
+            <FeedSheetCta label={interestSent ? 'Interest sent' : 'Send Interest'} disabled={interestSent} onPress={() => setInterestOpen(true)} />
+          </>
         }
       >
-        <ProfileHead candidate={who} onPlay={card.hasVideo ? onOpenFull : undefined} />
-        <ProfileFacts candidate={who} />
-        {card.hasVideo && <Button variant="outline" size="md" icon="video" label="Watch full interview" onPress={onOpenFull} />}
-        {!!notice && <Text style={[text.uiSm, styles.danger]}>{notice}</Text>}
-        {detail ? (
-          <ProfileSections candidate={detail} onPlayClip={playClip} onOpenDocument={openDocument} openingDoc={openingDoc} />
-        ) : error ? (
-          <View style={styles.state}>
-            <Text style={[text.uiMd, styles.muted]}>{error}</Text>
-          </View>
-        ) : (
-          <ActivityIndicator color={color.textSubtle} style={styles.state} />
+        {card.hasVideo && (
+          <FeedSheetFilm
+            poster={card.posterUrl ?? card.photoUrl}
+            title={verified ? 'Verified interview' : 'Interview film'}
+            sub="The full recording, as the interviewer saw it"
+            action="Watch full interview"
+            onPress={onOpenFull}
+          />
         )}
-      </EmSheet>
+        <FeedSheetFacts items={facts} />
+        {!!notice && <Text style={styles.notice}>{notice}</Text>}
+        {detail ? (
+          <Sections candidate={detail} openingDoc={openingDoc} onPlayClip={playClip} onOpenDocument={openDocument} />
+        ) : error ? (
+          <FeedSheetNote>{error}</FeedSheetNote>
+        ) : (
+          <FeedSheetNote loading />
+        )}
+      </FeedSheet>
 
       <SendInterestSheet
         open={open && interestOpen}
@@ -148,14 +158,128 @@ export function CandidateProfileSheet({
   )
 }
 
+function Sections({
+  candidate, openingDoc, onPlayClip, onOpenDocument,
+}: {
+  candidate: CandidateDetail
+  openingDoc: string | null
+  onPlayClip: (videoId: string) => void
+  onOpenDocument: (docId: string) => void
+}) {
+  const experience = candidate.experience ?? []
+  const edu = candidate.education
+  const eduTitle = edu ? [edu.qualification ? label(edu.qualification) : null, edu.fieldOfStudy].filter(Boolean).join(' · ') : ''
+  const eduSub = edu
+    ? [edu.institution, edu.year ?? edu.yearOfCompletion, edu.score != null ? `${edu.scoreType ? label(edu.scoreType) : 'Score'} ${edu.score}` : null]
+        .filter(Boolean)
+        .join(' · ')
+    : ''
+  const prefs = candidate.preferences
+  const looking = [
+    ...(prefs?.desiredRoles ?? []),
+    ...(prefs?.targetRoles ?? []),
+    ...(prefs?.preferredLocations ?? []),
+    ...(prefs?.remote ? ['Open to remote'] : []),
+    ...(prefs?.employmentTypes ?? []).map(label),
+  ].filter((v, k, all) => !!v && all.indexOf(v) === k)
+  const videos = candidate.videos ?? []
+  const documents = candidate.documents ?? []
+  const links = (candidate.portfolioLinks ?? []).filter((l) => !!l?.url)
+
+  return (
+    <>
+      <FeedSheetSection title="Experience">
+        {experience.length > 0 ? (
+          <View style={styles.list}>
+            {experience.map((x, k) => (
+              <FeedSheetEntry
+                key={`${k}-${x.company}`}
+                icon="brief"
+                title={x.title || x.company}
+                sub={[x.title ? x.company : null, [monthYear(x.from), x.to ? monthYear(x.to) : 'now'].filter(Boolean).join(' – ')].filter(Boolean).join(' · ')}
+                body={x.description}
+              />
+            ))}
+          </View>
+        ) : (
+          <Text style={styles.empty}>No work experience listed.</Text>
+        )}
+      </FeedSheetSection>
+
+      {!!edu && (!!eduTitle || !!eduSub) && (
+        <FeedSheetSection title="Education">
+          <FeedSheetEntry icon="grad" title={eduTitle || 'Education'} sub={eduSub} />
+        </FeedSheetSection>
+      )}
+
+      {looking.length > 0 && <FeedSheetSection title="Looking for"><FeedSheetChips soft items={looking} /></FeedSheetSection>}
+      {candidate.skills?.length > 0 && <FeedSheetSection title="Skills"><FeedSheetChips items={candidate.skills} /></FeedSheetSection>}
+      {candidate.languages?.length > 0 && <FeedSheetSection title="Languages"><FeedSheetChips items={candidate.languages} /></FeedSheetSection>}
+
+      {videos.length > 0 && (
+        <FeedSheetSection title="Self-uploaded clips">
+          <View style={styles.list}>
+            {videos.map((v) => (
+              <FeedSheetItem
+                key={v.id}
+                lead={<FeedSheetPlay />}
+                title={v.title || `Clip ${v.slot}`}
+                sub="Self-uploaded · not verified"
+                trail={clipLength(v.durationSec) ? <Text style={styles.trail}>{clipLength(v.durationSec)}</Text> : null}
+                label={`Play ${v.title || `clip ${v.slot}`}, self-uploaded, not verified`}
+                onPress={() => onPlayClip(v.id)}
+              />
+            ))}
+          </View>
+        </FeedSheetSection>
+      )}
+
+      {documents.length > 0 && (
+        <FeedSheetSection title="Documents">
+          <View style={styles.list}>
+            {documents.map((d) => (
+              <FeedSheetItem
+                key={d.id}
+                lead={<View style={styles.docMark}><Icon name="file" size={space.lg} tint={color.textOnInkMuted} /></View>}
+                title={d.name || label(d.kind)}
+                sub={[label(d.kind), fileSize(d.sizeBytes)].filter(Boolean).join(' · ')}
+                trail={openingDoc === d.id
+                  ? <ActivityIndicator color={color.textOnInkMuted} />
+                  : <Icon name="download" size={space.lg + 2} tint={color.textOnInkMuted} />}
+                label={`Download ${d.name || label(d.kind)}`}
+                disabled={openingDoc === d.id}
+                onPress={() => onOpenDocument(d.id)}
+              />
+            ))}
+          </View>
+        </FeedSheetSection>
+      )}
+
+      {links.length > 0 && (
+        <FeedSheetSection title="Links">
+          <View style={styles.list}>
+            {links.map((l) => (
+              <FeedSheetItem
+                key={l.url}
+                lead={<View style={styles.docMark}><Icon name="link" size={space.lg} tint={color.textOnInkMuted} /></View>}
+                title={l.label || l.url}
+                sub={l.label ? l.url : null}
+                trail={<Icon name="arrowUR" size={space.lg} tint={color.textOnInkMuted} />}
+                label={`Open ${l.label || l.url}`}
+                onPress={() => { Linking.openURL(linkUrl(l.url)).catch(() => {}) }}
+              />
+            ))}
+          </View>
+        </FeedSheetSection>
+      )}
+    </>
+  )
+}
+
 const styles = StyleSheet.create({
-  grow: { flex: 1 },
-  pressed: { opacity: opacity.pressed },
-  muted: { color: color.textMuted },
-  danger: { color: color.danger },
-  state: { paddingVertical: space.xl },
-  foot: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingHorizontal: space.lg, paddingTop: space.md, borderTopWidth: borderWidth.thin, borderTopColor: color.border, backgroundColor: color.surface },
-  round: { width: height['control-lg'], height: height['control-lg'], borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
-  pass: { borderWidth: borderWidth.thin, borderColor: color.dangerBorder, backgroundColor: color.surface },
-  save: { backgroundColor: color.ink },
+  list: { gap: space.sm },
+  empty: { fontFamily: FF.body, fontSize: fontSize['ui-md'], lineHeight: leadingNative['ui-md'], color: color.textOnInkMuted },
+  notice: { fontFamily: FF.body, fontSize: fontSize['ui-sm'], lineHeight: leadingNative['ui-sm'], color: color.dangerOnInk },
+  trail: { fontFamily: FF.monoMedium, fontSize: fontSize['meta-md'], lineHeight: leadingNative['meta-md'], color: color.textOnInkMuted },
+  docMark: { width: space['2xl'] + space['2xs'], height: space['2xl'] + space['2xs'], alignItems: 'center', justifyContent: 'center' },
 })

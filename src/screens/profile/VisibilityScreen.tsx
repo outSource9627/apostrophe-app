@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react'
-import { ScrollView, StyleSheet, View } from 'react-native'
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import Svg, { Path } from 'react-native-svg'
 import { api, ApiClientError } from '../../lib/api'
-import { color, space, radius, borderWidth } from '../../theme'
-import { AppBar, Banner, Body, Button, Card, Display, Eyebrow, Meta, Skeleton, Toggle } from '../../components/ui'
+import { borderWidth, color, fontFamilyNative as FF } from '../../theme'
+import { Icon } from '../../components/ui/Icon'
+import { Btn, DetailHeader, Skel } from '../../components/tab/kit'
 
 interface Audience { hiddenFromFeed: boolean; published: boolean }
 
@@ -14,7 +14,8 @@ interface Audience { hiddenFromFeed: boolean; published: boolean }
  * never deletes and never disconnects, and the screen says so — no confirm
  * dialog, no danger zone, no crimson. Until a video resume is published the
  * student is not in the feed at all, so the switch shows its not-applicable
- * state. Mirrors the web VisibilityClient.
+ * state. Mirrors the web VisibilityClient. Option A of
+ * docs/student-receipts-privacy-mockup.html: the switch card as the hero.
  */
 export function VisibilityScreen({ onBack, onBook }: { onBack: () => void; onBook: () => void }) {
   const insets = useSafeAreaInsets()
@@ -33,11 +34,11 @@ export function VisibilityScreen({ onBack, onBook }: { onBack: () => void; onBoo
   const toggle = (next: boolean) => { setHidden(next); mut.mutate(next) }
 
   const frame = (child: React.ReactNode) => (
-    <View style={[styles.page, { paddingTop: insets.top }]}><AppBar title="Visibility" onBack={onBack} />{child}</View>
+    <View style={[styles.page, { paddingTop: insets.top }]}><DetailHeader title="Visibility" onBack={onBack} />{child}</View>
   )
-  if (q.isPending) return frame(<View style={styles.body}><Skeleton lines={3} /></View>)
+  if (q.isPending) return frame(<View style={styles.body}><Skel w="100%" h={96} /><Skel w="100%" h={96} /><Skel w="100%" h={96} /></View>)
   if (q.isError && !(q.error instanceof ApiClientError && q.error.status === 404)) {
-    return frame(<View style={styles.centre}><Body tone="muted">Could not load your visibility.</Body></View>)
+    return frame(<View style={styles.centre}><Text style={styles.load}>Could not load your visibility.</Text></View>)
   }
   const aud = q.data ?? { hiddenFromFeed: false, published: false }
   const err = mut.isError ? 'Could not change your visibility. Try again.' : null
@@ -45,14 +46,17 @@ export function VisibilityScreen({ onBack, onBook }: { onBack: () => void; onBoo
   if (!aud.published) {
     return frame(
       <ScrollView contentContainerStyle={styles.body}>
-        <Display level="lg">Who can find you.</Display>
+        <Text accessibilityRole="header" style={styles.h}>Who can find you.</Text>
         <View style={styles.well}>
-          <Toggle on={false} disabled label="Show me in the employer feed" />
-          <Body size="sm" tone="muted" style={{ marginTop: space.md }}>
+          <View style={styles.switchRow}>
+            <Text style={styles.switchLabel}>Show me in the employer feed</Text>
+            <Switch on={false} disabled label="Show me in the employer feed" />
+          </View>
+          <Text style={[styles.p, styles.gapTop]}>
             This switch controls whether your video resume appears in the employer feed. You do not have one yet — it comes out of your interview, and the switch turns on by itself the day your film is published.
-          </Body>
+          </Text>
         </View>
-        <Button variant="primary" size="lg" full label="Book an interview" onPress={onBook} />
+        <Btn variant="primary" label="Book an interview" onPress={onBook} style={styles.big} />
       </ScrollView>,
     )
   }
@@ -60,53 +64,73 @@ export function VisibilityScreen({ onBack, onBook }: { onBack: () => void; onBoo
   return frame(
     hidden ? (
       <ScrollView contentContainerStyle={styles.body}>
-        <Display level="lg">You are hidden.</Display>
-        <Card style={styles.card}>
-          <Toggle on={false} onChange={toggle} disabled={mut.isPending} label="Show me in the employer feed" />
-          {changedAt && <Meta style={{ color: color.textSubtle, marginTop: space.md }}>Off since {fmtWhen(changedAt)}</Meta>}
-        </Card>
-        <View style={{ gap: space.sm }}>
-          <Eyebrow>What changed</Eyebrow>
-          <Body size="sm">Employers cannot find you in the feed. New employers will not come across your profile.</Body>
+        <Text accessibilityRole="header" style={styles.h}>You are hidden.</Text>
+        <View style={styles.card}>
+          <View style={styles.switchRow}>
+            <Text style={styles.switchLabel}>Show me in the employer feed</Text>
+            <Switch on={false} onChange={toggle} disabled={mut.isPending} label="Show me in the employer feed" />
+          </View>
+          {changedAt && <Text style={[styles.meta, styles.gapTop]}>Off since {fmtWhen(changedAt)}</Text>}
         </View>
-        <View style={{ gap: space.sm }}>
-          <Eyebrow>What did not change</Eyebrow>
+        <View style={styles.group}>
+          <Text style={styles.eyebrow}>What changed</Text>
+          <Text style={styles.pDark}>Employers cannot find you in the feed. New employers will not come across your profile.</Text>
+        </View>
+        <View style={styles.group}>
+          <Text style={styles.eyebrow}>What did not change</Text>
           <Facts items={['Your video resume is intact, exactly where it was.', 'Your connections stand.', 'Your chats are open, and those employers can still reach you.']} />
         </View>
-        {err ? <Banner tone="danger">{err}</Banner> : null}
-        <View style={{ marginTop: 'auto', gap: space.sm, paddingBottom: insets.bottom }}>
-          <Button variant="primary" size="lg" full busy={mut.isPending} label="Show me in the feed again" onPress={() => toggle(false)} />
-          <Body size="xs" tone="subtle">You are back in the feed the moment you tap it.</Body>
+        {err ? <View style={styles.banner}><Text style={styles.bannerText}>{err}</Text></View> : null}
+        <View style={styles.group}>
+          <Btn variant="primary" busy={mut.isPending} label="Show me in the feed again" onPress={() => toggle(false)} style={styles.big} />
+          <Text style={styles.metaCentre}>You are back in the feed the moment you tap it.</Text>
         </View>
       </ScrollView>
     ) : (
       <ScrollView contentContainerStyle={styles.body}>
-        <Display level="lg">Who can find you.</Display>
-        <Card style={styles.card}>
-          <Toggle on tone="success" onChange={toggle} disabled={mut.isPending} label="Show me in the employer feed" />
-          <Body size="sm" tone="muted" style={{ marginTop: space.md }}>Employers swiping the feed see your video resume and your profile, and can send you an Interest.</Body>
-        </Card>
-        <View style={{ gap: space.sm }}>
-          <Eyebrow>If you turn this off</Eyebrow>
-          <Body size="sm" tone="muted">You stop appearing in the employer feed. That is the whole of it — everything below stays exactly as it is.</Body>
+        <Text accessibilityRole="header" style={styles.h}>Who can find you.</Text>
+        <View style={styles.card}>
+          <View style={styles.switchRow}>
+            <Text style={styles.switchLabel}>Show me in the employer feed</Text>
+            <Switch on onChange={toggle} disabled={mut.isPending} label="Show me in the employer feed" />
+          </View>
+          <Text style={[styles.p, styles.gapTop]}>Employers swiping the feed see your video resume and your profile, and can send you an Interest.</Text>
+        </View>
+        <View style={styles.group}>
+          <Text style={styles.eyebrow}>If you turn this off</Text>
+          <Text style={styles.p}>You stop appearing in the employer feed. That is the whole of it — everything below stays exactly as it is.</Text>
           <Facts items={['Your video resume is untouched. Turning this off never deletes it.', 'Your existing connections stand.', 'Chats you are already in carry on, and those employers can still reach you.', 'Turn it back on whenever you like. Nothing is lost in between.']} />
         </View>
-        <Meta style={{ color: color.textSubtle }}>Takes effect immediately</Meta>
-        {err ? <Banner tone="danger">{err}</Banner> : null}
+        <Text style={styles.meta}>Takes effect immediately</Text>
+        {err ? <View style={styles.banner}><Text style={styles.bannerText}>{err}</Text></View> : null}
       </ScrollView>
     ),
   )
 }
 
+/** The mockup's 52x30 switch: green when on, sunken grey when off, dimmed when not applicable. */
+function Switch({ on, onChange, label, disabled }: { on: boolean; onChange?: (next: boolean) => void; label: string; disabled?: boolean }) {
+  return (
+    <Pressable
+      accessibilityRole="switch"
+      accessibilityState={{ checked: on, disabled: !!disabled }}
+      accessibilityLabel={label}
+      disabled={disabled}
+      onPress={() => onChange?.(!on)}
+      style={[styles.track, on && styles.trackOn, !on && !!disabled && styles.trackDim]}
+    >
+      <View style={[styles.knob, on ? styles.knobOn : styles.knobOff]} />
+    </Pressable>
+  )
+}
+
 function Facts({ items }: { items: string[] }) {
   return (
-    <View style={{ gap: space.sm }}>
+    <View style={styles.facts}>
       {items.map((t) => (
-        <View key={t} style={{ flexDirection: 'row', gap: space.sm }}>
-          <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" style={{ marginTop: space['2xs'] }}>
-            <Path d="M20 6 9 17l-5-5" stroke={color.success} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" />
-          </Svg>
-          <Body size="sm" style={{ flex: 1 }}>{t}</Body>
+        <View key={t} style={styles.fact}>
+          <View style={styles.tick}><Icon name="check" size={16} tint={color.successFill} weight={2.2} /></View>
+          <Text style={styles.factText}>{t}</Text>
         </View>
       ))}
     </View>
@@ -124,7 +148,31 @@ function fmtWhen(iso: string): string {
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.background },
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  body: { padding: space.xl, gap: space.xl, paddingBottom: space['4xl'] },
-  well: { borderRadius: radius.md, borderWidth: borderWidth.thin, borderColor: color.border, backgroundColor: color.surfaceMuted, padding: space.lg },
-  card: { padding: space.lg },
+  body: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 40, gap: 20 },
+  h: { fontFamily: FF.bodyBold, fontSize: 30, lineHeight: 32, letterSpacing: -1.2, color: color.text },
+  load: { fontFamily: FF.body, fontSize: 15, color: color.textMuted },
+  card: { backgroundColor: color.surface, borderWidth: borderWidth.thin, borderColor: color.border, borderRadius: 20, padding: 16 },
+  well: { backgroundColor: color.surfaceMuted, borderWidth: borderWidth.thin, borderColor: color.border, borderRadius: 14, padding: 16 },
+  switchRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  switchLabel: { flex: 1, fontFamily: FF.bodySemiBold, fontSize: 16, letterSpacing: -0.24, color: color.text },
+  gapTop: { marginTop: 12 },
+  p: { fontFamily: FF.body, fontSize: 14, lineHeight: 21, color: color.textMuted },
+  pDark: { fontFamily: FF.body, fontSize: 14, lineHeight: 21, color: color.text },
+  meta: { fontFamily: FF.monoMedium, fontSize: 11.5, letterSpacing: 0.46, color: color.textSubtle },
+  metaCentre: { fontFamily: FF.monoMedium, fontSize: 11.5, letterSpacing: 0.46, color: color.textSubtle, textAlign: 'center' },
+  eyebrow: { fontFamily: FF.monoMedium, fontSize: 11, letterSpacing: 1.54, textTransform: 'uppercase', color: color.textMuted },
+  group: { gap: 10 },
+  facts: { gap: 10 },
+  fact: { flexDirection: 'row', gap: 10 },
+  tick: { marginTop: 3 },
+  factText: { flex: 1, fontFamily: FF.body, fontSize: 14.5, lineHeight: 21, color: color.text },
+  banner: { backgroundColor: color.dangerSoft, borderWidth: borderWidth.thin, borderColor: color.dangerBorder, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 14 },
+  bannerText: { fontFamily: FF.body, fontSize: 14, lineHeight: 20, color: color.danger },
+  big: { height: 52 },
+  track: { width: 52, height: 30, borderRadius: 15, backgroundColor: color.surfaceSunken },
+  trackOn: { backgroundColor: color.successFill },
+  trackDim: { opacity: 0.55 },
+  knob: { position: 'absolute', top: 3, width: 24, height: 24, borderRadius: 12, backgroundColor: color.surface },
+  knobOn: { left: 25 },
+  knobOff: { left: 3 },
 })

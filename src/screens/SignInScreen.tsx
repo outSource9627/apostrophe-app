@@ -1,33 +1,16 @@
 import React, { useState } from 'react'
-import {
-  KeyboardAvoidingView,
-  Linking,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native'
+import { KeyboardAvoidingView, Linking, Platform, ScrollView, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { BrandMark, PhoneInput, text } from '../components/ui'
-import { Field, Input } from '../components/ui/fields'
-import { Segmented } from '../components/ui/controls'
 import { Banner } from '../components/ui/Banner'
-import { GoogleButton } from '../components/ui/GoogleButton'
-import { Button } from '../components/ui/Button'
-import { Body } from '../components/ui/Type'
+import {
+  A, AButton, AField, AInput, APassword, APhone, AuthSeg, AuthSub, AuthTitle, AuthTop, BottomBar,
+  GoogleBtn, Link, Note, NoteStrong, OrRow, Swap,
+} from '../components/auth/kit'
 import { api, tokenStore } from '../lib/api'
 import { ApiClientError } from '../lib/api/types'
-import {
-  color,
-  height,
-  leadingNative,
-  space,
-  trackingNative,
-} from '../theme'
+import { color } from '../theme'
 
-type Method = 'Mobile' | 'Email' | 'Google'
+type Method = 'Mobile OTP' | 'Email & password'
 
 type BannerState =
   | { type: 'WRONG_CREDENTIALS'; message: string }
@@ -36,8 +19,16 @@ type BannerState =
   | null
 
 interface Props {
-  onSignedIn: () => void
+  /**
+   * `mustChangePassword` is the server's routing hint for an interviewer on a
+   * temporary password (IV-07). The role itself is read back by the caller.
+   */
+  onSignedIn: (hint: { mustChangePassword: boolean }) => void
+  onBack: () => void
   onRegister: () => void
+  onForgot: () => void
+  /** Interviewers have no self-signup; this opens the HR application. */
+  onJoinUs: () => void
   onOtpSent: (data: { mobile: string; resendAfterSeconds: number }) => void
 }
 
@@ -49,9 +40,9 @@ interface Props {
  * Method selector: Segmented control (Mobile, Email, Google)
  * Dynamic Banner: handles 401 wrong credentials, 403 suspended, and 429 rate limit.
  */
-export function SignInScreen({ onSignedIn, onRegister, onOtpSent }: Props) {
+export function SignInScreen({ onSignedIn, onBack, onRegister, onForgot, onJoinUs, onOtpSent }: Props) {
   const insets = useSafeAreaInsets()
-  const [method, setMethod] = useState<Method>('Mobile')
+  const [method, setMethod] = useState<Method>('Mobile OTP')
 
   // Mobile state
   const [mobile, setMobile] = useState('')
@@ -59,6 +50,10 @@ export function SignInScreen({ onSignedIn, onRegister, onOtpSent }: Props) {
   // Email state
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [shown, setShown] = useState(false)
+  const [mobileError, setMobileError] = useState<string | null>(null)
+  const [emailError, setEmailError] = useState<string | null>(null)
+  const [passwordError, setPasswordError] = useState<string | null>(null)
 
   // Status & banner
   const [pending, setPending] = useState(false)
@@ -66,7 +61,11 @@ export function SignInScreen({ onSignedIn, onRegister, onOtpSent }: Props) {
 
   // 1 · Submit Mobile to send OTP
   async function handleSendMobileCode() {
-    if (pending || mobile.length !== 10) return
+    if (pending) return
+    if (!/^[6-9]\d{9}$/.test(mobile)) {
+      setMobileError('Enter a valid 10-digit mobile number')
+      return
+    }
     setPending(true)
     setBanner(null)
 
@@ -120,18 +119,22 @@ export function SignInScreen({ onSignedIn, onRegister, onOtpSent }: Props) {
 
   // 2 · Submit Email & Password
   async function handleEmailLogin() {
-    if (pending || !email.trim() || !password) return
+    if (pending) return
+    const badEmail = !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+    setEmailError(badEmail ? 'Enter a valid email address' : null)
+    setPasswordError(password ? null : 'Enter your password')
+    if (badEmail || !password) return
     setPending(true)
     setBanner(null)
 
     try {
-      const data = await api.post<{ accessToken: string; refreshToken: string }>(
+      const data = await api.post<{ accessToken: string; refreshToken: string; mustChangePassword?: boolean }>(
         '/auth/login/password',
         { email, password },
         { anonymous: true },
       )
-      await tokenStore.set(data)
-      onSignedIn()
+      await tokenStore.set({ accessToken: data.accessToken, refreshToken: data.refreshToken })
+      onSignedIn({ mustChangePassword: !!data.mustChangePassword })
     } catch (err) {
       if (err instanceof ApiClientError) {
         if (err.status === 403) {
@@ -162,29 +165,15 @@ export function SignInScreen({ onSignedIn, onRegister, onOtpSent }: Props) {
       style={[styles.root, { paddingTop: insets.top }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <View style={styles.appBar}>
-        <BrandMark />
-        <Pressable onPress={onRegister} hitSlop={space.md} style={styles.appBarAction}>
-          <Body size="md" weight="semibold" tone="accent">Create account</Body>
-        </Pressable>
-      </View>
+      <AuthTop onBack={onBack} />
 
-      <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + space.xl }]}
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* Title */}
-        <View style={styles.header}>
-          <Text style={[text.metaMd, styles.eyebrow]}>WELCOME BACK</Text>
-          <Text style={text.displayGreet}>
-            Pick up where{'\n'}
-            <Text style={styles.headlineAccent}>you left off.</Text>
-          </Text>
-        </View>
+      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+        <View style={styles.titleGap} />
+        <AuthTitle>Welcome back</AuthTitle>
+        <AuthSub>Log in to your Apostrophe account.</AuthSub>
 
-        {/* Method chooser · Segmented 3-option control */}
-        <Segmented
-          options={['Mobile', 'Email', 'Google'] as const}
+        <AuthSeg
+          options={['Mobile OTP', 'Email & password'] as const}
           value={method}
           onChange={(m) => {
             setMethod(m)
@@ -192,151 +181,104 @@ export function SignInScreen({ onSignedIn, onRegister, onOtpSent }: Props) {
           }}
         />
 
-        {/* Dynamic Inline Banner */}
         {banner && (
-          <Banner
-            tone={
-              banner.type === 'WRONG_CREDENTIALS'
-                ? 'danger'
-                : banner.type === 'RATE_LIMITED'
-                  ? 'warning'
-                  : 'info'
-            }
-            reference={
-              banner.type === 'SUSPENDED'
-                ? banner.ref
-                : banner.type === 'RATE_LIMITED'
-                  ? banner.retryTime
-                  : undefined
-            }
-            actionLabel={banner.type === 'SUSPENDED' ? 'Write to support' : undefined}
-            onAction={
-              banner.type === 'SUSPENDED'
-                ? () => Linking.openURL('mailto:support@apostrophe.work')
-                : undefined
-            }
-          >
-            {banner.message}
-          </Banner>
-        )}
-
-        {/* 1 · Mobile Method */}
-        {method === 'Mobile' && (
-          <View style={styles.formSection}>
-            <Field label="Mobile" helper="We’ll text a six-digit code. It’s good for 10 minutes.">
-              <PhoneInput
-                value={mobile}
-                onChangeText={(v) => {
-                  setMobile(v)
-                  setBanner(null)
-                }}
-                textContentType="telephoneNumber"
-                editable={!pending}
-              />
-            </Field>
-
-            <View style={styles.ctaSection}>
-              <Button
-                label={pending ? 'Sending code…' : 'Send me a code'}
-                variant="primary"
-                size="lg"
-                full
-                disabled={pending || mobile.length !== 10}
-                busy={pending}
-                onPress={handleSendMobileCode}
-              />
-              <Body size="xs" tone="subtle" style={styles.channelNote}>
-                Mobile, email and Google all reach the same account.
-              </Body>
-            </View>
+          <View style={styles.banner}>
+            <Banner
+              tone={
+                banner.type === 'WRONG_CREDENTIALS' ? 'danger' : banner.type === 'RATE_LIMITED' ? 'warning' : 'info'
+              }
+              reference={
+                banner.type === 'SUSPENDED' ? banner.ref : banner.type === 'RATE_LIMITED' ? banner.retryTime : undefined
+              }
+              actionLabel={banner.type === 'SUSPENDED' ? 'Write to support' : undefined}
+              onAction={
+                banner.type === 'SUSPENDED' ? () => Linking.openURL('mailto:support@apostrophe.work') : undefined
+              }
+            >
+              {banner.message}
+            </Banner>
           </View>
         )}
 
-        {/* 2 · Email Method */}
-        {method === 'Email' && (
-          <View style={styles.formSection}>
-            <Field label="Email">
-              <Input
+        {method === 'Mobile OTP' ? (
+          <>
+            <AField label="Mobile number" helper="We’ll send a 6-digit code by SMS." error={mobileError}>
+              <APhone
+                value={mobile}
+                onChangeText={(v) => {
+                  setMobile(v.replace(/\D/g, ''))
+                  setMobileError(null)
+                  setBanner(null)
+                }}
+                invalid={!!mobileError}
+                editable={!pending}
+              />
+            </AField>
+            <View style={styles.cta}>
+              <AButton label={pending ? 'Sending code…' : 'Send OTP'} busy={pending} onPress={handleSendMobileCode} />
+            </View>
+          </>
+        ) : (
+          <>
+            <AField label="Email" error={emailError}>
+              <AInput
                 value={email}
                 onChangeText={(v) => {
                   setEmail(v)
+                  setEmailError(null)
                   setBanner(null)
                 }}
+                invalid={!!emailError}
                 keyboardType="email-address"
                 autoCapitalize="none"
+                autoCorrect={false}
                 textContentType="emailAddress"
                 placeholder="you@example.com"
                 editable={!pending}
               />
-            </Field>
-
-            <Field label="Password">
-              <Input
+            </AField>
+            <AField label="Password" right={<Link onPress={onForgot}>Forgot?</Link>} error={passwordError}>
+              <APassword
                 value={password}
                 onChangeText={(v) => {
                   setPassword(v)
+                  setPasswordError(null)
                   setBanner(null)
                 }}
-                secureTextEntry
+                invalid={!!passwordError}
+                shown={shown}
+                onToggle={() => setShown((v) => !v)}
                 textContentType="password"
                 placeholder="Your password"
                 editable={!pending}
               />
-            </Field>
-
-            <View style={styles.ctaSection}>
-              <Button
-                label={pending ? 'Signing in…' : 'Sign in'}
-                variant="primary"
-                size="lg"
-                full
-                disabled={pending || !email.trim() || !password}
-                busy={pending}
-                onPress={handleEmailLogin}
-              />
-              <Body size="xs" tone="subtle" style={styles.channelNote}>
-                Mobile, email and Google all reach the same account.
-              </Body>
+            </AField>
+            <View style={styles.cta}>
+              <AButton label={pending ? 'Signing in…' : 'Log in'} busy={pending} onPress={handleEmailLogin} />
             </View>
-          </View>
+          </>
         )}
 
-        {/* 3 · Google Method */}
-        {method === 'Google' && (
-          <View style={styles.googleSection}>
-            <Body size="sm" tone="muted" style={styles.googleHelper}>
-              Sign in securely with your Google account to access your interviews and profile.
-            </Body>
+        <OrRow />
+        <GoogleBtn />
 
-            <GoogleButton onPress={() => {}} />
-
-            <Body size="xs" tone="subtle" style={styles.channelNote}>
-              Mobile, email and Google all reach the same account.
-            </Body>
-          </View>
-        )}
+        <Note>
+          <NoteStrong>Interviewer?</NoteStrong> Log in with the email and temporary password we sent you. You’ll set a
+          new one the first time. New here? <Link onPress={onJoinUs}>Join us as HR</Link>
+        </Note>
       </ScrollView>
+
+      <BottomBar insetBottom={insets.bottom + 14}>
+        <Swap lead="New to Apostrophe?" action="Create account" onPress={onRegister} />
+      </BottomBar>
     </KeyboardAvoidingView>
   )
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: color.background },
-  appBar: {
-    height: height['screen-header'],
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: space.xl,
-  },
-  appBarAction: { height: height.tap, justifyContent: 'center' },
-  scroll: { paddingHorizontal: space.xl, paddingTop: space.xs, gap: space.xl },
-  header: { gap: space.sm },
-  eyebrow: { color: color.textMuted, letterSpacing: trackingNative.eyebrow },
-  headlineAccent: { color: color.accent },
-  formSection: { gap: space.lg },
-  ctaSection: { marginTop: space.lg, gap: space.sm },
-  googleSection: { gap: space.xl, paddingTop: space.sm },
-  googleHelper: { lineHeight: leadingNative['ui-md'] },
-  channelNote: { textAlign: 'center' },
+  scroll: { paddingHorizontal: A.gutter, paddingBottom: 24 },
+  titleGap: { height: 12 },
+  banner: { marginTop: 16 },
+  cta: { marginTop: 22 },
 })

@@ -19,3 +19,8 @@ export { InterviewerNotificationsScreen } from './InterviewerNotificationsScreen
 export { InterviewerChatsScreen } from './InterviewerChatsScreen'
 export { InterviewerRoomScreen } from './InterviewerRoomScreen'
 export { InterviewerThreadScreen } from './InterviewerThreadScreen'
+export { InterviewerEditProfileScreen } from './InterviewerEditProfileScreen'
+export { InterviewerContactScreen } from './InterviewerContactScreen'
+export { InterviewerNotifSettingsScreen } from './InterviewerNotifSettingsScreen'
+export { InterviewerHelpScreen } from './InterviewerHelpScreen'
+export { InterviewerDataScreen } from './InterviewerDataScreen'

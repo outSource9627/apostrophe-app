@@ -8,8 +8,9 @@ import { fmtShortDate, fmtTime } from '../../lib/interviews/slots'
 import { feedbackNote, statusMark } from '../../lib/interviews/status'
 import { minutesPhrase, useBookingRules, type BookingRules } from '../../lib/interviews/rules'
 import { useCountdown } from '../../lib/interviews/useCountdown'
-import { color, space, spaceHalf, radius, trackingNative } from '../../theme'
-import { Banner, Button, Card, ErrorState, InkCard, InkPill, ScreenHeader, Skeleton, StickyFooter, text } from '../../components/ui'
+import { color, fontFamilyNative as FF, radius } from '../../theme'
+import { Banner } from '../../components/ui'
+import { Btn, DetailHeader, FooterBar, Panel, Skel, StateBlock } from '../../components/tab/kit'
 import { InterviewerPlate } from './InterviewerPlate'
 
 /**
@@ -35,18 +36,28 @@ export function InterviewDetailScreen({
   const booking = useBookingRules()
 
   const frame = (child: React.ReactNode) => (
-    <View style={[styles.page, { paddingTop: insets.top }]}><ScreenHeader title="Interview" onBack={onBack} />{child}</View>
+    <View style={[styles.page, { paddingTop: insets.top }]}><DetailHeader title="Interview" onBack={onBack} />{child}</View>
   )
-  if (q.isPending || booking.pending) return frame(<View style={styles.loading}><Skeleton lines={4} /></View>)
-  if (q.isError || !booking.rules) return frame(
-    <View style={styles.centre}>
-      <ErrorState
+  if (q.isPending || booking.pending) {
+    return frame(
+      <View style={styles.loading}>
+        <Skel w="100%" h={190} />
+        <Skel w="100%" h={90} />
+        <Skel w="100%" h={90} />
+      </View>,
+    )
+  }
+  if (q.isError || !booking.rules) {
+    return frame(
+      <StateBlock
+        icon="alert"
         title={q.isError ? 'This interview could not be found.' : 'Could not load the booking settings.'}
         body={booking.error ?? 'Nothing has changed on your booking.'}
-        action={<Button variant="outline" size="sm" label="Try again" onPress={() => { void q.refetch(); booking.retry() }} />}
-      />
-    </View>,
-  )
+        action="Try again"
+        onAction={() => { void q.refetch(); booking.retry() }}
+      />,
+    )
+  }
 
   const iv = q.data!
   const w = joinWindow(iv, booking.rules)
@@ -69,18 +80,18 @@ function joinWindow(iv: StudentInterview, rules: BookingRules): JoinWindow {
   }
 }
 
-/** The design's ink "upcoming" card (Android M4), carrying this interview's date. */
+/** The ink card carrying this interview's date, with the clock inside it. */
 function WhenCard({ iv, pill, right, children }: { iv: StudentInterview; pill: string; right?: string; children?: React.ReactNode }) {
   return (
-    <InkCard>
+    <View style={styles.ink}>
       <View style={styles.inkTop}>
-        <InkPill label={pill} />
-        {!!right && <Text style={[text.metaMd, styles.onInkMuted]}>{right.toUpperCase()}</Text>}
+        <View style={styles.inkPill}><Text style={styles.inkPillText}>{pill.toUpperCase()}</Text></View>
+        {!!right && <Text style={styles.inkRight}>{right.toUpperCase()}</Text>}
       </View>
-      <Text style={[text.displaySm, styles.onInk]}>{`${fmtShortDate(iv.slotStart)} · ${fmtTime(iv.slotStart)}`}</Text>
-      <Text style={[text.uiSm, styles.onInkMuted]}>{`${iv.durationMin}-minute interview · ${iv.tier} · IST`}</Text>
+      <Text style={styles.inkTitle}>{`${fmtShortDate(iv.slotStart)} · ${fmtTime(iv.slotStart)}`}</Text>
+      <Text style={styles.inkSub}>{`${iv.durationMin}-minute interview · ${iv.tier} · IST`}</Text>
       {children}
-    </InkCard>
+    </View>
   )
 }
 
@@ -92,27 +103,24 @@ function Booked({ iv, w, onReschedule, onCancel }: { iv: StudentInterview; w: Jo
     <>
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
         <WhenCard iv={iv} pill="Booked">
-          <View style={styles.clockWell}>
-            <Text style={[text.metaSm, styles.onInkMuted]}>STARTS IN</Text>
-            <Text style={[text.metaXl, styles.onInk]}>{hms}</Text>
-          </View>
+          <Clock label="STARTS IN" value={hms} />
         </WhenCard>
         <InterviewerPlate note="Assigned, and kept unnamed until the session starts. Every student gets the same interviewer on the same terms, and nobody can shop for a soft one." />
-        <Card style={styles.windowCard}>
-          <Text style={[text.metaSm, styles.eyebrow]}>{closeT ? `JOIN WINDOW · ${openT} – ${closeT} IST` : `JOIN OPENS · ${openT} IST`}</Text>
-          <Text style={[text.uiMd, styles.muted]}>
+        <Panel>
+          <Text style={styles.eyebrow}>{closeT ? `JOIN WINDOW · ${openT} – ${closeT} IST` : `JOIN OPENS · ${openT} IST`}</Text>
+          <Text style={styles.prose}>
             {`Join opens ${minutesPhrase(w.opensBefore)} before the start${closeT ? ` and closes at ${closeT}` : ''}. Run the device check before then.`}
           </Text>
-        </Card>
+        </Panel>
       </ScrollView>
-      <StickyFooter inset={false}>
-        <Button variant="primary" size="lg" full disabled label="Join interview" />
+      <FooterBar>
+        <Btn disabled label="Join interview" />
         <View style={styles.footRow}>
           {/* Always offered: when a move or a cancel is not allowed, those screens say why and route to a person. */}
-          <View style={styles.grow}><Button variant="outline" size="md" full label="Reschedule" onPress={onReschedule} /></View>
-          <View style={styles.grow}><Button variant="outline" size="md" full label="Cancel" onPress={onCancel} /></View>
+          <Btn variant="outline" label="Reschedule" onPress={onReschedule} style={styles.grow} />
+          <Btn variant="outline" label="Cancel" onPress={onCancel} style={styles.grow} />
         </View>
-      </StickyFooter>
+      </FooterBar>
     </>
   )
 }
@@ -126,10 +134,7 @@ function JoinOpen({ iv, w, onJoin }: { iv: StudentInterview; w: JoinWindow; onJo
     <>
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
         <WhenCard iv={iv} pill={started ? 'Started' : 'Join open'} right={closeT ? `Closes ${closeT}` : undefined}>
-          <View style={styles.clockWell}>
-            <Text style={[text.metaSm, styles.onInkMuted]}>{started ? (closeT ? 'UNTIL JOIN CLOSES' : 'STARTED') : 'STARTS IN'}</Text>
-            <Text style={[text.metaXl, styles.onInk]}>{started ? (closeT ? toClose.ms : '—') : toStart.ms}</Text>
-          </View>
+          <Clock label={started ? (closeT ? 'UNTIL JOIN CLOSES' : 'STARTED') : 'STARTS IN'} value={started ? (closeT ? toClose.ms : '—') : toStart.ms} />
         </WhenCard>
         {started && (
           <Banner tone="warning">
@@ -140,10 +145,10 @@ function JoinOpen({ iv, w, onJoin }: { iv: StudentInterview; w: JoinWindow; onJo
         )}
         <InterviewerPlate note="You will see who it is the moment the session starts — that is the first thing that happens in the room." />
       </ScrollView>
-      <StickyFooter inset={false}>
-        <Button variant="primary" size="lg" full label="Join interview" onPress={onJoin} />
-        <Button variant="outline" size="md" full label="Run the device check" onPress={onJoin} />
-      </StickyFooter>
+      <FooterBar>
+        <Btn label="Join interview" onPress={onJoin} />
+        <Btn variant="outline" label="Run the device check" onPress={onJoin} />
+      </FooterBar>
     </>
   )
 }
@@ -158,16 +163,16 @@ function Missed({ iv, w, onSupport, onBook }: { iv: StudentInterview; w: JoinWin
     <>
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
         <WhenCard iv={iv} pill={reviewed ? 'Ended early' : interviewerMissed ? 'Interviewer did not join' : 'No show'} />
-        <Card style={interviewerMissed || reviewed ? styles.windowCard : styles.dangerCard}>
-          <Text style={[text.metaSm, interviewerMissed || reviewed ? styles.muted : styles.dangerText]}>WHAT HAPPENED</Text>
+        <Panel tone={interviewerMissed || reviewed ? 'plain' : 'danger'}>
+          <Text style={[styles.eyebrow, !(interviewerMissed || reviewed) && styles.dangerText]}>WHAT HAPPENED</Text>
           {reviewed ? (
             <>
-              <Text style={text.uiMd}>
+              <Text style={styles.prose}>
                 {interviewerMissed
                   ? 'Your session started but ended early. After review, it was recorded as your interviewer leaving or ending it. This is not on you.'
                   : 'Your session started but ended early. After review, it was recorded as you leaving before it could finish.'}
               </Text>
-              <Text style={text.uiMd}>
+              <Text style={styles.prose}>
                 {interviewerMissed
                   ? 'You get a free reschedule, and it is placed ahead of the queue so you are matched sooner.'
                   : 'No refund is due, but you get one free reschedule so you are not out of pocket.'}
@@ -175,28 +180,28 @@ function Missed({ iv, w, onSupport, onBook }: { iv: StudentInterview; w: JoinWin
             </>
           ) : interviewerMissed ? (
             <>
-              <Text style={text.uiMd}>{`You were there, but your interviewer did not join${closeT ? ` before ${closeT}` : ''}. This is not on you.`}</Text>
-              <Text style={text.uiMd}>You get a free reschedule, and it is placed ahead of the queue so you are matched sooner.</Text>
+              <Text style={styles.prose}>{`You were there, but your interviewer did not join${closeT ? ` before ${closeT}` : ''}. This is not on you.`}</Text>
+              <Text style={styles.prose}>You get a free reschedule, and it is placed ahead of the queue so you are matched sooner.</Text>
             </>
           ) : (
             <>
-              <Text style={text.uiMd}>
+              <Text style={styles.prose}>
                 {closeT && w.closesAfter != null
                   ? `Join stayed open until ${closeT} and you did not join. The interview was called a no-show after ${minutesPhrase(w.closesAfter)}.`
                   : 'Join stayed open and you did not join, so the interview was called a no-show.'}
               </Text>
-              <Text style={text.uiMd}>No refund is due, but you get one free reschedule so you are not out of pocket.</Text>
+              <Text style={styles.prose}>No refund is due, but you get one free reschedule so you are not out of pocket.</Text>
             </>
           )}
-        </Card>
-        <Text style={[text.uiXs, styles.muted]}>
+        </Panel>
+        <Text style={styles.fine}>
           {interviewerMissed ? 'If something here looks wrong, an admin can review it.' : 'If your network or your phone failed you, say so — an admin can review it.'}
         </Text>
       </ScrollView>
-      <StickyFooter inset={false}>
-        <Button variant="primary" size="lg" full label="Book your free reschedule" onPress={onBook} />
-        <Button variant="outline" size="md" full label="Ask admin to look at this" onPress={onSupport} />
-      </StickyFooter>
+      <FooterBar>
+        <Btn label="Book your free reschedule" onPress={onBook} />
+        <Btn variant="outline" label="Ask admin to look at this" onPress={onSupport} />
+      </FooterBar>
     </>
   )
 }
@@ -216,55 +221,68 @@ function Terminal({ iv, onBook, onFeedback }: { iv: StudentInterview; onBook: ()
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
         <WhenCard iv={iv} pill={technical ? 'Ended early' : mark.label} />
         {done && (
-          <Card style={styles.windowCard}>
-            <Text style={text.uiBaseSemi}>Your interview is done.</Text>
-            <Text style={[text.uiMd, styles.muted]}>When your film is published it becomes your video resume.</Text>
-            {!!note && <Text style={[text.uiSm, styles.muted]}>{note}</Text>}
-          </Card>
+          <Panel>
+            <Text style={styles.cardTitle}>Your interview is done.</Text>
+            <Text style={styles.prose}>When your film is published it becomes your video resume.</Text>
+            {!!note && <Text style={styles.prose}>{note}</Text>}
+          </Panel>
         )}
         {underReview && (
-          <Card style={styles.windowCard}>
-            <Text style={text.uiBaseSemi}>Under review</Text>
-            <Text style={[text.uiMd, styles.muted]}>The session ended before it finished, so it did not become a video resume. Our team is reviewing what happened.</Text>
-            <Text style={[text.uiMd, styles.muted]}>If it was not on you, a free re-interview is added to your account and you will be told here and in your notifications.</Text>
-          </Card>
+          <Panel>
+            <Text style={styles.cardTitle}>Under review</Text>
+            <Text style={styles.prose}>The session ended before it finished, so it did not become a video resume. Our team is reviewing what happened.</Text>
+            <Text style={styles.prose}>If it was not on you, a free re-interview is added to your account and you will be told here and in your notifications.</Text>
+          </Panel>
         )}
         {technical && (
-          <Card style={styles.windowCard}>
-            <Text style={text.uiBaseSemi}>What happened</Text>
-            <Text style={[text.uiMd, styles.muted]}>Our video room or the network dropped your session. That is not on you.</Text>
-            <Text style={[text.uiMd, styles.muted]}>We have added a free re-interview to your account at no charge — book it whenever you are ready.</Text>
-          </Card>
+          <Panel>
+            <Text style={styles.cardTitle}>What happened</Text>
+            <Text style={styles.prose}>Our video room or the network dropped your session. That is not on you.</Text>
+            <Text style={styles.prose}>We have added a free re-interview to your account at no charge — book it whenever you are ready.</Text>
+          </Panel>
         )}
       </ScrollView>
-      <StickyFooter inset={false}>
-        {scorecardReady && <Button variant="primary" size="lg" full label="See my scorecard" onPress={onFeedback} />}
-        {technical && <Button variant="primary" size="lg" full label="Book your free re-interview" onPress={onBook} />}
+      <FooterBar>
+        {scorecardReady && <Btn label="See my scorecard" onPress={onFeedback} />}
+        {technical && <Btn label="Book your free re-interview" onPress={onBook} />}
         {!underReview && !technical && (
-          <Button variant={scorecardReady ? 'outline' : 'primary'} size={scorecardReady ? 'md' : 'lg'} full label="Book another interview" onPress={onBook} />
+          <Btn variant={scorecardReady ? 'outline' : 'primary'} label="Book another interview" onPress={onBook} />
         )}
-      </StickyFooter>
+      </FooterBar>
     </>
+  )
+}
+
+function Clock({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.clockWell}>
+      <Text style={styles.clockLabel}>{label}</Text>
+      <Text style={styles.clockValue}>{value}</Text>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.background },
-  centre: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.xl },
-  loading: { padding: space.xl },
-  body: { paddingHorizontal: space.lg, paddingTop: space.xs, gap: space.md, paddingBottom: space.xl },
-  inkTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  onInk: { color: color.textOnInk },
-  onInkMuted: { color: color.textOnInkMuted },
-  clockWell: {
-    flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginTop: space.xs,
-    paddingHorizontal: space.md, paddingVertical: spaceHalf['2.5'], borderRadius: radius.tile, backgroundColor: color.onInkGround,
-  },
-  windowCard: { padding: space.lg, gap: space.sm },
-  eyebrow: { color: color.textMuted, letterSpacing: trackingNative.eyebrow },
-  muted: { color: color.textMuted },
-  footRow: { flexDirection: 'row', gap: spaceHalf['2.5'] },
+  loading: { padding: 20, gap: 14 },
+  body: { paddingHorizontal: 20, paddingTop: 8, gap: 14, paddingBottom: 24 },
   grow: { flex: 1 },
-  dangerCard: { backgroundColor: color.dangerSoft, borderColor: color.dangerBorder, padding: space.lg, gap: space.sm },
-  dangerText: { color: color.danger, letterSpacing: trackingNative.eyebrow },
+  footRow: { flexDirection: 'row', gap: 8 },
+
+  ink: { backgroundColor: color.ink, borderRadius: 18, padding: 18 },
+  inkTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  inkPill: { backgroundColor: color.onInkGround, borderRadius: radius.pill, paddingVertical: 5, paddingHorizontal: 10 },
+  inkPillText: { fontFamily: FF.monoMedium, fontSize: 10.5, letterSpacing: 1, color: color.textInverse },
+  inkRight: { fontFamily: FF.monoMedium, fontSize: 11, letterSpacing: 1.1, color: color.textOnInkMuted },
+  inkTitle: { fontFamily: FF.bodyBold, fontSize: 22, letterSpacing: -0.66, color: color.textInverse, marginTop: 12 },
+  inkSub: { fontFamily: FF.body, fontSize: 14, lineHeight: 19, color: color.textOnInkBody, marginTop: 4 },
+  clockWell: { marginTop: 16 },
+  clockLabel: { fontFamily: FF.monoMedium, fontSize: 10.5, letterSpacing: 1, color: color.textOnInkSubtle },
+  clockValue: { fontFamily: FF.monoSemiBold, fontSize: 32, letterSpacing: -0.5, color: color.textInverse, marginTop: 2 },
+
+  eyebrow: { fontFamily: FF.monoMedium, fontSize: 10.5, letterSpacing: 1.05, color: color.textMuted },
+  dangerText: { color: color.danger },
+  cardTitle: { fontFamily: FF.bodySemiBold, fontSize: 17, letterSpacing: -0.17, color: color.text },
+  prose: { fontFamily: FF.body, fontSize: 14.5, lineHeight: 21, color: color.textSecondary },
+  fine: { fontFamily: FF.body, fontSize: 13, lineHeight: 18, color: color.textMuted },
 })

@@ -156,6 +156,31 @@ export const color = {
   onInkOutline: 'rgba(255, 255, 255, 0.3)',
 
   /**
+   * ── the video feed ────────────────────────────────────────────────────
+   * The app's student job feed and employer candidate feed (ApostropheApp
+   * docs/tinder-feed-mockups.html · design 1) share one dark deck: the page and
+   * the tab bar are `inkDeep`, the card is `inkDeeper`, and these mark what a
+   * card says and what its four round buttons do.
+   */
+  /** Pass, the filter count and the film's progress. */
+  feedPink: '#FD3A73',
+  /** A highlight pill (pay, job type, salary, joining) — `feedPink` at 85%, so the film reads through. */
+  feedPinkPill: 'rgba(253, 58, 115, 0.85)',
+  /** Save / Shortlist, the live dot and the verified tick. */
+  feedLike: '#20D575',
+  /** Undo. */
+  feedUndo: '#FFC000',
+  /** A round feed button's fill (90%) and a skill pill over the film (75%). */
+  feedAction: 'rgba(18, 22, 34, 0.9)',
+  feedPill: 'rgba(18, 22, 34, 0.75)',
+  /** The details sheet the card's ⌃ opens (mockup A · "Twin + dark sheet"), its fixed foot, and the scrim under it. */
+  feedSheet: '#0E121D',
+  feedSheetFoot: '#0A0D16',
+  feedScrim: 'rgba(7, 9, 15, 0.6)',
+  /** The pay / expected-salary value in that sheet's fact grid — `feedPink` lifted for small type on ink. */
+  feedPinkSoft: '#FF8FB0',
+
+  /**
    * ── semantic state ────────────────────────────────────────────────────
    * Each state has a TEXT colour (`success`), a SOFT ground (`successSoft`), a
    * FILL for dots, bars and icons (`successFill`) and, where a state is drawn
@@ -276,6 +301,9 @@ export const radius = {
   deck: 22,
   /** The lobby's camera frame. */
   frame: 24,
+  /** The app's video feed card (ApostropheApp docs/tinder-feed-mockups.html), and the top of its details sheet. */
+  feed: 26,
+  'feed-sheet': 28,
   /** Every button, badge, pill and toggle. */
   pill: 999,
 } as const
@@ -1108,6 +1136,18 @@ export const height = {
   'deck-play': 68,
   /** The job deck on a desktop (G2): the card is 420 × 620, the round actions beside it 76. */
   'deck-card': 620,
+  /**
+   * The app's video feed (ApostropheApp docs/tinder-feed-mockups.html): the
+   * round buttons 58 / 46, a glass button on the card (sound, details) 34, and
+   * a button in the bar above the card 38.
+   */
+  'feed-action': 58,
+  'feed-action-sm': 46,
+  'feed-glass': 34,
+  'feed-top': 38,
+  /** The film still in the feed's details sheet (docs/feed-details-mockups.html · A): 54 × 84. */
+  'feed-thumb-w': 54,
+  'feed-thumb-h': 84,
   /** The live room (M8): the self/interviewer tile is 116 wide, a round control 60, the Leave pill 76 × 60. */
   'room-tile-w': 116,
   'room-ctl': 60,

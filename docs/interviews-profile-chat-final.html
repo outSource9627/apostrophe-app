@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apostrophe App – My interviews, Profile & Chat (production design)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FAFAFC; --surface:#fff; --muted:#F1F3F7; --sunken:#E6E8EE;
+    --text:#0B0F1A; --text2:#3A4256; --text3:#6B7385; --text4:#8A91A2;
+    --border:#E3E6ED; --border-strong:#C9CED9;
+    --accent:#5B3DF5; --accent-hover:#4A2FE0; --accent-soft:#EFEBFF; --accent-wash:#F7F6FF;
+    --accent-muted:#C4B8FF; --accent-bright:#7258FF; --accent-deep:#3B2A8F; --accent-edge:#DCD3FF;
+    --ink:#0B0F1A; --ink-raised:#151B2B;
+    --ok:#0E9F6E; --ok-text:#0B7A55; --ok-soft:#E6F7F0; --danger:#E5484D; --danger-text:#C22A30; --danger-soft:#FDECEC; --warn:#935F00; --warn-soft:#FFF5E1; --warn-edge:#F5E2B8; --info:#2F6BFF; --info-soft:#E8EFFF;
+    --r-md:14px; --r-lg:18px; --r-xl:28px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{font-family:'Geist',system-ui,sans-serif;background:#E9EAF2;color:var(--text);padding:40px 24px 90px}
+  button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+  button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex:none}
+  .mono{font:500 11px 'Geist Mono',monospace;letter-spacing:.14em;text-transform:uppercase}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+  /* ---------- page ---------- */
+  .intro{max-width:1240px;margin:0 auto 36px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:28px 32px}
+  .intro h1{font-size:30px;letter-spacing:-.035em;line-height:1.1}
+  .intro .lede{font-size:16px;color:var(--text3);margin-top:8px;line-height:1.5;max-width:820px}
+  .section{max-width:1240px;margin:0 auto 70px}
+  .section>h2{font-size:28px;letter-spacing:-.035em}
+  .section>p{font-size:15px;color:var(--text3);margin:4px 0 22px;max-width:820px;line-height:1.5}
+  .row{display:flex;flex-wrap:wrap;gap:40px;align-items:flex-start}
+  .cell{width:390px}
+  .states{display:flex;flex-wrap:wrap;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:22px;padding:4px;margin-bottom:14px}
+  .states button{padding:8px 12px;border-radius:99px;font-size:13.5px;font-weight:600;color:var(--text3);white-space:nowrap}
+  .states button.on{background:var(--accent);color:#fff}
+  .cap{margin-top:14px;font-size:14px;color:var(--text3);line-height:1.45}
+  .notes{width:390px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:22px}
+  .notes h3{font-size:18px;letter-spacing:-.02em;margin-bottom:10px}
+  .notes ul{padding-left:18px;font-size:14px;line-height:1.6;color:var(--text2)}
+  .notes li{margin-bottom:6px}
+  .notes .mono{color:var(--accent);margin-bottom:8px;display:block}
+
+  /* ---------- phone ---------- */
+  .phone{width:390px;height:812px;background:var(--bg);border-radius:44px;border:10px solid #0B0F1A;overflow:hidden;position:relative}
+  .status{height:44px;display:flex;justify-content:space-between;align-items:center;padding:0 26px;font-size:14px;font-weight:600;position:absolute;top:0;left:0;right:0;z-index:40;pointer-events:none}
+  .status i{width:90px;height:24px;background:#0B0F1A;border-radius:14px;position:absolute;left:50%;top:8px;transform:translateX(-50%)}
+  .scroll{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none;padding-top:44px}
+  .scroll::-webkit-scrollbar{display:none}
+  .compact{position:absolute;top:0;left:0;right:0;height:96px;padding:44px 20px 0;display:flex;align-items:center;justify-content:space-between;background:rgba(250,250,252,.96);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);z-index:30;opacity:0;transform:translateY(-8px);pointer-events:none;transition:.2s}
+  .compact.on{opacity:1;transform:none}
+  .compact b{font-size:18px;letter-spacing:-.02em}
+
+  /* floating tab bar — Profile is the last tab */
+  .tab{position:absolute;left:14px;right:14px;bottom:14px;height:68px;background:rgba(255,255,255,.96);backdrop-filter:blur(14px);border:1px solid var(--border);border-radius:24px;display:flex;justify-content:space-around;align-items:center;z-index:25}
+  .tab button{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11.5px;font-weight:600;color:var(--text4);padding:7px 8px;border-radius:14px;min-width:60px;min-height:48px;justify-content:center}
+  .tab button.on{color:var(--accent);background:var(--accent-soft)}
+
+  /* ---------- shared ---------- */
+  .pill{font:500 10.5px 'Geist Mono',monospace;letter-spacing:.1em;text-transform:uppercase;border-radius:99px;padding:5px 10px;display:inline-block;white-space:nowrap}
+  .pill.ok{background:var(--ok-soft);color:var(--ok-text)}.pill.acc{background:var(--accent-soft);color:var(--accent-hover)}
+  .pill.warn{background:var(--warn-soft);color:var(--warn)}.pill.neutral{background:var(--muted);color:var(--text3)}
+  .pill.info{background:var(--info-soft);color:#1F4FD1}.pill.danger{background:var(--danger-soft);color:var(--danger-text)}
+  .pill.onink{background:rgba(255,255,255,.14);color:#fff}
+  .pill.live::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-right:6px;vertical-align:1px}
+  .rowc{display:flex;align-items:center;gap:14px}
+  .grow{flex:1;min-width:0}
+  .sub{font-size:14px;color:var(--text3);line-height:1.4}
+  .title{font-size:30px;font-weight:800;letter-spacing:-.04em;line-height:1.05}
+  .head{padding:12px 20px 12px}
+  .btn{height:46px;min-width:44px;border-radius:var(--r-md);font-weight:700;font-size:15px;padding:0 18px;display:inline-flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap}
+  .btn.pri{background:var(--accent);color:#fff}.btn.out{border:1.5px solid var(--border-strong);background:var(--surface)}
+  .btn.white{background:#fff;color:var(--accent-deep)}.btn.ghost{border:1px solid rgba(255,255,255,.3);color:#fff}
+  .btn.dis{background:var(--muted);color:var(--text4)}.btn.full{width:100%}.btn.danger{border:1.5px solid #F2B8BA;color:var(--danger-text);background:var(--surface)}
+  .btn.dangerfill{background:var(--danger);color:#fff}.btn.sm{height:38px;font-size:14px;padding:0 14px;border-radius:12px}
+  .btn.quiet{color:var(--text2)}
+  .chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:0 20px 4px}
+  .chips::-webkit-scrollbar{display:none}
+  .chip{white-space:nowrap;padding:0 14px;height:40px;display:inline-flex;align-items:center;border-radius:99px;font-size:14px;font-weight:600;background:var(--surface);border:1px solid var(--border);color:var(--text2)}
+  .chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px}
+  .pad{padding:0 20px}
+  .chev{width:18px;color:var(--text4)}
+  .avatar{border-radius:50%;display:grid;place-items:center;font-weight:700;color:#fff;flex:none}
+  .banner{display:flex;gap:10px;align-items:flex-start;border-radius:var(--r-md);padding:12px 14px;font-size:14px;line-height:1.4}
+  .banner.warn{background:var(--warn-soft);border:1px solid var(--warn-edge);color:var(--warn)}
+  .banner.danger{background:var(--danger-soft);border:1px solid #F2B8BA;color:var(--danger-text)}
+  .skel{background:linear-gradient(90deg,var(--muted) 0%,#E9ECF2 50%,var(--muted) 100%);background-size:200% 100%;animation:sh 1.3s infinite linear;border-radius:10px}
+  @keyframes sh{to{background-position:-200% 0}}
+  .center{display:grid;place-items:center;text-align:center;padding:60px 36px 0}
+  .center .ic{width:64px;height:64px;border-radius:20px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;margin-bottom:16px}
+  .center .ic svg{width:30px;height:30px}
+  .center b{font-size:22px;letter-spacing:-.03em;display:block}
+  .center p{font-size:15px;color:var(--text3);margin:8px 0 18px;line-height:1.5}
+  [data-act]{cursor:pointer}
+
+  /* sheets / toast */
+  .scrim{position:absolute;inset:0;background:rgba(11,15,26,.4);z-index:50;opacity:0;pointer-events:none;transition:.25s}
+  .scrim.on{opacity:1;pointer-events:auto}
+  .sheet{position:absolute;left:0;right:0;bottom:0;max-height:90%;background:var(--bg);border-radius:28px 28px 0 0;z-index:51;transform:translateY(105%);transition:transform .35s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;overflow:hidden}
+  .sheet.on{transform:none}
+  .sheet .grab{width:40px;height:4px;border-radius:4px;background:var(--border-strong);margin:10px auto 0;flex:none}
+  .sheet .sh{display:flex;align-items:center;gap:12px;padding:12px 20px 8px;flex:none}
+  .sheet .sh b{font-size:20px;letter-spacing:-.025em}
+  .sheet .x{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--muted);margin-left:auto;flex:none}
+  .sheet .body{padding:4px 20px 20px;overflow-y:auto;display:grid;gap:14px;align-content:start;scrollbar-width:none}
+  .sheet .foot{padding:12px 20px 24px;background:var(--surface);border-top:1px solid var(--border);display:grid;gap:8px;flex:none}
+  .toast{position:absolute;left:14px;right:14px;bottom:100px;background:var(--ink);color:#fff;border-radius:var(--r-md);padding:13px 14px;z-index:60;font-size:14px;font-weight:600;transform:translateY(20px);opacity:0;pointer-events:none;transition:.25s}
+  .toast.on{transform:none;opacity:1}
+  .rule{font-size:14px;line-height:1.5;color:var(--text2);padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md)}
+
+  /* ===== INTERVIEWS ===== */
+  .dtile{width:54px;height:60px;border-radius:12px;background:var(--muted);display:grid;place-items:center;align-content:center;flex:none}
+  .dtile small{font:500 10px 'Geist Mono',monospace;letter-spacing:.1em;color:var(--text3)}
+  .dtile b{font-size:22px;letter-spacing:-.03em;line-height:1}
+  .icard{display:flex;gap:14px;padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);min-height:104px}
+  .icard.next{border-color:var(--accent-edge);background:var(--accent-wash)}
+  .icard.next .dtile{background:var(--accent);} .icard.next .dtile small{color:var(--accent-muted)} .icard.next .dtile b{color:#fff}
+  .icard .when{font-size:16.5px;font-weight:600;letter-spacing:-.01em}
+  .icard .act{font-size:14px;font-weight:600;color:var(--accent);margin-top:6px}
+  .until{font:500 10.5px 'Geist Mono',monospace;letter-spacing:.08em;color:var(--accent);margin-top:2px}
+  .ilist{display:grid;gap:10px;padding:14px 20px 0}
+  .grp{font:500 11px 'Geist Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--text3);padding:6px 4px 0}
+  .fab{position:absolute;right:16px;bottom:96px;height:52px;border-radius:99px;background:var(--accent);color:#fff;font-weight:700;font-size:15px;display:flex;align-items:center;gap:8px;padding:0 20px 0 16px;z-index:20;transition:padding .25s}
+  .fab span{overflow:hidden;white-space:nowrap;max-width:160px;transition:max-width .25s,opacity .2s}
+  .fab.small{padding:0 15px}.fab.small span{max-width:0;opacity:0}
+  .ink{background:var(--ink);color:#fff;border-radius:var(--r-lg);padding:18px}
+  .ink .p{font-size:14px;color:#A6ACBA;margin-top:4px;line-height:1.4}
+  .ink h4{font-size:22px;font-weight:700;letter-spacing:-.03em;margin-top:12px}
+  .screenhead{display:flex;align-items:center;gap:12px;padding:8px 14px 8px}
+  .screenhead .back{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--border);background:var(--surface);flex:none}
+  .screenhead b{font-size:18px;letter-spacing:-.02em}
+  .sticky{position:absolute;left:0;right:0;bottom:0;padding:12px 20px 26px;background:var(--surface);border-top:1px solid var(--border);display:grid;gap:8px;z-index:24}
+  .sticky .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+  /* ===== PROFILE ===== */
+  .menu{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
+  .mrow{display:flex;align-items:center;gap:14px;padding:12px 16px;min-height:64px;border-bottom:1px solid var(--border)}
+  .mrow:last-child{border-bottom:0}
+  .mrow:active{background:var(--muted)}
+  .mrow .ic{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;flex:none;background:var(--accent-soft);color:var(--accent)}
+  .mrow b{font-size:16px;display:block;letter-spacing:-.01em}.mrow span.s{font-size:13.5px;color:var(--text3);display:block;margin-top:1px;line-height:1.35}
+  .mlabel{font:500 11px 'Geist Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--text3);padding:24px 20px 8px}
+  .vchip{display:inline-flex;align-items:center;gap:4px}
+  .vchip svg{width:14px;stroke:var(--ok);stroke-width:2.6}
+
+  /* ===== CHAT ===== */
+  .crow{display:flex;gap:14px;padding:14px;margin-bottom:10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);min-height:88px}
+  .crow.unread{border-color:var(--accent-edge);background:var(--accent-wash)}
+  .crow.muted{background:var(--muted)}
+  .crow .nm{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+  .crow .nm b{font-size:17px;letter-spacing:-.01em;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .crow .nm b.u{font-weight:700}
+  .crow .nm span{font:500 11px 'Geist Mono',monospace;color:var(--text4);flex:none}
+  .crow .ctx{font:500 10.5px 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--text4);margin-top:3px}
+  .crow .pv{display:flex;align-items:center;gap:10px;margin-top:5px;font-size:14.5px;color:var(--text3)}
+  .crow .pv.u{color:var(--text);font-weight:500}
+  .crow .pv p{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .uchip{min-width:22px;height:22px;border-radius:99px;background:var(--sunken);font:500 11px 'Geist Mono',monospace;display:grid;place-items:center;padding:0 7px;flex:none}
+  .strip{display:flex;align-items:center;gap:8px;padding:9px 20px;background:var(--warn-soft);border-bottom:1px solid var(--warn-edge);font:500 11px 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--warn)}
+  .strip i{width:8px;height:8px;border-radius:50%;background:var(--warn-fill,#F5A524);animation:pulse 1.2s infinite}
+  @keyframes pulse{50%{opacity:.3}}
+  .archh{display:flex;align-items:center;gap:12px;margin:16px 0 0}
+  .thread{position:absolute;inset:0;background:var(--bg);display:flex;flex-direction:column}
+  .th-head{padding:52px 10px 10px 10px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);background:var(--surface)}
+  .th-head .back,.th-head .more{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;flex:none}
+  .th-head .back{border:1px solid var(--border)}
+  .th-body{flex:1;overflow-y:auto;padding:14px 16px;display:grid;gap:8px;align-content:start;scrollbar-width:none}
+  .day{text-align:center;font:500 10.5px 'Geist Mono',monospace;letter-spacing:.12em;color:var(--text4);margin:8px 0 2px}
+  .sys{display:flex;align-items:center;gap:10px;justify-self:center;font-size:13px;color:var(--text3);background:var(--muted);border-radius:99px;padding:8px 14px}
+  .sys small{font:500 10.5px 'Geist Mono',monospace;color:var(--text4)}
+  .msg{max-width:78%;padding:10px 13px;border-radius:18px;font-size:15px;line-height:1.4}
+  .msg.in{background:var(--surface);border:1px solid var(--border);border-bottom-left-radius:4px}
+  .msg.out{background:var(--accent);color:#fff;justify-self:end;border-bottom-right-radius:4px}
+  .msg small{display:block;font:500 10.5px 'Geist Mono',monospace;opacity:.6;margin-top:4px}
+  .typing{display:inline-flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:18px;border-bottom-left-radius:4px;padding:13px 14px;width:fit-content}
+  .typing i{width:7px;height:7px;border-radius:50%;background:var(--text4);animation:bounce 1.1s infinite}
+  .typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+  @keyframes bounce{40%{transform:translateY(-4px);opacity:.5}}
+  .closes{padding:6px 20px 8px;font:500 10.5px 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--text4)}
+  .maskline{margin:10px 16px 0;background:var(--info-soft);border-radius:var(--r-md);padding:11px 14px;font-size:13.5px;line-height:1.45;color:#1F4FD1}
+  .maskline b{font:500 10.5px 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:4px}
+  .compose{padding:10px 14px 24px;background:var(--surface);border-top:1px solid var(--border);display:flex;gap:10px;align-items:flex-end}
+  .compose .in{flex:1;min-height:46px;border:1.5px solid var(--border);border-radius:23px;padding:12px 16px;color:var(--text4);font-size:15px}
+  .compose .send{width:46px;height:46px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;opacity:.4}
+  .ro{padding:14px 20px 28px;background:var(--surface);border-top:1px solid var(--border)}
+  .ro b{font-size:15px;display:block}.ro span{font-size:13.5px;color:var(--text3);display:block;margin-top:3px;line-height:1.4}
+  .recpill{margin-left:auto}
+  .reason{display:flex;flex-wrap:wrap;gap:8px}
+  .cons{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:12px 14px}
+  .cons b{font:500 10.5px 'Geist Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);display:block;margin-bottom:3px}
+  .cons span{font-size:14.5px;line-height:1.45}
+  .noteinput{border:1.5px solid var(--border);border-radius:var(--r-md);background:var(--surface);padding:12px 14px;min-height:80px;font-size:15px;color:var(--text4)}
+</style>
+</head>
+<body>
+
+<div class="intro">
+  <div class="mono" style="color:var(--accent)">Production design · chosen directions</div>
+  <h1>My interviews · Profile · Chat</h1>
+  <p class="lede">The three screens you picked — Cards, Grouped list, Classic list — now carry every state they need to ship: loading, empty, error, offline, and each status. Everything shown is something the app already has; names, dates and numbers are sample values. Tap the state switches above each phone, then tap into rows.</p>
+</div>
+
+<div class="section">
+  <h2>My interviews</h2>
+  <p>Filter chips with counts, a card per interview, the next one highlighted with its countdown, and a Book button that shrinks to an icon as you scroll. Tap a row to see the interview’s detail screen.</p>
+  <div class="row">
+    <div class="cell"><div class="states" id="ivStates"></div><div class="phone" id="iv"></div><div class="cap">List screen</div></div>
+    <div class="cell"><div class="states" id="idStates"></div><div class="phone" id="id"></div><div class="cap">Detail screen (what each row opens)</div></div>
+    <div class="notes"><span class="mono">Production notes</span><h3>What makes it ship-ready</h3><ul>
+      <li><b>States:</b> normal, loading skeleton, empty (“Nothing booked yet.”), error with Try again, and a filtered-empty line.</li>
+      <li><b>Every status:</b> Booked, In progress, Completed, Under review, Cancelled, Rescheduled, No show.</li>
+      <li><b>Next interview</b> carries a violet card and its countdown, derived from the real start time.</li>
+      <li><b>Scrolling:</b> the large title collapses into a compact bar; the Book button shrinks to “+”.</li>
+      <li><b>Touch:</b> chips 40px, rows ≥ 100px, buttons ≥ 44px; focus rings for keyboard and switch access.</li>
+      <li><b>Pull to refresh</b> stays as it is today.</li>
+      <li><b>No shadows;</b> depth comes from borders and tints.</li></ul></div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>Profile</h2>
+  <p>The Profile tab, the Account screen: who you are, your destinations, identity with per-identifier verification, settings, and Sign out with confirmation.</p>
+  <div class="row">
+    <div class="cell"><div class="states" id="pfStates"></div><div class="phone" id="pf"></div><div class="cap">Account screen</div></div>
+    <div class="notes"><span class="mono">Production notes</span><h3>What makes it ship-ready</h3><ul>
+      <li><b>Identity is shown per identifier,</b> at the identifier: email and mobile each carry their own Verified state.</li>
+      <li><b>Unverified email</b> shows the one violet Verify button, then a “Link sent” state. It explains why: you can’t pay or book another interview until it’s verified.</li>
+      <li><b>Sign out</b> asks first (“Are you sure you want to sign out?”) and says it applies to this device only.</li>
+      <li><b>Delete or export my data</b> is an ordinary row, not red; the destructive control lives on its own screen.</li>
+      <li><b>States:</b> loading skeleton and error with its real message.</li>
+      <li>Rows are 64px tall with 40px icon tiles and a chevron; no row relies on colour alone.</li></ul></div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>Chat</h2>
+  <p>The classic list and its thread. Unread is a quiet count chip, never a red dot or a coloured row. Switch the list state and the thread kind; use the ⋯ menu inside a thread.</p>
+  <div class="row">
+    <div class="cell"><div class="states" id="chStates"></div><div class="phone" id="ch"></div><div class="cap">Chats list</div></div>
+    <div class="cell"><div class="states" id="thStates"></div><div class="phone" id="th"></div><div class="cap">Thread (tap ⋯ for Report and Block)</div></div>
+    <div class="notes"><span class="mono">Production notes</span><h3>What makes it ship-ready</h3><ul>
+      <li><b>Three thread kinds:</b> employer (company name), your interviewer (masked, then named when the session starts), Apostrophe Support.</li>
+      <li><b>States:</b> loading, empty (“No chats yet.” with the real explanation), error, and the reconnecting strip (“a sent message will go out when you are back”).</li>
+      <li><b>Thread:</b> day dividers, system lines, typing dots, closing-time line, and the read-only footers for archived or expired chats.</li>
+      <li><b>Masked interviewer</b> shows why: assigned anonymously, named when your session starts.</li>
+      <li><b>Report</b> freezes the chat as evidence and doesn’t tell the other side; <b>Block</b> lists its consequences before it happens.</li>
+      <li>The composer’s send arrow is dimmed until there is text. There is no attach button: attachments are sent from the web for now.</li></ul></div>
+  </div>
+</div>
+
+<script>
+/* ---------- icons + shell ---------- */
+const I = {
+  home:'<svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z"/></svg>',
+  cal:'<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
+  brief:'<svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V4h6v3M3 12h18"/></svg>',
+  heart:'<svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 017-2.6A4 4 0 0119 10c0 5.6-7 10-7 10z"/></svg>',
+  chat:'<svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg>',
+  user:'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>',
+  x:'<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  back:'<svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>',
+  chev:'<svg class="chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>',
+  plus:'<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
+  send:'<svg viewBox="0 0 24 24"><path d="M4 12h15M13 6l6 6-6 6"/></svg>',
+  more:'<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></svg>',
+  eye:'<svg viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+  clip:'<svg viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6zM14 3v4h4"/></svg>',
+  bell:'<svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0112 0v5l2 2H4zM10 20h4"/></svg>',
+  star:'<svg viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.8-4.5 4.3 1.1 6.1L12 17l-5.4 2.8 1.1-6.1L3.2 9.4l6.1-.8z"/></svg>',
+  edit:'<svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>',
+  rec:'<svg viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></svg>',
+  card:'<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/></svg>',
+  shield:'<svg viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4-3 7-7 9-4-2-7-5-7-9V6z"/></svg>',
+  sliders:'<svg viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>',
+  flag:'<svg viewBox="0 0 24 24"><path d="M5 21V4h11l-2 4 2 4H5"/></svg>',
+  ban:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M6 6l12 12"/></svg>',
+  check:'<svg viewBox="0 0 24 24"><path d="M5 12l4 4 10-10"/></svg>',
+  alert:'<svg viewBox="0 0 24 24"><path d="M12 3l10 18H2zM12 10v5M12 18v.5"/></svg>',
+  headset:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.6"/></svg>'
+};
+const TABS=[['home','Home','home'],['cal','Interviews','interviews'],['brief','Jobs','jobs'],['heart','Interests','interests'],['user','Profile','profile']];
+const tab=a=>`<nav class="tab" aria-label="Main">${TABS.map(t=>`<button data-act="toast:Opens ${t[1]}" class="${t[2]===a?'on':''}" ${t[2]===a?'aria-current="page"':''}>${I[t[0]]}<span>${t[1]}</span></button>`).join('')}</nav>`;
+const status=()=>`<div class="status"><span>9:41</span><i></i><span>5G ▮▮▮</span></div>`;
+const shell=el=>el.insertAdjacentHTML('beforeend','<div class="scrim" data-act="close"></div><div class="sheet" role="dialog"><div class="grab"></div><div class="sh"><b></b><button class="x" data-act="close" aria-label="Close">'+I.x+'</button></div><div class="body"></div><div class="foot" style="display:none"></div></div><div class="toast" role="status"></div>');
+function sheet(el,title,body,foot){el.querySelector('.sheet .sh b').textContent=title;el.querySelector('.sheet .body').innerHTML=body;const f=el.querySelector('.sheet .foot');f.style.display=foot?'grid':'none';f.innerHTML=foot||'';el.querySelector('.scrim').classList.add('on');el.querySelector('.sheet').classList.add('on')}
+const closeSheet=el=>{el.querySelector('.scrim').classList.remove('on');el.querySelector('.sheet').classList.remove('on')};
+let tt;const toast=(el,m)=>{const t=el.querySelector('.toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),1700)};
+const switcher=(host,opts,get,set)=>{host.innerHTML=opts.map(o=>`<button class="${o[0]===get()?'on':''}" data-s="${o[0]}">${o[1]}</button>`).join('');host.querySelectorAll('button').forEach(b=>b.onclick=()=>{set(b.dataset.s);host.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b))})};
+const skelRow=(n,h=88)=>Array.from({length:n},()=>`<div class="rowc" style="padding:14px 0;min-height:${h}px"><div class="skel" style="width:48px;height:48px;border-radius:50%"></div><div class="grow" style="display:grid;gap:9px"><div class="skel" style="height:15px;width:55%"></div><div class="skel" style="height:11px;width:75%"></div><div class="skel" style="height:13px;width:90%"></div></div></div>`).join('');
+const errorBlock=(title,body,act)=>`<div class="center"><div class="ic">${I.alert}</div><b>${title}</b><p>${body}</p><button class="btn out" data-act="${act}">Try again</button></div>`;
+
+/* =====================================================================
+   MY INTERVIEWS
+   ===================================================================== */
+const MARK={BOOKED:['Booked','neutral'],IN_PROGRESS:['In progress','acc live'],COMPLETED:['Completed','ok'],INCOMPLETE:['Under review','info'],CANCELLED:['Cancelled','neutral'],RESCHEDULED:['Rescheduled','neutral'],STUDENT_NO_SHOW:['No show','danger']};
+const IVS=[
+ {id:'i1',when:'Today · 11:30 AM',day:1,mon:'OCT',status:'BOOKED',dur:20,tier:'T2',until:'IN 24 MIN',up:true,resch:true,cancel:true},
+ {id:'i2',when:'Mon 6 Oct · 4:00 PM',day:6,mon:'OCT',status:'BOOKED',dur:20,tier:'T2',until:'IN 5 DAYS',up:true,resch:true,cancel:true},
+ {id:'i3',when:'Wed 24 Sep · 11:30 AM',day:24,mon:'SEP',status:'COMPLETED',dur:20,tier:'T2',fb:'READY',who:'Interviewer'},
+ {id:'i4',when:'Mon 15 Sep · 10:00 AM',day:15,mon:'SEP',status:'COMPLETED',dur:20,tier:'T2',fb:'AWAITING',who:'Interviewer'},
+ {id:'i5',when:'Sat 6 Sep · 3:30 PM',day:6,mon:'SEP',status:'CANCELLED',dur:20,tier:'T2'},
+ {id:'i6',when:'Tue 2 Sep · 5:00 PM',day:2,mon:'SEP',status:'INCOMPLETE',dur:20,tier:'T2'},
+ {id:'i7',when:'Fri 29 Aug · 2:00 PM',day:29,mon:'AUG',status:'STUDENT_NO_SHOW',dur:20,tier:'T2'},
+ {id:'i8',when:'Mon 25 Aug · 6:00 PM',day:25,mon:'AUG',status:'RESCHEDULED',dur:20,tier:'T2'},
+];
+const isUp=i=>i.up,isPast=i=>!i.up;
+const subLine=i=>`${i.dur} minutes · ${i.tier}${i.who?' · with '+i.who:''}`;
+const fbNote=i=>i.status==='COMPLETED'&&i.fb==='AWAITING'?'Feedback on its way':null;
+const action=i=>i.status==='COMPLETED'?'View details':(i.resch||i.cancel)?'Manage':'View details';
+const FILTERS=['All','Upcoming','Completed','Cancelled'];
+const inFilter=f=>({All:IVS,Upcoming:IVS.filter(isUp),Completed:IVS.filter(i=>isPast(i)&&i.status==='COMPLETED'),Cancelled:IVS.filter(i=>isPast(i)&&i.status==='CANCELLED')})[f];
+const card=(i,first)=>{const m=MARK[i.status];return `<div class="icard ${first&&i.up?'next':''}" data-act="open:${i.id}" role="button" tabindex="0" aria-label="${i.when}, ${m[0]}"><div class="dtile"><small>${i.mon}</small><b>${i.day}</b></div><div class="grow"><div class="rowc" style="justify-content:space-between;gap:8px;align-items:flex-start"><div style="min-width:0"><div class="when">${i.when}</div>${i.until&&first?`<div class="until">${i.until}</div>`:''}</div><span class="pill ${m[1]}">${m[0]}</span></div><div class="sub" style="font-size:13.5px;margin-top:4px">${subLine(i)}</div>${fbNote(i)?`<div class="sub" style="font-size:13.5px">${fbNote(i)}</div>`:''}<div class="act">${action(i)} →</div></div></div>`};
+const IV={state:'normal',f:'All',el:document.getElementById('iv')};
+function ivHTML(){
+  const head=`<div class="compact"><b>My interviews</b></div>`;
+  const title=`<div class="head"><div class="title">My interviews</div></div>`;
+  if(IV.state==='loading')return `${status()}${head}<div class="scroll">${title}<div class="pad">${skelRow(4,104)}</div></div>${tab('interviews')}`;
+  if(IV.state==='error')return `${status()}${head}<div class="scroll">${title}${errorBlock('Could not load your interviews.','Nothing has changed on your bookings. Try again.','retry')}</div>${tab('interviews')}`;
+  if(IV.state==='empty')return `${status()}${head}<div class="scroll">${title}<div class="center"><div class="ic">${I.cal}</div><b>Nothing booked yet.</b><p>Your interview, and the video resume it becomes, both start here.</p><button class="btn pri" data-act="toast:Opens Book an interview">Book an interview</button></div></div>${tab('interviews')}`;
+  const list=inFilter(IV.f);const up=list.filter(isUp),past=list.filter(isPast);
+  const chips=`<div class="chips" role="tablist">${FILTERS.map(x=>`<button class="chip ${x===IV.f?'on':''}" role="tab" aria-selected="${x===IV.f}" data-act="f:${x}">${x} (${inFilter(x).length})</button>`).join('')}</div>`;
+  const body=list.length?`${up.length?`<div class="grp">Upcoming</div>${up.map((i,k)=>card(i,k===0)).join('')}`:''}${past.length?`<div class="grp" style="padding-top:10px">Past</div>${past.map(i=>card(i)).join('')}`:''}`:`<div class="sub" style="padding:14px 4px">No ${IV.f.toLowerCase()} interviews.</div>`;
+  return `${status()}${head}<div class="scroll">${title}${chips}<div class="ilist" style="padding-bottom:210px">${body}</div></div><div class="fab" role="button" tabindex="0" data-act="toast:Opens Book an interview">${I.plus}<span>Book an interview</span></div>${tab('interviews')}`;
+}
+function renderIv(){const el=IV.el;el.innerHTML=ivHTML();shell(el);const sc=el.querySelector('.scroll');if(sc){let last=0;sc.addEventListener('scroll',()=>{const y=sc.scrollTop;el.querySelector('.compact').classList.toggle('on',y>60);const f=el.querySelector('.fab');if(f)f.classList.toggle('small',y>last&&y>40);last=y})}}
+renderIv();
+switcher(document.getElementById('ivStates'),[['normal','List'],['loading','Loading'],['empty','Empty'],['error','Error']],()=>IV.state,s=>{IV.state=s;renderIv()});
+
+/* detail */
+const D={s:'upcoming',el:document.getElementById('id')};
+function detailHTML(){
+  const head=`<div class="screenhead"><button class="back" data-act="toast:Back" aria-label="Back">${I.back}</button><b>Interview</b></div>`;
+  let body='',foot='';
+  if(D.s==='upcoming'){body=`<div class="ink"><div class="rowc" style="justify-content:space-between"><span class="pill onink">UPCOMING</span><span class="mono" style="color:#C9CED9;font-size:11px">IN 24 MIN</span></div><h4>1 Oct · 11:30 AM</h4><div class="p">20-minute interview · T2 · IST</div><div class="mono" style="color:#8A91A2;margin-top:16px;font-size:10.5px">STARTS IN</div><div style="font:600 32px 'Geist Mono',monospace;margin-top:2px">00:24:00</div></div>
+    <div class="rule"><span class="mono" style="font-size:10.5px;color:var(--text3)">JOIN OPENS · 11:20 AM IST</span><br>The join button opens a few minutes before the start and stays open for a short time after.</div>
+    <div class="rule">The device check is required before you join: camera, microphone, speaker and network.</div>
+    <div class="rule">Your interviewer’s name and photo appear when the session starts.</div>`;
+    foot=`<span class="btn dis full">Join interview</span><div class="two"><span class="btn out" data-act="toast:Opens Reschedule">Reschedule</span><span class="btn out" data-act="toast:Opens Cancel">Cancel</span></div>`}
+  if(D.s==='join'){body=`<div class="ink"><div class="rowc" style="justify-content:space-between"><span class="pill onink live">IN PROGRESS</span></div><h4>1 Oct · 11:30 AM</h4><div class="p">20-minute interview · T2 · IST</div><div class="mono" style="color:#8A91A2;margin-top:16px;font-size:10.5px">UNTIL JOIN CLOSES</div><div style="font:600 32px 'Geist Mono',monospace;margin-top:2px">12:40</div></div>
+    <div class="rule">The room is open. Run the device check first if you haven’t.</div>`;
+    foot=`<span class="btn pri full" data-act="toast:Opens the room">Join interview</span><span class="btn out full" data-act="toast:Opens the device check">Run the device check</span>`}
+  if(D.s==='done'){body=`<div class="ink"><span class="pill onink">COMPLETED</span><h4>24 Sep · 11:30 AM</h4><div class="p">20-minute interview · T2 · IST</div></div><div class="card"><b style="font-size:17px">Your interview is done.</b><div class="sub" style="margin-top:6px">When your film is published it becomes your video resume.</div></div>`;
+    foot=`<span class="btn pri full" data-act="toast:Opens your scorecard">See my scorecard</span><span class="btn out full" data-act="toast:Opens Book an interview">Book another interview</span>`}
+  if(D.s==='review'){body=`<div class="ink"><span class="pill onink">UNDER REVIEW</span><h4>2 Sep · 5:00 PM</h4><div class="p">20-minute interview · T2 · IST</div></div><div class="card"><b style="font-size:17px">Under review</b><div class="sub" style="margin-top:6px">The session ended before it finished, so it did not become a video resume. Our team is reviewing what happened.</div><div class="sub" style="margin-top:8px">If it was not on you, a free re-interview is added to your account and you will be told here and in your notifications.</div></div>`;
+    foot=`<span class="btn out full" data-act="toast:Opens Support">Ask admin to look at this</span>`}
+  return `${status()}<div class="scroll" style="padding-bottom:190px">${head}<div class="pad" style="display:grid;gap:14px;margin-top:8px">${body}</div></div><div class="sticky">${foot}</div>`;
+}
+function renderD(){D.el.innerHTML=detailHTML();shell(D.el)}renderD();
+switcher(document.getElementById('idStates'),[['upcoming','Upcoming'],['join','Join open'],['done','Completed'],['review','Under review']],()=>D.s,s=>{D.s=s;renderD()});
+
+document.getElementById('iv').addEventListener('click',e=>{const a=e.target.closest('[data-act]');if(!a)return;const x=a.dataset.act,el=IV.el;
+  if(x==='close')return closeSheet(el);
+  if(x==='retry'){IV.state='loading';renderIv();return setTimeout(()=>{IV.state='normal';renderIv();document.querySelectorAll('#ivStates button').forEach(b=>b.classList.toggle('on',b.dataset.s==='normal'))},900)}
+  if(x.startsWith('f:')){IV.f=x.slice(2);return renderIv()}
+  if(x.startsWith('open:')){const i=IVS.find(v=>v.id===x.slice(5));D.s=i.up?'upcoming':i.status==='COMPLETED'?'done':'review';renderD();document.querySelectorAll('#idStates button').forEach(b=>b.classList.toggle('on',b.dataset.s===D.s));return toast(el,'Opens the interview detail →')}
+  if(x.startsWith('toast:'))return toast(el,x.slice(6))});
+document.getElementById('id').addEventListener('click',e=>{const a=e.target.closest('[data-act]');if(!a)return;const x=a.dataset.act;if(x==='close')return closeSheet(D.el);if(x.startsWith('toast:'))toast(D.el,x.slice(6))});
+
+/* =====================================================================
+   PROFILE (Account)
+   ===================================================================== */
+const P={state:'verified',verify:'idle',el:document.getElementById('pf')};
+const YOURS=[['user','My profile','What employers see'],['edit','Finish or edit your profile','The six profile steps'],['rec','Your videos','Your video resume and self-uploads'],['clip','My applications','Jobs you have applied to'],['heart','Connections','Employers you are connected with'],['bell','Notifications','Your inbox'],['star','Your stats','How your profile is doing']];
+const MORE=[['card','Receipts','Payments and invoices'],['eye','Visibility','Who can see your profile'],['sliders','Notification settings','Push, email and in-app'],['shield','Delete or export my data','Your legal rights']];
+const mrow=(r,plain)=>`<div class="mrow" role="button" tabindex="0" data-act="toast:Opens ${r[1]}"><div class="ic" style="${plain?'background:var(--muted);color:var(--text2)':''}">${I[r[0]]}</div><div class="grow"><b>${r[1]}</b><span class="s">${r[2]}</span></div>${I.chev}</div>`;
+function pfHTML(){
+  const head=`<div class="compact"><b>Account</b></div>`,title=`<div class="head"><div class="title">Account</div></div>`;
+  if(P.state==='loading')return `${status()}${head}<div class="scroll">${title}<div class="pad"><div class="rowc" style="margin-bottom:22px"><div class="skel" style="width:60px;height:60px;border-radius:50%"></div><div class="grow" style="display:grid;gap:9px"><div class="skel" style="height:18px;width:50%"></div><div class="skel" style="height:12px;width:80%"></div></div></div><div class="skel" style="height:340px;border-radius:18px"></div></div></div>${tab('profile')}`;
+  if(P.state==='error')return `${status()}${head}<div class="scroll">${title}${errorBlock('Could not load your account.','Nothing has changed. Try again in a moment.','retry')}</div>${tab('profile')}`;
+  const unv=P.state==='unverified';
+  const emailRight=!unv?'<span class="pill ok">Verified</span>':P.verify==='sent'?'<span class="pill info">Link sent</span>':P.verify==='sending'?'<span class="btn pri sm" style="opacity:.7">Sending…</span>':'<span class="btn pri sm" data-act="verify">Verify</span>';
+  return `${status()}${head}<div class="scroll" style="padding-bottom:130px">${title}
+  <div class="pad rowc" style="margin:6px 0 4px"><div class="avatar" style="width:60px;height:60px;background:var(--accent-deep);font-size:20px">AK</div><div class="grow"><div style="font-size:22px;font-weight:800;letter-spacing:-.03em">Ashish Kumar</div><div class="sub">+91 98765 43210 · ashish@example.com</div></div></div>
+  <div class="mlabel">Your profile</div><div class="pad"><div class="menu">${YOURS.map(r=>mrow(r)).join('')}</div></div>
+  <div class="mlabel">Identity</div><div class="pad"><div class="menu">
+    <div class="mrow"><div class="grow"><b>ashish@example.com</b><span class="s">${unv?'Email · until it’s verified you can’t pay or book another interview':'Email'}</span></div>${emailRight}</div>
+    <div class="mrow"><div class="grow"><b>+91 98765 43210</b><span class="s">Mobile · how you sign in</span></div><span class="pill ok">Verified</span></div></div></div>
+  <div class="mlabel">More</div><div class="pad"><div class="menu">${MORE.map(r=>mrow(r,true)).join('')}</div></div>
+  <div class="pad" style="margin-top:22px"><div class="menu"><div class="mrow" role="button" tabindex="0" data-act="signout"><div class="grow"><b>Sign out</b><span class="s">On this device only</span></div></div></div></div></div>${tab('profile')}`;
+}
+function renderPf(){P.el.innerHTML=pfHTML();shell(P.el);const sc=P.el.querySelector('.scroll');if(sc)sc.addEventListener('scroll',()=>P.el.querySelector('.compact').classList.toggle('on',sc.scrollTop>60))}
+renderPf();
+switcher(document.getElementById('pfStates'),[['verified','Verified'],['unverified','Email not verified'],['loading','Loading'],['error','Error']],()=>P.state,s=>{P.state=s;P.verify='idle';renderPf()});
+P.el.addEventListener('click',e=>{const a=e.target.closest('[data-act]');if(!a)return;const x=a.dataset.act,el=P.el;
+  if(x==='close')return closeSheet(el);
+  if(x==='retry'){P.state='loading';renderPf();return setTimeout(()=>{P.state='verified';renderPf();document.querySelectorAll('#pfStates button').forEach(b=>b.classList.toggle('on',b.dataset.s==='verified'))},900)}
+  if(x==='verify'){P.verify='sending';renderPf();return setTimeout(()=>{P.verify='sent';renderPf()},900)}
+  if(x==='signout')return sheet(el,'Sign Out','<div class="sub" style="font-size:15px">Are you sure you want to sign out?</div>',`<span class="btn danger full" data-act="toast:Signed out">Sign Out</span><span class="btn quiet full" data-act="close">Cancel</span>`);
+  if(x.startsWith('toast:')){closeSheet(el);toast(el,x.slice(6))}});
+
+/* =====================================================================
+   CHAT
+   ===================================================================== */
+const COL=['#5B3DF5','#0E9F6E','#E0366B','#2F6BFF'];
+const TH=[
+ {id:'t1',kind:'INTERVIEWER',name:'Your Interviewer',masked:true,ctx:'Interview today, 11:30 AM',pv:'Hi! Looking forward to speaking with you.',time:'10:42',unread:1},
+ {id:'t2',kind:'EMPLOYER',name:'Company A',init:'CA',c:0,ctx:'Their Interest · connected 28 Sep',pv:'Thanks for accepting. Are you free this week?',time:'Yesterday',unread:2},
+ {id:'t3',kind:'EMPLOYER',name:'Company B',init:'CB',c:1,ctx:'Your application · connected 22 Sep',pv:'We would like to move you to the next round.',time:'Mon',unread:0},
+ {id:'t4',kind:'SUPPORT',name:'Apostrophe Support',init:'A’',c:3,ctx:'Support · replies within one working day',pv:'Your receipt has been regenerated.',time:'22 Sep',unread:0},
+ {id:'t5',kind:'EMPLOYER',name:'Company D',init:'CD',c:2,ctx:'Connection withdrawn 20 Sep',pv:'Thank you for your time.',time:'20 Sep',unread:0,archived:true},
+];
+const plate=(t,s=48)=>t.masked?`<div class="avatar" style="width:${s}px;height:${s}px;background:var(--muted);color:var(--text3)">${I.user.replace('<svg','<svg style="width:'+Math.round(s*.46)+'px"')}</div>`:`<div class="avatar" style="width:${s}px;height:${s}px;background:${COL[t.c%4]};font-size:${Math.round(s*.34)}px">${t.init}</div>`;
+const live=TH.filter(t=>!t.archived),arch=TH.filter(t=>t.archived);
+const unreadTotal=live.reduce((n,t)=>n+t.unread,0);
+const crow=(t,muted)=>`<div class="crow${t.unread?' unread':''}${muted?' muted':''}" data-act="th:${t.id}" role="button" tabindex="0" aria-label="${t.name}${t.unread?', '+t.unread+' unread':''}">${plate(t)}<div class="grow"><div class="nm"><b class="${t.unread?'u':''}" style="${muted?'color:var(--text3)':''}">${t.name}</b><span>${t.time}</span></div><div class="ctx">${t.ctx}</div><div class="pv ${t.unread?'u':''}"><p>${t.pv}</p>${t.unread?`<span class="uchip">${t.unread}</span>`:''}</div></div></div>`;
+const CH={state:'normal',el:document.getElementById('ch')};
+function chHTML(){
+  const head=`<div class="compact"><b>Chats</b></div>`;
+  const strip=CH.state==='offline'?`<div class="strip" role="status"><i></i>Reconnecting · a sent message will go out when you are back</div>`:'';
+  const title=`<div class="head"><div class="title">Chats</div>${CH.state==='normal'||CH.state==='offline'?`<div class="mono" style="color:var(--text3);margin-top:8px">${unreadTotal} UNREAD</div>`:''}</div>`;
+  let body;
+  if(CH.state==='loading')body=`<div class="pad">${skelRow(5)}</div>`;
+  else if(CH.state==='error')body=errorBlock('Could not load your chats.','Nothing has changed. Try again in a moment.','retry');
+  else if(CH.state==='empty')body=`<div class="pad" style="margin-top:6px"><div class="card"><b style="font-size:20px;letter-spacing:-.02em">No chats yet.</b><div class="sub" style="margin-top:8px;font-size:15px;line-height:1.5">A chat opens when you accept an Interest, and one opens with your interviewer the day before your interview. Support is always here.</div></div></div>`;
+  else body=`<div class="pad">${live.map(t=>crow(t)).join('')}<div class="archh"><span class="mono" style="color:var(--text3)">Archived</span><div class="grow" style="height:1px;background:var(--border)"></div><span class="mono" style="color:var(--text4)">${arch.length}</span></div>${arch.map(t=>crow(t,true)).join('')}</div>`;
+  return `${status()}${head}<div class="scroll" style="padding-bottom:130px">${strip?`<div style="margin:0 0 -4px">${strip}</div>`:''}${title}${body}</div>${tab('none')}`;
+}
+function renderCh(){CH.el.innerHTML=chHTML();shell(CH.el);const sc=CH.el.querySelector('.scroll');if(sc)sc.addEventListener('scroll',()=>CH.el.querySelector('.compact').classList.toggle('on',sc.scrollTop>60))}
+renderCh();
+switcher(document.getElementById('chStates'),[['normal','List'],['offline','Reconnecting'],['loading','Loading'],['empty','Empty'],['error','Error']],()=>CH.state,s=>{CH.state=s;renderCh()});
+CH.el.addEventListener('click',e=>{const a=e.target.closest('[data-act]');if(!a)return;const x=a.dataset.act,el=CH.el;
+  if(x==='close')return closeSheet(el);
+  if(x==='retry'){CH.state='loading';renderCh();return setTimeout(()=>{CH.state='normal';renderCh();document.querySelectorAll('#chStates button').forEach(b=>b.classList.toggle('on',b.dataset.s==='normal'))},900)}
+  if(x.startsWith('th:')){const m={t1:'masked',t2:'employer',t3:'employer',t4:'support',t5:'archived'}[x.slice(3)];T.k=m;renderT();document.querySelectorAll('#thStates button').forEach(b=>b.classList.toggle('on',b.dataset.s===m));return toast(el,'Opens the thread →')}
+  if(x.startsWith('toast:'))toast(el,x.slice(6))});
+
+/* thread */
+const T={k:'employer',el:document.getElementById('th')};
+const TK={
+ employer:{t:TH[1],sub:'Their Interest · connected 28 Sep',closes:'',canBlock:true,body:`<div class="day">28 SEP</div><div class="sys">Chat opened</div><div class="msg in">Hello! We liked your video resume.<small>11:02</small></div><div class="msg out">Thank you! Happy to talk.<small>11:20</small></div><div class="day">YESTERDAY</div><div class="msg in">Thanks for accepting. Are you free this week?<small>6:15 PM</small></div><div class="typing" aria-label="Typing"><i></i><i></i><i></i></div>`},
+ masked:{t:TH[0],sub:'Interview today, 11:30 AM',closes:'Interviewer chats stay open for 48 hours after the session.',mask:true,support:true,body:`<div class="day">TODAY</div><div class="sys">This chat opened for your interview</div><div class="msg in">Hi! Looking forward to speaking with you.<small>10:42</small></div>`},
+ revealed:{t:{...TH[0],masked:false,name:'Rahul Verma',init:'RV',c:1},sub:'Interview today, 11:30 AM',closes:'Interviewer chats stay open for 48 hours after the session.',rec:true,support:true,body:`<div class="day">TODAY</div><div class="sys">This chat opened for your interview</div><div class="msg in">Hi! Looking forward to speaking with you.<small>10:42</small></div><div class="sys" style="gap:12px"><span class="avatar" style="width:36px;height:36px;background:${COL[1]};font-size:12px">RV</span><span>Your session started · your interviewer is Rahul Verma</span><small>11:30</small></div>`},
+ support:{t:TH[3],sub:'Support · replies within one working day',closes:'',body:`<div class="day">22 SEP</div><div class="msg out">Can you send my receipt again?<small>9:10</small></div><div class="msg in">Your receipt has been regenerated.<small>9:48</small></div>`},
+ archived:{t:TH[4],sub:'Withdrawn 20 Sep',archived:true,body:`<div class="day">20 SEP</div><div class="sys">This conversation has been archived.</div><div class="msg in">Thank you for your time.<small>4:02 PM</small></div>`},
+};
+function renderT(){
+  const k=TK[T.k],t=k.t,el=T.el;
+  el.innerHTML=`${status()}<div class="thread"><div class="th-head"><button class="back" data-act="toast:Back" aria-label="Back">${I.back}</button>${plate(t,38)}<div class="grow"><div style="font-size:17px;font-weight:600;letter-spacing:-.01em">${t.name}</div><div class="mono" style="font-size:10.5px;color:var(--text4);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${k.sub}</div></div>${k.rec?'<span class="pill acc live recpill">Recording</span>':''}<button class="more" data-act="menu" aria-label="More">${I.more}</button></div>
+  ${k.mask?`<div class="maskline"><b>Assigned anonymously so nobody can pick or avoid one · named when your session starts</b>Every student gets the interviewer they would have got anyway. We do not send their name or photo to your phone before the session, so nobody can pick or avoid one.</div>`:''}
+  <div class="th-body">${k.body}</div>${k.closes?`<div class="closes">${k.closes}</div>`:''}
+  ${k.archived?`<div class="ro"><b>This connection was withdrawn on 20 Sep.</b><span>Neither side can write here again. Everything above stays, and the row stays in your Connections. Blocking is still open to you from the menu.</span></div>`:`<div class="compose"><div class="in">Message</div><div class="send" aria-label="Send">${I.send}</div></div>`}</div>`;
+  shell(el);el.querySelector('.th-body').scrollTop=9999;
+}
+renderT();
+switcher(document.getElementById('thStates'),[['employer','Employer'],['masked','Interviewer · masked'],['revealed','Interviewer · revealed'],['support','Support'],['archived','Archived']],()=>T.k,s=>{T.k=s;renderT()});
+const REASONS=['Harassment','Spam','Scam or fraud','Off-platform payment','Inappropriate content','Impersonation','Something else'];
+T.el.addEventListener('click',e=>{const a=e.target.closest('[data-act]');if(!a)return;const x=a.dataset.act,el=T.el,k=TK[T.k],name=k.t.name;
+  if(x==='close')return closeSheet(el);
+  if(x==='menu')return sheet(el,name,`<div class="menu" style="border-radius:var(--r-md)">
+    <div class="mrow" data-act="report" style="min-height:56px"><div class="ic" style="background:var(--muted);color:var(--text2);width:34px;height:34px">${I.flag}</div><div class="grow"><b style="font-size:15.5px">Report this chat</b></div></div>
+    ${k.support?`<div class="mrow" data-act="toast:Opens Support" style="min-height:56px"><div class="ic" style="background:var(--muted);color:var(--text2);width:34px;height:34px">${I.headset}</div><div class="grow"><b style="font-size:15.5px">Message support</b></div></div>`:''}
+    ${(k.canBlock||k.archived)&&!k.mask?`<div class="mrow" data-act="block" style="min-height:56px"><div class="ic" style="background:var(--danger-soft);color:var(--danger-text);width:34px;height:34px">${I.ban}</div><div class="grow"><b style="font-size:15.5px;color:var(--danger-text)">Block ${name}</b></div></div>`:''}</div>`);
+  if(x==='report')return sheet(el,`Report ${name}`,`<div class="sub" style="font-size:14.5px">The conversation is frozen as evidence. ${name} is not told you reported it.</div><div class="reason">${REASONS.map((r,i)=>`<span class="chip ${i===1?'on':''}" data-act="reason">${r}</span>`).join('')}</div><div class="noteinput">Anything you want to add (optional)</div>`,`<span class="btn pri full" data-act="toast:Report sent">Send report</span><span class="btn quiet full" data-act="close">Cancel</span>`);
+  if(x==='reason'){a.parentElement.querySelectorAll('.chip').forEach(c=>c.classList.toggle('on',c===a));return}
+  if(x==='block')return sheet(el,`Block ${name}?`,`<div style="display:grid;gap:8px"><div class="cons"><b>Right away</b><span>This chat stays archived, and closed to both of you for good.</span></div><div class="cons"><b>Permanently</b><span>${name} never sees your profile in the feed again, and cannot send you an Interest.</span></div><div class="cons"><b>Not undoable</b><span>Not from here. Support can, and will ask why.</span></div></div><div class="sub" style="font-size:13.5px">${name} is not told. A block and a withdrawal look the same from the other side.</div>`,`<span class="btn dangerfill full" data-act="toast:${name} blocked">Block ${name}</span><span class="btn quiet full" data-act="close">Keep the connection</span>`);
+  if(x.startsWith('toast:')){closeSheet(el);toast(el,x.slice(6))}});
+</script>
+</body>
+</html>

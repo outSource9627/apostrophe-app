@@ -3,12 +3,8 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useQueryClient } from '@tanstack/react-query'
-import { color, space, spaceHalf, trackingNative } from '../../theme'
-import { Button, Input, text } from '../../components/ui'
-import { InterviewerShell } from '../../components/interviewer/InterviewerShell'
-import { IvAction, IvCard, IvLabel } from '../../components/interviewer/iv'
-import { EmBadge, EmChip, EmError } from '../../components/employer/em'
-import { EmField } from '../../components/employer/form'
+import { color, fontFamilyNative as FF } from '../../theme'
+import { OutBtn, PageFrame, PBtn, WBadge, WCard, WChip, WField, WInput, ErrBlock, k } from './walletKit'
 import { ApiClientError } from '../../lib/api'
 import { getBank, getWallet, listWithdrawals, requestWithdrawal, type BankDto, type WalletDto, type WithdrawalDto } from '../../lib/api/interviewer'
 import { formatPaise } from '../../lib/format/money'
@@ -54,9 +50,9 @@ export function WithdrawScreen() {
 
   if (!wallet) {
     return (
-      <InterviewerShell back={() => navigation.goBack()} title="Withdraw">
-        {error ? <EmError title="Couldn’t load your wallet." body={error} action={<Button variant="secondary" size="pair" icon="refresh" label="Try again" onPress={() => { load() }} />} /> : <ActivityIndicator color={color.textSubtle} style={styles.loading} />}
-      </InterviewerShell>
+      <PageFrame onBack={() => navigation.goBack()} title="Withdraw">
+        {error ? <ErrBlock title="Couldn’t load your wallet." body={error} onRetry={() => { load() }} /> : <ActivityIndicator color={color.textSubtle} style={s.loading} />}
+      </PageFrame>
     )
   }
 
@@ -83,64 +79,61 @@ export function WithdrawScreen() {
     }
   }
 
+  const err = tooLow && min != null ? `The minimum is ${formatPaise(min)}.` : tooHigh ? 'That is more than is available.' : undefined
+
   return (
-    <InterviewerShell
-      back={() => navigation.goBack()}
+    <PageFrame
+      onBack={() => navigation.goBack()}
       title="Withdraw"
       sub={`${formatPaise(wallet.availablePaise)} available`}
-      footer={<IvAction label={busy ? 'Requesting…' : ok ? `Withdraw ${formatPaise(paise)}` : 'Withdraw'} tone={ok && !busy ? 'accent' : 'off'} onPress={ok && !busy ? () => { submit() } : undefined} />}
+      footer={<PBtn on={ok && !busy} label={busy ? 'Requesting…' : ok ? `Withdraw ${formatPaise(paise)}` : 'Withdraw'} onPress={ok && !busy ? () => { submit() } : undefined} />}
     >
-      {!!blocked && <IvCard tone="danger"><Text style={[text.uiSm, styles.danger]}>{blocked}</Text></IvCard>}
-      <EmField
-        label="Amount"
-        note="₹"
-        error={tooLow && min != null ? `The minimum is ${formatPaise(min)}.` : tooHigh ? 'That is more than is available.' : undefined}
-        hint={min != null ? `Minimum ${formatPaise(min)}` : undefined}
-      >
-        <Input value={amount} onChangeText={(v) => setAmount(v.replace(/[^\d.]/g, ''))} keyboardType="decimal-pad" placeholder="0" editable={!blocked} />
-      </EmField>
-      <View style={styles.chips}>
-        {min != null && min <= wallet.availablePaise && <EmChip compact label="Minimum" on={paise === min} onPress={() => setAmount(String(min / 100))} />}
-        {wallet.availablePaise > 0 && <EmChip compact label="All" on={paise === wallet.availablePaise} onPress={() => setAmount(String(wallet.availablePaise / 100))} />}
+      {!!blocked && <WCard tone="danger" padding={14}><Text style={s.blocked}>{blocked}</Text></WCard>}
+      <WField label="Amount" error={err} hint={min != null ? `Minimum ${formatPaise(min)}` : undefined}>
+        <WInput lead="₹" bad={!!err} dis={!!blocked} value={amount} onChangeText={(v) => setAmount(v.replace(/[^\d.]/g, ''))} keyboardType="decimal-pad" placeholder="0" />
+      </WField>
+      <View style={s.chips}>
+        {min != null && min <= wallet.availablePaise && <WChip sm label="Minimum" on={paise === min} onPress={() => setAmount(String(min / 100))} />}
+        {wallet.availablePaise > 0 && <WChip sm label="All" on={paise === wallet.availablePaise} onPress={() => setAmount(String(wallet.availablePaise / 100))} />}
       </View>
-      <IvCard>
-        <IvLabel>PAID TO</IvLabel>
-        <Text style={text.uiMdSemi}>{bank ? `${bank.accountHolder} · •••• ${bank.accountNumberLast4}` : 'No payout account yet'}</Text>
-        {!!bank && <Text style={[text.uiXs, styles.muted]}>{`IFSC ${bank.ifsc}`}</Text>}
-        <Button variant="outline" size="sm" label={bank ? 'Change account' : 'Add an account'} onPress={() => navigation.navigate('InterviewerBankAccount')} style={styles.start} />
-      </IvCard>
-      {!!notice && <Text style={[text.uiSm, styles.secondary]}>{notice}</Text>}
+      <WCard gap={4}>
+        <Text style={s.lbl}>Paid to</Text>
+        <Text style={k.nmx}>{bank ? `${bank.accountHolder} · •••• ${bank.accountNumberLast4}` : 'No payout account yet'}</Text>
+        {!!bank && <Text style={k.sub}>{`IFSC ${bank.ifsc}`}</Text>}
+        <OutBtn sm label={bank ? 'Change account' : 'Add an account'} onPress={() => navigation.navigate('InterviewerBankAccount')} style={s.start} />
+      </WCard>
+      {!!notice && <Text style={s.notice}>{notice}</Text>}
 
       {!!history?.length && (
         <>
-          <IvLabel style={styles.section}>REQUESTS</IvLabel>
+          <Text accessibilityRole="header" style={s.section}>Requests</Text>
           {history.map((w) => {
             const st = WITHDRAWAL_STATUS[w.status] ?? { label: w.status, tone: 'violet' as const }
             return (
-              <IvCard key={w.id}>
-                <View style={styles.top}>
-                  <Text style={[text.metaXl, styles.fig]}>{formatPaise(w.amountPaise)}</Text>
-                  <EmBadge label={st.label} tone={st.tone} small />
+              <WCard key={w.id} gap={4}>
+                <View style={s.top}>
+                  <Text style={s.fig}>{formatPaise(w.amountPaise)}</Text>
+                  <WBadge label={st.label} tone={st.tone} />
                 </View>
-                <Text style={[text.uiXs, styles.muted]}>{`Requested ${istStamp(w.requestedAt)}${w.payment?.reference ? ` · Ref ${w.payment.reference}` : ''}`}</Text>
-                {w.status === 'REJECTED' && !!w.rejectionReason && <Text style={[text.uiXs, styles.danger]}>{w.rejectionReason}</Text>}
-              </IvCard>
+                <Text style={k.sub}>{`Requested ${istStamp(w.requestedAt)}${w.payment?.reference ? ` · Ref ${w.payment.reference}` : ''}`}</Text>
+                {w.status === 'REJECTED' && !!w.rejectionReason && <Text style={[k.sub, { color: color.danger }]}>{w.rejectionReason}</Text>}
+              </WCard>
             )
           })}
         </>
       )}
-    </InterviewerShell>
+    </PageFrame>
   )
 }
 
-const styles = StyleSheet.create({
-  muted: { color: color.textMuted },
-  secondary: { color: color.textSecondary },
-  danger: { color: color.danger },
-  fig: { letterSpacing: trackingNative.meta },
-  loading: { paddingVertical: space['3xl'] },
-  chips: { flexDirection: 'row', gap: spaceHalf['1.5'] },
-  start: { alignSelf: 'flex-start', paddingHorizontal: space.md, marginTop: space.xs },
+const s = StyleSheet.create({
+  loading: { paddingVertical: 48 },
+  blocked: { fontFamily: FF.body, fontSize: 14.5, lineHeight: 20, color: color.danger },
+  chips: { flexDirection: 'row', gap: 8 },
+  lbl: { fontFamily: FF.bodyMedium, fontSize: 14, color: color.textMuted },
+  start: { marginTop: 4 },
+  notice: { fontFamily: FF.body, fontSize: 14.5, lineHeight: 20, color: color.textSecondary },
+  section: { fontFamily: FF.bodyBold, fontSize: 19, letterSpacing: -0.57, color: color.text, paddingTop: 2, paddingHorizontal: 2 },
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  section: { marginTop: space.sm },
+  fig: { fontFamily: FF.monoMedium, fontSize: 17, color: color.text },
 })

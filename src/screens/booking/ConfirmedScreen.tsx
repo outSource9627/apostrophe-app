@@ -6,8 +6,10 @@ import { api } from '../../lib/api'
 import { getInterviewIcs, type StudentInterview } from '../../lib/api/interviews'
 import { minutesPhrase, useBookingRules } from '../../lib/interviews/rules'
 import { bookingRef, fmtShortDate, fmtTime } from '../../lib/interviews/slots'
-import { borderWidth, color, height, radius, space, spaceHalf, trackingNative } from '../../theme'
-import { Button, ScreenHeader, Skeleton, StickyFooter, text } from '../../components/ui'
+import { borderWidth, color, fontFamilyNative as FF } from '../../theme'
+import { Icon } from '../../components/ui/Icon'
+import { Btn, Skel } from '../../components/tab/kit'
+import { Disc, Eyebrow, FlowFooter, FlowHeader, Lead, Sub } from '../../components/tab/flow'
 
 /**
  * "Add to calendar" without a native calendar dep: a Google Calendar template
@@ -58,21 +60,21 @@ export function ConfirmedScreen({
 
   return (
     <View style={[styles.page, { paddingTop: insets.top }]}>
-      <ScreenHeader onClose={onDone} />
+      <FlowHeader onClose={onDone} />
       {q.data ? (
         <>
           <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
-            <View style={styles.tick}><Text style={styles.tickMark}>✓</Text></View>
+            <Disc tone="ok"><Icon name="check" size={26} tint={color.successFill} weight={2.2} /></Disc>
             <View style={styles.head}>
-              <Text style={[text.metaMd, styles.booked]}>BOOKED · {bookingRef(q.data.id)}</Text>
-              <Text style={text.displayLead}>{`${fmtShortDate(q.data.slotStart)} · ${fmtTime(q.data.slotStart)}`}</Text>
-              <Text style={[text.uiMd, styles.sub]}>{fmtTime(q.data.slotEnd)} IST · {q.data.durationMin} min · in the app</Text>
+              <Eyebrow tone="ok">BOOKED · {bookingRef(q.data.id)}</Eyebrow>
+              <Lead>{`${fmtShortDate(q.data.slotStart)} · ${fmtTime(q.data.slotStart)}`}</Lead>
+              <Sub>{fmtTime(q.data.slotEnd)} IST · {q.data.durationMin} min · in the app</Sub>
             </View>
 
             <View>
               <View style={styles.prepHead}>
-                <Text style={text.uiBaseSemi}>Before your interview</Text>
-                <Text style={[text.metaMd, styles.sub]}>{ticked.filter(Boolean).length} / {prep.length}</Text>
+                <Text style={styles.prepHeadText}>Before your interview</Text>
+                <Text style={styles.count}>{ticked.filter(Boolean).length} / {prep.length}</Text>
               </View>
               {prep.map((p, i) => (
                 <Pressable
@@ -83,25 +85,25 @@ export function ConfirmedScreen({
                   style={styles.prepRow}
                 >
                   <View style={[styles.box, ticked[i] ? styles.boxOn : styles.boxOff]}>
-                    {ticked[i] && <Text style={styles.boxMark}>✓</Text>}
+                    {ticked[i] && <Icon name="check" size={14} tint={color.textInverse} weight={3} />}
                   </View>
                   <View style={styles.prepText}>
-                    <Text style={[text.uiMdMedium, { color: ticked[i] ? color.textSubtle : color.text }]}>{p.title}</Text>
-                    <Text style={[text.uiXs, styles.sub]}>{p.sub}</Text>
+                    <Text style={[styles.prepTitle, { color: ticked[i] ? color.textSubtle : color.text }]}>{p.title}</Text>
+                    <Text style={styles.prepSub}>{p.sub}</Text>
                   </View>
                 </Pressable>
               ))}
             </View>
           </ScrollView>
 
-          <StickyFooter>
-            <Button variant="secondary" size="lg" full label="Run the device check now" onPress={() => onDeviceCheck(id)} />
-            <Button variant="outline" size="block" full label="Add to calendar" onPress={() => Linking.openURL(calendarUrl(q.data!, rules?.joinOpensMinutesBefore))} />
-            <Button variant="outline" size="block" full label="Share calendar file (.ics)" onPress={() => void shareIcs(q.data!.id)} />
-          </StickyFooter>
+          <FlowFooter>
+            <Btn variant="ink" label="Run the device check now" onPress={() => onDeviceCheck(id)} />
+            <Btn variant="outline" label="Add to calendar" onPress={() => Linking.openURL(calendarUrl(q.data!, rules?.joinOpensMinutesBefore))} />
+            <Btn variant="outline" label="Share calendar file (.ics)" onPress={() => void shareIcs(q.data!.id)} />
+          </FlowFooter>
         </>
       ) : (
-        <View style={styles.body}><Skeleton lines={3} /></View>
+        <View style={styles.body}><Skel w={56} h={56} round /><Skel w="70%" h={28} /><Skel w="100%" h={120} /></View>
       )}
     </View>
   )
@@ -119,17 +121,16 @@ function prepSteps(time: string): { title: string; sub: string }[] {
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.background },
-  body: { paddingHorizontal: spaceHalf['6'], gap: space.xl, paddingBottom: space.xl },
-  tick: { width: height['fab'], height: height['fab'], borderRadius: radius.pill, backgroundColor: color.successSoft, alignItems: 'center', justifyContent: 'center' },
-  tickMark: { ...text.displayLead, color: color.successFill },
-  head: { gap: space.sm },
-  booked: { color: color.success, letterSpacing: trackingNative.eyebrow },
-  sub: { color: color.textMuted },
-  prepHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spaceHalf['1.5'] },
-  prepRow: { minHeight: height['control-lg'], flexDirection: 'row', alignItems: 'center', gap: spaceHalf['3.5'], paddingVertical: space.sm, borderBottomWidth: borderWidth.thin, borderBottomColor: color.borderSoft },
-  prepText: { flex: 1, gap: space['2xs'] },
-  box: { width: height.radio, height: height.radio, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
+  body: { paddingHorizontal: 20, paddingTop: 0, gap: 20, paddingBottom: 20 },
+  head: { gap: 6 },
+  prepHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
+  prepHeadText: { fontFamily: FF.bodySemiBold, fontSize: 16, color: color.text },
+  count: { fontFamily: FF.monoMedium, fontSize: 11, letterSpacing: 1.54, textTransform: 'uppercase', color: color.textMuted },
+  prepRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingVertical: 12, borderTopWidth: borderWidth.thin, borderTopColor: color.border },
+  prepText: { flex: 1, gap: 2 },
+  prepTitle: { fontFamily: FF.bodyMedium, fontSize: 15 },
+  prepSub: { fontFamily: FF.body, fontSize: 12.5, lineHeight: 17.5, color: color.textMuted },
+  box: { width: 24, height: 24, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
   boxOn: { backgroundColor: color.accent },
-  boxOff: { backgroundColor: color.surface, borderWidth: borderWidth.medium, borderColor: color.borderStrong },
-  boxMark: { ...text.uiXs, color: color.textInverse },
+  boxOff: { backgroundColor: color.surface, borderWidth: 1.5, borderColor: color.borderStrong },
 })

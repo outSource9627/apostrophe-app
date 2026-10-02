@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apostrophe App – Receipts, Visibility, Your data (4 options each)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FAFAFC; --surface:#fff; --muted:#F1F3F7; --sunken:#E6E8EE;
+    --text:#0B0F1A; --text2:#3A4256; --text3:#6B7385; --text4:#8A91A2;
+    --border:#E3E6ED; --border-strong:#C9CED9;
+    --accent:#5B3DF5; --accent-soft:#EFEBFF; --accent-wash:#F7F6FF; --accent-edge:#DCD3FF; --accent-deep:#3B2A8F;
+    --ink:#0B0F1A; --ink-raised:#151B2B;
+    --ok:#0E9F6E; --ok-text:#0B7A55; --ok-soft:#E6F7F0; --danger:#E5484D; --danger-text:#C22A30; --danger-soft:#FDECEC; --danger-border:#F2B8BA;
+    --warn:#935F00; --warn-soft:#FFF5E1; --warn-edge:#F5E2B8; --info-soft:#E8EFFF;
+    --r-md:14px; --r-lg:20px; --r-xl:28px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{font-family:'Geist',system-ui,sans-serif;background:#E9EAF2;color:var(--text);padding:32px 24px 90px}
+  button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;text-align:left}
+  button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex:none}
+  .mono{font:500 11px 'Geist Mono',monospace;letter-spacing:.14em;text-transform:uppercase}
+  .num{font-family:'Geist Mono',monospace;font-weight:500;letter-spacing:.02em}
+
+  /* chooser */
+  .top{max-width:1300px;margin:0 auto 26px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:22px 26px;display:grid;gap:16px}
+  .top h1{font-size:26px;letter-spacing:-.035em}
+  .top p{font-size:14px;color:var(--text3);line-height:1.5;max-width:900px}
+  .chips{display:flex;flex-wrap:wrap;gap:4px;background:var(--muted);border-radius:22px;padding:4px;width:max-content;max-width:100%}
+  .chips button{padding:8px 14px;border-radius:99px;font-size:13.5px;font-weight:600;color:var(--text3);white-space:nowrap}
+  .chips button.on{background:var(--accent);color:#fff}
+  .chips.sm button{padding:6px 11px;font-size:12.5px}
+  .chips.sm button.on{background:var(--surface);color:var(--accent);border:1px solid var(--border)}
+  .lab{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+  .lab .mono{color:var(--text3);min-width:70px}
+  .wrap{display:flex;flex-wrap:wrap;gap:44px;justify-content:center;max-width:1700px;margin:0 auto}
+  .cell{width:390px}
+  .cap{margin-top:14px}.cap b{font-size:17px;letter-spacing:-.02em;display:block}.cap span{font-size:14px;color:var(--text3);line-height:1.45;display:block;margin-top:3px}
+
+  /* phone */
+  .phone{width:390px;height:812px;background:var(--bg);border-radius:44px;border:10px solid #0B0F1A;overflow:hidden;position:relative}
+  .status{height:44px;display:flex;justify-content:space-between;align-items:center;padding:0 26px;font-size:14px;font-weight:600;position:absolute;top:0;left:0;right:0;z-index:40;pointer-events:none}
+  .status i{width:90px;height:24px;background:#0B0F1A;border-radius:14px;position:absolute;left:50%;top:8px;transform:translateX(-50%)}
+  .scroll{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none;padding-top:44px;padding-bottom:28px}
+  .scroll::-webkit-scrollbar{display:none}
+  .screenhead{display:flex;align-items:center;gap:12px;padding:8px 14px}
+  .screenhead .back{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--border);background:var(--surface);flex:none}
+  .screenhead b{font-size:18px;letter-spacing:-.02em;display:block;line-height:1.15}
+  .screenhead small{font-size:13px;color:var(--text3);display:block;margin-top:1px}
+  .pad{padding:0 20px}
+  .stack{display:grid;gap:14px;padding:8px 20px 20px}
+
+  .pill{font:500 10.5px 'Geist Mono',monospace;letter-spacing:.1em;text-transform:uppercase;border-radius:99px;padding:5px 10px;display:inline-block;white-space:nowrap}
+  .pill.ok{background:var(--ok-soft);color:var(--ok-text)}.pill.warn{background:var(--warn-soft);color:var(--warn)}
+  .pill.neutral{background:var(--muted);color:var(--text3)}.pill.info{background:var(--info-soft);color:#1F4FD1}
+  .btn{height:46px;min-width:44px;border-radius:var(--r-md);font-weight:700;font-size:15px;padding:0 18px;display:inline-flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap;text-align:center}
+  .btn.pri{background:var(--accent);color:#fff}.btn.out{border:1.5px solid var(--border-strong);background:var(--surface)}
+  .btn.dis{background:var(--muted);color:var(--text4);cursor:default}.btn.full{width:100%}.btn.sm{height:40px;font-size:14px;padding:0 16px;border-radius:12px}
+  .btn.destr{background:var(--surface);border:1.5px solid var(--danger-border);color:var(--danger-text)}
+  .btn.quiet{color:var(--text)}
+  .btn svg{width:18px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px}
+  .eyebrow{font:500 11px 'Geist Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--text3)}
+  .h{font-size:22px;font-weight:700;letter-spacing:-.03em;line-height:1.15}
+  .h.lg{font-size:30px;font-weight:800;letter-spacing:-.04em;line-height:1.05}
+  .p{font-size:14.5px;line-height:1.5;color:var(--text3)}.p.dark{color:var(--text)}
+  .meta{font:500 11.5px 'Geist Mono',monospace;letter-spacing:.04em;color:var(--text4)}
+  .link{font-size:14px;font-weight:600;color:var(--accent)}
+  .rowc{display:flex;align-items:center;gap:12px}.grow{flex:1;min-width:0}
+  .t{font-size:16px;font-weight:600;letter-spacing:-.015em}
+  .sub{font-size:13.5px;color:var(--text3);margin-top:2px}
+  .amt{font-size:20px;font-weight:700;letter-spacing:-.03em;white-space:nowrap}
+  .brk{background:var(--muted);border-radius:12px;padding:12px;display:grid;gap:7px}
+  .brk .l{display:flex;justify-content:space-between;align-items:baseline;font-size:14px;color:var(--text3)}
+  .brk .l.s{color:var(--text);font-weight:600}.brk hr{border:0;height:1px;background:var(--border)}
+  .brk .l span:last-child{font-family:'Geist Mono',monospace;font-weight:500;color:var(--text)}
+  .skel{background:linear-gradient(90deg,var(--muted) 0%,#E9ECF2 50%,var(--muted) 100%);background-size:200% 100%;animation:sh 1.3s infinite linear;border-radius:18px}
+  @keyframes sh{to{background-position:-200% 0}}
+  .center{display:grid;place-items:center;text-align:center;padding:90px 36px 0}
+  .center .ic{width:68px;height:68px;border-radius:22px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;margin-bottom:16px}
+  .center .ic svg{width:30px;height:30px}
+  .center b{font-size:22px;letter-spacing:-.03em;display:block}
+  .center p{font-size:15px;color:var(--text3);margin:8px 0 20px;line-height:1.5}
+  .scrim{position:absolute;inset:0;background:rgba(11,15,26,.4);z-index:50;opacity:0;pointer-events:none;transition:.25s}
+  .scrim.on{opacity:1;pointer-events:auto}
+  .sheet{position:absolute;left:0;right:0;bottom:0;max-height:90%;background:var(--bg);border-radius:28px 28px 0 0;z-index:51;transform:translateY(105%);transition:transform .35s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;overflow:hidden}
+  .sheet.on{transform:none}
+  .sheet .grab{width:40px;height:4px;border-radius:4px;background:var(--border-strong);margin:10px auto 0;flex:none}
+  .sheet .sh{display:flex;align-items:center;gap:12px;padding:12px 20px 8px;flex:none}
+  .sheet .sh b{font-size:20px;letter-spacing:-.025em}
+  .sheet .x{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--muted);margin-left:auto;flex:none}
+  .sheet .body{padding:4px 20px 20px;overflow-y:auto;display:grid;gap:14px;align-content:start;scrollbar-width:none}
+  .sheet .foot{padding:12px 20px 24px;background:var(--surface);border-top:1px solid var(--border);display:grid;gap:8px;flex:none}
+  .dialog{position:absolute;left:20px;right:20px;top:50%;transform:translateY(-50%) scale(.96);background:var(--surface);border-radius:var(--r-xl);border:1px solid var(--border);z-index:51;padding:22px;display:grid;gap:12px;opacity:0;pointer-events:none;transition:.2s}
+  .dialog.on{opacity:1;pointer-events:auto;transform:translateY(-50%)}
+  .toast{position:absolute;left:14px;right:14px;bottom:24px;background:var(--ink);color:#fff;border-radius:var(--r-md);padding:13px 14px;z-index:60;font-size:14px;font-weight:600;transform:translateY(20px);opacity:0;pointer-events:none;transition:.25s}
+  .toast.on{transform:none;opacity:1}
+  .sw{width:52px;height:30px;border-radius:99px;background:var(--sunken);position:relative;flex:none;transition:.2s}
+  .sw::after{content:"";position:absolute;left:3px;top:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:.2s}
+  .sw.on{background:var(--ok)}.sw.on::after{left:25px}.sw.off{opacity:.55}
+  .facts{display:grid;gap:10px}.facts div{display:flex;gap:10px;font-size:14.5px;line-height:1.45}.facts svg{width:16px;margin-top:3px;stroke:var(--ok);stroke-width:2.2}
+  .banner{border-radius:var(--r-md);padding:12px 14px;font-size:14px;line-height:1.45;background:var(--danger-soft);color:var(--danger-text);border:1px solid var(--danger-border)}
+  .well{border-radius:var(--r-md);border:1px solid var(--border);background:var(--muted);padding:16px}
+
+  /* receipts */
+  .month{font:500 11px 'Geist Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--text3);padding:6px 4px}
+  .list{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
+  .list>.item{padding:14px 16px;border-top:1px solid var(--border);display:block;width:100%}.list>.item:first-child{border-top:0}
+  .ledger{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
+  .ledger .hd,.ledger .lr{display:grid;grid-template-columns:62px 1fr auto;gap:12px;padding:12px 16px;align-items:center}
+  .ledger .hd{background:var(--muted);font:500 10.5px 'Geist Mono',monospace;letter-spacing:.12em;color:var(--text3);text-transform:uppercase}
+  .ledger .lr{border-top:1px solid var(--border);width:100%}
+  .ledger .lr .d{font:500 12px 'Geist Mono',monospace;color:var(--text3);line-height:1.35}
+  .ledger .lr .a{font:600 15px 'Geist Mono',monospace;text-align:right}
+  .tl{position:relative;padding-left:26px;display:grid;gap:18px}
+  .tl::before{content:"";position:absolute;left:6px;top:8px;bottom:8px;width:2px;background:var(--sunken)}
+  .tl .n{position:relative}.tl .n::before{content:"";position:absolute;left:-26px;top:3px;width:14px;height:14px;border-radius:50%;background:var(--accent);border:3px solid var(--bg);box-sizing:content-box;margin:-3px}
+  .tl .n.mute::before{background:var(--border-strong)}
+  .tl .when{font:500 11px 'Geist Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);margin-bottom:8px}
+  .ticket{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
+  .ticket .tp{padding:14px 16px;display:grid;gap:8px}
+  .ticket .bt{padding:14px 16px;border-top:1.5px dashed var(--border-strong);display:grid;gap:12px;background:var(--accent-wash)}
+  .ticket.ref .bt{background:var(--muted)}
+  .chev{width:18px;color:var(--text4);transition:.2s}.chev.up{transform:rotate(180deg)}
+
+  /* visibility */
+  .radio{display:grid;gap:8px;padding:16px;border-radius:var(--r-lg);border:1.5px solid var(--border);background:var(--surface);width:100%}
+  .radio.on{border-color:var(--accent);background:var(--accent-wash)}
+  .radio .dot{width:22px;height:22px;border-radius:50%;border:2px solid var(--border-strong);display:grid;place-items:center;flex:none}
+  .radio.on .dot{border-color:var(--accent)}.radio.on .dot::after{content:"";width:10px;height:10px;border-radius:50%;background:var(--accent)}
+  .radio.dis{opacity:.55;cursor:default}
+  .seg{display:flex;background:var(--muted);border-radius:var(--r-md);padding:4px}
+  .seg button{flex:1;height:44px;border-radius:11px;font-size:14.5px;font-weight:600;color:var(--text3);text-align:center}
+  .seg button.on{background:var(--surface);color:var(--accent);border:1px solid var(--border)}
+  .seg.dis{opacity:.55}
+  .ink{background:var(--ink);color:#fff;border-radius:var(--r-lg);padding:20px}
+  .ink .p{color:#A6ACBA}.ink .meta{color:#8A91A2}
+  .ink.hid{background:var(--surface);color:var(--text);border:1px solid var(--border)}.ink.hid .p{color:var(--text3)}
+  .prev{border:1px solid var(--border);border-radius:var(--r-lg);background:var(--surface);padding:14px;display:grid;gap:10px}
+  .feedcard{border-radius:16px;aspect-ratio:16/10;background:linear-gradient(170deg,#7258FF,var(--accent-deep) 55%,var(--ink-raised));position:relative;display:grid;place-items:center;color:#fff}
+  .feedcard.gone{background:var(--muted);color:var(--text4);border:1.5px dashed var(--border-strong)}
+  .feedcard b{font-size:14px}
+  .sticky{position:absolute;left:0;right:0;bottom:0;padding:12px 20px 26px;background:var(--surface);border-top:1px solid var(--border);display:grid;gap:8px;z-index:24}
+
+  /* data */
+  .split{display:grid;grid-template-columns:96px 1fr;gap:12px}
+  .split .eyebrow{padding-top:3px;font-size:10.5px;letter-spacing:.1em}
+  .mx{display:flex;gap:10px;align-items:flex-start;font-size:14.5px;line-height:1.45}
+  .mx i{width:9px;height:9px;border-radius:50%;background:var(--border-strong);margin-top:6px;flex:none}.mx i.d{background:var(--ok)}
+  .pendcard{background:var(--danger-soft);border:1px solid var(--danger-border);border-radius:var(--r-lg);padding:16px}
+  .menurow{display:flex;align-items:center;gap:14px;padding:16px;border-top:1px solid var(--border);width:100%}
+  .menurow:first-child{border-top:0}
+  .menurow .ico{width:44px;height:44px;border-radius:14px;background:var(--muted);display:grid;place-items:center;color:var(--text2);flex:none}
+  .step{display:grid;grid-template-columns:34px 1fr;gap:12px}
+  .step .no{width:34px;height:34px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font:600 13px 'Geist Mono',monospace}
+  .rail{position:relative;display:grid;gap:0}
+  .rail .rr{display:grid;grid-template-columns:20px 1fr;gap:12px;padding-bottom:18px;position:relative}
+  .rail .rr::before{content:"";position:absolute;left:5px;top:16px;bottom:-2px;width:2px;background:var(--sunken)}.rail .rr:last-child::before{display:none}
+  .rail .rr i{width:12px;height:12px;border-radius:50%;background:var(--accent);margin:4px 0 0 0}
+  .rail .rr i.k{background:var(--text3)}.rail .rr i.l{background:var(--accent-edge)}
+  .rail .rr b{font:500 11px 'Geist Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);display:block;margin-bottom:3px;font-weight:500}
+  .note{font-size:13px;color:var(--text3);line-height:1.45}
+</style>
+</head>
+<body>
+<div class="top">
+  <div><div class="mono" style="color:var(--accent)">Student · Account</div>
+  <h1>Receipts · Visibility · Your data</h1></div>
+  <p>Four different layouts for each screen. Every sentence, status, pill and button label is taken from the live screens (ReceiptsScreen, VisibilityScreen, DataRightsScreen); names, dates, receipt numbers and amounts are sample values. Pick a screen, then an option, or compare all four. The state chips drive every phone, and the controls inside the phones are clickable.</p>
+  <div class="lab"><span class="mono">Screen</span><div class="chips" id="screens"></div></div>
+  <div class="lab"><span class="mono">Option</span><div class="chips" id="opts"></div></div>
+  <div class="lab"><span class="mono">State</span><div class="chips sm" id="states"></div></div>
+</div>
+<div class="wrap" id="stage"></div>
+
+<script>
+const I={
+ back:'<svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>',
+ chev:'<svg class="chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>',
+ right:'<svg viewBox="0 0 24 24" style="width:18px;color:var(--text4)"><path d="m9 18 6-6-6-6"/></svg>',
+ dl:'<svg viewBox="0 0 24 24"><path d="M12 4v11m0 0-4-4m4 4 4-4M5 20h14"/></svg>',
+ doc:'<svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>',
+ mail:'<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>',
+ x:'<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>',
+ check:'<svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>',
+ eye:'<svg viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+ eyeoff:'<svg viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 5.1A9.8 9.8 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4M6.6 6.6A17 17 0 0 0 2 12s3.5 7 10 7a9.6 9.6 0 0 0 4-.9"/></svg>',
+ zip:'<svg viewBox="0 0 24 24"><path d="M21 8v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8M1 3h22v5H1zM10 12h4"/></svg>',
+ trash:'<svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2m-9 0 1 14h8l1-14"/></svg>',
+ clock:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+ alert:'<svg viewBox="0 0 24 24"><path d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>'
+};
+const TIER={T1:'Class 12',T2:'Graduation',T3:'Post Graduation',T4:'PhD'};
+const rs=p=>'₹'+(p/100).toLocaleString('en-IN',{maximumFractionDigits:2});
+const PAY=[ // sample values only
+ {id:'p1',tier:'T3',d:'20 Mar 2026',m:'Mar 2026',method:'upi',status:'SUCCESS',amt:177000,rc:null},
+ {id:'p2',tier:'T2',d:'12 Mar 2026',m:'Mar 2026',method:'card',status:'SUCCESS',amt:118000,rc:{n:'RCP-0000-0002',b:100000,g:18000,r:18,url:true}},
+ {id:'p3',tier:'T2',d:'2 Feb 2026',m:'Feb 2026',method:'upi',status:'SUCCESS',amt:118000,rc:{n:'RCP-0000-0001',b:100000,g:18000,r:18,url:false}},
+ {id:'p4',tier:'T1',d:'18 Jan 2026',m:'Jan 2026',method:'upi',status:'REFUNDED',amt:59000,rc:{n:'RCP-0000-0000',b:50000,g:9000,r:18,url:true}}
+];
+const S={screen:'r',opt:'all',st:{r:'list',v:'visible',d:'none'},open:{},sheet:null,dtab:'export',dnav:null,dconf:false,toast:null,vErr:false};
+const SCREENS={r:'Receipts',v:'Visibility',d:'Your data'};
+const STATES={
+ r:[['list','Payments'],['empty','Empty'],['loading','Loading'],['error','Error']],
+ v:[['visible','Visible'],['hidden','Hidden'],['unpub','No video resume yet'],['loading','Loading'],['error','Load error'],['mutErr','Change failed']],
+ d:[['none','Default'],['preparing','Export preparing'],['ready','Export ready'],['pending','Deletion pending'],['loading','Loading'],['error','Error']]
+};
+const OPTS={
+ r:{A:['Cards','Each payment is a card with its GST breakdown always open, as the app does today, tightened.'],B:['Grouped by month','Compact rows under month headings; tap a row to unfold the breakdown and the PDF action.'],C:['Ledger','Date, interview and amount in aligned columns; tap a line for the receipt in a sheet.'],D:['Timeline','A dated rail with each receipt as a tear-off ticket: payment above the dashed line, GST invoice below.']},
+ v:{A:['Switch card','The single feed switch as the hero, then what changes and what does not, in plain lists.'],B:['Choice cards','The same on/off decision as two radio cards, each carrying its own consequence.'],C:['Segmented + preview','A two-way segment with a live preview of the employer feed and the facts under it.'],D:['Status hero','A big status panel says where you stand; a sticky action flips it.']},
+ d:{A:['One page','Export, then Delete: the explanation, then the control beneath it, then a confirm sheet.'],B:['Tabs','Export and Delete are separate tabs; Delete reads as a vertical timeline, then the control, then a confirm sheet.'],C:['Menu then detail','A neutral two-row menu; each row drills into its own page. Delete lives only on its own page.'],D:['Inline confirm','One page; the confirmation opens inside the card in place instead of a sheet.']}
+};
+const E=s=>s;
+const pill=(t,l)=>`<span class="pill ${t}">${l}</span>`;
+const head=(title,sub,k)=>`<div class="screenhead"><button class="back" data-a="noop" aria-label="Back">${I.back}</button><div><b>${title}</b>${sub?`<small>${sub}</small>`:''}</div></div>`;
+const phone=(inner,over='')=>`<div class="phone"><div class="status"><span>9:41</span><i></i><span>●●●</span></div><div class="scroll">${inner}</div>${over}<div class="toast ${S.toast?'on':''}">${S.toast||''}</div></div>`;
+const act=(a,v='')=>`data-a="${a}" data-v="${v}"`;
+
+/* ---------- shared states ---------- */
+const skel=()=>`<div class="stack"><div class="skel" style="height:96px"></div><div class="skel" style="height:96px"></div><div class="skel" style="height:96px"></div></div>`;
+function errState(title,body,btn){return `<div class="center"><div class="ic" style="background:var(--warn-soft);color:var(--warn)">${I.alert}</div><b>${title}</b><p>${body}</p>${btn?`<button class="btn out sm" ${act('noop')}>${btn}</button>`:''}</div>`}
+
+/* ================= RECEIPTS ================= */
+const brk=r=>`<div class="brk"><div class="l"><span>Interview</span><span>${rs(r.b)}</span></div><div class="l"><span>GST ${r.r}%</span><span>${rs(r.g)}</span></div><hr><div class="l s"><span>Total</span><span>${rs(r.b+r.g)}</span></div></div>`;
+const ttl=p=>`${p.tier} · ${TIER[p.tier]} interview`;
+const sdate=p=>`${p.d}${p.method?' · '+p.method.toUpperCase():''}`;
+const stp=p=>p.status==='REFUNDED'?pill('neutral','Refunded'):pill('ok','Paid');
+const dlAction=p=>p.rc&&p.rc.url?`<button class="btn out sm full" ${act('toast','Opening the PDF')}>${I.dl}Download receipt (PDF)</button>`:p.rc?`<button class="link" ${act('toast','Opening email to support')}>Need the PDF? Email support</button>`:'';
+const noRc=`<div class="p" style="font-size:13.5px">The receipt for this payment is being issued.</div>`;
+const rNote=`<div class="note" style="padding:4px 4px 0">Receipts are GST invoices issued for each successful payment.</div>`;
+function rA(){return head('Receipts','Payments and invoices')+`<div class="stack">${PAY.map(p=>`<div class="card" style="display:grid;gap:12px">
+<div class="rowc" style="align-items:flex-start"><div class="grow"><div class="t">${ttl(p)}</div><div class="sub">${sdate(p)}</div></div><div class="amt">${rs(p.amt)}</div></div>
+<div class="rowc" style="gap:10px">${stp(p)}${p.rc?`<span class="meta">${p.rc.n}</span>`:''}</div>
+${p.rc?brk(p.rc):noRc}${dlAction(p)}</div>`).join('')}${rNote}</div>`}
+function rB(){const mons=[...new Set(PAY.map(p=>p.m))];
+ return head('Receipts','Payments and invoices')+`<div class="stack" style="gap:6px">${mons.map(m=>`<div class="month" style="margin-top:8px">${m}</div><div class="list">${PAY.filter(p=>p.m===m).map(p=>{const o=S.open['B']===p.id;
+ return `<div class="item"><button style="width:100%;display:block" ${act('open','B:'+p.id)}><div class="rowc"><div class="grow"><div class="t">${ttl(p)}</div><div class="sub">${sdate(p)}</div></div><div style="text-align:right"><div class="amt" style="font-size:17px">${rs(p.amt)}</div><div style="margin-top:6px">${stp(p)}</div></div>${I.chev.replace('class="chev"','class="chev'+(o?' up':'')+'"')}</div></button>
+ ${o?`<div style="display:grid;gap:12px;margin-top:14px">${p.rc?`<div class="meta">${p.rc.n}</div>${brk(p.rc)}`:noRc}${dlAction(p)}</div>`:''}</div>`}).join('')}</div>`).join('')}${rNote}</div>`}
+function rC(){const p=PAY.find(x=>x.id===S.open['C']);
+ const body=`${head('Receipts','Payments and invoices')}<div class="stack"><div class="ledger"><div class="hd"><span>Date</span><span>Interview</span><span style="text-align:right">Amount</span></div>${PAY.map(p=>`<button class="lr" ${act('open','C:'+p.id)}><span class="d">${p.d.replace(/ (\d{4})$/,'<br>$1')}</span><span><span class="t" style="font-size:15px;display:block">${ttl(p)}</span><span style="display:flex;gap:8px;align-items:center;margin-top:6px">${stp(p)}<span class="meta">${p.method.toUpperCase()}</span></span></span><span class="a">${rs(p.amt)}</span></button>`).join('')}</div>${rNote}</div>`;
+ const sh=`<div class="scrim ${p?'on':''}" ${act('open','C:')}></div><div class="sheet ${p?'on':''}"><div class="grab"></div><div class="sh"><b>${p?ttl(p):''}</b><button class="x" ${act('open','C:')} aria-label="Close">${I.x}</button></div><div class="body">${p?`<div class="rowc"><div class="grow"><div class="sub" style="margin:0">${sdate(p)}</div>${p.rc?`<div class="meta" style="margin-top:4px">${p.rc.n}</div>`:''}</div>${stp(p)}</div>${p.rc?brk(p.rc):noRc}`:''}</div><div class="foot">${p?dlAction(p):''}</div></div>`;
+ return [body,sh]}
+function rD(){return head('Receipts','Payments and invoices')+`<div class="stack"><div class="tl">${PAY.map(p=>`<div class="n ${p.status==='REFUNDED'?'mute':''}"><div class="when">${p.d}</div><div class="ticket ${p.status==='REFUNDED'?'ref':''}"><div class="tp"><div class="rowc" style="align-items:flex-start"><div class="grow"><div class="t">${ttl(p)}</div><div class="sub">${p.method.toUpperCase()}</div></div><div class="amt">${rs(p.amt)}</div></div><div class="rowc" style="gap:10px">${stp(p)}${p.rc?`<span class="meta">${p.rc.n}</span>`:''}</div></div><div class="bt">${p.rc?brk(p.rc):noRc}${dlAction(p)}</div></div></div>`).join('')}</div>${rNote}</div>`}
+function receipts(o){const s=S.st.r;
+ if(s==='loading')return head('Receipts','Payments and invoices')+skel();
+ if(s==='error')return head('Receipts','Payments and invoices')+errState('Could not load your receipts.','Nothing about your payments has changed. Try again.','Try again');
+ if(s==='empty')return head('Receipts','Payments and invoices')+`<div class="center"><div class="ic">${I.doc}</div><b>No payments yet.</b><p>When you buy an interview, its receipt appears here.</p></div>`;
+ return {A:rA,B:rB,C:rC,D:rD}[o]()}
+
+/* ================= VISIBILITY ================= */
+const ON_T='Employers swiping the feed see your video resume and your profile, and can send you an Interest.';
+const OFF_T='Employers cannot find you in the feed. New employers will not come across your profile.';
+const FACTS_ON=['Your video resume is untouched. Turning this off never deletes it.','Your existing connections stand.','Chats you are already in carry on, and those employers can still reach you.','Turn it back on whenever you like. Nothing is lost in between.'];
+const FACTS_OFF=['Your video resume is intact, exactly where it was.','Your connections stand.','Your chats are open, and those employers can still reach you.'];
+const facts=a=>`<div class="facts">${a.map(t=>`<div>${I.check}<span>${t}</span></div>`).join('')}</div>`;
+const sw=(on,dis)=>`<button class="sw ${on?'on':''} ${dis?'off':''}" ${dis?'':act('vset',on?'hidden':'visible')} role="switch" aria-checked="${on}" aria-label="Show me in the employer feed"></button>`;
+const UNPUB='This switch controls whether your video resume appears in the employer feed. You do not have one yet — it comes out of your interview, and the switch turns on by itself the day your film is published.';
+const vErr=()=>S.st.v==='mutErr'?`<div class="banner">Could not change your visibility. Try again.</div>`:'';
+const bookBtn=`<button class="btn pri full" ${act('toast','Opening booking')} style="height:52px">Book an interview</button>`;
+const vHdr=head('Visibility','');
+function vA(){const s=S.st.v;
+ if(s==='unpub')return vHdr+`<div class="stack"><div class="h lg">Who can find you.</div><div class="well"><div class="rowc"><div class="grow t">Show me in the employer feed</div>${sw(false,true)}</div><div class="p" style="margin-top:12px;font-size:14px">${UNPUB}</div></div>${bookBtn}</div>`;
+ const on=s!=='hidden';
+ return vHdr+`<div class="stack" style="gap:20px"><div class="h lg">${on?'Who can find you.':'You are hidden.'}</div>
+ <div class="card"><div class="rowc"><div class="grow t">Show me in the employer feed</div>${sw(on)}</div>${on?`<div class="p" style="margin-top:12px;font-size:14px">${ON_T}</div>`:`<div class="meta" style="margin-top:12px">Off since 1 Oct 2026, 10:30 am</div>`}</div>
+ ${on?`<div style="display:grid;gap:10px"><div class="eyebrow">If you turn this off</div><div class="p" style="font-size:14px">You stop appearing in the employer feed. That is the whole of it — everything below stays exactly as it is.</div>${facts(FACTS_ON)}</div><div class="meta">Takes effect immediately</div>`
+ :`<div style="display:grid;gap:8px"><div class="eyebrow">What changed</div><div class="p dark" style="font-size:14px">${OFF_T}</div></div><div style="display:grid;gap:10px"><div class="eyebrow">What did not change</div>${facts(FACTS_OFF)}</div>`}
+ ${vErr()}${on?'':`<div style="display:grid;gap:8px"><button class="btn pri full" style="height:52px" ${act('vset','visible')}>Show me in the feed again</button><div class="meta" style="text-align:center">You are back in the feed the moment you tap it.</div></div>`}</div>`}
+function vB(){const s=S.st.v;const un=s==='unpub';const on=s==='visible';
+ const card=(k,title,body,sel)=>`<button class="radio ${sel?'on':''} ${un?'dis':''}" ${un?'':act('vset',k)} role="radio" aria-checked="${sel}"><div class="rowc"><span class="dot"></span><div class="grow t">${title}</div></div><div class="p" style="font-size:14px;padding-left:34px">${body}</div></button>`;
+ return vHdr+`<div class="stack" style="gap:18px"><div class="h lg">Who can find you.</div>
+ ${un?`<div class="well"><div class="p" style="font-size:14px">${UNPUB}</div></div>`:''}
+ <div style="display:grid;gap:10px" role="radiogroup">${card('visible','Show me in the employer feed',ON_T,on&&!un)}${card('hidden','Hidden from the employer feed',OFF_T,s==='hidden'||s==='mutErr')}</div>
+ ${un?bookBtn:`<div class="meta">Takes effect immediately</div>`}
+ ${!un?`<div style="display:grid;gap:10px"><div class="eyebrow">Either way</div>${facts(['Your video resume is untouched. Turning this off never deletes it.','Your existing connections stand.','Chats you are already in carry on, and those employers can still reach you.'])}<div class="p" style="font-size:13.5px">Turn it back on whenever you like. Nothing is lost in between.</div></div>`:''}${vErr()}</div>`}
+function vC(){const s=S.st.v;const un=s==='unpub';const on=s==='visible';
+ const sg=`<div class="seg ${un?'dis':''}"><button class="${on&&!un?'on':''}" ${un?'':act('vset','visible')}>In the feed</button><button class="${!on&&!un?'on':''}" ${un?'':act('vset','hidden')}>Hidden</button></div>`;
+ return vHdr+`<div class="stack" style="gap:18px"><div class="h lg">${un||on?'Who can find you.':'You are hidden.'}</div>${sg}
+ <div class="prev"><div class="eyebrow">Employer feed</div><div class="feedcard ${on&&!un?'':'gone'}">${on&&!un?`<b>Your video resume and profile</b>`:`<b>${un?'No video resume yet':'Not shown'}</b>`}</div><div class="p" style="font-size:14px">${un?UNPUB:on?ON_T:OFF_T}</div></div>
+ ${un?bookBtn:`<div style="display:grid;gap:10px"><div class="eyebrow">${on?'If you turn this off':'What did not change'}</div>${on?`<div class="p" style="font-size:14px">You stop appearing in the employer feed. That is the whole of it — everything below stays exactly as it is.</div>`:''}${facts(on?FACTS_ON:FACTS_OFF)}</div><div class="meta">Takes effect immediately${on?'':' · Off since 1 Oct 2026, 10:30 am'}</div>`}${vErr()}</div>`}
+function vD(){const s=S.st.v;const un=s==='unpub';const on=s==='visible';
+ const hero=`<div class="ink ${!on||un?'hid':''}"><div class="rowc"><div class="grow"><div class="eyebrow" style="${on&&!un?'color:#A6ACBA':''}">Employer feed</div><div class="h" style="margin-top:8px;font-size:26px">${un?'No video resume yet.':on?'You are in the feed.':'You are hidden.'}</div></div>${sw(on&&!un,un)}</div><div class="p" style="font-size:14px;margin-top:10px">${un?UNPUB:on?ON_T:OFF_T}</div>${!on&&!un?`<div class="meta" style="margin-top:12px">Off since 1 Oct 2026, 10:30 am</div>`:''}</div>`;
+ const rows=on?[['If you turn this off',null]]:[];
+ return vHdr+`<div class="stack" style="gap:18px;padding-bottom:110px">${hero}
+ ${un?'':`<div class="card" style="padding:4px 16px"><div class="eyebrow" style="padding:12px 0 4px">${on?'If you turn this off':'What did not change'}</div>${(on?FACTS_ON:FACTS_OFF).map(t=>`<div class="rowc" style="padding:12px 0;border-top:1px solid var(--border);align-items:flex-start;gap:10px"><span style="color:var(--ok);margin-top:2px">${I.check.replace('<svg','<svg style="width:16px;stroke-width:2.2"')}</span><span style="font-size:14.5px;line-height:1.45">${t}</span></div>`).join('')}</div>${on?`<div class="p" style="font-size:14px">You stop appearing in the employer feed. That is the whole of it — everything above stays exactly as it is.</div>`:`<div class="p dark" style="font-size:14px"><b>What changed.</b> ${OFF_T}</div>`}`}${vErr()}</div>
+ <div class="sticky">${un?bookBtn:on?`<button class="btn out full" ${act('vset','hidden')}>Hide me from the feed</button><div class="meta" style="text-align:center">Takes effect immediately</div>`:`<button class="btn pri full" style="height:52px" ${act('vset','visible')}>Show me in the feed again</button><div class="meta" style="text-align:center">You are back in the feed the moment you tap it.</div>`}</div>`}
+function visibility(o){const s=S.st.v;
+ if(s==='loading')return vHdr+skel();
+ if(s==='error')return vHdr+`<div class="center"><div class="p" style="font-size:15px">Could not load your visibility.</div></div>`;
+ return {A:vA,B:vB,C:vC,D:vD}[o]()}
+
+/* ================= DATA ================= */
+const EXP_NONE=(extra='')=>`<div class="h">Take a copy with you.</div><div class="p" style="font-size:14px;margin-top:8px">We build the file in the background and email you a link when it’s ready. It’s JSON you can open anywhere, plus the documents you uploaded.</div>${extra}<button class="btn out full" style="margin-top:14px" ${act('dexport')}>Request my export</button><div class="meta" style="margin-top:10px">Usually ready within 24 hours</div>`;
+const EXP_PREP=`${pill('neutral','PREPARING')}<div class="p" style="font-size:14px;margin-top:10px">We’re building your file. We’ll email you when it’s ready — you don’t need to keep this open.</div>`;
+const EXP_READY=`${pill('info','READY')}<div style="display:flex;gap:10px;align-items:baseline;margin-top:10px"><span class="meta" style="color:var(--text)">apostrophe-export-2026-10-01.zip</span><span class="meta">12.4 MB</span></div><button class="btn out sm" style="margin-top:12px" ${act('toast','Downloading')}>${I.dl}Download</button><div class="meta" style="margin-top:10px">This link is short-lived — request a fresh export if it stops working.</div>`;
+const expBody=()=>({none:EXP_NONE(),preparing:EXP_PREP,ready:EXP_READY}[S.st.d]||EXP_NONE());
+const DEL_H='Deleting is permanent. We finish it within thirty days.';
+const SPL=[['Immediately','Your profile leaves every employer feed. Nobody new can find you.'],['Within thirty days','Both recordings are purged — the raw interview and the edited video resume.'],['Kept by law','Payment and invoice records stay for as long as Indian tax law requires. Your name, email and mobile are replaced with a reference number inside them.']];
+const split=()=>SPL.map(([a,b])=>`<div class="split"><div class="eyebrow">${a}</div><div class="p dark" style="font-size:14.5px">${b}</div></div>`).join('');
+const DEL_META='We’ll ask you to confirm once. You can cancel any time in the next thirty days.';
+const pend=()=>`<div style="display:grid;gap:18px"><div class="pendcard">${pill('warn','DELETION PENDING')}<div class="h" style="margin-top:10px;font-size:20px">We’re deleting your account by 31 Oct 2026.</div><div class="meta" style="margin-top:6px">Requested 1 Oct 2026, 10:30 am</div></div>
+<div style="display:grid;gap:10px"><div class="eyebrow">Done</div><div class="mx"><i class="d"></i><span>Your profile left every employer feed on 1 Oct 2026, 10:30 am.</span></div><div class="mx"><i class="d"></i><span>Your open chats are archived.</span></div></div>
+<div style="display:grid;gap:10px"><div class="eyebrow">Still to happen</div><div class="mx"><i></i><span>Both recordings are purged by 31 Oct 2026.</span></div><div class="mx"><i></i><span>Payment records are kept, with your name, email and mobile replaced.</span></div></div>
+<button class="btn out full" ${act('dcancel')}>Cancel this request</button><div class="meta">Cancel before 31 Oct 2026 and nothing is lost.</div></div>`;
+const confirmSheet=(id,open)=>`<div class="scrim ${open?'on':''}" ${act('dsheet','')}></div><div class="sheet ${open?'on':''}"><div class="grab"></div><div class="sh"><b>Delete my account?</b><button class="x" ${act('dsheet','')} aria-label="Close">${I.x}</button></div><div class="body"><div class="p" style="font-size:14.5px">Your profile leaves every feed now, and both recordings are purged within thirty days. You can cancel any time in the next thirty days.</div></div><div class="foot"><button class="btn destr full" ${act('dconfirm')}>Delete my account</button><button class="btn quiet full" ${act('dsheet','')}>Keep my account</button></div></div>`;
+const dHdr=()=>head('Your data','Export a copy, or delete your account');
+const delCard=(btn)=>`<div class="card" style="display:grid;gap:14px"><div class="h" style="font-size:20px">${DEL_H}</div>${split()}${btn}<div class="meta">${DEL_META}</div></div>`;
+const delBtn=a=>`<button class="btn destr full" ${act(a,'A')}>Delete my account</button>`;
+function dA(){const s=S.st.d;
+ const page=dHdr()+`<div class="stack" style="gap:24px"><div style="display:grid;gap:12px"><div class="eyebrow">Export</div><div class="card">${expBody()}</div></div><div style="display:grid;gap:12px"><div class="eyebrow">Delete my account</div>${s==='pending'?pend():delCard(delBtn('dsheet'))}</div></div>`;
+ return [page,confirmSheet('A',S.sheet==='A')]}
+function dB(){const s=S.st.d;const tab=S.dtab;
+ const tabs=`<div style="padding:4px 20px 0"><div class="seg"><button class="${tab==='export'?'on':''}" ${act('dtab','export')}>Export a copy</button><button class="${tab==='delete'?'on':''}" ${act('dtab','delete')}>Delete account</button></div></div>`;
+ let body;
+ if(tab==='export')body=`<div class="card">${expBody()}</div>`;
+ else if(s==='pending')body=pend();
+ else body=`<div class="h" style="font-size:24px">${DEL_H}</div><div class="rail" style="margin-top:6px">${SPL.map(([a,b],i)=>`<div class="rr"><i class="${i==2?'k':i==1?'l':''}"></i><div><b>${a}</b><div class="p dark" style="font-size:14.5px">${b}</div></div></div>`).join('')}</div><button class="btn destr full" ${act('dsheet','B')}>Delete my account</button><div class="meta">${DEL_META}</div>`;
+ return [dHdr()+tabs+`<div class="stack" style="gap:16px;padding-top:18px">${body}</div>`,confirmSheet('B',S.sheet==='B')]}
+function dC(){const s=S.st.d;const nav=S.dnav;
+ if(!nav){const exs={none:'Take a copy with you.',preparing:'PREPARING',ready:'READY'}[s]||'Take a copy with you.';
+  return dHdr()+`<div class="stack" style="gap:16px"><div class="list"><button class="menurow" ${act('dnav','export')}><span class="ico">${I.zip}</span><span class="grow"><span class="t" style="display:block">Export</span><span class="sub" style="display:block">${exs}</span></span>${I.right}</button><button class="menurow" ${act('dnav','delete')}><span class="ico">${I.trash}</span><span class="grow"><span class="t" style="display:block">Delete my account</span><span class="sub" style="display:block">${s==='pending'?'DELETION PENDING':'Deleting is permanent.'}</span></span>${I.right}</button></div></div>`}
+ const back=`<div class="screenhead"><button class="back" ${act('dnav','')} aria-label="Back">${I.back}</button><div><b>${nav==='export'?'Export':'Delete my account'}</b></div></div>`;
+ if(nav==='export')return back+`<div class="stack"><div class="card">${expBody()}</div></div>`;
+ return [back+`<div class="stack" style="gap:18px">${s==='pending'?pend():`<div class="h lg" style="font-size:26px">${DEL_H}</div><div style="display:grid;gap:16px">${split()}</div><div style="display:grid;gap:10px;margin-top:6px"><button class="btn destr full" ${act('dsheet','C')}>Delete my account</button><div class="meta">${DEL_META}</div></div>`}</div>`,confirmSheet('C',S.sheet==='C')]}
+function dD(){const s=S.st.d;
+ const exp=`<div class="rowc" style="gap:14px;align-items:flex-start"><span style="width:44px;height:44px;border-radius:14px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;flex:none">${I.mail}</span><div class="grow">${expBody()}</div></div>`;
+ const open=S.sheet==='D';
+ const del=s==='pending'?pend():`<div class="eyebrow">Delete my account</div><div class="h" style="font-size:22px">${DEL_H}</div><div class="card" style="padding:4px 16px">${SPL.map(([a,b],i)=>`<div style="padding:14px 0;border-top:${i?'1px solid var(--border)':'0'}"><div class="eyebrow" style="margin-bottom:5px">${a}</div><div class="p dark" style="font-size:14.5px">${b}</div></div>`).join('')}</div>
+ ${open?`<div class="card" style="border-color:var(--danger-border);display:grid;gap:12px"><div class="t" style="font-size:18px">Delete my account?</div><div class="p" style="font-size:14.5px">Your profile leaves every feed now, and both recordings are purged within thirty days. You can cancel any time in the next thirty days.</div><button class="btn destr full" ${act('dconfirm')}>Delete my account</button><button class="btn quiet full" ${act('dsheet','D')}>Keep my account</button></div>`:`<button class="btn destr full" ${act('dsheet','D')}>Delete my account</button><div class="meta">${DEL_META}</div>`}`;
+ return dHdr()+`<div class="stack" style="gap:26px"><div class="card" style="background:var(--accent-wash);border-color:var(--accent-edge)"><div class="eyebrow" style="margin-bottom:12px;color:var(--accent-deep)">Export</div>${exp}</div><div style="display:grid;gap:14px">${del}</div></div>`}
+function data(o){const s=S.st.d;
+ if(s==='loading')return dHdr()+skel();
+ if(s==='error')return dHdr()+errState('Could not load your data settings.','Nothing was changed. Try again in a moment.','');
+ return {A:dA,B:dB,C:dC,D:dD}[o]()}
+
+/* ================= RENDER ================= */
+const FN={r:receipts,v:visibility,d:data};
+function render(){
+ document.getElementById('screens').innerHTML=Object.entries(SCREENS).map(([k,l])=>`<button class="${S.screen===k?'on':''}" data-a="screen" data-v="${k}">${l}</button>`).join('');
+ const o=OPTS[S.screen];
+ document.getElementById('opts').innerHTML=Object.entries(o).map(([k,[n]])=>`<button class="${S.opt===k?'on':''}" data-a="opt" data-v="${k}">${k} · ${n}</button>`).join('')+`<button class="${S.opt==='all'?'on':''}" data-a="opt" data-v="all">Compare all</button>`;
+ document.getElementById('states').innerHTML=STATES[S.screen].map(([k,l])=>`<button class="${S.st[S.screen]===k?'on':''}" data-a="state" data-v="${k}">${l}</button>`).join('');
+ const list=S.opt==='all'?['A','B','C','D']:[S.opt];
+ document.getElementById('stage').innerHTML=list.map(k=>{let r=FN[S.screen](k);let over='';if(Array.isArray(r)){over=r[1];r=r[0]}
+  return `<div class="cell"><div data-opt="${k}">${phone(r,over)}</div><div class="cap"><b>${k} · ${o[k][0]}</b><span>${o[k][1]}</span></div></div>`}).join('');
+}
+let tt;const toast=m=>{S.toast=m;render();clearTimeout(tt);tt=setTimeout(()=>{S.toast=null;render()},1600)};
+document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a,v=b.dataset.v;
+ const sc=S.screen;
+ if(a==='screen'){S.screen=v;S.opt='all';S.sheet=null}
+ else if(a==='opt')S.opt=v;
+ else if(a==='state'){S.st[sc]=v;S.sheet=null;S.dnav=null}
+ else if(a==='open'){const[k,id]=v.split(':');S.open[k]=(S.open[k]===id||!id)?null:id}
+ else if(a==='vset'){S.st.v=v}
+ else if(a==='dexport'){S.st.d='preparing'}
+ else if(a==='dsheet'){S.sheet=(S.sheet?null:v)}
+ else if(a==='dconfirm'){S.sheet=null;S.st.d='pending'}
+ else if(a==='dcancel'){S.st.d='none'}
+ else if(a==='dtab')S.dtab=v;
+ else if(a==='dnav')S.dnav=v||null;
+ else if(a==='toast'){return toast(v)}
+ render()});
+S.open.B='p2';
+try{const h=location.hash.slice(1).split('/');if(h[0]&&SCREENS[h[0]]){S.screen=h[0];S.opt=h[1]||'all';if(h[2])S.st[h[0]]=h[2];if(h[3])S.sheet=h[3];if(h[4])S.dnav=h[4];if(h[5])S.open.C=h[5];if(h[6])S.dtab=h[6]}}catch(e){}
+render();
+</script>
+</body>
+</html>

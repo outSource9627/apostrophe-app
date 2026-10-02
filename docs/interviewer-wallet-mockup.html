@@ -1,0 +1,557 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apostrophe App – Interviewer Wallet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FAFAFC; --surface:#fff; --muted:#F1F3F7; --sunken:#E6E8EE;
+    --text:#0B0F1A; --text2:#3A4256; --text3:#6B7385; --text4:#8A91A2;
+    --border:#E3E6ED; --border-strong:#C9CED9;
+    --accent:#5B3DF5; --accent-hover:#4A2FE0; --accent-soft:#EFEBFF; --accent-wash:#F7F6FF; --accent-edge:#D9D1FF;
+    --accent-muted:#C4B8FF;
+    --ink:#0B0F1A; --ink-raised:#151B2B;
+    --ok:#0E9F6E; --ok-text:#0B7A55; --ok-soft:#E6F7F0; --ok-edge:#BFE8D6;
+    --danger:#E5484D; --danger-text:#C22A30; --danger-soft:#FDECEC; --danger-edge:#F2B8BA;
+    --warn:#935F00; --warn-soft:#FFF5E1; --warn-edge:#F5E2B8; --info:#2F6BFF; --info-soft:#E8EFFF;
+    --r-md:14px; --r-lg:18px; --r-xl:28px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{font-family:'Geist',system-ui,sans-serif;background:#E9EAF2;color:var(--text);padding:40px 24px 90px}
+  button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;text-align:left}
+  button:focus-visible,[tabindex]:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex:none}
+  .mono{font:500 11.5px 'Geist Mono',monospace;letter-spacing:.14em;text-transform:uppercase}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+  /* ---------- page ---------- */
+  .intro{max-width:1240px;margin:0 auto 20px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:28px 32px}
+  .intro h1{font-size:30px;letter-spacing:-.035em;line-height:1.1}
+  .intro .lede{font-size:16px;color:var(--text3);margin-top:8px;line-height:1.5;max-width:900px}
+  .legend{display:grid;gap:10px;margin-top:16px;font-size:14px;color:var(--text2);line-height:1.45}
+  .section{max-width:1760px;margin:0 auto 60px}
+  .section>h2{font-size:28px;letter-spacing:-.035em}
+  .section>p{font-size:15px;color:var(--text3);margin:4px 0 18px;max-width:880px;line-height:1.5}
+  .ctl{display:grid;gap:10px;margin-bottom:22px}
+  .ctl .cl{font:500 11.5px 'Geist Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--text3);margin-bottom:-4px}
+  .states{display:flex;flex-wrap:wrap;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:22px;padding:4px;width:fit-content;max-width:100%}
+  .states button{padding:8px 12px;border-radius:99px;font-size:13.5px;font-weight:600;color:var(--text3);white-space:nowrap}
+  .states button.on{background:var(--accent);color:#fff}
+  .ptag{display:inline-block;font:500 11.5px 'Geist Mono',monospace;letter-spacing:.04em;text-transform:uppercase;border:1px dashed var(--accent);color:var(--accent);border-radius:99px;padding:2px 8px;background:var(--accent-wash);white-space:nowrap;vertical-align:middle;font-weight:500}
+  .cfg{border-bottom:1px dotted var(--text4)}
+
+  /* ---------- phone ---------- */
+  .phone{width:390px;height:812px;background:var(--bg);border-radius:44px;border:10px solid #0B0F1A;overflow:hidden;position:relative}
+  .status{height:44px;display:flex;justify-content:space-between;align-items:center;padding:0 26px;font-size:14px;font-weight:600;position:absolute;top:0;left:0;right:0;z-index:40;pointer-events:none}
+  .status i{width:90px;height:24px;background:#0B0F1A;border-radius:14px;position:absolute;left:50%;top:8px;transform:translateX(-50%)}
+  .scroll{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none;padding-top:44px;padding-bottom:110px}
+  .scroll::-webkit-scrollbar{display:none}
+  .compact{position:absolute;top:0;left:0;right:0;height:96px;padding:44px 20px 0;display:flex;align-items:center;background:rgba(250,250,252,.96);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);z-index:30;opacity:0;transform:translateY(-8px);pointer-events:none;transition:.2s}
+  .compact.on{opacity:1;transform:none}
+  .compact b{font-size:18px;letter-spacing:-.02em}
+  .tab{position:absolute;left:14px;right:14px;bottom:14px;height:68px;background:rgba(255,255,255,.96);backdrop-filter:blur(14px);border:1px solid var(--border);border-radius:24px;display:flex;justify-content:space-around;align-items:center;z-index:25}
+  .tab button{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10.5px;font-weight:600;color:var(--text4);padding:7px 2px;border-radius:14px;min-width:60px;min-height:48px;justify-content:center}
+  .tab button.on{color:var(--accent);background:var(--accent-soft)}
+  .toast{position:absolute;left:14px;right:14px;bottom:100px;background:var(--ink);color:#fff;border-radius:var(--r-md);padding:13px 14px;z-index:70;font-size:14px;font-weight:600;transform:translateY(20px);opacity:0;pointer-events:none;transition:.25s}
+  .toast.on{transform:none;opacity:1}
+  [data-act]{cursor:pointer}
+
+  /* ---------- shared ---------- */
+  .grow{flex:1;min-width:0}
+  .ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pad{padding:0 20px}
+  .stack{display:grid;gap:14px;grid-template-columns:minmax(0,1fr)}
+  .stack>*{min-width:0}
+  .head{padding:6px 20px 14px}
+  .title{font-size:30px;font-weight:800;letter-spacing:-.04em;line-height:1.05}
+  .head .mono{color:var(--text3);margin-top:8px}
+  .sub{font-size:14px;color:var(--text3);line-height:1.35}
+  .sub.cl2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .brandbar{height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 20px}
+  .brand{display:flex;align-items:center;gap:10px;font-size:18px;font-weight:700;letter-spacing:-.01em}
+  .mark{width:30px;height:30px;border-radius:9px;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:800;font-size:19px;line-height:1;padding-bottom:3px}
+  .disc{width:40px;height:40px;border-radius:50%;background:var(--ink-raised);color:#fff;display:grid;place-items:center;font-size:13.5px;font-weight:600;flex:none;text-align:center}
+  .btn{height:46px;min-width:44px;border-radius:var(--r-md);font-weight:700;font-size:15px;padding:0 18px;display:inline-flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap;text-align:center}
+  .btn.pri{background:var(--accent);color:#fff}.btn.out{border:1.5px solid var(--border-strong);background:var(--surface)}
+  .btn.off{background:var(--sunken);color:var(--text3);cursor:default}
+  .btn.white{background:#fff;color:var(--ink)}.btn.ghostink{border:1px solid rgba(255,255,255,.3);color:#fff}
+  .btn.full{width:100%}
+  .btn.sm{height:38px;font-size:14px;padding:0 14px;border-radius:12px}
+  .pbtn{height:50px;border-radius:99px;width:100%;font-weight:700;font-size:15.5px;display:flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap;text-align:center}
+  .pbtn.on{background:var(--accent);color:#fff}.pbtn.off{background:var(--sunken);color:var(--text3);cursor:default}
+  .bd{font:600 13px 'Geist',sans-serif;letter-spacing:-.005em;border-radius:99px;padding:3px 10px;display:inline-block;white-space:nowrap;line-height:1.3}
+  .bd.green{background:var(--ok-soft);color:var(--ok-text)}.bd.violet{background:var(--accent-soft);color:var(--accent-hover)}
+  .bd.red{background:var(--danger-soft);color:var(--danger-text)}.bd.gray{background:var(--muted);color:var(--text3)}
+  .bd.amber{background:var(--warn-soft);color:var(--warn)}
+  .nmx{font-size:16.5px;font-weight:600;letter-spacing:-.02em;line-height:1.25}
+  .oh{display:flex;align-items:center;justify-content:space-between;padding:6px 2px 0;gap:8px}
+  .oh h3{font-size:19px;font-weight:700;letter-spacing:-.03em;display:flex;align-items:center;gap:8px}
+  .oh .lk{font-size:14px;font-weight:600;color:var(--accent);padding:6px 2px}
+  .ow{background:var(--surface);border:1px solid var(--border);border-radius:20px;overflow:hidden}
+  .ir{display:flex;align-items:center;gap:12px;padding:9px 16px;border-bottom:1px solid var(--border);min-height:60px}
+  .ir:last-child{border-bottom:0}
+  .amt{font:500 14px 'Geist Mono',monospace;white-space:nowrap;color:var(--text);flex:none}
+  .amt.cr{color:var(--ok-text)}
+  .fe{font:500 13px 'Geist Mono',monospace;color:var(--text2)}
+  .chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:0 20px 4px}
+  .chips::-webkit-scrollbar{display:none}
+  .chip{white-space:nowrap;padding:0 14px;height:40px;display:inline-flex;align-items:center;border-radius:99px;font-size:14.5px;font-weight:600;background:var(--surface);border:1px solid var(--border);color:var(--text2);flex:none}
+  .chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .chip.sm{height:36px;font-size:14px}
+  .skel{background:linear-gradient(90deg,var(--muted) 0%,#E9ECF2 50%,var(--muted) 100%);background-size:200% 100%;animation:sh 1.3s infinite linear;border-radius:10px}
+  @keyframes sh{to{background-position:-200% 0}}
+  .center{display:grid;place-items:center;text-align:center;padding:72px 32px 0}
+  .center .ic{width:72px;height:72px;border-radius:24px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;margin-bottom:16px}
+  .center .ic svg{width:32px;height:32px}
+  .center b{font-size:24px;font-weight:700;letter-spacing:-.03em;display:block}
+  .center p{font-size:16px;color:var(--text3);margin:10px 0 22px;line-height:1.5}
+  .center .btn{height:52px;font-size:16px;padding:0 26px;border-radius:16px}
+  .note{font-size:14px;color:var(--text3);line-height:1.4;padding:0 4px}
+  .note.dn{color:var(--danger-text)}
+  .nonetxt{padding:20px 4px;font-size:16px;color:var(--text3);line-height:1.45}
+  .nonetxt b{display:block;color:var(--text);font-size:17px;font-weight:600;margin-bottom:2px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:16px;display:grid;gap:10px}
+  .card.acc{background:var(--accent-wash);border-color:var(--accent-edge)}
+  .card.dng{background:var(--danger-soft);border-color:var(--danger-edge)}
+  .lbl{font:500 14px 'Geist',sans-serif;color:var(--text3)}
+  .lbl.acc{color:var(--accent-hover)}
+  .li{display:flex;align-items:center;gap:7px;min-width:0}
+  .rowc{display:flex;align-items:center;gap:10px}
+  .jb{justify-content:space-between}
+  .link{font-size:14.5px;font-weight:600;color:var(--accent);padding:2px 0}
+  .dng-t{color:var(--danger-text)}
+
+  /* figures + tiles (from approved Home) */
+  .fig{font:700 33px/1 'Geist',sans-serif;letter-spacing:-.045em;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--text);min-height:33px;display:flex;align-items:center}
+  .fig.l7{font-size:29px}.fig.l8{font-size:26px}.fig.l9{font-size:22px}
+  .fig.dim{color:var(--text4)}
+  .grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;align-items:stretch}
+  .tile{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:14px 16px;display:grid;gap:5px;min-width:0;align-content:center}
+  .tile.wide{grid-column:1/-1}
+  .tile .lbl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2}
+  .chipi{width:20px;height:20px;border-radius:7px;display:grid;place-items:center;flex:none}
+  .chipi svg{width:13px;height:13px}
+  .chipi.acc{background:var(--accent-soft);color:var(--accent)}
+  .chipi.ok{background:var(--ok-soft);color:var(--ok-text)}
+  .chipi.info{background:var(--info-soft);color:#1F4FD1}
+  .chipi.warn{background:var(--warn-soft);color:var(--warn)}
+  .chipi.mut{background:var(--muted);color:var(--text2)}
+  .ink{background:var(--ink);color:#fff;border-radius:24px;padding:16px;display:grid;gap:12px}
+  .ink .lbl{color:#A6ACBA}.ink .lbl.acc{color:var(--accent-muted)}
+  .ink .fig{color:#fff}.ink .fig.dim{color:#6B7385}
+  .ink .itile{background:var(--ink-raised);border-radius:16px;padding:12px 14px;display:grid;gap:5px;min-width:0}
+  .ink .chipi{background:rgba(255,255,255,.1);color:#C9CED9}
+  .ink .fig{min-height:0}
+  .ink .itile .fig{font-size:24px}.ink .itile .fig.l7{font-size:22px}.ink .itile .fig.l8{font-size:20px}.ink .itile .fig.l9{font-size:18px}
+  .ink .note{color:#C9CED9;padding:0}
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:4px}
+  .steps>div{display:grid;align-content:start;gap:5px;font-size:14px;font-weight:600;color:var(--text4)}
+  .steps>div i{display:block;height:6px;border-radius:6px;background:var(--sunken)}
+  .steps>div small{font:400 13px 'Geist',sans-serif;color:var(--text3);line-height:1.3;word-break:break-word}
+  .steps .done{color:var(--text)}.steps .done i{background:var(--accent)}
+  .steps .cur{color:var(--accent-hover)}.steps .cur i{background:var(--accent-muted)}
+  .steps .okk{color:var(--ok-text)}.steps .okk i{background:var(--ok)}
+  .steps .bad{color:var(--danger-text)}.steps .bad i{background:var(--danger)}
+  .tl{position:relative;display:grid;gap:0;padding-left:20px}
+  .tl::before{content:"";position:absolute;left:5px;top:12px;bottom:12px;width:2px;background:var(--border)}
+  .ti{position:relative;padding:9px 0;display:flex;align-items:center;gap:10px}
+  .ti i{position:absolute;left:-20px;top:50%;margin-top:-6px;width:12px;height:12px;border-radius:50%;background:var(--surface);border:2px solid var(--border-strong)}
+  .ti i.cr{border-color:var(--ok);background:var(--ok-soft)}
+
+  /* sheets */
+  .scrim{position:absolute;inset:0;background:rgba(11,15,26,.4);z-index:50}
+  .sheet{position:absolute;left:0;right:0;bottom:0;max-height:92%;background:var(--bg);border-radius:28px 28px 0 0;z-index:51;display:flex;flex-direction:column;overflow:hidden;animation:up .3s cubic-bezier(.2,.8,.2,1)}
+  @keyframes up{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+  .sheet .grab{width:40px;height:4px;border-radius:4px;background:var(--border-strong);margin:10px auto 0;flex:none}
+  .sheet .sh{display:flex;align-items:center;gap:12px;padding:12px 20px 8px;flex:none}
+  .sheet .sh b{font-size:20px;letter-spacing:-.025em;display:block}
+  .sheet .sh span{font-size:14px;color:var(--text3)}
+  .sheet .x{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--muted);margin-left:auto;flex:none}
+  .sheet .body{padding:4px 20px 20px;overflow-y:auto;display:grid;gap:14px;align-content:start;scrollbar-width:none}
+  .sheet .foot{padding:12px 20px 24px;background:var(--surface);border-top:1px solid var(--border);display:grid;gap:8px;flex:none}
+  .fld{display:grid;gap:6px}
+  .fld label{font:500 14px 'Geist',sans-serif;color:var(--text2)}
+  .inp{display:flex;align-items:center;height:52px;border:1.5px solid var(--border-strong);border-radius:14px;background:var(--surface);padding:0 14px;gap:8px}
+  .inp.bad{border-color:var(--danger)}.inp.dis{background:var(--muted)}
+  .inp span{font-size:17px;color:var(--text3);font-weight:600}
+  .inp input{flex:1;min-width:0;border:0;background:none;font:500 17px 'Geist',sans-serif;color:var(--text);height:100%;outline:0}
+  .inp:focus-within{border-color:var(--accent)}
+  .fld .err{font-size:14px;color:var(--danger-text)}
+  .fld .hint{font-size:13.5px;color:var(--text3);line-height:1.4}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .wrap{max-width:1100px;margin:0 auto}
+  .layout{display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap}
+  .ctl{display:grid;gap:10px;margin-bottom:22px}
+  .ctl .cl{font:500 11.5px 'Geist Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--text3);margin-bottom:-4px}
+  .notes{width:540px;max-width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:20px 24px}
+  .notes h4{font-size:17px;letter-spacing:-.02em;margin-bottom:2px}
+  .notes ul{padding-left:18px;font-size:13.5px;line-height:1.55;color:var(--text2)}
+  .notes li{margin-bottom:5px}
+  .notes .mono{color:var(--accent);margin:14px 0 5px;display:block;font-size:11.5px}
+  .cov{width:100%;border-collapse:collapse;font-size:13px;line-height:1.45}
+  .cov td{border-top:1px solid var(--border);padding:6px 8px 6px 0;vertical-align:top;color:var(--text2)}
+  .cov td:first-child{width:32%;font-weight:600;color:var(--text)}
+  .band{display:flex;gap:10px;align-items:flex-start;padding:14px 20px;background:var(--danger-soft);border-bottom:1px solid var(--danger-edge);color:var(--danger-text);font-size:14.5px;line-height:1.45;margin-bottom:14px}
+  .band svg{width:20px;height:20px;margin-top:1px}
+  .page{position:absolute;inset:0;background:var(--bg);z-index:39;display:flex;flex-direction:column;padding-top:44px;animation:pin .25s cubic-bezier(.2,.8,.2,1)}
+  @keyframes pin{from{transform:translateX(24px);opacity:0}to{transform:none;opacity:1}}
+  .ph{display:flex;align-items:center;gap:12px;padding:6px 20px 12px;flex:none}
+  .back{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--surface);border:1px solid var(--border);flex:none}
+  .ph b{font-size:22px;font-weight:700;letter-spacing:-.03em;display:block;line-height:1.15}
+  .ph span{font-size:14px;color:var(--text3)}
+  .pbody{flex:1;min-height:0;overflow-y:auto;padding:4px 20px 28px;display:grid;gap:14px;align-content:start;grid-template-columns:minmax(0,1fr);scrollbar-width:none}
+  .pbody::-webkit-scrollbar{display:none}
+  .pbody>*{min-width:0}
+  .pfoot{padding:12px 20px 24px;background:var(--surface);border-top:1px solid var(--border);flex:none;display:grid;gap:8px}
+  .inp input[type=date]{font-size:16px}
+  .lr{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border);min-height:64px}
+  .lr:last-child{border-bottom:0}
+  .lr .rt{display:grid;gap:2px;justify-items:end;flex:none}
+  .bal{font:500 12.5px 'Geist Mono',monospace;color:var(--text3);white-space:nowrap}
+  .pill{white-space:nowrap}
+  .rowbtn{display:flex;align-items:center;gap:12px;width:100%;padding:12px 16px;min-height:64px;border-bottom:1px solid var(--border)}
+  .rowbtn:last-child{border-bottom:0}
+  .rowbtn .ic{width:34px;height:34px;border-radius:11px;background:var(--muted);color:var(--text2);display:grid;place-items:center;flex:none}
+  .rowbtn .ic svg{width:19px;height:19px}
+  .rowbtn .chev{width:18px;height:18px;color:var(--text4)}
+  body.solo{padding:10px}.solo .intro,.solo .ctl,.solo .notes{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="intro">
+  <div class="mono" style="color:var(--accent)">Interviewer app · Wallet · final</div>
+  <h1>Wallet, ink card and request stepper</h1>
+  <p class="lede">The Wallet tab of the interviewer persona, Option D from the design round, made complete. Reads the wallet, bank, ledger, withdrawals and statements endpoints (<span class="mono" style="letter-spacing:.04em;font-size:12px">InterviewerWalletScreen</span> and the four screens it opens). Withdraw, Payout account, Ledger and Earnings statements are the app’s own screens: tap them from the Wallet and use the back button. Amounts, names, dates, references and bank details are placeholder-shaped samples (sample “today” is Fri 2 Oct). Same type scale, tokens, hairline borders, no shadows and floating tab bar as the approved Home.</p>
+  <div class="legend">
+    <div><span class="ptag">PROPOSAL</span>&nbsp; Dashed tag: not in the app today. Anything not tagged is something the app shows, or a field the API already carries.</div>
+    <div><b>Config-driven values</b> (minimum withdrawal, scorecard window, statement range) are admin settings; the numbers here are samples, dotted-underlined where printed.</div>
+    <div><b>Square brackets</b> mark text that comes from the server (rejection reason, error message, adjustment note, suspension reason).</div>
+  </div>
+</div>
+<div class="ctl">
+  <div class="cl">State</div><div class="states" id="sSw"></div>
+  <div class="cl">Withdraw rule</div><div class="states" id="rSw"></div>
+  <div class="cl">Ledger, statements and saving</div><div class="states" id="dSw"></div>
+</div>
+<div class="layout">
+<div class="phone" id="ph"></div>
+<div class="notes" id="notes"></div>
+</div>
+</div>
+
+<script>
+const I={
+ home:'<svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z"/></svg>',
+ cal:'<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
+ clock:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+ wallet:'<svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M3 10h18M16 15h2"/></svg>',
+ user:'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>',
+ alert:'<svg viewBox="0 0 24 24"><path d="M12 3l10 18H2zM12 10v5M12 18v.5"/></svg>',
+ lock:'<svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>',
+ trend:'<svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8M15 7h6v6"/></svg>',
+ bank:'<svg viewBox="0 0 24 24"><path d="M3 10l9-6 9 6M5 10v8M10 10v8M14 10v8M19 10v8M3 21h18"/></svg>',
+ file:'<svg viewBox="0 0 24 24"><path d="M6 3h8l5 5v13H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/></svg>',
+ chev:'<svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>',
+ back:'<svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>',
+ x:'<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+ plus:'<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
+ dl:'<svg viewBox="0 0 24 24"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg>',
+ refresh:'<svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 10-2 6M20 4v7h-7"/></svg>'
+};
+const TABS=[['home','Home'],['cal','Interviews'],['clock','Availability'],['wallet','Wallet'],['user','Account']];
+const tab=()=>`<nav class="tab" aria-label="Main">${TABS.map(t=>`<button data-act="toast:Opens ${t[1]}" class="${t[1]==='Wallet'?'on':''}" ${t[1]==='Wallet'?'aria-current="page"':''}>${I[t[0]]}<span>${t[1]}</span></button>`).join('')}</nav>`;
+const status=()=>`<div class="status"><span>9:41</span><i></i><span>5G ▮▮▮</span></div>`;
+const ptag=t=>`<span class="ptag">${t||'PROPOSAL'}</span>`;
+const CFG=t=>`<span class="cfg">${t}</span>`;
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+const fmt=p=>{const n=Math.abs(p),r=Math.floor(n/100),q=n%100;return (p<0?'−':'')+'₹'+r.toLocaleString('en-IN')+(q?'.'+String(q).padStart(2,'0'):'')};
+const lc=s=>{const n=s.length;return n<=6?'':n===7?'l7':n===8?'l8':'l9'};
+const brandBar=`<div class="brandbar"><div class="brand"><div class="mark">’</div>Apostrophe</div><button class="disc" data-act="toast:Opens Account" aria-label="Account">RK</button></div>`;
+const bandHTML=`<div class="band" role="alert">${I.alert}<div><b>Account suspended.</b> [Reason from the platform] New interviews and withdrawals are paused; you can still submit owed scorecards.</div></div>`;
+const errBlock=(t,m,act)=>`<div class="center"><div class="ic">${I.alert}</div><b>${t}</b><p>${m}</p><button class="btn out" data-act="${act}">${I.refresh.replace('<svg','<svg style="width:18px;height:18px"')}Try again</button></div>`;
+const emptyBlock=(t,m)=>`<div class="center"><div class="ic">${I.file}</div><b>${t}</b><p>${m}</p></div>`;
+const sk=(h,w,r)=>`<div class="skel" style="height:${h}px;${w?`width:${w};`:''}${r?`border-radius:${r}px`:''}"></div>`;
+
+/* ---------- samples (paise). Minimum, window and range are config samples ---------- */
+const MIN=50000,WINH=24,MAXD=90,PER=6,RECENT=5,TODAY='2026-10-02',MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const KL={CREDIT_INTERVIEW:'Interview fee',LOCK_WITHDRAWAL:'Withdrawal requested',UNLOCK_WITHDRAWAL:'Withdrawal returned',DEBIT_PAID:'Paid out',ADJUSTMENT_CREDIT:'Adjustment',ADJUSTMENT_DEBIT:'Adjustment'};
+const BANK0={holder:'Account Holder',last4:'1234',ifsc:'HDFC0001234',pan4:'567F'};
+const NOTE='[Note from the platform]';
+const S={st:'normal',rule:'ok',data:'ok',bankSaved:undefined,reqs:[],stm:[]};
+const P={nav:[],sheet:null,ui:{}};
+const RULES=[['ok','Can withdraw'],['below','Below minimum'],['nobank','No payout account'],['rej','Last request rejected'],['req','Request requested'],['appr','Request approved'],['susp','Suspended']];
+const STATES=[['normal','Normal'],['loading','Loading'],['empty','Empty'],['error','Error']];
+const DATAS=[['ok','Normal'],['loading','Loading'],['error','Ledger and statements unreadable'],['fail','Saving fails'],['bankerr','Payout account unreadable']];
+const WSTAT={REQUESTED:['Requested','violet'],APPROVED:['Approved','amber'],PAID:['Paid','green'],REJECTED:['Rejected','red']};
+const SSTAT={PENDING:['Preparing','amber'],READY:['Ready','green'],FAILED:['Failed','red']};
+const bd=x=>`<span class="bd ${x[1]}">${x[0]}</span>`;
+
+function W(){
+ const r=S.rule,e=S.st==='empty';
+ const bank=S.bankSaved!==undefined?S.bankSaved:(r==='nobank'||e)?null:BANK0;
+ const w={avail:125000,locked:0,pending:85000,life:235000,min:MIN,can:true,reason:null,open:null,bank,bankErr:S.data==='bankerr'&&S.bankSaved===undefined,susp:false};
+ if(w.bankErr)w.bank=null;
+ if(r==='below')w.avail=35000;
+ if(r==='req'||r==='appr'){w.locked=50000;w.avail=75000;w.open={p:50000,at:'28 Sep, 11:05 AM',st:r==='req'?'REQUESTED':'APPROVED'}}
+ if(r==='susp')w.susp=true;
+ if(e){w.avail=0;w.pending=0;w.life=0}
+ if(S.reqs.length){const q=S.reqs.reduce((a,x)=>a+x.p,0);w.avail-=q;w.locked+=q;w.open=S.reqs[0]}
+ if(w.susp)w.reason='ACCOUNT_SUSPENDED';
+ else if(!w.bank)w.reason='NO_BANK_ACCOUNT';
+ else if(w.avail<w.min)w.reason='BELOW_MINIMUM';
+ w.can=!w.reason&&!w.open;
+ return w}
+function blocked(w){
+ if(w.susp)return 'Withdrawals are paused while your account is suspended.';
+ if(w.open)return 'You already have a withdrawal request being processed.';
+ if(w.can)return null;
+ if(w.reason==='NO_BANK_ACCOUNT')return 'Add a payout bank account first.';
+ return `The minimum withdrawal is ${CFG(fmt(w.min))}.`}
+function LEDALL(){
+ if(S.st==='empty')return [];
+ const r=S.rule,a=[
+ {k:'CREDIT_INTERVIEW',s:1,p:30000,d:'21 Aug',t:'4:30 PM',who:'Candidate D · T1'},
+ {k:'CREDIT_INTERVIEW',s:1,p:45000,d:'29 Aug',t:'11:00 AM',who:'Candidate E · T2'},
+ {k:'LOCK_WITHDRAWAL',s:-1,p:30000,d:'30 Aug',t:'5:45 PM'},
+ {k:'UNLOCK_WITHDRAWAL',s:1,p:30000,d:'31 Aug',t:'10:00 AM'},
+ {k:'LOCK_WITHDRAWAL',s:-1,p:60000,d:'8 Sep',t:'1:00 PM'},
+ {k:'DEBIT_PAID',s:-1,p:60000,d:'10 Sep',t:'3:15 PM'},
+ {k:'CREDIT_INTERVIEW',s:1,p:45000,d:'22 Sep',t:'6:00 PM',who:'Candidate C · T3'},
+ {k:'ADJUSTMENT_CREDIT',s:1,p:10000,d:'24 Sep',t:'10:20 AM',note:NOTE},
+ {k:'ADJUSTMENT_DEBIT',s:-1,p:5000,d:'26 Sep',t:'2:10 PM',note:NOTE}];
+ if(r==='rej'||r==='req'||r==='appr')a.push({k:'LOCK_WITHDRAWAL',s:-1,p:50000,d:'28 Sep',t:'11:05 AM'});
+ if(r==='rej')a.push({k:'UNLOCK_WITHDRAWAL',s:1,p:50000,d:'29 Sep',t:'9:30 AM'});
+ a.push({k:'CREDIT_INTERVIEW',s:1,p:30000,d:'30 Sep',t:'4:40 PM',who:'Candidate B · T2'},
+        {k:'CREDIT_INTERVIEW',s:1,p:30000,d:'1 Oct',t:'6:10 PM',who:'Candidate A · T2'});
+ if(r==='below')a.push({k:'ADJUSTMENT_DEBIT',s:-1,p:90000,d:'2 Oct',t:'9:00 AM',note:NOTE});
+ S.reqs.slice().reverse().forEach(q=>a.push({k:'LOCK_WITHDRAWAL',s:-1,p:q.p,d:'2 Oct',t:'3:15 PM'}));
+ let bal=0;
+ return a.map((x,i)=>{if(x.k!=='DEBIT_PAID')bal+=x.s*x.p;return {...x,id:i,bal}}).reverse()}
+function HIST(){
+ if(S.st==='empty')return S.reqs.slice();
+ const r=S.rule,out=[];
+ if(r==='req')out.push({p:50000,st:'REQUESTED',at:'28 Sep, 11:05 AM'});
+ if(r==='appr')out.push({p:50000,st:'APPROVED',at:'28 Sep, 11:05 AM',dec:'28 Sep, 4:00 PM'});
+ if(r==='rej')out.push({p:50000,st:'REJECTED',at:'28 Sep, 11:05 AM',dec:'29 Sep, 9:30 AM',why:'[Reason from the platform]'});
+ out.push({p:60000,st:'PAID',at:'8 Sep, 1:00 PM',dec:'9 Sep, 10:00 AM',ref:'REF-SAMPLE'},{p:30000,st:'REJECTED',at:'30 Aug, 5:45 PM',dec:'31 Aug, 10:00 AM',why:'[Reason from the platform]'});
+ return [...S.reqs,...out]}
+const STM0=()=>S.st==='empty'?[]:[{from:'1 Sep',to:'30 Sep',st:'READY',rows:6,cr:'₹2,200',po:'₹600',at:'1 Oct, 9:00 AM'},{from:'1 Aug',to:'31 Aug',st:'PENDING',at:'2 Oct, 3:10 PM'},{from:'1 Jul',to:'31 Jul',st:'FAILED',at:'1 Oct, 9:05 AM',err:'[Error from the platform]'}];
+const STMALL=()=>[...S.stm,...STM0()];
+
+/* ---------- Wallet tab ---------- */
+const pendNote=w=>w.pending>0?`<div class="note">Pending fees release when you submit each scorecard within ${CFG(WINH+' hours')}.</div>`:'';
+const tlRow=r=>{const cr=r.s>0,meta=[r.who,r.note,`${r.d}, ${r.t}`].filter(Boolean).join(' · ');return `<div class="ti"><i class="${cr?'cr':''}"></i><div class="grow"><div class="nmx ell">${KL[r.k]}</div><div class="sub cl2">${meta}</div></div><span class="amt ${cr?'cr':''}">${cr?'+':'−'}${fmt(r.p)}</span></div>`};
+function recent(){
+ if(S.data==='error')return `<div class="note" style="font-size:16px">The ledger could not be read.</div>`;
+ const rows=LEDALL().slice(0,RECENT);
+ if(!rows.length)return `<div class="note" style="font-size:16px">No transactions yet.</div>`;
+ return `<div class="ow" style="padding:4px 16px"><div class="tl">${rows.map(tlRow).join('')}</div></div>`}
+function stepper(w){
+ const h=HIST()[0];if(!h)return '';
+ const s=h.st,c=['','',''],sm=['','',''];let l2='Approved';
+ sm[0]=h.at;
+ if(s==='REQUESTED')c[0]='cur';
+ if(s==='APPROVED'){c[0]='done';c[1]='cur';sm[1]=h.dec||''}
+ if(s==='PAID'){c[0]=c[1]='done';c[2]='okk';sm[1]=h.dec||'';sm[2]=h.ref?'Ref '+h.ref:''}
+ if(s==='REJECTED'){c[0]='done';c[1]='bad';l2='Rejected';sm[1]=[h.dec,h.why].filter(Boolean).join(' · ')}
+ const live=s==='REQUESTED'||s==='APPROVED';
+ return `<div class="card"><div class="rowc jb"><span class="lbl">${live?'Withdrawal in progress':'Last withdrawal'}</span>${bd(WSTAT[s])}</div><div class="nmx" style="font:500 20px 'Geist Mono',monospace;letter-spacing:0">${fmt(h.p)}</div>
+  <div class="steps"><div class="${c[0]}"><i></i>Requested<small>${sm[0]}</small></div><div class="${c[1]}"><i></i>${l2}<small>${sm[1]}</small></div><div class="${c[2]}"><i></i>Paid<small>${sm[2]}</small></div></div>
+  <div class="rowc jb"><button class="link" data-act="push:wd">See its status</button>${ptag()}</div></div>`}
+const rowBtn=(ic,t,sub,act)=>`<button class="rowbtn" data-act="${act}"><span class="ic">${I[ic]}</span><div class="grow"><div class="nmx">${t}</div><div class="sub cl2">${sub}</div></div>${I.chev.replace('<svg','<svg class="chev"')}</button>`;
+function walletBody(w){
+ const f=fmt(w.avail),b=blocked(w);
+ const it=(ic,l,p)=>{const x=fmt(p);return `<div class="itile"><div class="li"><span class="chipi">${I[ic]}</span><span class="lbl">${l}</span></div><div class="fig ${lc(x)} ${p===0?'dim':''}">${x}</div></div>`};
+ const bankSub=w.bank?`${w.bank.holder} · •••• ${w.bank.last4} · ${w.bank.ifsc}`:w.bankErr?'Could not load':'Not added yet';
+ return `<div class="pad stack">
+  <div class="ink"><div class="rowc jb"><span class="li"><span class="chipi">${I.wallet}</span><span class="lbl acc">Available to withdraw</span></span><span class="lbl" style="font:500 12.5px 'Geist Mono',monospace">${w.bank?'•••• '+w.bank.last4:'No account'}</span></div>
+   <div class="rowc" style="align-items:flex-end"><div class="fig ${lc(f)} ${w.avail===0?'dim':''}">${f}</div><span class="grow"></span>${b?`<button class="btn off" style="background:rgba(255,255,255,.14);color:#8E94A6" disabled>Withdraw</button>`:`<button class="btn white" data-act="push:wd">Withdraw</button>`}</div>
+   ${b?`<div class="note">${b}</div>`:''}
+   <div class="grid2" style="gap:8px">${it('clock','Pending',w.pending)}${it('lock','In withdrawal',w.locked)}</div></div>
+  <div class="tile"><div class="rowc jb"><div class="li"><span class="chipi ok">${I.trend}</span><span class="lbl">Lifetime earned</span></div><div class="fig ${lc(fmt(w.life))} ${w.life===0?'dim':''}" style="min-height:0;font-size:22px">${fmt(w.life)}</div></div></div>
+  ${pendNote(w)}${stepper(w)}
+  <div class="oh"><h3>Recent</h3><button class="lk" data-act="push:ledger">Full ledger</button></div>${recent()}
+  <div class="ow">${rowBtn('bank','Payout account',bankSub,'push:bank')}${rowBtn('file','Earnings statements','Request a statement for a date range','push:stmts')}</div></div>`}
+function walletInner(){
+ const title=`<div class="head"><div class="title">Wallet</div><div class="sub" style="margin-top:6px">Your earnings · INR</div></div>`;
+ const band=S.rule==='susp'&&S.st!=='loading'&&S.st!=='error'?bandHTML:'';
+ if(S.st==='loading')return brandBar+title+`<div class="pad stack">${sk(190,'100%',24)}${sk(60,'100%',18)}<div class="ow">${Array.from({length:4},()=>`<div class="ir"><div class="grow" style="display:grid;gap:8px">${sk(16,'50%')}${sk(13,'75%')}</div>${sk(14,'54px')}</div>`).join('')}</div></div>`;
+ if(S.st==='error')return brandBar+title+errBlock('Couldn’t load your wallet.','[Error message from the server]','retryW');
+ return brandBar+band+title+walletBody(W())}
+
+/* ---------- pushed screens ---------- */
+const WREQ=x=>`<div class="card" style="gap:4px"><div class="rowc jb"><b style="font:500 17px 'Geist Mono',monospace;letter-spacing:0">${fmt(x.p)}</b>${bd(WSTAT[x.st])}</div><div class="sub">Requested ${x.at}${x.ref?` · Ref ${x.ref}`:''}</div>${x.st==='REJECTED'&&x.why?`<div class="sub dng-t">${x.why}</div>`:''}</div>`;
+function pgWd(){
+ const w=W(),a=P.ui.amt||'',n=Number(a||0),paise=isNaN(n)?0:Math.round(n*100),b=blocked(w),min=w.min;
+ const tooLow=paise>0&&paise<min,tooHigh=paise>w.avail,ok=!b&&paise>0&&!tooLow&&!tooHigh&&!P.ui.busy;
+ const h=HIST(),err=tooLow?`The minimum is ${fmt(min)}.`:tooHigh?'That is more than is available.':'';
+ const body=`${b?`<div class="card dng" style="padding:14px"><div class="sub dng-t" style="font-size:14.5px">${b}</div></div>`:''}
+  <div class="fld"><label for="amt">Amount</label><div class="inp ${err?'bad':''} ${b?'dis':''}"><span>₹</span><input id="amt" data-f="amt" inputmode="decimal" placeholder="0" value="${esc(a)}" ${b?'disabled':''} autocomplete="off"></div>${err?`<div class="err" role="alert">${err}</div>`:`<div class="hint">Minimum ${CFG(fmt(min))}</div>`}</div>
+  <div class="rowc" style="gap:8px">${min<=w.avail?`<button class="chip sm ${paise===min?'on':''}" data-act="chipMin">Minimum</button>`:''}${w.avail>0?`<button class="chip sm ${paise===w.avail?'on':''}" data-act="chipAll">All</button>`:''}</div>
+  <div class="card" style="gap:4px"><div class="lbl">Paid to</div><div class="nmx">${w.bank?`${w.bank.holder} · •••• ${w.bank.last4}`:'No payout account yet'}</div>${w.bank?`<div class="sub">IFSC ${w.bank.ifsc}</div>`:''}<button class="btn out sm" style="width:fit-content;margin-top:4px" data-act="push:bank">${w.bank?'Change account':'Add an account'}</button></div>
+  ${P.ui.wn?`<div class="note" style="color:var(--text2);font-size:14.5px">${P.ui.wn}</div>`:''}
+  ${h.length?`<div class="oh" style="padding-top:2px"><h3>Requests</h3></div>${h.map(WREQ).join('')}`:''}`;
+ return {t:'Withdraw',s:`${fmt(w.avail)} available`,body,foot:`<button class="pbtn ${ok?'on':'off'}" ${ok?'data-act="wdGo"':'disabled'}>${P.ui.busy?'Requesting…':ok?`Withdraw ${fmt(paise)}`:'Withdraw'}</button>`}}
+const IFSC=/^[A-Z]{4}0[A-Z0-9]{6}$/,PANR=/^[A-Z]{5}\d{4}[A-Z]$/,ACC=/^\d{9,18}$/;
+function bkInit(){const w=W();return {holder:w.bank?w.bank.holder:'',acct:'',conf:'',ifsc:w.bank?w.bank.ifsc:'',pan:'',tried:false}}
+function pgBank(){
+ const w=W(),k=P.ui.bk||(P.ui.bk=bkInit());
+ const E={holder:k.holder.trim().length<2?'Enter the name on the account.':'',acct:!ACC.test(k.acct)?'Enter 9 to 18 digits.':'',conf:k.conf!==k.acct?'The two numbers don’t match.':'',ifsc:!IFSC.test(k.ifsc)?'An IFSC is 11 characters, like HDFC0001234.':'',pan:!PANR.test(k.pan)?'A PAN is 10 characters, like ABCDE1234F.':''};
+ const fld=(id,lab,val,type,extra,hint)=>`<div class="fld"><label for="${id}">${lab}</label><div class="inp ${k.tried&&E[id]?'bad':''}"><input id="${id}" data-f="${id}" value="${esc(val)}" ${type?`type="${type}"`:''} ${extra||''} autocomplete="off"></div>${k.tried&&E[id]?`<div class="err" role="alert">${E[id]}</div>`:hint?`<div class="hint">${hint}</div>`:''}</div>`;
+ const body=`${w.bank?`<div class="card" style="gap:4px"><div class="lbl">Saved now</div><div class="nmx">${w.bank.holder} · •••• ${w.bank.last4}</div><div class="sub">IFSC ${w.bank.ifsc}${w.bank.pan4?` · PAN •••• ${w.bank.pan4}`:''}</div></div>`:''}
+  ${P.ui.bn?`<div class="note" style="color:var(--text2);font-size:14.5px">${P.ui.bn}</div>`:''}
+  ${fld('holder','Name on the account',k.holder)}${fld('acct','Account number',k.acct,'password','inputmode="numeric"')}${fld('conf','Confirm the account number',k.conf,'text','inputmode="numeric"')}${fld('ifsc','IFSC',k.ifsc,'text','maxlength="11"')}${fld('pan','PAN',k.pan,'text','maxlength="10"','Asked every time: the platform stores it encrypted and never shows it back.')}`;
+ return {t:'Payout account',s:'Where withdrawals are paid',body,foot:`<button class="pbtn ${P.ui.busy?'off':'on'}" ${P.ui.busy?'disabled':'data-act="bankSave"'}>${P.ui.busy?'Saving…':w.bank?'Replace account':'Save account'}</button>`}}
+const FILTERS=[['all','All'],['fees','Interview fees'],['withdrawals','Withdrawals'],['adjustments','Adjustments']];
+const GROUP={fees:['CREDIT_INTERVIEW'],withdrawals:['LOCK_WITHDRAWAL','UNLOCK_WITHDRAWAL','DEBIT_PAID'],adjustments:['ADJUSTMENT_CREDIT','ADJUSTMENT_DEBIT']};
+const lrowP=r=>{const cr=r.s>0,meta=[r.who,r.note,`${r.d}, ${r.t}`].filter(Boolean).join(' · ');
+ return `<div class="lr"><div class="grow"><div class="nmx">${KL[r.k]}</div><div class="sub cl2">${meta}</div></div><div class="rt"><span class="amt ${cr?'cr':''}">${cr?'+':'−'}${fmt(r.p)}</span><span class="bal">Bal ${fmt(r.bal)}</span></div></div>`};
+function pgLedger(){
+ const all=LEDALL(),total=all.length,pg=P.ui.pg||1,loaded=all.slice(0,pg*PER),f=P.ui.f||'all';
+ const sub=S.data==='ok'&&S.data!=='loading'?`${total} ${total===1?'entry':'entries'}`:'';
+ let body;
+ if(S.data==='loading')body=`<div class="ow">${Array.from({length:6},()=>`<div class="ir"><div class="grow" style="display:grid;gap:8px">${sk(16,'50%')}${sk(13,'75%')}</div>${sk(14,'54px')}</div>`).join('')}</div>`;
+ else if(S.data==='error')body=errBlock('Couldn’t load the ledger.','[Error message from the server]','retryL');
+ else if(!total)body=emptyBlock('No transactions yet.','Interview fees land here once each scorecard is in.');
+ else{
+  const shown=f==='all'?loaded:loaded.filter(r=>GROUP[f].includes(r.k));
+  body=`<div class="chips" style="margin:0 -20px">${FILTERS.map(x=>`<button class="chip ${x[0]===f?'on':''}" data-act="filt:${x[0]}">${x[1]}</button>`).join('')}</div>
+   <div class="rowc jb"><span class="sub">Balance after each entry, newest first</span>${ptag()}</div>
+   ${shown.length?`<div class="ow">${shown.map(lrowP).join('')}</div>`:`<div class="sub" style="text-align:center;padding:24px 0;font-size:16px">Nothing here yet.</div>`}
+   ${loaded.length<total?`<button class="btn out" style="align-self:center;justify-self:center" data-act="more" ${P.ui.more?'disabled':''}>${P.ui.more?'Loading…':'Load more'}</button>`:''}`}
+ return {t:'Ledger',s:S.data==='ok'?sub:'',body}}
+const dlab=v=>{const p=v.split('-');return `${+p[2]} ${MON[+p[1]-1]}`};
+const dspan=(a,b)=>Math.round((Date.UTC(...b.split('-').map((x,i)=>i===1?x-1:+x))-Date.UTC(...a.split('-').map((x,i)=>i===1?x-1:+x)))/864e5);
+function rngErr(){const u=P.ui;if(u.from&&u.to){const d=dspan(u.from,u.to);if(d<0)return 'The range ends before it starts.';if(d+1>MAXD)return `A statement covers up to ${MAXD} days.`}return ''}
+function pgStmts(){
+ const rows=STMALL();let body;
+ if(S.data==='loading')body=[1,2,3].map(()=>sk(96,'100%',20)).join('');
+ else if(S.data==='error')body=errBlock('Couldn’t load your statements.','[Error message from the server]','retryS');
+ else if(!rows.length)body=emptyBlock('No statements yet.','Request one for any range; it is prepared in the background.');
+ else body=rows.map(s=>`<div class="card" style="gap:6px"><div class="rowc jb"><b class="nmx">${s.from} – ${s.to}</b>${bd(SSTAT[s.st])}</div>${s.st==='READY'?`<div class="sub">${s.rows} entries · ${s.cr} credited · ${s.po} paid out</div>`:''}${s.st==='FAILED'&&s.err?`<div class="sub dng-t">${s.err}</div>`:''}<div class="sub" style="color:var(--text4)">Requested ${s.at}</div>${s.st==='READY'?`<button class="btn out sm" style="width:fit-content" data-act="toast:Opens the statement file">${I.dl.replace('<svg','<svg style="width:18px;height:18px"')}Open</button>`:''}</div>`).join('');
+ return {t:'Earnings statements',s:'Interview fees and payouts, for a date range',body,foot:`<button class="pbtn on" data-act="sheet:req">${I.plus.replace('<svg','<svg style="width:20px;height:20px"')}Request a statement</button>`}}
+function sheetReq(){
+ const u=P.ui,re=rngErr(),ok=u.from&&u.to&&!re&&!u.busy;
+ return {t:'Request a statement',s:`Up to ${CFG(MAXD+' days')} at a time.`,body:`<div class="fld"><label for="from">From</label><div class="inp"><input id="from" data-f="from" type="date" min="2021-01-01" max="${TODAY}" value="${u.from||''}"></div></div>
+  <div class="fld"><label for="to">To</label><div class="inp ${re?'bad':''}"><input id="to" data-f="to" type="date" min="${u.from||'2021-01-01'}" max="${TODAY}" value="${u.to||''}"></div>${re?`<div class="err" role="alert">${re}</div>`:''}</div>`,
+  foot:`${u.rn?`<div class="note dn">${u.rn}</div>`:''}<button class="pbtn ${ok?'on':'off'}" ${ok?'data-act="reqGo"':'disabled'}>${u.busy?'Requesting…':'Request'}</button>`}}
+function pageHTML(){
+ const s=P.nav[P.nav.length-1];if(!s)return '';
+ const d={wd:pgWd,bank:pgBank,ledger:pgLedger,stmts:pgStmts}[s]();
+ return `<div class="page" role="region" aria-label="${d.t}"><div class="ph"><button class="back" data-act="pop" aria-label="Back">${I.back}</button><div class="grow"><b>${d.t}</b>${d.s?`<span>${d.s}</span>`:''}</div></div>${S.rule==='susp'?bandHTML:''}<div class="pbody">${d.body}</div>${d.foot?`<div class="pfoot">${d.foot}</div>`:''}</div>`}
+function sheetHTML(){
+ if(!P.sheet)return '';const d=sheetReq();
+ return `<div class="scrim" data-act="close"></div><div class="sheet" role="dialog" aria-label="${d.t}"><div class="grab"></div><div class="sh"><div><b>${d.t}</b><span>${d.s}</span></div><button class="x" data-act="close" aria-label="Close">${I.x}</button></div><div class="body">${d.body}</div><div class="foot">${d.foot}</div></div>`}
+
+/* ---------- phone ---------- */
+const ph=document.getElementById('ph');
+function render(focusId,keepPage){
+ const q=s=>ph.querySelector(s),y=q('.scroll')?q('.scroll').scrollTop:0,py=keepPage&&q('.pbody')?q('.pbody').scrollTop:0,by=q('.sheet .body')?q('.sheet .body').scrollTop:0;
+ ph.innerHTML=`<div class="compact"><b>Wallet</b></div><div class="scroll">${walletInner()}</div>${tab()}${pageHTML()}${status()}${sheetHTML()}<div class="toast" role="status"></div>`;
+ const sc=q('.scroll'),cp=q('.compact');sc.scrollTop=y;sc.addEventListener('scroll',()=>cp.classList.toggle('on',sc.scrollTop>90));sc.dispatchEvent(new Event('scroll'));
+ if(q('.pbody'))q('.pbody').scrollTop=py;if(q('.sheet .body'))q('.sheet .body').scrollTop=by;
+ if(focusId){const i=q('#'+focusId);if(i){i.focus();try{const n=i.value.length;i.setSelectionRange(n,n)}catch(e){}}}}
+function notesHTML(){
+ const row=(a,b)=>`<tr><td>${a}</td><td>${b}</td></tr>`;
+ return `<h4>Wallet · Option D, complete</h4><div class="sub" style="margin-bottom:6px">One design. Every screen the app has behind the Wallet tab is reachable from it.</div>
+ <span class="mono">In the app today</span><ul>
+  <li>Available to withdraw with Withdraw, or the server’s sentence for why not; Pending, In withdrawal and Lifetime earned; the pending release note.</li>
+  <li>Withdrawal in progress with “See its status”; Payout account row; Recent (five rows) with Full ledger; Earnings statements row.</li>
+  <li>Four pushed screens, each with a back button: Withdraw, Payout account, Ledger, Earnings statements (its date range is a sheet).</li>
+  <li>Suspended band on every screen, and the Withdraw rule order: suspended, request open, no payout account, below the minimum. A rejected request does not block Withdraw.</li></ul>
+ <span class="mono">${ptag()} what is new</span><ul>
+  <li>The ink card, and the Requested, Approved, Paid or Rejected stepper with a Last withdrawal card. They need the withdrawals list on this screen; the wallet response carries only the amount and time of the open request.</li>
+  <li>“Balance after” on each Ledger row: the field exists on the ledger row (<span class="mono" style="display:inline;margin:0;color:inherit;letter-spacing:.02em;font-size:12px">balanceAfterPaise</span>) but no screen prints it.</li>
+  <li>The timeline form of Recent and the approval time inside the stepper (from the withdrawal’s decided-at).</li></ul>
+ <span class="mono">Samples and states</span><ul>
+  <li>Minimum withdrawal, scorecard window and statement range are admin config; ${CFG('₹500')}, ${CFG('24 hours')} and ${CFG('90 days')} are samples. The Ledger pages by ${PER} here so Load more can be seen; the app asks for 50 at a time.</li>
+  <li>States: Normal, Loading, Empty, Error (“Couldn’t load your wallet.”); seven withdraw rules; Ledger and Statements reads can fail (“Couldn’t load the ledger.”, “The ledger could not be read.”, “Couldn’t load your statements.”); saving can fail (“Not requested. Check your connection and try again.”, “Not saved. …”, “Not requested. Try again.”); Payout account unreadable (“Could not load”).</li></ul>
+ <span class="mono">Coverage checklist · real screen to place</span>
+ <table class="cov">
+  ${row('InterviewerWalletScreen','Ink card (available, pending, in withdrawal), Lifetime tile, release note, stepper or Last withdrawal, Recent, Payout account row, Statements row, band, loading, error')}
+  ${row('WithdrawScreen','Withdraw or See its status: blocked card, Amount, Minimum and All chips, minimum and over-balance errors, Paid to, Change or Add an account, success notice, Requests with status, reference, rejection reason')}
+  ${row('BankAccountScreen','Payout account row: Saved now (holder, last four, IFSC, PAN last four), five-field form with the app’s patterns and messages, saved notice, Replace or Save account')}
+  ${row('InterviewerLedgerScreen','Full ledger: four filters, six kinds, date and time, signed amounts, Load more, entry count, “No transactions yet.”, “Nothing here yet.”, error')}
+  ${row('StatementsScreen','Earnings statements: Preparing, Ready (entries, credited, paid out, Open), Failed with reason, Requested time, Request a statement sheet (From, To, range errors), empty, error')}
+  ${row('lib/interviewer/wallet.ts','All four blocked sentences and the four withdrawal statuses')}
+  ${row('Ledger kinds','Interview fee, Withdrawal requested, Withdrawal returned, Paid out, Adjustment (credit and debit)')}</table>
+ <div class="sub" style="margin-top:10px">Not drawn: the system date picker (here a plain date field), the device keyboard, the 5-second poll that turns Preparing into Ready (a new request turns Ready after a few seconds here), and the signed file the Open button launches.</div>`}
+
+/* ---------- controls ---------- */
+function drawSw(){
+ const mk=(id,list,cur,k)=>{document.getElementById(id).innerHTML=list.map(o=>`<button class="${o[0]===cur?'on':''}" data-k="${k}" data-v="${o[0]}">${o[1]}</button>`).join('')};
+ mk('sSw',STATES,S.st,'st');mk('rSw',RULES,S.rule,'rule');mk('dSw',DATAS,S.data,'data')}
+let tt;
+function toast(m){const t=ph.querySelector('.toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),1800)}
+function reset(){S.reqs=[];S.stm=[];S.bankSaved=undefined;P.nav=[];P.sheet=null;P.ui={}}
+function push(s){P.nav.push(s);P.sheet=null;
+ if(s==='wd'){P.ui.amt='';P.ui.wn=null;P.ui.busy=false}
+ if(s==='bank'){P.ui.bk=null;P.ui.bn=null;P.ui.busy=false}
+ if(s==='ledger'){P.ui.f='all';P.ui.pg=1;P.ui.more=false}
+ if(s==='stmts'){P.ui.from=P.ui.to='';P.ui.rn=null}}
+const FAILS=S=>S.data==='fail';
+document.getElementById('ph').addEventListener('click',e=>{
+ const a=e.target.closest('[data-act]');if(!a)return;
+ const x=a.dataset.act,i=x.indexOf(':'),k=i<0?x:x.slice(0,i),v=i<0?'':x.slice(i+1);
+ if(k==='toast')return toast(v);
+ if(k==='push'){push(v);return render()}
+ if(k==='pop'){P.nav.pop();P.sheet=null;P.ui.busy=false;return render(null,true)}
+ if(k==='sheet'){P.sheet=v;P.ui.rn=null;return render()}
+ if(k==='close'){P.sheet=null;return render(null,true)}
+ if(k==='filt'){P.ui.f=v;return render(null,true)}
+ if(k==='more'){P.ui.more=true;render(null,true);return setTimeout(()=>{P.ui.more=false;P.ui.pg=(P.ui.pg||1)+1;render(null,true)},500)}
+ if(k==='chipMin'){P.ui.amt=String(W().min/100);return render(null,true)}
+ if(k==='chipAll'){P.ui.amt=String(W().avail/100);return render(null,true)}
+ if(k==='wdGo'){const p=Math.round(Number(P.ui.amt||0)*100);P.ui.busy=true;P.ui.wn=null;render(null,true);
+  return setTimeout(()=>{P.ui.busy=false;
+   if(S.data==='fail')P.ui.wn='Not requested. Check your connection and try again.';
+   else{S.reqs=[{p,st:'REQUESTED',at:'2 Oct, 3:15 PM'},...S.reqs];P.ui.wn=`${fmt(p)} requested. You’ll see its status below.`;P.ui.amt=''}
+   render(null,true)},600)}
+ if(k==='bankSave'){const b=P.ui.bk;b.tried=true;
+  const ok=b.holder.trim().length>=2&&ACC.test(b.acct)&&b.conf===b.acct&&IFSC.test(b.ifsc)&&PANR.test(b.pan);
+  if(!ok)return render(null,true);
+  P.ui.busy=true;P.ui.bn=null;render(null,true);
+  return setTimeout(()=>{P.ui.busy=false;
+   if(S.data==='fail')P.ui.bn='Not saved. Check your connection and try again.';
+   else{S.bankSaved={holder:b.holder.trim(),last4:b.acct.slice(-4),ifsc:b.ifsc,pan4:b.pan.slice(-4)};b.acct=b.conf=b.pan='';b.tried=false;P.ui.bn='Payout account saved.'}
+   render(null,true)},600)}
+ if(k==='reqGo'){const u=P.ui;u.busy=true;u.rn=null;render(null,true);
+  return setTimeout(()=>{u.busy=false;
+   if(S.data==='fail'){u.rn='Not requested. Try again.';return render(null,true)}
+   const st={from:dlab(u.from),to:dlab(u.to),st:'PENDING',at:'2 Oct, 3:20 PM'};S.stm=[st,...S.stm];P.sheet=null;u.from=u.to='';render(null,true);
+   setTimeout(()=>{st.st='READY';st.rows=4;st.cr='₹1,800';st.po='₹0';if(P.nav[P.nav.length-1]==='stmts')render(null,true)},3500)},600)}
+ if(k==='retryW'){S.st='loading';drawSw();render();return setTimeout(()=>{S.st='normal';drawSw();render()},900)}
+ if(k==='retryL'||k==='retryS'){const d=S.data;S.data='loading';drawSw();render(null,true);return setTimeout(()=>{S.data='ok';drawSw();render(null,true)},900)}
+});
+document.addEventListener('click',e=>{
+ const b=e.target.closest('button[data-k]');if(!b)return;
+ S[b.dataset.k]=b.dataset.v;reset();drawSw();render()});
+ph.addEventListener('input',e=>{
+ const f=e.target.dataset&&e.target.dataset.f;if(!f)return;
+ if(f==='amt'){P.ui.amt=e.target.value.replace(/[^\d.]/g,'');return render('amt',true)}
+ if(f==='from'||f==='to'){P.ui[f]=e.target.value;if(f==='from'&&P.ui.to&&P.ui.to<P.ui.from)P.ui.to='';return render(f)}
+ const k=P.ui.bk;let v=e.target.value;
+ if(f==='acct'||f==='conf')v=v.replace(/\D/g,'');
+ if(f==='ifsc'||f==='pan')v=v.toUpperCase().replace(/[^A-Z0-9]/g,'');
+ k[f]=v;render(f,true)});
+
+/* ---------- boot (+ hash params for screenshots) ---------- */
+const q=new URLSearchParams(location.hash.slice(1));
+if(q.get('s'))S.st=q.get('s');if(q.get('r'))S.rule=q.get('r');if(q.get('d'))S.data=q.get('d');
+if(q.get('solo'))document.body.classList.add('solo');
+document.getElementById('notes').innerHTML=notesHTML();
+drawSw();
+(q.get('p')||'').split(',').filter(Boolean).forEach(push);
+if(q.get('amt'))P.ui.amt=q.get('amt');if(q.get('f'))P.ui.f=q.get('f');if(q.get('pg'))P.ui.pg=+q.get('pg');
+if(q.get('sheet'))P.sheet=q.get('sheet');
+if(q.get('tried')&&P.nav[P.nav.length-1]==='bank'){W();P.ui.bk={holder:'',acct:'123',conf:'',ifsc:'ABC',pan:'',tried:true}}
+render();
+if(q.get('y'))ph.querySelector('.scroll').scrollTop=+q.get('y'),ph.querySelector('.scroll').dispatchEvent(new Event('scroll'));
+if(q.get('py')&&ph.querySelector('.pbody'))ph.querySelector('.pbody').scrollTop=+q.get('py');
+</script>
+</body>
+</html>

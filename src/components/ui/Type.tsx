@@ -48,12 +48,17 @@ export function Body({
   weight?: 'regular' | 'medium' | 'semibold'
   tone?: 'default' | 'muted' | 'subtle' | 'inverse' | 'accent' | 'danger'
 } & TextProps) {
+  // Every size honours every weight it has a style for. `sm` used to drop
+  // semibold (so a small Button's label came out regular), `xs` dropped both,
+  // and `md`/`base` dropped medium. 2xs and lg have one weight each.
+  const byWeight = (regular: object, medium: object, semibold: object) =>
+    weight === 'semibold' ? semibold : weight === 'medium' ? medium : regular
   const base = {
     '2xs': text.ui2xs,
-    xs: text.uiXs,
-    sm: weight === 'medium' ? text.uiSmMedium : text.uiSm,
-    md: weight === 'semibold' ? text.uiMdSemi : text.uiMd,
-    base: weight === 'semibold' ? text.uiBaseSemi : text.uiBase,
+    xs: byWeight(text.uiXs, text.uiXsMedium, text.uiXsSemi),
+    sm: byWeight(text.uiSm, text.uiSmMedium, text.uiSmSemi),
+    md: byWeight(text.uiMd, text.uiMdMedium, text.uiMdSemi),
+    base: byWeight(text.uiBase, text.uiBaseMedium, text.uiBaseSemi),
     lg: text.uiLgSemi,
   }[size]
   const tint = {

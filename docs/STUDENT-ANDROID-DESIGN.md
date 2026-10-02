@@ -260,3 +260,72 @@ files touched.
   the full-screen player, the gallery picker, and the on-screen keyboard over the edit sheet (the shared `Sheet` is a plain modal, so
   the field may sit under the keyboard on a small phone) have not been exercised on Android.
 - Jest reports a worker that did not exit gracefully after these suites (open timer); all tests pass.
+
+## Video feed — the job deck as `docs/tinder-feed-mockups.html` (2026-10-02)
+
+The user asked for the empty band under the deck's buttons to go, and for the feed to look like design 1 of the mockup, for students and employers alike.
+
+- **Why there was a gap:** the screen sits above the global tab bar, but it still added the bottom safe-area inset for its buttons. The card also ended at a fixed 90 pt from the bottom.
+- **Layout now:**
+  - The card runs from under the tabs to 10 pt above the tab bar.
+  - The four round buttons (Undo · Not interested · Save · Apply) are fixed over the foot of the card. They stay put while the card is dragged.
+  - The facts sit 84 pt up, clear of the buttons.
+- **Shared pieces:** they live in `src/components/ui/feed-deck.tsx`, and the employer feed uses the same file.
+- **Choices the user made:**
+  - **Dark tab bar** while a card or the loading card is up. This comes from `navigation/tabBarTone.ts`, keyed by route, plus a `dark` prop on `TabBar`.
+  - **Pink highlight pills**, from new tokens `feedPink`, `feedPinkPill`, `feedLike`, `feedUndo`, `feedAction`, `feedPill`, `radius.feed` and `height.feed-*`. They were added in apostrophe-user and synced.
+  - **The toast goes at the top of the card**, under the tag, for 4 s.
+- **Behaviour fixes:**
+  - The toast used to stay up forever and cover the facts.
+  - Undo used to step the deck back one card, which brought back the wrong job after a skip. It now restores the job the server undid.
+  - A failed save or not-interested used to drop the job silently. The job now comes back, with a toast.
+  - A failed page used to be re-fetched in a loop. The deck now stops and offers "Try again".
+  - A page landing after the filters changed is dropped.
+  - The empty and error states were drawn on a black page in dark text. They are now on the light page.
+  - Skip now has a "Back" toast, as on the employer feed. "Show skipped jobs" appears when the deck runs out after skips.
+  - "Hidden for N days" comes from the server's `suppressedUntil`, not a typed 60.
+  - "Remote · Remote" no longer appears in the meta line.
+  - The card behind keeps its player when it comes to the top, so its loaded first frame is not lost.
+- **Deviations from the mockup:**
+  - The card keeps the company row and the job title. The mockup's student mode puts the company name where a candidate's name goes and hides the title.
+  - There are no section-label rows.
+  - There is one story bar (the film's progress), because a job has one film.
+  - ✈ opens the Apply screen, which already handles "already applied", "closed" and "no published video resume".
+- **Verified on the Android emulator:**
+  - The layout and the dark bar.
+  - Skip.
+  - Not interested, then Undo.
+  - Save, its toast, then Undo.
+  - The details sheet.
+- **Not verified:**
+  - A job with a video.
+  - The empty and error states.
+  - iOS.
+- **Test data:** during that check, "Operations Associate" (Meridian Financial) was passed for the emulator's student. It is still hidden in the local DB.
+
+### Mockup A built — "Twin + dark sheet" (2026-10-02)
+
+The user picked direction A of `docs/feed-details-mockups.html` for both personas, built to match the mockup.
+
+- **Tag:** no outline. It uses Geist at 12 pt in a 30 pt pill and shows the job's category, or "Video pitch · m:ss" for a job with a video, instead of "JOB MATCH".
+- **Fade:** the card has no bottom edge.
+  - Its bottom corners are square, and it runs straight into the tab bar with no gap.
+  - The shade turns solid page-black from 84% of the card's height down (`FeedShade`).
+  - The facts and the four buttons sit in the fade.
+  - The dark tab bar has no top rule.
+- **Details sheet:** `JobDetailsSheet` is now the dark `FeedSheet` from `components/ui/feed-deck.tsx`.
+  - Head: logo, title, "company · Posted …", ✕.
+  - A 2×2 facts grid, with Pay in pink.
+  - Soft chips: where (deduped against the type), category, department, openings; plus the application status when the student has applied.
+  - Then the job's film, if any.
+  - Then the sections: the role, what you'll do, what they're looking for (with the minimum qualification), what you get, skills, and the company.
+  - A fixed foot with ✕, ♥ and the pink "Apply with video resume". It reads "Already applied" or "Applications closed" when either applies.
+- **New tokens:** `feedSheet`, `feedSheetFoot`, `feedScrim`, `feedPinkSoft`, `radius.feed-sheet`, `height.feed-thumb-w` and `height.feed-thumb-h`. They were added in apostrophe-user and synced.
+- **Status bar fix:** the app-wide status bar now keeps its light icons on dark screens.
+  - Cause: App.tsx re-renders on every navigation, and on Android React Native re-sends a `<StatusBar>`'s style on every update. The root `<StatusBar barStyle="dark-content" />` therefore put dark icons back over the feed and Home's violet header.
+  - It is now `RootStatusBar`, memoised so it never updates. `useLightStatusBar` also counts requests now, so a screen's blur can't undo the next screen's focus.
+- **Verified on the emulator (student):**
+  - The feed: tag, fade, buttons, black tab bar.
+  - White status-bar icons after going from Home to Jobs.
+  - The details sheet, loaded and complete.
+- **Not verified:** the employer side; see EMPLOYER-ANDROID-DESIGN.md.
