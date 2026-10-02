@@ -1,0 +1,788 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apostrophe App – Student chat: 4 design options</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FAFAFC; --surface:#fff; --muted:#F1F3F7; --sunken:#E6E8EE;
+    --text:#0B0F1A; --text2:#3A4256; --text3:#6B7385; --text4:#8A91A2;
+    --border:#E3E6ED; --border-strong:#C9CED9;
+    --accent:#5B3DF5; --accent-hover:#4A2FE0; --accent-soft:#EFEBFF; --accent-wash:#F7F6FF;
+    --accent-muted:#C4B8FF; --accent-bright:#7258FF; --accent-deep:#3B2A8F; --accent-edge:#DCD3FF;
+    --ink:#0B0F1A; --ink-raised:#151B2B;
+    --ok:#0E9F6E; --ok-text:#0B7A55; --ok-soft:#E6F7F0; --danger:#E5484D; --danger-text:#C22A30; --danger-soft:#FDECEC; --danger-border:#F2B8BA;
+    --warn:#935F00; --warn-soft:#FFF5E1; --warn-edge:#F5E2B8; --warn-fill:#F5A524; --info:#2F6BFF; --info-soft:#E8EFFF; --info-text:#1F4FD1;
+    --r-md:14px; --r-lg:18px; --r-xl:28px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{font-family:'Geist',system-ui,sans-serif;background:#E9EAF2;color:var(--text);padding:0 24px 90px}
+  button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+  button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex:none}
+  .mono{font:500 11px 'Geist Mono',monospace;letter-spacing:.14em;text-transform:uppercase}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+  /* ---------- page chrome ---------- */
+  .chooser{position:sticky;top:0;z-index:100;background:#E9EAF2;padding:14px 0 10px;margin:0 auto;max-width:1640px}
+  .chooser .bar{display:flex;flex-wrap:wrap;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:24px;padding:4px;align-items:center}
+  .chooser .bar .lbl{padding:0 12px;color:var(--text3)}
+  .chooser button{padding:9px 16px;border-radius:99px;font-size:14px;font-weight:600;color:var(--text3);white-space:nowrap}
+  .chooser button.on{background:var(--accent);color:#fff}
+  .chooser button small{font:500 10.5px 'Geist Mono',monospace;letter-spacing:.08em;opacity:.7;margin-left:6px}
+  .intro{max-width:1640px;margin:18px auto 22px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:26px 30px}
+  .intro h1{font-size:30px;letter-spacing:-.035em;line-height:1.1}
+  .intro .lede{font-size:15.5px;color:var(--text3);margin-top:8px;line-height:1.5;max-width:900px}
+  .legend{display:flex;flex-wrap:wrap;gap:12px 28px;margin-top:16px;font-size:13.5px;color:var(--text2);align-items:center;line-height:1.45}
+  .legend span.i{display:inline-flex;align-items:center;gap:8px;max-width:640px}
+  .section{max-width:1640px;margin:0 auto 60px}
+  .section>h2{font-size:28px;letter-spacing:-.035em}
+  .section>p{font-size:15px;color:var(--text3);margin:4px 0 18px;max-width:900px;line-height:1.5}
+  .row{display:flex;flex-wrap:wrap;gap:40px;align-items:flex-start}
+  .cell{width:390px}
+  .states{display:flex;flex-wrap:wrap;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:22px;padding:4px;margin-bottom:10px}
+  .states.wide{max-width:1000px}
+  .states button{padding:7px 11px;border-radius:99px;font-size:13px;font-weight:600;color:var(--text3);white-space:nowrap}
+  .states button.on{background:var(--accent);color:#fff}
+  .states .tag{font:500 10.5px 'Geist Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--text4);padding:8px 8px 0}
+  .cap{margin-top:12px;font-size:14px;color:var(--text3);line-height:1.45}
+  .cap b{color:var(--text);font-weight:700}
+  .notes{width:390px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:22px}
+  .notes h3{font-size:18px;letter-spacing:-.02em;margin-bottom:10px}
+  .notes ul{padding-left:18px;font-size:14px;line-height:1.55;color:var(--text2)}
+  .notes li{margin-bottom:6px}
+  .notes .mono{color:var(--accent);margin-bottom:8px;display:block}
+  .cmp{display:flex;gap:26px;overflow-x:auto;padding-bottom:12px;align-items:flex-start}
+  .cmp .col{flex:none;width:calc(390px*.72)}
+  .cmp .col .zoomer{zoom:.72}
+  .cmp .col .cap{font-size:13px}
+
+  /* PROPOSAL marker */
+  .prop{display:inline-flex;align-items:center;font:500 9.5px 'Geist Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--accent-hover);border:1px dashed var(--accent);border-radius:99px;padding:2px 7px;background:transparent;white-space:nowrap;vertical-align:middle}
+  .propbox{outline:1.5px dashed var(--accent);outline-offset:3px}
+
+  /* ---------- phone ---------- */
+  .phone{width:390px;height:812px;background:var(--bg);border-radius:44px;border:10px solid #0B0F1A;overflow:hidden;position:relative}
+  .status{height:44px;display:flex;justify-content:space-between;align-items:center;padding:0 26px;font-size:14px;font-weight:600;position:absolute;top:0;left:0;right:0;z-index:40;pointer-events:none}
+  .status i{width:90px;height:24px;background:#0B0F1A;border-radius:14px;position:absolute;left:50%;top:8px;transform:translateX(-50%)}
+  .scroll{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none;padding-top:44px}
+  .scroll::-webkit-scrollbar{display:none}
+  .compact{position:absolute;top:0;left:0;right:0;height:96px;padding:44px 20px 0;display:flex;align-items:center;background:rgba(250,250,252,.96);border-bottom:1px solid var(--border);z-index:30;opacity:0;transform:translateY(-8px);pointer-events:none;transition:.2s}
+  .compact.on{opacity:1;transform:none}
+  .compact b{font-size:18px;letter-spacing:-.02em}
+  .tab{position:absolute;left:14px;right:14px;bottom:14px;height:68px;background:rgba(255,255,255,.96);border:1px solid var(--border);border-radius:24px;display:flex;justify-content:space-around;align-items:center;z-index:25}
+  .tab button{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11.5px;font-weight:600;color:var(--text4);padding:7px 8px;border-radius:14px;min-width:60px;min-height:48px;justify-content:center}
+
+  /* ---------- shared ---------- */
+  .pill{font:500 10.5px 'Geist Mono',monospace;letter-spacing:.1em;text-transform:uppercase;border-radius:99px;padding:5px 10px;display:inline-block;white-space:nowrap}
+  .pill.ok{background:var(--ok-soft);color:var(--ok-text)}.pill.acc{background:var(--accent-soft);color:var(--accent-hover)}
+  .pill.warn{background:var(--warn-soft);color:var(--warn)}.pill.neutral{background:var(--muted);color:var(--text3)}
+  .pill.info{background:var(--info-soft);color:var(--info-text)}.pill.danger{background:var(--danger-soft);color:var(--danger-text)}
+  .pill.live::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-right:6px;vertical-align:1px}
+  .pill.sm{padding:3px 8px;font-size:10px}
+  .rowc{display:flex;align-items:center;gap:14px}
+  .grow{flex:1;min-width:0}
+  .sub{font-size:14px;color:var(--text3);line-height:1.4}
+  .title{font-size:30px;font-weight:800;letter-spacing:-.04em;line-height:1.05}
+  .head{padding:12px 20px 12px}
+  .btn{height:46px;min-width:44px;border-radius:var(--r-md);font-weight:700;font-size:15px;padding:0 18px;display:inline-flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap}
+  .btn.pri{background:var(--accent);color:#fff}.btn.out{border:1.5px solid var(--border-strong);background:var(--surface)}
+  .btn.full{width:100%}
+  .btn.dangerfill{background:var(--danger);color:#fff}
+  .btn.quiet{color:var(--text2)}
+  .chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:0 20px 4px}
+  .chips::-webkit-scrollbar{display:none}
+  .chip{white-space:nowrap;padding:0 14px;height:40px;display:inline-flex;align-items:center;border-radius:99px;font-size:14px;font-weight:600;background:var(--surface);border:1px solid var(--border);color:var(--text2)}
+  .chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .chip.s{height:34px;font-size:13.5px;padding:0 12px;gap:6px}
+  .chip small{font:500 10.5px 'Geist Mono',monospace;opacity:.7}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px}
+  .pad{padding:0 20px}
+  .pl{display:grid;place-items:center;flex:none;overflow:hidden;border:1px solid var(--border)}
+  .skel{background:linear-gradient(90deg,var(--muted) 0%,#E9ECF2 50%,var(--muted) 100%);background-size:200% 100%;animation:sh 1.3s infinite linear;border-radius:10px}
+  @keyframes sh{to{background-position:-200% 0}}
+  .center{display:grid;place-items:center;text-align:center;padding:60px 36px 0}
+  .center .ic{width:64px;height:64px;border-radius:20px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;margin-bottom:16px}
+  .center .ic svg{width:30px;height:30px}
+  .center b{font-size:22px;letter-spacing:-.03em;display:block}
+  .center p{font-size:15px;color:var(--text3);margin:8px 0 18px;line-height:1.5}
+  [data-act]{cursor:pointer}
+  .uchip{min-width:22px;height:22px;border-radius:99px;background:var(--sunken);font:500 11px 'Geist Mono',monospace;display:grid;place-items:center;padding:0 7px;flex:none}
+  .strip{display:flex;align-items:center;gap:8px;padding:9px 20px;background:var(--warn-soft);border-bottom:1px solid var(--warn-edge);font:500 11px 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--warn)}
+  .strip i{width:8px;height:8px;border-radius:50%;background:var(--warn-fill);animation:pulse 1.2s infinite;flex:none}
+  .strip svg{width:14px;height:14px}
+  @keyframes pulse{50%{opacity:.3}}
+  .glabel{font:500 11px 'Geist Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--text3)}
+  .hr{height:1px;background:var(--border);flex:1}
+
+  /* sheets / toast */
+  .scrim{position:absolute;inset:0;background:rgba(11,15,26,.4);z-index:50}
+  .sheet{position:absolute;left:0;right:0;bottom:0;max-height:92%;background:var(--bg);border-radius:28px 28px 0 0;z-index:51;display:flex;flex-direction:column;overflow:hidden}
+  .sheet .grab{width:40px;height:4px;border-radius:4px;background:var(--border-strong);margin:10px auto 0;flex:none}
+  .sheet .sh{display:flex;align-items:center;gap:12px;padding:12px 20px 8px;flex:none}
+  .sheet .sh b{font-size:20px;letter-spacing:-.025em}
+  .sheet .x{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--muted);margin-left:auto;flex:none}
+  .sheet .body{padding:4px 20px 20px;overflow-y:auto;display:grid;gap:14px;align-content:start;scrollbar-width:none}
+  .sheet .foot{padding:12px 20px 24px;background:var(--surface);border-top:1px solid var(--border);display:grid;gap:8px;flex:none}
+  .toast{position:absolute;left:14px;right:14px;bottom:100px;background:var(--ink);color:#fff;border-radius:var(--r-md);padding:13px 14px;z-index:60;font-size:14px;font-weight:600;transform:translateY(20px);opacity:0;pointer-events:none;transition:.25s}
+  .toast.on{transform:none;opacity:1}
+  .menu{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden}
+  .mrow{display:flex;align-items:center;gap:14px;padding:0 16px;min-height:56px;border-bottom:1px solid var(--border)}
+  .mrow:last-child{border-bottom:0}
+  .mrow .ic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;flex:none;background:var(--muted);color:var(--text2)}
+  .mrow .ic svg{width:18px;height:18px}
+  .mrow b{font-size:15.5px;letter-spacing:-.01em}
+  .mrow.rad{min-height:50px}
+  .mrow .dot{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--border-strong);flex:none;display:grid;place-items:center}
+  .mrow.sel .dot{border-color:var(--accent)}
+  .mrow.sel .dot::after{content:"";width:10px;height:10px;border-radius:50%;background:var(--accent)}
+  .reason{display:flex;flex-wrap:wrap;gap:8px}
+  .cons{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:12px 14px}
+  .cons b{font:500 10.5px 'Geist Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);display:block;margin-bottom:3px}
+  .cons span{font-size:14.5px;line-height:1.45}
+  .noteinput{border:1.5px solid var(--border);border-radius:var(--r-md);background:var(--surface);padding:12px 14px;min-height:80px;font-size:15px;color:var(--text4)}
+  .dangercard{background:var(--danger-soft);border:1px solid var(--danger-border);border-radius:var(--r-lg);padding:14px 16px;display:grid;gap:10px;color:var(--danger-text);font-size:14.5px;line-height:1.45}
+  .dangercard div b{font:500 10.5px 'Geist Mono',monospace;letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:2px;font-weight:500}
+
+  /* ---------- thread shared ---------- */
+  .thread{position:absolute;inset:0;background:var(--bg);display:flex;flex-direction:column}
+  .th-head{padding:52px 10px 10px 10px;display:flex;align-items:center;gap:10px;background:var(--surface);border-bottom:1px solid var(--border);flex:none}
+  .th-head .back,.th-head .more{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;flex:none}
+  .th-head .back{border:1px solid var(--border)}
+  .th-head .nm{font-size:17px;font-weight:600;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .th-head .sb{font:500 10.5px 'Geist Mono',monospace;color:var(--text4);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .th-body{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;scrollbar-width:none;min-height:0}
+  .th-body::-webkit-scrollbar{display:none}
+  .th-body>.inner{display:grid;gap:8px;align-content:start;margin-top:auto}
+  .day{text-align:center;font:500 10.5px 'Geist Mono',monospace;letter-spacing:.12em;color:var(--text4);margin:8px 0 2px;text-transform:uppercase}
+  .sys{display:flex;align-items:center;gap:10px;justify-self:center;font-size:13px;color:var(--text3);background:var(--muted);border-radius:99px;padding:8px 14px;text-align:center}
+  .sys small{font:500 10.5px 'Geist Mono',monospace;color:var(--text4)}
+  .msg{max-width:82%;padding:10px 13px;border-radius:18px;font-size:15px;line-height:1.4;overflow-wrap:anywhere}
+  .msg.in{background:var(--surface);border:1px solid var(--border);border-bottom-left-radius:4px;justify-self:start}
+  .msg.out{background:var(--accent);color:#fff;justify-self:end;border-bottom-right-radius:4px}
+  .msg.att{display:flex;gap:10px;align-items:center;padding:10px 14px}
+  .msg.att b{font-size:14px;font-weight:500;display:block;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:170px}
+  .msg.att small{font:500 10.5px 'Geist Mono',monospace;color:var(--text4)}
+  .tm{font:500 10.5px 'Geist Mono',monospace;color:var(--text4);padding-left:4px;justify-self:start}
+  .rc{display:inline-flex;align-items:center;gap:5px;font:500 10.5px 'Geist Mono',monospace;color:var(--text4);justify-self:end;padding-right:4px}
+  .rc svg{width:12px;height:12px;stroke-width:1.5}
+  .rc.read{color:var(--text3)}.rc.queued{color:var(--info)}
+  .rc .spin{width:12px;height:12px;border-radius:50%;border:2px solid var(--border-strong);border-top-color:var(--text4);animation:rot 1s linear infinite}
+  @keyframes rot{to{transform:rotate(360deg)}}
+  .typing{display:inline-flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:18px;border-bottom-left-radius:4px;padding:13px 14px;width:fit-content;justify-self:start}
+  .typing i{width:7px;height:7px;border-radius:50%;background:var(--text4);animation:bounce 1.1s infinite}
+  .typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+  @keyframes bounce{40%{transform:translateY(-4px);opacity:.5}}
+  .closes{padding:6px 20px 8px;font:500 10.5px 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--text4);flex:none}
+  .maskline{margin:10px 16px 0;background:var(--info-soft);border-radius:var(--r-md);padding:11px 14px;font-size:13.5px;line-height:1.45;color:var(--info-text);flex:none}
+  .maskline b{font:500 10.5px 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:4px}
+  .compose{padding:10px 14px 24px;background:var(--surface);border-top:1px solid var(--border);flex:none}
+  .compose .cerr{font-size:13px;color:var(--danger);margin-bottom:8px}
+  .compose .crow2{display:flex;gap:10px;align-items:flex-end}
+  .compose input,.compose textarea{flex:1;min-width:0;min-height:46px;border:1.5px solid var(--border);border-radius:23px;padding:12px 16px;font:15px 'Geist',sans-serif;color:var(--text);background:var(--surface);outline:0}
+  .compose input:focus,.compose textarea:focus{border-color:var(--accent)}
+  .compose .send{width:46px;height:46px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;flex:none}
+  .compose .send.off{opacity:.4;pointer-events:none}
+  .ro{padding:14px 20px 28px;background:var(--surface);border-top:1px solid var(--border);flex:none}
+  .ro b{font-size:15px;display:block;font-weight:600}.ro span{font-size:13.5px;color:var(--text3);display:block;margin-top:3px;line-height:1.4}
+  .emptyb{display:grid;place-items:center;text-align:center;padding:40px 36px;align-self:center;justify-self:center}
+  .emptyb b{font-size:18px;letter-spacing:-.02em;display:block}
+  .emptyb span{font-size:14.5px;color:var(--text3);margin-top:6px;display:block;line-height:1.45}
+
+  /* ===== list option bits ===== */
+  .crow{display:flex;gap:14px;padding:14px 0;border-top:1px solid var(--border);min-height:88px}
+  .crow:first-child{border-top:0}
+  .crow .nm{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+  .crow .nm b{font-size:17px;letter-spacing:-.01em;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+  .crow .nm b.u{font-weight:700}
+  .crow .nm span{font:500 11px 'Geist Mono',monospace;color:var(--text4);flex:none}
+  .crow .ctx{font:500 10.5px 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--text4);margin-top:3px;line-height:1.4}
+  .crow .pv{display:flex;align-items:center;gap:10px;margin-top:5px;font-size:14.5px;color:var(--text3)}
+  .crow .pv.u{color:var(--text);font-weight:500}
+  .crow .pv p{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .group{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:0 14px;margin-top:8px}
+  .group.muted{background:var(--muted)}
+  .group .crow{padding:12px 0;min-height:80px}
+  .ccard{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;display:grid;gap:10px;margin-top:10px}
+  .ccard .top{display:flex;gap:8px;align-items:center;justify-content:space-between}
+  .ccard .nm{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+  .ccard .nm b{font-size:17px;letter-spacing:-.01em;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ccard .nm b.u{font-weight:700}
+  .ccard .nm span{font:500 11px 'Geist Mono',monospace;color:var(--text4);flex:none}
+  .ccard .pv{font-size:14.5px;color:var(--text3);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .ccard .pv.u{color:var(--text);font-weight:500}
+  .ccard .ft{display:flex;justify-content:space-between;align-items:center;gap:8px;font:500 10.5px 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--text4)}
+  .inkc{background:var(--ink);color:#fff;border-radius:var(--r-lg);padding:16px;display:grid;gap:12px;margin-top:6px}
+  .inkc .mono{color:#A6ACBA}
+  .inkc h4{font-size:20px;font-weight:700;letter-spacing:-.03em}
+  .inkc .pvv{font-size:14.5px;color:#A6ACBA;line-height:1.4}
+  .mini{display:flex;gap:10px;align-items:center;padding:8px 0;min-height:64px;border-top:1px solid var(--border)}
+  .mini .nm{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+  .mini .nm b{font-size:16px;letter-spacing:-.01em;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mini .nm b.u{font-weight:700}
+  .mini .nm span{font:500 10.5px 'Geist Mono',monospace;color:var(--text4);flex:none}
+  .mini .pv{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--text3);margin-top:1px}
+  .mini .pv p{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mini .pv.u{color:var(--text);font-weight:500}
+  .tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
+  .ptile{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:12px;display:grid;gap:8px;align-content:start;min-height:132px}
+  .ptile .ctx{font:500 10px 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--text4);line-height:1.4}
+  .ptile b{font-size:15.5px;letter-spacing:-.01em;font-weight:600;line-height:1.2}
+  .ptile b.u{font-weight:700}
+  .ptile .pv{font-size:13.5px;color:var(--text3);line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+  /* ===== thread option bits ===== */
+  .A .th-body .inner{gap:3px}
+  .A .gap{height:9px}
+  .A .msg{border-radius:20px}
+  .A .msg.in.m{border-bottom-left-radius:6px}.A .msg.in.end{border-bottom-left-radius:4px}
+  .A .msg.out.m{border-bottom-right-radius:6px}.A .msg.out.end{border-bottom-right-radius:4px}
+  .A .dayr{display:flex;align-items:center;gap:12px;margin:12px 0 8px}
+  .A .dayr span{font:500 10.5px 'Geist Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--text4)}
+  .B .pin{margin:10px 16px 0;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:12px 14px;flex:none}
+  .B .pin .t{display:flex;align-items:center;gap:10px;justify-content:space-between}
+  .B .pin .l1{font:500 10.5px 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);line-height:1.5}
+  .B .pin .more2{font-size:13.5px;color:var(--text3);line-height:1.45;margin-top:8px}
+  .B .msg.in{background:var(--muted);border:0}
+  .B .msg.fail{background:var(--danger-soft);border:1px solid var(--danger-border);color:var(--danger-text);justify-self:end;border-bottom-right-radius:4px}
+  .C .blk{border-radius:var(--r-md);border:1px solid var(--border);background:var(--surface);padding:10px 13px 12px;font-size:15px;line-height:1.45;display:grid;gap:6px;width:94%}
+  .C .blk.me{background:var(--accent-wash);border-color:var(--accent-edge);justify-self:end}
+  .C .blk.th{justify-self:start}
+  .C .blk .lh{display:flex;justify-content:space-between;gap:8px;font:500 10.5px 'Geist Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--text4)}
+  .C .blk .lh span.who{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .C .blk.me .lh .who{color:var(--accent-hover)}
+  .C .blk .lh .rc{padding:0;justify-self:auto;letter-spacing:.02em;text-transform:none}
+  .C .stk{position:sticky;top:-14px;z-index:5;justify-self:center;background:var(--bg);padding:6px 0}
+  .C .stk span{font:500 10.5px 'Geist Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);background:var(--surface);border:1px solid var(--border);border-radius:99px;padding:5px 12px;display:inline-block}
+  .C .scard{display:flex;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:12px 14px}
+  .C .scard.mt{background:var(--muted)}
+  .C .scard .ic{width:36px;height:36px;border-radius:12px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;flex:none}
+  .C .scard.mt .ic{background:var(--sunken);color:var(--text3)}
+  .C .scard .ic svg{width:18px;height:18px}
+  .C .scard b{font-size:14.5px;font-weight:600;display:block;letter-spacing:-.005em}
+  .C .scard small{font:500 10.5px 'Geist Mono',monospace;color:var(--text4);letter-spacing:.06em}
+  .C .compose textarea{border-radius:14px;min-height:46px;height:46px;resize:none}
+  .C .compose .send{width:auto;height:46px;border-radius:14px;padding:0 18px;font-weight:700;font-size:15px}
+  .D .th-head{border-bottom:0;background:var(--bg)}
+  .D .th-head .mid{flex:1;min-width:0;text-align:center}
+  .D .th-head .back{background:var(--surface)}
+  .D .th-body{padding:6px 16px 130px}
+  .D .th-body .inner{gap:6px}
+  .D .msg.in{background:var(--muted);border:0}
+  .D .sys{background:none;padding:6px 0;font:500 10.5px 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--text4)}
+  .D .float{position:absolute;left:12px;right:12px;bottom:14px;z-index:20}
+  .D .fcomp{background:var(--surface);border:1.5px solid var(--border);border-radius:28px;padding:6px 6px 6px 8px;display:flex;align-items:flex-end;gap:6px}
+  .D .fcomp input{flex:1;min-width:0;height:44px;border:0;outline:0;font:15px 'Geist',sans-serif;padding:0 8px;background:transparent;color:var(--text)}
+  .D .fcomp .send{width:44px;height:44px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;flex:none}
+  .D .fcomp .send.off{opacity:.4;pointer-events:none}
+  .D .fcomp .clip{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;color:var(--text3);flex:none;position:relative}
+  .D .fcomp .clip .prop{position:absolute;top:-30px;left:-2px;background:var(--bg);z-index:3}
+  .D .fcerr{text-align:right;font-size:13px;color:var(--danger);background:var(--bg);padding:2px 12px 8px}
+  .D .fro{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px 16px}
+  .D .fro b{font-size:15px;display:block;font-weight:600}.D .fro span{font-size:13.5px;color:var(--text3);display:block;margin-top:3px;line-height:1.4}
+  .D .fstrip{position:absolute;top:100px;left:50%;transform:translateX(-50%);z-index:20;background:var(--warn-soft);border:1px solid var(--warn-edge);border-radius:99px;padding:6px 12px;font:500 10.5px 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--warn);display:flex;gap:7px;align-items:center;white-space:nowrap}
+  .D .fstrip i{width:7px;height:7px;border-radius:50%;background:var(--warn-fill);animation:pulse 1.2s infinite}
+</style>
+</head>
+<body>
+
+<div class="chooser"><div class="bar" id="chooser"></div></div>
+
+<div class="intro">
+  <div class="mono" style="color:var(--accent)">Student app · Chats</div>
+  <h1>Chats list and Chat thread: four options</h1>
+  <p class="lede">The baseline <b>Current</b> is the approved design as built in <code>ChatListScreen</code> / <code>ThreadScreen</code>. Options A to D evolve it differently. Every field, copy line, state and rule comes from the app code (<code>chat.ts</code>, <code>format.ts</code>, <code>parts.tsx</code>); names, dates and counts are placeholder-shaped samples. Use the chooser above, then the state switchers; tap list rows to open a thread, type and send, and use the ⋯ menu for Report and Block.</p>
+  <div class="legend">
+    <span class="i"><span class="prop">Proposal</span> Not in the app today. A dashed outline marks the element. Kept minimal.</span>
+    <span class="i"><b>Everything else is real:</b>&nbsp;three thread kinds (company, your interviewer masked then named, Apostrophe Support), unread as a mono chip, no presence, Report and Block in the ⋯ menu, composer removed (never a dead send arrow) when read-only or archived.</span>
+  </div>
+</div>
+
+<div id="app"></div>
+
+<script>
+/* =====================================================================
+   icons
+   ===================================================================== */
+const I={
+ home:'<svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z"/></svg>',
+ cal:'<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
+ brief:'<svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V4h6v3M3 12h18"/></svg>',
+ heart:'<svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 017-2.6A4 4 0 0119 10c0 5.6-7 10-7 10z"/></svg>',
+ user:'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>',
+ x:'<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+ back:'<svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>',
+ send:'<svg viewBox="0 0 24 24"><path d="M4 12h15M13 6l6 6-6 6"/></svg>',
+ more:'<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></svg>',
+ flag:'<svg viewBox="0 0 24 24"><path d="M5 21V4h11l-2 4 2 4H5"/></svg>',
+ ban:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M6 6l12 12"/></svg>',
+ check:'<svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>',
+ alert:'<svg viewBox="0 0 24 24"><path d="M12 3l10 18H2zM12 10v5M12 18v.5"/></svg>',
+ buoy:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.6"/><path d="M5.6 5.6l3.9 3.9M14.5 14.5l3.9 3.9M18.4 5.6l-3.9 3.9M9.5 14.5l-3.9 3.9"/></svg>',
+ doc:'<svg viewBox="0 0 24 24" style="width:20px;height:20px"><path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z"/><path d="M14 3v5h5"/></svg>',
+ cloud:'<svg viewBox="0 0 24 24"><path d="M12 13v8"/><path d="M8 17l4 4 4-4"/><path d="M20 16.6A5 5 0 0017 8h-1.3A8 8 0 104 15.9"/></svg>',
+ wifi:'<svg viewBox="0 0 24 24"><path d="M3 3l18 18"/><path d="M8.5 16.5a5 5 0 017 0"/><path d="M5 13a10 10 0 013.2-2.1M19 13a10 10 0 00-7.6-2.9"/><path d="M2 8.8A15 15 0 017 6M22 8.8a15 15 0 00-8.6-2.7"/><path d="M12 20h.01"/></svg>',
+ clip:'<svg viewBox="0 0 24 24"><path d="M20 11l-8.5 8.5a5 5 0 01-7-7L13 4a3.5 3.5 0 015 5l-8.5 8.5a2 2 0 01-3-3L14 7"/></svg>',
+ chev:'<svg viewBox="0 0 24 24" style="width:18px;height:18px;color:var(--text4)"><path d="M6 9l6 6 6-6"/></svg>'
+};
+const MARKSVG=(s,fill)=>`<svg viewBox="0 0 100 100" style="width:${s}px;height:${s}px;fill:${fill};stroke:none"><path d="M62.5 8C42.8 8 28 21.6 28 39.2c0 15.4 11.4 26.6 26.4 26.6 4.6 0 8.6-1 11.9-2.9 1.7-1 3.3.9 2.3 2.7C62.2 76.4 51.6 85.6 38.4 92.4l4.9 8.6C67.4 89.4 84 68.6 84 43.5 84 22.6 75.4 8 62.5 8Z"/></svg>`;
+const FIG=s=>`<svg viewBox="0 0 64 64" style="width:${s}px;height:${s}px;fill:var(--text4);stroke:none"><circle cx="32" cy="24.5" r="11"/><path d="M11 64c0-12.7 9.4-21 21-21s21 8.3 21 21z"/></svg>`;
+
+/* =====================================================================
+   real content (placeholder-shaped values)
+   ctx = the real contextLine() strings; time = real fmtRowStamp (clock today, else "21 Sep")
+   ===================================================================== */
+const PAL=[['var(--accent-soft)','var(--accent-hover)'],['var(--ok-soft)','var(--ok-text)'],['var(--info-soft)','var(--info-text)'],['var(--warn-soft)','var(--warn)']];
+const TH=[
+ {id:'t1',kind:'INT',name:'Your Interviewer',masked:true,ctx:'Interview today, 11:30 AM',pv:'Hi! Looking forward to speaking with you.',time:'10:42 AM',unread:1},
+ {id:'t2',kind:'EMP',name:'Company A',init:'CA',c:0,origin:'Their Interest',since:'28 Sep',ctx:'Their Interest · connected 28 Sep',ind:'Industry A',pv:'Thanks for accepting. Are you free this week?',time:'1 Oct',unread:2},
+ {id:'t3',kind:'EMP',name:'Company B',init:'CB',c:1,origin:'Your application',since:'22 Sep',ctx:'Your application · connected 22 Sep',ind:'Industry B',pv:'We would like to move you to the next round.',time:'29 Sep',unread:0},
+ {id:'t4',kind:'SUP',name:'Apostrophe Support',ctx:'Support · replies within one working day',pv:'Your receipt has been regenerated.',time:'22 Sep',unread:0},
+ {id:'t5',kind:'EMP',name:'Company D',init:'CD',c:2,origin:'Their Interest',since:'20 Sep',ctx:'Connection withdrawn 20 Sep',ind:'Industry D',pv:'Thank you for your time.',time:'20 Sep',unread:0,arch:'withdrawn'},
+ {id:'t6',kind:'EMP',name:'Company E',init:'CE',c:3,origin:'Your application',since:'14 Sep',ctx:'You blocked them 14 Sep',ind:'Industry E',pv:'Could you share your availability?',time:'14 Sep',unread:0,arch:'blocked'},
+];
+const LIVE=TH.filter(t=>!t.arch),ARCH=TH.filter(t=>t.arch);
+/* One flat list, newest message first — no pins, groups, counts or archive section. TH is already in that order. */
+const ALL=TH;
+const UNREAD_TOTAL=LIVE.reduce((n,t)=>n+t.unread,0);
+const REASONS=['Harassment','Spam','Scam or fraud','Off-platform payment','Inappropriate content','Impersonation','Something else'];
+const NOW_CLK='9:41 AM';
+
+/* =====================================================================
+   atoms
+   ===================================================================== */
+function plate(t,s,v){ /* v: 'cur' = shipped plate, 'tile' = logo-tile palette */
+  const base=`width:${s}px;height:${s}px;`;
+  if(t.kind==='SUP')return `<div class="pl" style="${base}border-radius:50%;background:var(--info-soft);border-color:var(--info-soft);color:var(--info)">${I.buoy.replace('<svg','<svg style="width:'+Math.round(s*.46)+'px;height:'+Math.round(s*.46)+'px"')}</div>`;
+  if(t.kind==='INT'){
+    if(t.masked)return `<div class="pl" style="${base}border-radius:50%;background:var(--muted)">${MARKSVG(Math.round(s*.45),'var(--ink)')}</div>`;
+    return `<div class="pl" style="${base}border-radius:50%;background:var(--muted)">${FIG(s)}</div>`;
+  }
+  const r=s>=44?14:s>=36?11:9, fs=s>=44?13:11;
+  if(v==='tile'){const p=PAL[t.c%4];return `<div class="pl" style="${base}border-radius:${r}px;background:${p[0]};color:${p[1]};border-color:${p[0]};font:500 ${fs}px 'Geist Mono',monospace;letter-spacing:.06em">${t.init}</div>`}
+  return `<div class="pl" style="${base}border-radius:${r}px;background:var(--muted);color:var(--text3);font:500 ${fs}px 'Geist Mono',monospace;letter-spacing:.06em">${t.init}</div>`;
+}
+const status=()=>`<div class="status"><span>9:41</span><i></i><span>5G ▮▮▮</span></div>`;
+const TABS=[['home','Home'],['cal','Interviews'],['brief','Jobs'],['heart','Interests'],['user','Profile']];
+const tab=()=>`<nav class="tab">${TABS.map(t=>`<button data-act="toast:Opens ${t[1]}">${I[t[0]]}<span>${t[1]}</span></button>`).join('')}</nav>`;
+const PROP=(txt)=>`<span class="prop">Proposal${txt?' · '+txt:''}</span>`;
+const skelRows=(n,s=48,r='50%',h=88)=>Array.from({length:n},()=>`<div class="rowc" style="padding:14px 0;min-height:${h}px"><div class="skel" style="width:${s}px;height:${s}px;border-radius:${r};flex:none"></div><div class="grow" style="display:grid;gap:9px"><div class="skel" style="height:15px;width:55%"></div><div class="skel" style="height:11px;width:75%"></div><div class="skel" style="height:13px;width:90%"></div></div></div>`).join('');
+const errBlock=()=>`<div class="center"><div class="ic">${I.alert}</div><b>Could not load your chats.</b><p>Nothing has changed. Try again in a moment.</p><button class="btn out" data-act="retry">Try again</button></div>`;
+const emptyList=()=>`<div class="pad" style="margin-top:6px"><div class="card"><b style="font-size:20px;letter-spacing:-.02em">No chats yet.</b><div class="sub" style="margin-top:8px;font-size:15px;line-height:1.5">A chat opens when you accept an Interest, and one opens with your interviewer the day before your interview. Support is always here.</div></div></div>`;
+const reconnectStrip=()=>`<div class="strip" role="status"><i></i>Reconnecting · a sent message will go out when you are back</div>`;
+const unreadChip=n=>n?`<span class="uchip">${n}</span>`:'';
+const archHead=(n)=>`<div class="rowc" style="gap:12px;margin:16px 0 0"><span class="glabel">Archived</span><div class="hr"></div><span class="mono" style="color:var(--text4)">${n}</span></div>`;
+const gHead=(l,n)=>`<div class="rowc" style="gap:12px;margin:18px 4px 0"><span class="glabel">${l}</span><div class="hr"></div><span class="mono" style="color:var(--text4)">${n}</span></div>`;
+const aria=t=>`${t.name}${t.unread?', '+t.unread+' unread':''}`;
+
+/* =====================================================================
+   LIST renderers
+   ===================================================================== */
+function listFrame(ph,inner,o={}){
+  const title=o.title??`<div class="head"><div class="title">Chats</div>${o.sub??''}</div>`;
+  const stripH=ph.state==='offline'?`<div style="margin:0 0 -4px">${reconnectStrip()}</div>`:'';
+  return `${status()}<div class="compact"><b>Chats</b></div><div class="scroll" style="padding-bottom:130px">${stripH}${title}${inner}</div>${tab()}`;
+}
+const unreadSub=()=>'';
+
+/* ---- Current ---- */
+function crowCur(t,muted){return `<div class="crow" data-act="th:${t.id}" role="button" tabindex="0" aria-label="${aria(t)}">${plate(t,48,'cur')}<div class="grow"><div class="nm"><b class="${t.unread?'u':''}" style="${muted?'color:var(--text3)':''}">${t.name}</b><span>${t.time}</span></div><div class="ctx">${t.ctx}</div><div class="pv ${t.unread?'u':''}"><p>${t.pv}</p>${unreadChip(t.unread)}</div></div></div>`}
+function listCur(ph){
+  const s=ph.state;let body;
+  if(s==='loading')body=`<div class="pad">${skelRows(5)}</div>`;
+  else if(s==='error')body=errBlock();
+  else if(s==='empty')body=emptyList();
+  else body=`<div class="pad">${ALL.map(t=>crowCur(t)).join('')}</div>`;
+  return listFrame(ph,body,{sub:unreadSub(ph)});
+}
+
+/* ---- A: Unread / Earlier / Archived grouped cards ---- */
+function crowA(t,muted){return `<div class="crow" data-act="th:${t.id}" role="button" tabindex="0" aria-label="${aria(t)}">${plate(t,44,'tile')}<div class="grow"><div class="nm"><b class="${t.unread?'u':''}" style="${muted?'color:var(--text3)':''}">${t.name}</b><span>${t.time}</span></div><div class="pv ${t.unread?'u':''}" style="margin-top:3px"><p>${t.pv}</p>${unreadChip(t.unread)}</div><div class="ctx">${t.ctx}</div></div></div>`}
+function listA(ph){
+  const s=ph.state;let body;
+  if(s==='loading')body=`<div class="pad"><div class="group" style="margin-top:6px">${skelRows(4,44,'14px')}</div></div>`;
+  else if(s==='error')body=errBlock();
+  else if(s==='empty')body=emptyList();
+  else body=`<div class="pad"><div class="group">${ALL.map(t=>crowA(t)).join('')}</div></div>`;
+  return listFrame(ph,body);
+}
+
+/* ---- B: context-first cards, interviewer as ink "next" card ---- */
+function cardB(t,muted){
+  const label=t.arch==='blocked'?'You blocked them':t.arch==='withdrawn'?'Withdrawn':t.kind==='SUP'?'Support':t.kind==='INT'?'Interviewer':t.origin;
+  const right=t.kind==='SUP'?'replies in 1 working day':t.kind==='INT'?t.ctx:(t.arch?t.since:'since '+t.since);
+  return `<div class="ccard" data-act="th:${t.id}" role="button" tabindex="0" aria-label="${aria(t)}" style="${muted?'background:var(--muted)':''}"><div class="top"><span class="pill neutral sm" ${muted?'style="background:var(--sunken)"':''}>${label}</span><span class="mono" style="font-size:10.5px;color:var(--text4);letter-spacing:.06em">${right}</span></div><div class="rowc" style="gap:12px;align-items:flex-start">${plate(t,44,'tile')}<div class="grow"><div class="nm"><b class="${t.unread?'u':''}" style="${muted?'color:var(--text3)':''}">${t.name}</b><span>${t.time}</span></div>${t.ind?`<div class="mono" style="font-size:10.5px;color:var(--text4);letter-spacing:.06em;margin-top:2px">${t.ind}</div>`:''}</div></div><div class="pv ${t.unread?'u':''}">${t.pv}</div>${t.unread?`<div class="ft"><span>${t.unread} unread</span>${unreadChip(t.unread)}</div>`:''}</div>`;
+}
+function listB(ph){
+  const s=ph.state;let body;
+  if(s==='loading')body=`<div class="pad"><div class="skel" style="height:150px;border-radius:18px;margin-top:6px"></div>${[0,1,2].map(()=>`<div class="skel" style="height:120px;border-radius:18px;margin-top:10px"></div>`).join('')}</div>`;
+  else if(s==='error')body=errBlock();
+  else if(s==='empty')body=emptyList();
+  else body=`<div class="pad">${ALL.map(t=>cardB(t)).join('')}</div>`;
+  return listFrame(ph,body,{sub:unreadSub(ph)});
+}
+
+/* ---- C: compact + filter chips (proposal), grouped by door ---- */
+function miniC(t,muted){return `<div class="mini" data-act="th:${t.id}" role="button" tabindex="0" aria-label="${aria(t)}">${plate(t,38,'tile')}<div class="grow"><div class="nm"><b class="${t.unread?'u':''}" style="${muted?'color:var(--text3)':''}">${t.name}</b><span>${t.time}</span></div><div class="pv ${t.unread?'u':''}"><p>${t.pv}</p>${unreadChip(t.unread)}</div></div></div>`}
+function listC(ph){
+  const s=ph.state;let body;
+  if(s==='loading')body=`<div class="pad">${skelRows(7,38,'11px',64)}</div>`;
+  else if(s==='error')body=errBlock();
+  else if(s==='empty')body=emptyList();
+  else body=`<div class="pad">${ALL.map(t=>miniC(t)).join('')}</div>`;
+  return listFrame(ph,body);
+}
+
+/* ---- D: pinned special threads, employer rows, archive folded ---- */
+function ptileD(t){return `<div class="ptile" data-act="th:${t.id}" role="button" tabindex="0" aria-label="${aria(t)}"><div class="rowc" style="justify-content:space-between;align-items:flex-start">${plate(t,38)}${unreadChip(t.unread)}</div><div class="ctx">${t.ctx}</div><b class="${t.unread?'u':''}">${t.name}</b><div class="pv">${t.pv}</div></div>`}
+function rowD(t,muted){const meta=(t.arch||!t.since)?t.ctx.toUpperCase():'SINCE '+t.since.toUpperCase();return `<div class="crow" data-act="th:${t.id}" role="button" tabindex="0" aria-label="${aria(t)}">${plate(t,52,'tile')}<div class="grow"><div class="nm"><b class="${t.unread?'u':''}" style="${muted?'color:var(--text3)':''}">${t.name}</b><span>${t.time}</span></div><div style="margin-top:4px;display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span class="pill neutral sm">${t.origin||(t.kind==='SUP'?'Support':'Interviewer')}</span><span class="mono" style="font-size:10px;color:var(--text4);letter-spacing:.06em">${meta}</span></div><div class="pv ${t.unread?'u':''}"><p>${t.pv}</p>${unreadChip(t.unread)}</div></div></div>`}
+function listD(ph){
+  const s=ph.state;let body;
+  if(s==='loading')body=`<div class="pad"><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px"><div class="skel" style="height:132px;border-radius:18px"></div><div class="skel" style="height:132px;border-radius:18px"></div></div>${skelRows(3,52,'14px')}</div>`;
+  else if(s==='error')body=errBlock();
+  else if(s==='empty')body=emptyList();
+  else body=`<div class="pad">${ALL.map(t=>rowD(t)).join('')}</div>`;
+  return listFrame(ph,body,{sub:unreadSub(ph)});
+}
+const LISTS={cur:listCur,A:listA,B:listB,C:listC,D:listD};
+
+/* =====================================================================
+   THREAD model (real rules)
+   ===================================================================== */
+const KINDS=[['emp','Employer'],['mask','Interviewer · masked'],['rev','Interviewer · revealed'],['sup','Support']];
+const TSTATES=[['messages','Messages'],['empty','Empty thread'],['loading','Loading'],['error','Error'],['sending','Sending'],['failed','Send failed'],['offline','Offline'],['menu','⋯ Menu'],['report','Report sheet'],['block','Block sheet'],['withdrawn','Withdrawn'],['blocked','Blocked'],['readonly','Interviewer read-only'],['notopen','Not open yet']];
+const FORCE={withdrawn:'emp',blocked:'emp',readonly:'rev',notopen:'mask'};
+const SHEETSTATES=['menu','report','block'];
+const IDENT={
+ emp:{kind:'EMP',name:'Company A',init:'CA',c:0,masked:false,sub:'Their Interest · since 28 Sep',ctx:'Their Interest · connected 28 Sep',ind:'Industry A'},
+ mask:{kind:'INT',name:'Your Interviewer',masked:true,sub:'Today, 11:30 AM'},
+ rev:{kind:'INT',name:'Rahul Verma',masked:false,sub:'Your interviewer'},
+ sup:{kind:'SUP',name:'Apostrophe Support',sub:'Support'},
+};
+const SENT_BODY='Thursday at 3 PM works for me.';
+function model(ph){
+  const st=ph.state,kk=FORCE[st]||ph.kind,id={...IDENT[kk]};
+  const m={kk,id,items:[],foot:{type:'composer'},closes:'',mask:false,rec:false,canBlock:false,support:false,err:null,strip:false,draft:'',busy:false,state:st,archived:null};
+  const it=m.items,day=l=>it.push({t:'day',l}),sys=(x,time,media)=>it.push({t:'sys',x,time,media}),inm=(b,time)=>it.push({t:'m',mine:0,b,time}),out=(b,d,r)=>it.push({t:'m',mine:1,b,d,r});
+  if(kk==='emp'){
+    day('28 September');inm('Hello! We liked your video resume.','11:02 AM');out('Thank you! Happy to talk.','read','Read 28 Sep, 11:20 AM');
+    day('Yesterday');inm('Thanks for accepting. Are you free this week?','6:15 PM');out('Yes, I can do Thursday.','delivered','Delivered yesterday 6:20 PM');
+    day('Today');it.push({t:'m',mine:0,att:{name:'Document.pdf',meta:'PDF · 240 KB'},time:'9:05 AM'});out('Got it, thank you.','read','Read 9:22 AM');
+    if(st==='messages')it.push({t:'typing'});
+    m.canBlock=true;
+  }else if(kk==='mask'){
+    day('Today');sys('This chat opened for your interview','10:00 AM');inm('Hi! Looking forward to speaking with you.','10:42 AM');
+    m.mask=true;m.support=true;m.closes='Closes Sun 4 Oct, 12:00 PM IST · 48 hours after your interview';
+  }else if(kk==='rev'){
+    day('Today');sys('This chat opened for your interview','10:00 AM');inm('Hi! Looking forward to speaking with you.','10:42 AM');
+    sys('Your session started · your interviewer is Rahul Verma','11:30 AM',1);
+    m.rec=true;m.support=true;m.closes='Closes Sun 4 Oct, 12:00 PM IST · 48 hours after your interview';
+  }else{
+    day('22 September');out('Can you send my receipt again?','read','Read 22 Sep, 9:12 AM');inm('Your receipt has been regenerated.','9:48 AM');
+  }
+  if(st==='empty'||st==='notopen')m.items=[];
+  if(st==='sending'||st==='offline'){m.items.push({t:'m',mine:1,b:SENT_BODY,d:st==='sending'?'sent':'queued',r:st==='sending'?'Sent · not delivered':'Queued · offline'});m.busy=st==='sending';}
+  if(st==='offline')m.strip=true;
+  if(st==='failed'){m.err='That did not send.';m.draft=SENT_BODY;}
+  if(st==='withdrawn'){m.id.sub='Withdrawn 20 Sep';m.items.push({t:'sys',x:'This conversation has been archived.'});m.foot={type:'ro',title:'This connection was withdrawn on 20 Sep.',body:'Neither side can write here again. Everything above stays, and the row stays in your Connections. Blocking is still open to you from the menu.'};m.canBlock=true;m.archived='withdrawn';}
+  if(st==='blocked'){m.id.sub='Blocked 14 Sep';m.items.push({t:'sys',x:'This conversation has been archived.'});m.foot={type:'ro',title:'This connection was blocked.',body:'Neither side can write here again. Everything above stays, and the row stays in your Connections.'};m.canBlock=false;m.archived='blocked';}
+  if(st==='readonly'){m.id.sub='Interview 2 Oct · read-only';m.items.push({t:'sys',x:'This chat is now read-only.'});m.foot={type:'ro',title:'Interviewer chats stay open for 48 hours after the session.',body:'Everything above stays and remains searchable. Your written feedback and your film arrive on your profile, not here.'};m.rec=false;m.closes='';}
+  if(st==='notopen'){m.id.sub='4 Oct, 11:30 AM';m.mask=false;m.closes='';m.foot={type:'ro',title:'This chat opens closer to your interview.',body:'It opens Sat 3 Oct, 11:30 AM IST — a day before your interview. There is no composer because there is no thread yet, and no name because none has been sent.'};}
+  (ph.extra||[]).forEach(x=>{const ti=m.items.findIndex(i=>i.t==='typing');const row={t:'m',mine:1,b:x.b,d:x.d,r:x.r};if(ti>=0)m.items.splice(ti,0,row);else m.items.push(row)});
+  return m;
+}
+const rcpt=x=>{if(!x.d)return '';const ic=x.d==='sent'?'<span class="spin"></span>':x.d==='queued'?I.cloud:I.check;return `<span class="rc ${x.d}">${ic}${x.r}</span>`};
+function msgHTML(i,cls=''){
+  if(i.att)return `<div class="msg in att ${cls}"><span style="color:var(--text4)">${I.doc}</span><span style="min-width:0"><b>${i.att.name}</b><small>${i.att.meta}</small></span></div>`;
+  return `<div class="msg ${i.mine?'out':'in'} ${cls}">${i.b}</div>`;
+}
+const moreBtn=m=>m.rec?`<span class="pill acc live" style="margin-left:auto">Recording</span>`:`<button class="more" data-act="menu" aria-label="More">${I.more}</button>`;
+const sub=m=>m.id.sub.toUpperCase();
+const typingH=()=>`<div class="typing" aria-label="Typing"><i></i><i></i><i></i></div>`;
+const dv=(ph,m)=>ph.draftNow!==null&&ph.draftNow!==undefined?ph.draftNow:m.draft;
+
+/* ---------- sheets ---------- */
+function menuSheet(m){
+  const n=m.id.name;
+  return `<div class="menu"><div class="mrow" data-act="report"><div class="ic">${I.flag}</div><b>Report this chat</b></div>${m.support?`<div class="mrow" data-act="toast:Opens Support"><div class="ic">${I.buoy}</div><b>Message support</b></div>`:''}${m.canBlock?`<div class="mrow" data-act="block"><div class="ic" style="background:var(--danger-soft);color:var(--danger-text)">${I.ban}</div><b style="color:var(--danger)">Block ${n}</b></div>`:''}</div>`;
+}
+function reportSheet(m,v,ph){
+  const n=m.id.name,sel=ph.reason;
+  const info=`<div class="sub" style="font-size:14.5px">The conversation is frozen as evidence. ${n} is not told you reported it.</div>`;
+  const pick=v==='rows'?`<div class="menu">${REASONS.map((r,i)=>`<div class="mrow rad ${i===sel?'sel':''}" data-act="reason:${i}"><span class="dot"></span><b style="font-weight:500;font-size:15px">${r}</b></div>`).join('')}</div>`:`<div class="reason">${REASONS.map((r,i)=>`<span class="chip ${i===sel?'on':''}" data-act="reason:${i}">${r}</span>`).join('')}</div>`;
+  return {body:info+pick+`<div class="noteinput">Anything you want to add (optional)</div>`,foot:`<span class="btn pri full" data-act="sendreport">Send report</span><span class="btn quiet full" data-act="close">Cancel</span>`,title:`Report ${n}`};
+}
+function blockSheet(m,v){
+  const n=m.id.name;
+  const note=`<div class="sub" style="font-size:13.5px">${n} is not told. A block and a withdrawal look the same from the other side.</div>`;
+  const body=v==='danger'?`<div class="dangercard"><div><b>Right away</b>This chat stays archived, and closed to both of you for good.</div><div><b>Permanently</b>${n} never sees your profile in the feed again, and cannot send you an Interest.</div><div><b>Not undoable</b>Not from here. Support can, and will ask why.</div></div>${note}`
+   :`<div style="display:grid;gap:8px"><div class="cons"><b>Right away</b><span>This chat stays archived, and closed to both of you for good.</span></div><div class="cons"><b>Permanently</b><span>${n} never sees your profile in the feed again, and cannot send you an Interest.</span></div><div class="cons"><b>Not undoable</b><span>Not from here. Support can, and will ask why.</span></div></div>${note}`;
+  return {title:`Block ${n}?`,body,foot:`<span class="btn dangerfill full" data-act="doblock">Block ${n}</span><span class="btn quiet full" data-act="close">Keep the connection</span>`};
+}
+const SHEETV={cur:{r:'chips',b:'cards'},A:{r:'chips',b:'cards'},B:{r:'rows',b:'cards'},C:{r:'rows',b:'danger'},D:{r:'chips',b:'danger'}};
+function sheetHTML(m,ph){
+  const sh=ph.sheet;if(!sh)return '';
+  const v=SHEETV[ph.opt];let t='',b='',f='';
+  if(sh==='menu'){t=m.id.name;b=menuSheet(m);}
+  else if(sh==='report'){const r=reportSheet(m,v.r,ph);t=r.title;b=r.body;f=r.foot;}
+  else{const r=blockSheet(m,v.b);t=r.title;b=r.body;f=r.foot;}
+  return `<div class="scrim" data-act="close"></div><div class="sheet" role="dialog"><div class="grab"></div><div class="sh"><b>${t}</b><button class="x" data-act="close" aria-label="Close">${I.x}</button></div><div class="body">${b}</div>${f?`<div class="foot">${f}</div>`:''}</div>`;
+}
+
+/* ---------- common thread pieces ---------- */
+const loadingThread=(ph,hd)=>`${status()}<div class="thread ${ph.opt}">${hd}<div style="padding:24px"><div class="skel" style="height:14px;width:60%;margin-bottom:12px"></div><div class="skel" style="height:14px;width:85%;margin-bottom:12px"></div><div class="skel" style="height:14px;width:45%"></div></div></div>`;
+const errorThread=(ph,hd)=>`${status()}<div class="thread ${ph.opt}">${hd}<div style="flex:1;display:grid;place-items:center;text-align:center;padding:36px"><div class="sub" style="font-size:15px">This conversation is not available.</div></div></div>`;
+function composerStd(m,ph){
+  const f=m.foot;
+  if(f.type==='ro')return `<div class="ro"><b>${f.title}</b><span>${f.body}</span></div>`;
+  const v=dv(ph,m),can=v.trim().length>0&&!m.busy;
+  return `<div class="compose">${m.err?`<div class="cerr">${m.err}</div>`:''}<div class="crow2"><input id="in-${ph.id}" value="${v.replace(/"/g,'&quot;')}" placeholder="Message" aria-label="Message" autocomplete="off"><button class="send ${can?'':'off'}" data-act="send" aria-label="Send">${I.send}</button></div></div>`;
+}
+const maskLine=()=>`<div class="maskline"><b>Assigned anonymously so nobody can pick or avoid one · named when your session starts</b>Every student gets the interviewer they would have got anyway. We do not send their name or photo to your phone before the session, so nobody can pick or avoid one.</div>`;
+const emptyThread=()=>`<div class="emptyb"><b>No messages yet</b><span>Nothing has been sent in this conversation yet.</span></div>`;
+const strip2=()=>`<div class="strip" role="status">${I.wifi}Reconnecting · nothing is lost</div>`;
+const sysHTML=i=>`<div class="sys" ${i.media?'style="gap:12px"':''}>${i.media?plate({kind:'INT',masked:false},36):''}<span>${i.x}</span>${i.time?`<small>${i.time}</small>`:''}</div>`;
+const closesH=m=>m.closes?`<div class="closes">${m.closes}</div>`:'';
+function headStd(m,v){return `<div class="th-head"><button class="back" data-act="toast:Back" aria-label="Back">${I.back}</button>${plate(m.id,38,v)}<div class="grow"><div class="nm">${m.id.name}</div><div class="sb">${sub(m)}</div></div>${moreBtn(m)}</div>`}
+
+/* ---- Current ---- */
+function threadCur(ph,m){
+  const hd=headStd(m,'cur');
+  if(m.state==='loading')return loadingThread(ph,hd);
+  if(m.state==='error')return errorThread(ph,hd);
+  const body=m.items.length?m.items.map(i=>i.t==='day'?`<div class="day">${i.l}</div>`:i.t==='sys'?sysHTML(i):i.t==='typing'?typingH():i.mine?`${msgHTML(i)}${rcpt(i)}`:`${msgHTML(i)}<span class="tm">${i.time}</span>`).join(''):emptyThread();
+  return `${status()}<div class="thread ${ph.opt}">${hd}${m.strip?strip2():''}${m.mask?maskLine():''}<div class="th-body"><div class="inner">${body}</div></div>${closesH(m)}${composerStd(m,ph)}</div>`;
+}
+
+/* ---- A: grouped bubbles ---- */
+function threadA(ph,m){
+  const hd=headStd(m,'tile');
+  if(m.state==='loading')return loadingThread(ph,hd);
+  if(m.state==='error')return errorThread(ph,hd);
+  let out='';const its=m.items;
+  its.forEach((i,k)=>{
+    if(i.t==='day')out+=`<div class="dayr"><div class="hr"></div><span>${i.l}</span><div class="hr"></div></div>`;
+    else if(i.t==='sys')out+=`<div class="gap"></div>`+sysHTML(i)+`<div class="gap"></div>`;
+    else if(i.t==='typing')out+=`<div class="gap"></div>`+typingH();
+    else{
+      const prev=its[k-1],next=its[k+1];
+      const sameP=prev&&prev.t==='m'&&prev.mine===i.mine,sameN=next&&next.t==='m'&&next.mine===i.mine;
+      if(!sameP)out+='<div class="gap"></div>';
+      out+=msgHTML(i,sameN?'m':'end');
+      if(!sameN)out+=i.mine?rcpt(i):`<span class="tm">${i.time}</span>`;
+    }
+  });
+  return `${status()}<div class="thread ${ph.opt}">${hd}${m.strip?strip2():''}${m.mask?maskLine():''}<div class="th-body"><div class="inner">${its.length?out:emptyThread()}</div></div>${closesH(m)}${composerStd(m,ph)}</div>`;
+}
+
+/* ---- B: pinned context header ---- */
+function pinB(m,ph){
+  const k=m.kk,st=m.state,open=ph.pinOpen!==false;
+  let l1='',more='',pill='';
+  if(k==='emp'){
+    l1=`${m.id.ctx}<br>${m.id.ind}`;
+    pill=m.archived?`<span class="pill neutral sm">${m.archived==='blocked'?'Blocked':'Withdrawn'}</span>`:`<span class="pill ok sm">Connected</span>`;
+  }else if(k==='sup'){l1='Support · replies within one working day';pill='<span class="pill info sm">Support</span>';}
+  else{
+    l1=st==='notopen'?'Opens Sat 3 Oct, 11:30 AM IST':st==='readonly'?'Interview 2 Oct · read-only':'Interview today, 11:30 AM';
+    pill=m.rec?'':`<span class="pill neutral sm">${st==='readonly'?'Read-only':st==='notopen'?'Not open':'Masked'}</span>`;
+    more=m.mask?'Assigned anonymously so nobody can pick or avoid one · named when your session starts. Every student gets the interviewer they would have got anyway. We do not send their name or photo to your phone before the session.':'';
+  }
+  const tog=more?`<button data-act="pin" aria-label="Details" style="display:grid;transform:rotate(${open?180:0}deg)">${I.chev}</button>`:'';
+  return `<div class="pin"><div class="t"><div class="l1">${l1}</div><div class="rowc" style="gap:6px">${pill}${tog}</div></div>${more&&open?`<div class="more2">${more}</div>`:''}</div>`;
+}
+function threadB(ph,m){
+  const hd=`<div class="th-head"><button class="back" data-act="toast:Back" aria-label="Back">${I.back}</button>${plate(m.id,38,'tile')}<div class="grow"><div class="nm">${m.id.name}</div></div>${moreBtn(m)}</div>`;
+  if(m.state==='loading')return loadingThread(ph,hd);
+  if(m.state==='error')return errorThread(ph,hd);
+  const failed=m.state==='failed';
+  let body=m.items.map(i=>i.t==='day'?`<div class="day">${i.l}</div>`:i.t==='sys'?sysHTML(i):i.t==='typing'?typingH():i.mine?`${msgHTML(i)}${rcpt(i)}`:`${msgHTML(i)}<span class="tm">${i.time}</span>`).join('');
+  if(failed)body+=`<div class="msg fail propbox">${SENT_BODY}</div><span class="rc" style="color:var(--danger-text);flex-wrap:wrap;justify-content:flex-end;gap:5px">${I.alert.replace('<svg','<svg style="width:12px;height:12px"')}That did not send · <b data-act="retry-send" style="text-decoration:underline">Retry</b> ${PROP('failed bubble')}</span>`;
+  const mm={...m,err:null,draft:failed?'':m.draft};
+  return `${status()}<div class="thread ${ph.opt}">${hd}${m.strip?strip2():''}${pinB(m,ph)}<div class="th-body"><div class="inner">${body||emptyThread()}</div></div>${closesH(m)}${composerStd(mm,ph)}</div>`;
+}
+
+/* ---- C: transcript blocks + system cards + sticky day chips ---- */
+function threadC(ph,m){
+  const hd=headStd(m,'tile');
+  if(m.state==='loading')return loadingThread(ph,hd);
+  if(m.state==='error')return errorThread(ph,hd);
+  const who=m.id.name.toUpperCase();
+  let out='';
+  m.items.forEach(i=>{
+    if(i.t==='day')out+=`<div class="stk"><span>${i.l}</span></div>`;
+    else if(i.t==='typing')out+=typingH();
+    else if(i.t==='sys'){
+      const arch=/archived|read-only/.test(i.x);
+      out+=`<div class="scard ${arch?'mt':''}"><div class="ic">${i.media?plate({kind:'INT',masked:false},36):arch?I.ban:I.check}</div><div class="grow"><b>${i.x}</b>${i.time?`<small>${i.time}</small>`:''}</div></div>`;
+    }else{
+      const lh=i.mine?`<div class="lh"><span class="who">You</span>${rcpt(i)}</div>`:`<div class="lh"><span class="who">${who}</span><span>${i.time}</span></div>`;
+      const inner=i.att?`<div class="rowc" style="gap:10px"><span style="color:var(--text4)">${I.doc}</span><span><b style="font-weight:500;font-size:14px">${i.att.name}</b><br><small class="tm" style="padding:0">${i.att.meta}</small></span></div>`:i.b;
+      out+=`<div class="blk ${i.mine?'me':'th'}">${lh}<div>${inner}</div></div>`;
+    }
+  });
+  const f=m.foot;let foot;
+  if(f.type==='ro')foot=`<div class="ro"><b>${f.title}</b><span>${f.body}</span></div>`;
+  else{
+    const v=dv(ph,m),can=v.trim().length>0&&!m.busy;
+    foot=`<div class="compose">${m.err?`<div class="cerr">${m.err}</div>`:''}<div class="crow2"><textarea id="in-${ph.id}" rows="1" placeholder="Message" aria-label="Message">${v}</textarea><button class="send ${can?'':'off'}" data-act="send">Send</button></div></div>`;
+  }
+  return `${status()}<div class="thread ${ph.opt}">${hd}${m.strip?strip2():''}${m.mask?maskLine():''}<div class="th-body"><div class="inner">${m.items.length?out:emptyThread()}</div></div>${closesH(m)}${foot}</div>`;
+}
+
+/* ---- D: minimal, floating composer ---- */
+function threadD(ph,m){
+  const hd=`<div class="th-head"><button class="back" data-act="toast:Back" aria-label="Back">${I.back}</button><div class="mid"><div class="nm" style="font-size:16.5px">${m.id.name}</div><div class="sb">${sub(m)}</div></div>${m.rec?`<span class="pill acc live sm">Recording</span>`:`<button class="more" data-act="menu" aria-label="More">${I.more}</button>`}</div>`;
+  if(m.state==='loading')return loadingThread(ph,hd);
+  if(m.state==='error')return errorThread(ph,hd);
+  let lastMine=-1;m.items.forEach((i,k)=>{if(i.t==='m'&&i.mine)lastMine=k});
+  const body=m.items.map((i,k)=>i.t==='day'?`<div class="day" style="margin:14px 0 4px">${i.l}</div>`:i.t==='sys'?sysHTML(i):i.t==='typing'?typingH():i.mine?`${msgHTML(i)}${k===lastMine?rcpt(i):''}`:msgHTML(i)).join('');
+  const f=m.foot;let foot;
+  if(f.type==='ro')foot=`<div class="fro"><b>${f.title}</b><span>${f.body}</span></div>`;
+  else{
+    const v=dv(ph,m),can=v.trim().length>0&&!m.busy;
+    foot=`${m.err?`<div class="fcerr">${m.err}</div>`:''}<div class="fcomp"><button class="clip propbox" data-act="toast:Proposal · attach from the app" aria-label="Attach">${I.clip}<span class="prop">Proposal</span></button><input id="in-${ph.id}" value="${v.replace(/"/g,'&quot;')}" placeholder="Message" aria-label="Message" autocomplete="off"><button class="send ${can?'':'off'}" data-act="send" aria-label="Send">${I.send}</button></div>`;
+  }
+  return `${status()}<div class="thread ${ph.opt}">${hd}${m.mask?`<div style="margin-top:2px">${maskLine()}</div>`:''}<div class="th-body"><div class="inner">${body||emptyThread()}${m.closes?`<div class="tm" style="text-align:center;padding:10px 0 0;text-transform:uppercase;letter-spacing:.06em;justify-self:center">${m.closes}</div>`:''}</div></div>${m.strip?`<div class="fstrip"><i></i>Reconnecting · nothing is lost</div>`:''}<div class="float">${foot}</div></div>`;
+}
+const THREADS={cur:threadCur,A:threadA,B:threadB,C:threadC,D:threadD};
+
+/* =====================================================================
+   app: options, state, rendering
+   ===================================================================== */
+const OPTS=[['cur','Current','approved baseline'],['A','Option A',''],['B','Option B',''],['C','Option C',''],['D','Option D','']];
+const NOTES={
+ cur:{name:'Current (approved)',short:'Shipped design',list:['Avatar rows, mono context line, preview, mono unread chip. One flat list, newest first.','Company = rounded square monogram; interviewer and support = circles.'],thread:['Classic bubbles, delivery mark under every sent message, time under every received one.','Menu in the ⋯ header button; composer replaced by a read-only foot when archived or read-only.']},
+ A:{name:'A · Grouped cards',short:'Single card list · grouped bubbles',list:['<b>One flat list in one card, newest first</b> — no groups, counts or section headers.','Name, preview and chip first; the mono context line sits last. Logo-tile palette (soft fills) for company tiles.'],thread:['<b>Consecutive messages grouped</b>: tail only on the last bubble of a run, one time or receipt per run.','Day dividers as ruled labels; system lines stay quiet pills.']},
+ B:{name:'B · Context first',short:'Card per chat · pinned context header',list:['<b>One flat list of cards, newest first</b> — nothing pinned.','Each chat as a card: <b>origin pill</b> (Their Interest / Your application), since-date, company, <b>industry</b> (a real field on the connection), preview up to two lines.'],thread:['<b>Pinned context card</b> under the header: origin, connected date, industry (employer); interview time (interviewer); collapsible masked-interviewer explanation (real copy).','Received bubbles are flat grey.','Send failed: '+PROP('failed bubble with Retry')+' (today the text just returns to the composer).']},
+ C:{name:'C · Compact / transcript',short:'Compact rows · transcript blocks',list:['<b>Compact 38px rows</b>, one flat list, newest first — no filter chips, groups or counts.'],thread:['<b>Transcript blocks</b>: full-width, mono sender and time line, your messages tinted violet-wash; the sender is the counterparty name.','<b>System cards</b> for opened / session started / archived / read-only; sticky day chips; rectangular Send button; list-style Report sheet.']},
+ D:{name:'D · Pinned priority / minimal',short:'Large rows · floating composer',list:['<b>One flat list, newest first</b>: larger 52px tiles with an origin pill and since-date; nothing pinned or folded.'],thread:['<b>Minimal header</b>, no hairline; flat grey received bubbles; <b>receipt only on the latest sent message</b>; plain mono system text.','<b>Floating pill composer</b>; read-only foot becomes a floating panel; Reconnecting becomes a floating pill.','Attach button '+PROP()+' (the app has no picker yet; attachments are received, and sent from web).']},
+};
+const G={mode:'cur',ls:'list',ts:'messages',tk:'emp'};
+const PH=[];
+let tt;
+
+function mkPhone(screen,opt){
+  const ph={id:'p'+PH.length,screen,opt,state:'',kind:'emp',sheet:null,extra:[],filter:'all',archOpen:false,pinOpen:true,reason:1,draftNow:null};
+  PH.push(ph);syncPhone(ph);return ph.id;
+}
+function syncPhone(ph){
+  if(ph.screen==='list'){ph.state=G.ls}
+  else{ph.state=G.ts;ph.kind=G.tk;ph.sheet=SHEETSTATES.includes(G.ts)?G.ts:null;ph.extra=[];ph.draftNow=null;ph.reason=1;}
+}
+function renderPhone(ph){
+  const el=document.getElementById(ph.id);if(!el)return;
+  const old=el.querySelector('.scroll');const keep=old?old.scrollTop:0;
+  if(ph.screen==='list'){
+    el.innerHTML=LISTS[ph.opt](ph)+'<div class="toast" role="status"></div>';
+    const sc=el.querySelector('.scroll');
+    if(sc){sc.scrollTop=keep;sc.addEventListener('scroll',()=>{const c=el.querySelector('.compact');if(c)c.classList.toggle('on',sc.scrollTop>60)})}
+  }else{
+    const shown=SHEETSTATES.includes(ph.state)?{...ph,state:'messages'}:ph;
+    const m=model(shown);
+    el.innerHTML=THREADS[ph.opt](shown,m)+sheetHTML(m,ph)+'<div class="toast" role="status"></div>';
+    const b=el.querySelector('.th-body');if(b)b.scrollTop=99999;
+  }
+}
+function toast(el,msg){const t=el.querySelector('.toast');if(!t)return;t.textContent=msg;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),1700)}
+
+function switcher(host,opts,get,set,tag){
+  host.innerHTML=(tag?`<span class="tag">${tag}</span>`:'')+opts.map(o=>`<button class="${o[0]===get()?'on':''}" data-s="${o[0]}">${o[1]}</button>`).join('');
+  host.querySelectorAll('button').forEach(b=>b.onclick=()=>set(b.dataset.s));
+}
+function refreshSwitchers(){
+  document.querySelectorAll('[data-sw=ls]').forEach(h=>switcher(h,[['list','List'],['offline','Reconnecting'],['loading','Loading'],['empty','Empty'],['error','Error']],()=>G.ls,s=>{G.ls=s;syncAll('list');refreshSwitchers()},'List'));
+  document.querySelectorAll('[data-sw=tk]').forEach(h=>switcher(h,KINDS,()=>G.tk,s=>{G.tk=s;if(FORCE[G.ts])G.ts='messages';syncAll('thread');refreshSwitchers()},'Thread'));
+  document.querySelectorAll('[data-sw=ts]').forEach(h=>switcher(h,TSTATES,()=>G.ts,s=>{G.ts=s;if(FORCE[s])G.tk=FORCE[s];syncAll('thread');refreshSwitchers()},'State'));
+}
+function syncAll(screen){PH.filter(p=>p.screen===screen).forEach(p=>{syncPhone(p);renderPhone(p)})}
+
+function render(){
+  PH.length=0;
+  const app=document.getElementById('app');
+  let h='';
+  if(G.mode!=='all'){
+    const o=G.mode,n=NOTES[o],tagl=`<span class="mono" style="font-size:12px;color:var(--accent);vertical-align:middle;margin-left:8px">${n.name}</span>`;
+    h=`<div class="section"><h2>Chats list ${tagl}</h2><p>Opened from the chat button in the Home header and from “Chats” on Connections. Tap a row to open that thread in the thread phone below.</p>
+    <div class="states wide" data-sw="ls"></div>
+    <div class="row"><div class="cell"><div class="phone" id="${mkPhone('list',o)}"></div><div class="cap">Chats list</div></div>
+    <div class="notes"><span class="mono">${o==='cur'?'Baseline':'Option '+o}</span><h3>${n.name}</h3><ul>${n.list.map(x=>`<li>${x}</li>`).join('')}</ul></div></div></div>
+    <div class="section"><h2>Chat thread ${tagl}</h2><p>Pick a thread kind and a state. Type and send in the composer (delivery goes Sent, Delivered, Read), and use ⋯ for Report and Block.</p>
+    <div class="states wide" data-sw="tk"></div><div class="states wide" data-sw="ts"></div>
+    <div class="row"><div class="cell"><div class="phone" id="${mkPhone('thread',o)}"></div><div class="cap">Thread</div></div>
+    <div class="notes"><span class="mono">${o==='cur'?'Baseline':'Option '+o}</span><h3>${n.name}</h3><ul>${n.thread.map(x=>`<li>${x}</li>`).join('')}</ul></div></div></div>`;
+  }else{
+    const cols=sc=>OPTS.map(o=>`<div class="col"><div class="zoomer"><div class="phone" id="${mkPhone(sc,o[0])}"></div></div><div class="cap"><b>${o[1]}</b>${o[2]?' · '+o[2]:''}<br>${NOTES[o[0]].short}</div></div>`).join('');
+    h=`<div class="section"><h2>Chats list · compare all</h2><p>Current baseline plus the four options at 72% scale. The state switcher drives every phone.</p><div class="states wide" data-sw="ls"></div><div class="cmp">${cols('list')}</div></div>
+    <div class="section"><h2>Chat thread · compare all</h2><p>The kind and state switchers drive every phone; each phone still lets you type, send and open sheets.</p><div class="states wide" data-sw="tk"></div><div class="states wide" data-sw="ts"></div><div class="cmp">${cols('thread')}</div></div>`;
+  }
+  app.innerHTML=h;
+  PH.forEach(p=>renderPhone(p));
+  refreshSwitchers();
+}
+function renderChooser(){
+  const b=document.getElementById('chooser');
+  b.innerHTML=`<span class="lbl mono">Design option</span>`+OPTS.map(o=>`<button data-m="${o[0]}" class="${G.mode===o[0]?'on':''}">${o[1]}${o[2]?`<small>${o[2]}</small>`:''}</button>`).join('')+`<button data-m="all" class="${G.mode==='all'?'on':''}" style="margin-left:auto">Compare all 4</button>`;
+  b.querySelectorAll('button').forEach(x=>x.onclick=()=>{G.mode=x.dataset.m;renderChooser();render();window.scrollTo({top:0})});
+}
+
+/* interactions (delegated) */
+document.addEventListener('click',e=>{
+  const a=e.target.closest('[data-act]');if(!a)return;
+  const el=a.closest('.phone');if(!el)return;
+  const ph=PH.find(p=>p.id===el.id);if(!ph)return;
+  const x=a.dataset.act;
+  if(x==='close'){ph.sheet=null;if(SHEETSTATES.includes(ph.state))ph.state='messages';return renderPhone(ph)}
+  if(x==='menu'){ph.sheet='menu';return renderPhone(ph)}
+  if(x==='report'){ph.sheet='report';return renderPhone(ph)}
+  if(x==='block'){ph.sheet='block';return renderPhone(ph)}
+  if(x.startsWith('reason:')){ph.reason=+x.split(':')[1];return renderPhone(ph)}
+  if(x==='sendreport'){ph.sheet=null;if(SHEETSTATES.includes(ph.state))ph.state='messages';return renderPhone(ph)} /* real app: the sheet just closes */
+  if(x==='doblock'){ph.sheet=null;G.ts='blocked';G.tk='emp';syncAll('thread');refreshSwitchers();return}
+  if(x==='retry'){ph.state='loading';renderPhone(ph);return setTimeout(()=>{ph.state='list';renderPhone(ph)},900)}
+  if(x==='arch'){ph.archOpen=!ph.archOpen;return renderPhone(ph)}
+  if(x==='pin'){ph.pinOpen=!(ph.pinOpen!==false);return renderPhone(ph)}
+  if(x.startsWith('filt:')){ph.filter=x.slice(5);return renderPhone(ph)}
+  if(x.startsWith('th:')){
+    const t=TH.find(z=>z.id===x.slice(3));
+    G.tk=t.kind==='SUP'?'sup':t.kind==='INT'?'mask':'emp';
+    G.ts=t.arch==='withdrawn'?'withdrawn':t.arch==='blocked'?'blocked':'messages';
+    syncAll('thread');refreshSwitchers();toast(el,'Opens the thread →');return;
+  }
+  if(x==='retry-send'||x==='send'){
+    const inp=el.querySelector('[id^=in-]');
+    let v=(inp?inp.value:'').trim();
+    if(x==='retry-send'&&!v)v=SENT_BODY;
+    if(!v)return;
+    if(['failed','sending','offline'].includes(ph.state))ph.state=G.ts==='offline'?'offline':'messages';
+    const queued=G.ts==='offline';
+    const o={b:v,d:queued?'queued':'sent',r:queued?'Queued · offline':'Sent · not delivered'};
+    ph.extra.push(o);ph.draftNow=null;
+    renderPhone(ph);
+    if(!queued){
+      setTimeout(()=>{o.d='delivered';o.r='Delivered '+NOW_CLK;renderPhone(ph)},1000);
+      setTimeout(()=>{o.d='read';o.r='Read '+NOW_CLK;renderPhone(ph)},2400);
+    }
+    return;
+  }
+  if(x.startsWith('toast:'))toast(el,x.slice(6));
+});
+document.addEventListener('input',e=>{
+  const t=e.target;if(!t.id||!t.id.startsWith('in-'))return;
+  const el=t.closest('.phone'),ph=PH.find(p=>p.id===el.id);if(!ph)return;
+  ph.draftNow=t.value;
+  const s=el.querySelector('.send');if(s)s.classList.toggle('off',!t.value.trim()||ph.state==='sending');
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&e.target.id&&e.target.id.startsWith('in-')&&e.target.tagName==='INPUT'){const s=e.target.closest('.phone').querySelector('.send');if(s&&!s.classList.contains('off'))s.click()}
+});
+
+/* optional deep link for review: #mode=A&ls=empty&ts=report&tk=mask */
+(function(){location.hash.slice(1).split('&').forEach(p=>{const [k,v]=p.split('=');if(k==='mode')G.mode=v;else if(k==='ls')G.ls=v;else if(k==='ts'){G.ts=v;if(FORCE[v])G.tk=FORCE[v]}else if(k==='tk')G.tk=v})})();
+renderChooser();render();
+</script>
+</body>
+</html>

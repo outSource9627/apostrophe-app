@@ -236,6 +236,17 @@ const queryClient = new QueryClient({
   },
 })
 
+/**
+ * The app's default status bar, mounted once. App re-renders on every route
+ * change (the tab bar reads the route), and on Android React Native re-sends a
+ * <StatusBar>'s style on every update — so a plain one here put dark icons back
+ * over a screen that had just asked for light ones (lib/useLightStatusBar: the
+ * job feed, Home's violet header). Memoised with no props, it never updates.
+ */
+const RootStatusBar = React.memo(function RootStatusBar() {
+  return <StatusBar barStyle="dark-content" />
+})
+
 export default function App() {
   // The tab bar sits beside the stack, outside any navigator, so it cannot use
   // navigation hooks — it reads the current route from the container instead.
@@ -250,7 +261,7 @@ export default function App() {
         {/* Light-only for now; the brand ground is paper white. RN 0.87 removed
             StatusBar's backgroundColor prop, so the Android bar colour belongs
             in styles.xml rather than here. */}
-        <StatusBar barStyle="dark-content" />
+        <RootStatusBar />
         <NavigationContainer ref={navRef} onReady={syncRoute} onStateChange={syncRoute}>
         <View style={styles.appShell}>
         <View style={styles.stackArea}>
@@ -472,6 +483,7 @@ export default function App() {
                 <InterviewsScreen
                   onBack={() => navigation.goBack()}
                   onOpen={(id) => navigation.navigate('InterviewDetail', { id })}
+                  onChat={() => navigation.navigate('Chats')}
                   onBook={() => navigation.navigate('BookInterview')}
                 />
               )}
@@ -570,7 +582,9 @@ export default function App() {
               {({ navigation }) => (
                 <InterestsScreen
                   onBack={() => navigation.goBack()}
-                  onConnections={() => navigation.navigate('Connections')}
+                  onChats={() => navigation.navigate('Chats')}
+                  onOpenThread={(id) => navigation.navigate('Thread', { id })}
+                  onBrowseJobs={() => navigation.navigate('JobFeed')}
                   onVideoResume={() => navigation.navigate('VideoResume')}
                 />
               )}
@@ -669,6 +683,7 @@ export default function App() {
               {({ navigation }) => (
                 <AccountScreen
                   onBack={() => navigation.goBack()}
+                  onChat={() => navigation.navigate('Chats')}
                   onSignedOut={() => navigation.reset({ index: 0, routes: [{ name: 'Welcome' }] })}
                   onReceipts={() => navigation.navigate('Receipts')}
                   onVisibility={() => navigation.navigate('Visibility')}

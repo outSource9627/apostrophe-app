@@ -41,13 +41,13 @@ export const INTERVIEWER_TABS: TabDef[] = [
   { key: 'account', label: 'Account', root: 'InterviewerAccount', icon: 'person' },
 ]
 
-/** The Employer Android design's five (EM-04..29): Home lands under Feed; Account and Notifications sit behind the header. */
+/** The Employer Android design's five (EM-04..29): Home lands under Feed; Chats and Notifications sit behind the header; Profile (Account) is the last tab and never locked. */
 export const EMPLOYER_TABS: TabDef[] = [
   { key: 'feed', label: 'Feed', root: 'EmployerFeed', icon: 'feed', glyph: 'play' },
   { key: 'shortlist', label: 'Shortlist', root: 'EmployerShortlist', icon: 'star', glyph: 'bookmark', gated: true },
   { key: 'interests', label: 'Interests', root: 'EmployerInterests', icon: 'heart', glyph: 'heart', gated: true },
   { key: 'jobs', label: 'Jobs', root: 'EmployerJobs', icon: 'briefcase', glyph: 'brief', gated: true },
-  { key: 'chat', label: 'Chats', root: 'EmployerChats', icon: 'chat', glyph: 'chat', gated: true },
+  { key: 'profile', label: 'Profile', root: 'EmployerAccount', icon: 'person', glyph: 'user' },
 ]
 
 type Persona = 'student' | 'interviewer' | 'employer'
@@ -98,7 +98,7 @@ const INTERVIEWER_ROUTES: Partial<Record<keyof RootStackParamList, TabKey>> = {
   InterviewerChats: 'account',
 }
 
-// Routes the design draws without a tab bar (Account, Notifications, the job
+// Routes the design draws without a tab bar (Notifications, the job
 // editor, the applicant, a chat thread, documents and status) are left out, so
 // the bar hides there. Company profile draws the bar with nothing lit.
 const EMPLOYER_ROUTES: Partial<Record<keyof RootStackParamList, TabKey>> = {
@@ -111,8 +111,10 @@ const EMPLOYER_ROUTES: Partial<Record<keyof RootStackParamList, TabKey>> = {
   EmployerJobs: 'jobs',
   EmployerJobDetail: 'jobs',
   JobApplications: 'jobs',
-  EmployerChats: 'chat',
-  EmployerConnections: 'chat',
+  EmployerAccount: 'profile',
+  // Chat opens from the header button, so it has no tab of its own: the bar stays, nothing is lit.
+  EmployerChats: 'none',
+  EmployerConnections: 'none',
 }
 
 /** Which persona's bar, and which tab, a given route name activates — or `null` to hide the bar entirely. */

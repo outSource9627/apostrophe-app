@@ -83,6 +83,11 @@ const ICONS = {
   link: [P('M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7'), P('M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7')],
   sort: [P('M7 4v16M3 16l4 4 4-4M17 20V4M13 8l4-4 4 4')],
   arrowUR: [P('M7 17L17 7M8 7h9v9')],
+  // Interviewer Home tiles (docs/interviewer-home-final.html).
+  checkCircle: [C(12, 12, 9), P('M8 12.5l3 3 5-6')],
+  pie: [P('M12 3a9 9 0 1 0 9 9h-9z'), P('M15 3.5A9 9 0 0 1 20.5 9H15z')],
+  rupee: [P('M7 5h10M7 9h10M7 5c5 0 7 1.5 7 4s-2 4-7 4l7 6')],
+  wallet: [R(3, 6, 18, 14, 2), P('M3 10h18M16 15h2')],
 } satisfies Record<string, Shape[]>
 
 export type IconName = keyof typeof ICONS

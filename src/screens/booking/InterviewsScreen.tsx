@@ -9,6 +9,7 @@ import { fmtShortDate, fmtTime, splitByTime } from '../../lib/interviews/slots'
 import { feedbackNote, statusMark } from '../../lib/interviews/status'
 import { borderWidth, color, fontFamilyNative as FF, opacity, radius } from '../../theme'
 import { StatusPill } from '../../components/ui'
+import { ChatButton } from '../../components/tab/ChatButton'
 import { BookFab, CompactBar, GroupLabel, LargeTitle, Skel, StateBlock, useCollapsingTitle, useScrollingDown } from '../../components/tab/kit'
 
 type Filter = 'All' | 'Upcoming' | 'Completed' | 'Cancelled'
@@ -24,8 +25,8 @@ const FILTERS: Filter[] = ['All', 'Upcoming', 'Completed', 'Cancelled']
  * so the route's wiring does not change.
  */
 export function InterviewsScreen({
-  onOpen, onBook,
-}: { onBack?: () => void; onOpen: (id: string) => void; onBook: () => void }) {
+  onOpen, onBook, onChat,
+}: { onBack?: () => void; onOpen: (id: string) => void; onBook: () => void; onChat: () => void }) {
   const insets = useSafeAreaInsets()
   const [filter, setFilter] = useState<Filter>('All')
   const [now] = useState(() => Date.now())
@@ -35,7 +36,7 @@ export function InterviewsScreen({
 
   const header = (
     <View>
-      <LargeTitle title="My interviews" />
+      <LargeTitle title="My interviews" right={<ChatButton onPress={onChat} />} />
     </View>
   )
 

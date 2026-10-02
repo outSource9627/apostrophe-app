@@ -9,7 +9,7 @@ import {
 import { fmtClock, fmtDayMon, fmtRowStamp, originLabel } from '../../lib/chat/format'
 import { useChatSocketEvents } from '../../lib/chat/socket'
 import { borderWidth, color, fontFamilyNative as FF, opacity, radius } from '../../theme'
-import { CompactBar, GroupLabel, LargeTitle, SkeletonRows, StateBlock, useCollapsingTitle } from '../../components/tab/kit'
+import { CompactBar, LargeTitle, SkeletonRows, StateBlock, useCollapsingTitle } from '../../components/tab/kit'
 import { CounterpartyPlate } from './parts'
 
 const OPENS_HOURS_BEFORE = 24
@@ -61,16 +61,15 @@ export function ChatListScreen({ onOpenThread }: {
   if (q.isError) return frame(<StateBlock icon="alert" title="Could not load your chats." body="Nothing has changed. Try again in a moment." action="Try again" onAction={() => { void q.refetch() }} />)
 
   const { live, archived, conns } = q.data!
-  const unreadTotal = live.reduce((n, t) => n + t.unread, 0)
+  // One flat list, newest last message first; archived / withdrawn / blocked sit at their natural date.
+  const all = [...live, ...archived].sort((a, b) => (b.lastMessageAt ? +new Date(b.lastMessageAt) : 0) - (a.lastMessageAt ? +new Date(a.lastMessageAt) : 0))
 
   return (
     <View style={[s.page, { paddingTop: insets.top }]}>
       <CompactBar title="Chats" opacity={title.barOpacity} />
       {strip}
       <Animated.ScrollView onScroll={title.onScroll} scrollEventThrottle={16} showsVerticalScrollIndicator={false} contentContainerStyle={s.body}>
-        <LargeTitle title="Chats">
-          {unreadTotal > 0 && <Text style={s.unread}>{`${unreadTotal} UNREAD`}</Text>}
-        </LargeTitle>
+        <LargeTitle title="Chats" />
 
         {live.length === 0 && archived.length === 0 ? (
           <View style={s.pad}>
@@ -81,17 +80,9 @@ export function ChatListScreen({ onOpenThread }: {
           </View>
         ) : (
           <View style={s.pad}>
-            <View>{live.map((t, i) => <ThreadRow key={t.id} t={t} conn={t.connectionId ? conns.get(t.connectionId) : undefined} now={now} first={i === 0} muted={t.kind === 'STUDENT_INTERVIEWER' && t.state.readOnly && !t.state.open} onOpen={() => onOpenThread(t.id)} />)}</View>
-            {archived.length > 0 && (
-              <>
-                <View style={s.archHead}>
-                  <GroupLabel>Archived</GroupLabel>
-                  <View style={s.rule} />
-                  <Text style={s.archCount}>{String(archived.length)}</Text>
-                </View>
-                <View>{archived.map((t, i) => <ThreadRow key={t.id} t={t} conn={t.connectionId ? conns.get(t.connectionId) : undefined} now={now} first={i === 0} muted onOpen={() => onOpenThread(t.id)} />)}</View>
-              </>
-            )}
+            <View style={s.group}>
+              {all.map((t, i) => <ThreadRow key={t.id} t={t} conn={t.connectionId ? conns.get(t.connectionId) : undefined} now={now} first={i === 0} muted={t.state.archived || (t.kind === 'STUDENT_INTERVIEWER' && t.state.readOnly && !t.state.open)} onOpen={() => onOpenThread(t.id)} />)}
+            </View>
           </View>
         )}
       </Animated.ScrollView>
@@ -150,17 +141,17 @@ function ThreadRow({ t, conn, now, first, muted, onOpen }: {
       onPress={onOpen}
       style={({ pressed }) => [s.row, first ? null : s.rowBorder, pressed && s.pressed]}
     >
-      <CounterpartyPlate thread={t} size={48} />
+      <CounterpartyPlate thread={t} size={44} tinted />
       <View style={s.rowBody}>
         <View style={s.rowTop}>
           <Text style={[s.name, unread && s.nameUnread, muted && s.nameMuted]} numberOfLines={1}>{t.counterparty.name}</Text>
           {!!t.lastMessageAt && <Text style={s.stamp}>{fmtRowStamp(t.lastMessageAt, now)}</Text>}
         </View>
-        <Text style={s.ctx} numberOfLines={2}>{contextLine(t, conn, now).toUpperCase()}</Text>
         <View style={s.rowBottom}>
           <Text style={[s.preview, unread && s.previewUnread]} numberOfLines={1}>{t.lastMessagePreview ?? ' '}</Text>
           {unread && <View style={s.chip}><Text style={s.chipText}>{String(t.unread)}</Text></View>}
         </View>
+        <Text style={s.ctx} numberOfLines={2}>{contextLine(t, conn, now).toUpperCase()}</Text>
       </View>
     </Pressable>
   )
@@ -171,7 +162,6 @@ const s = StyleSheet.create({
   body: { paddingBottom: 130 },
   pad: { paddingHorizontal: 20 },
   pressed: { opacity: opacity.pressed },
-  unread: { fontFamily: FF.monoMedium, fontSize: 11, letterSpacing: 1.54, color: color.textMuted, marginTop: 8 },
 
   strip: {
     flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 9, paddingHorizontal: 20,
@@ -184,11 +174,8 @@ const s = StyleSheet.create({
   emptyTitle: { fontFamily: FF.bodyBold, fontSize: 20, letterSpacing: -0.4, color: color.text },
   emptyBody: { fontFamily: FF.body, fontSize: 15, lineHeight: 22, color: color.textMuted, marginTop: 8 },
 
-  archHead: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 16 },
-  rule: { flex: 1, height: borderWidth.thin, backgroundColor: color.border },
-  archCount: { fontFamily: FF.monoMedium, fontSize: 11, color: color.textSubtle },
-
-  row: { flexDirection: 'row', alignItems: 'flex-start', gap: 14, paddingVertical: 14, minHeight: 88 },
+  group: { backgroundColor: color.surface, borderWidth: borderWidth.thin, borderColor: color.border, borderRadius: 18, paddingHorizontal: 14, marginTop: 8 },
+  row: { flexDirection: 'row', alignItems: 'flex-start', gap: 14, paddingVertical: 12, minHeight: 80 },
   rowBorder: { borderTopWidth: borderWidth.thin, borderTopColor: color.border },
   rowBody: { flex: 1, minWidth: 0 },
   rowTop: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 10 },
@@ -196,8 +183,8 @@ const s = StyleSheet.create({
   nameUnread: { fontFamily: FF.bodyBold },
   nameMuted: { color: color.textMuted },
   stamp: { fontFamily: FF.monoMedium, fontSize: 11, color: color.textSubtle },
-  ctx: { fontFamily: FF.monoMedium, fontSize: 10.5, lineHeight: 15, letterSpacing: 0.63, color: color.textSubtle, marginTop: 3 },
-  rowBottom: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 5 },
+  ctx: { fontFamily: FF.monoMedium, fontSize: 10.5, lineHeight: 15, letterSpacing: 0.63, color: color.textSubtle, marginTop: 5 },
+  rowBottom: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 3 },
   preview: { flex: 1, fontFamily: FF.body, fontSize: 14.5, color: color.textMuted },
   previewUnread: { fontFamily: FF.bodyMedium, color: color.text },
   chip: { minWidth: 22, height: 22, borderRadius: radius.pill, paddingHorizontal: 7, backgroundColor: color.surfaceSunken, alignItems: 'center', justifyContent: 'center' },

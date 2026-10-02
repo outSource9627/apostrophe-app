@@ -68,6 +68,8 @@ export function PaidHome(props: PaidHomeProps) {
   const today = new Date(now)
   const dash = useQuery({ queryKey: ['dashboard'], queryFn: loadDashboard })
   const [sheet, setSheet] = useState<SheetKey>(null)
+  // The gradient is drawn at the header's measured size; a percentage-sized SVG collapses inside a content-sized view.
+  const [hdr, setHdr] = useState({ w: 0, h: 0 })
   useLightStatusBar()
 
   const firstName = me.name?.split(' ')[0]
@@ -84,16 +86,21 @@ export function PaidHome(props: PaidHomeProps) {
         }
       >
         {/* ── header ─────────────────────────────────────────────── */}
-        <View style={[s.header, { paddingTop: insets.top + 14 }]}>
-          <Svg style={StyleSheet.absoluteFill} width="100%" height="100%" preserveAspectRatio="none">
-            <Defs>
-              <LinearGradient id="homeHdr" x1="0" y1="0" x2="0.3" y2="1">
-                <Stop offset="0" stopColor={color.accentBright} />
-                <Stop offset="1" stopColor={color.accentDeep} />
-              </LinearGradient>
-            </Defs>
-            <Rect x="0" y="0" width="100%" height="100%" fill="url(#homeHdr)" />
-          </Svg>
+        <View
+          style={[s.header, { paddingTop: insets.top + 14 }]}
+          onLayout={(e) => setHdr({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}
+        >
+          {hdr.w > 0 && (
+            <Svg style={StyleSheet.absoluteFill} width={hdr.w} height={hdr.h}>
+              <Defs>
+                <LinearGradient id="homeHdr" x1="0" y1="0" x2="0.3" y2="1">
+                  <Stop offset="0" stopColor={color.accentBright} />
+                  <Stop offset="1" stopColor={color.accentDeep} />
+                </LinearGradient>
+              </Defs>
+              <Rect x="0" y="0" width={hdr.w} height={hdr.h} fill="url(#homeHdr)" />
+            </Svg>
+          )}
           <View style={s.headerRow}>
             <View style={s.headerText}>
               <Text style={s.date}>{longDate(today)}</Text>
@@ -564,7 +571,7 @@ const s = StyleSheet.create({
   grow: { flex: 1, minWidth: 0 },
   pressed: { opacity: opacity.pressed },
 
-  header: { paddingHorizontal: 20, paddingBottom: 70, borderBottomLeftRadius: 30, borderBottomRightRadius: 30, overflow: 'hidden' },
+  header: { backgroundColor: color.accentDeep, paddingHorizontal: 20, paddingBottom: 70, borderBottomLeftRadius: 30, borderBottomRightRadius: 30, overflow: 'hidden' },
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
   headerText: { flex: 1, minWidth: 0 },
   date: { fontFamily: FF.body, fontSize: 14, color: color.accentMuted },

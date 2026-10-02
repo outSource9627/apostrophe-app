@@ -1,0 +1,2403 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apostrophe – Real Video Feed System (Candidates & Student Jobs)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-page: #080A10;
+    --bg-panel: #111522;
+    --bg-subtle: #181E30;
+    --border-dim: rgba(255,255,255,0.08);
+    --border-bright: rgba(255,255,255,0.18);
+    --text-pure: #FFFFFF;
+    --text-high: #E6EAF2;
+    --text-mid: #9DA7BD;
+    --text-low: #606B82;
+    
+    /* Brand & Action Colors */
+    --tinder-pink: #FD3A73;
+    --tinder-rose: #FF6036;
+    --tinder-grad: linear-gradient(135deg, #FD297B 0%, #FF5864 50%, #FF655B 100%);
+    --tinder-cyan: #00D1FF;
+    --tinder-green: #20D575;
+    --tinder-gold: #FFC000;
+    --tinder-purple: #7C4DFF;
+    
+    /* Apostrophe Accent Tokens */
+    --apo-accent: #6344F5;
+    --apo-accent-light: #8364FF;
+    
+    --sans: 'Geist', 'Plus Jakarta Sans', -apple-system, system-ui, sans-serif;
+    --mono: 'Geist Mono', ui-monospace, monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
+  body {
+    background: var(--bg-page);
+    color: var(--text-high);
+    font-family: var(--sans);
+    min-height: 100vh;
+    padding: 20px 20px 80px;
+    overflow-x: hidden;
+  }
+
+  button { font: inherit; color: inherit; border: none; background: none; cursor: pointer; }
+  svg { display: block; flex-shrink: 0; }
+
+  /* ── STUDIO HEADER & CONTROLS ── */
+  .studio-header {
+    max-width: 1720px;
+    margin: 0 auto 20px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-dim);
+    border-radius: 20px;
+    padding: 16px 24px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .studio-brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .studio-logo {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    background: var(--tinder-grad);
+    display: grid;
+    place-items: center;
+    font-size: 24px;
+    font-weight: 800;
+    color: #fff;
+    box-shadow: 0 4px 18px rgba(253,58,115,0.4);
+  }
+  .studio-title h1 {
+    font-size: 18px;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .studio-title p {
+    font-size: 13px;
+    color: var(--text-mid);
+    margin-top: 2px;
+  }
+  .badge-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 750;
+    text-transform: uppercase;
+    background: rgba(253,58,115,0.18);
+    color: var(--tinder-pink);
+    border: 1px solid rgba(253,58,115,0.35);
+    padding: 2px 8px;
+    border-radius: 6px;
+    letter-spacing: 0.05em;
+  }
+
+  .studio-nav-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .mode-switch {
+    display: inline-flex;
+    background: #090B10;
+    border: 1px solid var(--border-bright);
+    border-radius: 999px;
+    padding: 4px;
+    gap: 4px;
+  }
+  .mode-btn {
+    padding: 8px 18px;
+    border-radius: 999px;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--text-mid);
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .mode-btn.active {
+    background: var(--tinder-grad);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(253,58,115,0.35);
+  }
+
+  .view-tabs {
+    display: inline-flex;
+    background: #090B10;
+    border: 1px solid var(--border-dim);
+    border-radius: 12px;
+    padding: 4px;
+    gap: 4px;
+  }
+  .view-tab {
+    padding: 7px 13px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    font-weight: 650;
+    color: var(--text-mid);
+    transition: 0.18s ease;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .view-tab:hover { color: #fff; }
+  .view-tab.active {
+    background: var(--bg-subtle);
+    color: #fff;
+    border: 1px solid var(--border-dim);
+  }
+
+  /* ── GESTURE INSTRUCTION STRIP ── */
+  .gesture-hints {
+    max-width: 1720px;
+    margin: 0 auto 24px;
+    background: rgba(20,26,40,0.6);
+    border: 1px solid var(--border-dim);
+    border-radius: 14px;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-size: 12.5px;
+    color: var(--text-mid);
+  }
+  .gesture-hint-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .gesture-hint-item strong { color: #fff; font-weight: 700; }
+  .gesture-pill-key {
+    background: #090B10;
+    border: 1px solid rgba(255,255,255,0.15);
+    padding: 2px 7px;
+    border-radius: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: #fff;
+  }
+
+  /* ── SHOWCASE GRID ── */
+  .showcase-grid {
+    max-width: 1720px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 28px;
+  }
+  @media (max-width: 1600px) { .showcase-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 840px) { .showcase-grid { grid-template-columns: 1fr; } }
+
+  .design-column {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .design-meta {
+    width: 100%;
+    max-width: 390px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 4px;
+  }
+  .design-meta h3 {
+    font-size: 15px;
+    font-weight: 750;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .design-pill {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: var(--bg-subtle);
+    color: var(--text-mid);
+    border: 1px solid var(--border-dim);
+  }
+
+  /* ── PHONE SHELL ── */
+  .phone-frame {
+    width: 390px;
+    height: 800px;
+    background: #000000;
+    border-radius: 46px;
+    border: 10px solid #171B26;
+    box-shadow: 0 25px 65px -15px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.12);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    user-select: none;
+    touch-action: none;
+  }
+
+  /* Status Bar */
+  .status-bar {
+    height: 38px;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #fff;
+    z-index: 30;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    pointer-events: none;
+  }
+  .status-camera-punch {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #090B10;
+  }
+  .status-icons {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+  }
+
+  /* Bottom Home Indicator */
+  .home-indicator {
+    position: absolute;
+    bottom: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 4px;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.7);
+    z-index: 35;
+    pointer-events: none;
+  }
+
+  /* ── TINDER TOP BAR ── */
+  .app-topbar {
+    position: absolute;
+    top: 36px;
+    left: 0;
+    right: 0;
+    height: 48px;
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 25;
+  }
+  .top-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    color: #fff;
+    background: rgba(0,0,0,0.4);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.18);
+    transition: transform 0.15s ease;
+    position: relative;
+  }
+  .top-btn:active { transform: scale(0.92); }
+  .top-btn .badge-dot {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    background: var(--tinder-pink);
+    color: #fff;
+    font-family: var(--mono);
+    font-size: 9px;
+    font-weight: 800;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    border: 2px solid #000;
+  }
+  .top-title {
+    font-size: 16px;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -0.01em;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .top-title-pill {
+    background: rgba(255,255,255,0.18);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.25);
+    padding: 5px 14px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 750;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+  }
+
+  /* ── BOTTOM APP NAV BAR (Tinder Style) ── */
+  .app-navbar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    padding-bottom: 12px;
+    background: #000000;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    z-index: 25;
+  }
+  .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    color: #717A8C;
+    transition: 0.15s;
+    position: relative;
+    padding: 6px 12px;
+  }
+  .nav-item.active {
+    color: var(--tinder-pink);
+  }
+  .nav-item.active svg {
+    stroke-width: 2.4;
+  }
+  .nav-item .nav-label {
+    font-size: 10px;
+    font-weight: 650;
+  }
+
+  /* ── FEED CARD CONTAINER (DRAGGABLE SWIPE STACK) ── */
+  .card-stage {
+    position: absolute;
+    top: 40px;
+    left: 10px;
+    right: 10px;
+    bottom: 70px;
+    border-radius: 26px;
+    overflow: hidden;
+    background: #101422;
+    cursor: grab;
+    transform-origin: 50% 100%;
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s;
+  }
+  .card-stage.dragging {
+    cursor: grabbing;
+    transition: none !important;
+  }
+
+  /* ── VIDEO CLIPS INDICATOR BARS (Top of Card) ── */
+  .story-bars {
+    position: absolute;
+    top: 50px;
+    left: 14px;
+    right: 14px;
+    height: 3.5px;
+    display: flex;
+    gap: 5px;
+    z-index: 22;
+  }
+  .story-bar {
+    flex: 1;
+    height: 100%;
+    background: rgba(255,255,255,0.35);
+    border-radius: 4px;
+    overflow: hidden;
+    cursor: pointer;
+    position: relative;
+  }
+  .story-bar.active .story-progress {
+    width: 100%;
+    height: 100%;
+    background: #fff;
+    box-shadow: 0 0 6px rgba(255,255,255,0.8);
+  }
+  .story-bar.seen .story-progress {
+    width: 100%;
+    height: 100%;
+    background: #fff;
+  }
+
+  /* ── REAL HTML5 VIDEO RUNNING IN FEED ── */
+  .card-video-wrap {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    overflow: hidden;
+    background: #000;
+  }
+  .card-video-wrap video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .card-media-tap-left, .card-media-tap-right {
+    position: absolute;
+    top: 0;
+    bottom: 140px;
+    width: 40%;
+    z-index: 15;
+    cursor: pointer;
+  }
+  .card-media-tap-left { left: 0; }
+  .card-media-tap-right { right: 0; }
+
+  .card-shade {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    background: linear-gradient(180deg, 
+      rgba(0,0,0,0.6) 0%, 
+      rgba(0,0,0,0.02) 18%, 
+      rgba(0,0,0,0.06) 40%, 
+      rgba(0,0,0,0.78) 70%, 
+      rgba(0,0,0,0.98) 100%);
+    pointer-events: none;
+  }
+
+  /* Video Badge & Sound Toggle overlay */
+  .video-chip-tag {
+    position: absolute;
+    top: 60px;
+    left: 14px;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.2);
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    z-index: 22;
+  }
+  .sound-btn-overlay {
+    position: absolute;
+    top: 60px;
+    right: 14px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #fff;
+    display: grid;
+    place-items: center;
+    z-index: 22;
+    cursor: pointer;
+  }
+
+  /* ── CARD BOTTOM INFO HUD (Tinder Exact Layout) ── */
+  .card-info-hud {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 84px;
+    padding: 0 16px;
+    z-index: 18;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    color: #fff;
+    pointer-events: auto;
+  }
+
+  .hud-name-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .hud-name-group {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    min-width: 0;
+  }
+  .hud-name {
+    font-size: 25px;
+    font-weight: 850;
+    letter-spacing: -0.03em;
+    color: #fff;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .hud-age {
+    font-size: 23px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.92);
+  }
+  .hud-verified-icon {
+    width: 22px;
+    height: 22px;
+    color: #27A2FF;
+    flex-shrink: 0;
+    margin-left: -2px;
+  }
+
+  /* Tinder Up-Arrow Profile Opener */
+  .hud-up-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.22);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.4);
+    display: grid;
+    place-items: center;
+    color: #fff;
+    flex-shrink: 0;
+    transition: transform 0.15s ease, background 0.15s;
+    cursor: pointer;
+  }
+  .hud-up-btn:hover { background: rgba(255,255,255,0.4); transform: translateY(-2px); }
+
+  .hud-section-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.9);
+    letter-spacing: 0.01em;
+  }
+  .hud-section-label svg { width: 15px; height: 15px; }
+
+  /* Pill Cloud (Highlighted Pink + Translucent Dark) */
+  .hud-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    max-height: 72px;
+    overflow: hidden;
+  }
+  .hud-pill {
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 650;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+    transition: transform 0.12s;
+  }
+  .hud-pill.highlight {
+    background: rgba(253,58,115,0.85);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(253,58,115,0.35);
+    border: 1px solid rgba(255,255,255,0.3);
+  }
+  .hud-pill.dark {
+    background: rgba(18,22,34,0.75);
+    backdrop-filter: blur(10px);
+    color: rgba(255,255,255,0.92);
+    border: 1px solid rgba(255,255,255,0.18);
+  }
+  .hud-pill.verified {
+    background: rgba(32,213,117,0.24);
+    color: #4EEDB0;
+    border: 1px solid rgba(32,213,117,0.45);
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .hud-meta-line {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: rgba(255,255,255,0.82);
+    font-weight: 550;
+  }
+  .hud-meta-line svg { width: 14px; height: 14px; opacity: 0.85; }
+
+  /* ── 4 IMPLEMENTABLE FLOATING ACTION BUTTONS (NO FAKE SUPER LIKE) ── */
+  .card-action-bar {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 12px;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    z-index: 20;
+  }
+  .act-btn {
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: rgba(18,22,34,0.9);
+    backdrop-filter: blur(14px);
+    border: 1px solid rgba(255,255,255,0.15);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.55);
+    cursor: pointer;
+    transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.15s;
+    position: relative;
+  }
+  .act-btn:hover { transform: scale(1.12); }
+  .act-btn:active { transform: scale(0.9); }
+
+  .act-btn.sm { width: 46px; height: 46px; }
+  .act-btn.lg { width: 58px; height: 58px; }
+
+  .act-btn.undo { color: var(--tinder-gold); }
+  .act-btn.pass { color: var(--tinder-pink); }
+  .act-btn.like { color: var(--tinder-green); }
+  .act-btn.plane { color: var(--tinder-purple); }
+
+  /* Stamp Badges (Overlay on Swipe/Drag) */
+  .stamp-badge {
+    position: absolute;
+    top: 110px;
+    padding: 6px 18px;
+    border-radius: 12px;
+    font-family: var(--mono);
+    font-size: 24px;
+    font-weight: 850;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border: 3.5px solid;
+    pointer-events: none;
+    opacity: 0;
+    transform: scale(0.8) rotate(-15deg);
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 25;
+  }
+  .stamp-badge.pass {
+    right: 20px;
+    color: var(--tinder-pink);
+    border-color: var(--tinder-pink);
+    transform: rotate(15deg);
+    background: rgba(253,58,115,0.18);
+  }
+  .stamp-badge.like {
+    left: 20px;
+    color: var(--tinder-green);
+    border-color: var(--tinder-green);
+    transform: rotate(-15deg);
+    background: rgba(32,213,117,0.18);
+  }
+  .stamp-badge.skip {
+    left: 50%;
+    transform: translateX(-50%) rotate(0deg);
+    color: #fff;
+    border-color: #fff;
+    background: rgba(255,255,255,0.2);
+  }
+  .stamp-badge.show {
+    opacity: 1 !important;
+    transform: scale(1.05) rotate(var(--rot, -12deg)) !important;
+  }
+
+  /* ── DESIGN 2: PRO DARK GLASS GLOW ── */
+  .d2-frame .card-stage {
+    background: #0C101A;
+    border: 1px solid rgba(99,68,245,0.3);
+    box-shadow: 0 0 35px rgba(99,68,245,0.22);
+  }
+  .d2-frame .act-btn.like {
+    background: linear-gradient(135deg, #10B981, #059669);
+    color: #fff;
+    border: none;
+    box-shadow: 0 4px 20px rgba(16,185,129,0.45);
+  }
+  .d2-frame .act-btn.pass {
+    background: linear-gradient(135deg, #EF4444, #DC2626);
+    color: #fff;
+    border: none;
+    box-shadow: 0 4px 20px rgba(239,68,68,0.45);
+  }
+  .d2-frame .hud-pill.highlight {
+    background: linear-gradient(135deg, #6344F5, #8364FF);
+    border: 1px solid rgba(255,255,255,0.25);
+  }
+
+  /* ── DESIGN 3: 3D STACK DECK ── */
+  .d3-frame .card-stage {
+    top: 52px;
+    bottom: 86px;
+    left: 14px;
+    right: 14px;
+    border-radius: 22px;
+    box-shadow: 0 16px 36px rgba(0,0,0,0.75);
+  }
+  .d3-deck-back {
+    position: absolute;
+    top: 42px;
+    left: 24px;
+    right: 24px;
+    bottom: 96px;
+    background: #181F30;
+    border-radius: 22px;
+    border: 1px solid rgba(255,255,255,0.08);
+    transform: translateY(-6px) scale(0.95);
+    z-index: 0;
+  }
+  .d3-deck-back-2 {
+    position: absolute;
+    top: 34px;
+    left: 34px;
+    right: 34px;
+    bottom: 104px;
+    background: #101524;
+    border-radius: 22px;
+    transform: translateY(-12px) scale(0.9);
+    z-index: -1;
+  }
+
+  /* ── DESIGN 4: REEL VIDEO SPOTLIGHT ── */
+  .d4-frame .reel-audio-wave {
+    position: absolute;
+    top: 56px;
+    right: 16px;
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.2);
+    padding: 6px 12px;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #fff;
+    font-size: 11px;
+    font-family: var(--mono);
+    z-index: 22;
+  }
+  .d4-frame .wave-bar {
+    width: 2.5px;
+    height: 12px;
+    background: #20D575;
+    border-radius: 2px;
+    animation: wave 1s ease-in-out infinite alternate;
+  }
+  .d4-frame .wave-bar:nth-child(2) { height: 16px; animation-delay: 0.2s; }
+  .d4-frame .wave-bar:nth-child(3) { height: 8px; animation-delay: 0.4s; }
+  @keyframes wave { 0% { transform: scaleY(0.4); } 100% { transform: scaleY(1.2); } }
+
+  /* ── FULL PROFILE & JOB DETAILS DRAWER (Slide Up) ── */
+  .profile-sheet {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 88%;
+    background: #0E121D;
+    border-top: 1px solid rgba(255,255,255,0.18);
+    border-radius: 28px 28px 0 0;
+    z-index: 50;
+    transform: translateY(105%);
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 -20px 50px rgba(0,0,0,0.85);
+  }
+  .profile-sheet.open {
+    transform: translateY(0);
+  }
+  .sheet-handle {
+    width: 38px;
+    height: 4px;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.3);
+    margin: 10px auto 4px;
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  .sheet-header {
+    padding: 12px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border-dim);
+    flex-shrink: 0;
+  }
+  .sheet-header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .sheet-logo-initials {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: var(--apo-accent);
+    color: #fff;
+    font-weight: 800;
+    display: grid;
+    place-items: center;
+    font-size: 15px;
+  }
+  .sheet-header h2 {
+    font-size: 18px;
+    font-weight: 800;
+    color: #fff;
+  }
+  .sheet-header p {
+    font-size: 12px;
+    color: var(--text-mid);
+  }
+  .sheet-close {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--bg-subtle);
+    color: #fff;
+    display: grid;
+    place-items: center;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .sheet-body {
+    padding: 16px 18px 24px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .sheet-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .sheet-stat-box {
+    background: var(--bg-subtle);
+    border: 1px solid var(--border-dim);
+    border-radius: 12px;
+    padding: 10px 12px;
+  }
+  .sheet-stat-box .lbl {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-mid);
+    text-transform: uppercase;
+  }
+  .sheet-stat-box .val {
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    margin-top: 3px;
+  }
+  .sheet-section h4 {
+    font-size: 12.5px;
+    font-weight: 750;
+    color: var(--text-mid);
+    text-transform: uppercase;
+    font-family: var(--mono);
+    margin-bottom: 8px;
+    letter-spacing: 0.05em;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .sheet-section p {
+    font-size: 13.5px;
+    color: var(--text-high);
+    line-height: 1.5;
+  }
+
+  /* Self-Uploaded Clips Section in Profile Sheet */
+  .self-clips-list {
+    display: grid;
+    gap: 8px;
+  }
+  .self-clip-card {
+    background: #090B10;
+    border: 1px solid var(--border-dim);
+    border-radius: 12px;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    cursor: pointer;
+    transition: 0.15s;
+  }
+  .self-clip-card:hover {
+    background: var(--bg-subtle);
+    border-color: rgba(255,255,255,0.2);
+  }
+  .self-clip-card .clip-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .self-clip-card .clip-play-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+    display: grid;
+    place-items: center;
+    color: #fff;
+  }
+  .self-clip-card .clip-title { font-size: 13px; font-weight: 700; color: #fff; }
+  .self-clip-card .clip-badge {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    color: var(--tinder-gold);
+    text-transform: uppercase;
+  }
+  .self-clip-card .clip-dur {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-mid);
+  }
+
+  .sheet-bullet-list {
+    list-style: none;
+    display: grid;
+    gap: 6px;
+  }
+  .sheet-bullet-list li {
+    font-size: 13px;
+    color: var(--text-high);
+    line-height: 1.45;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 8px;
+  }
+  .sheet-bullet-list li::before {
+    content: "•";
+    color: var(--tinder-pink);
+    font-size: 16px;
+    line-height: 1;
+  }
+
+  .sheet-actions {
+    padding: 14px 18px 20px;
+    background: #080A10;
+    border-top: 1px solid var(--border-dim);
+    display: flex;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  /* ── TOAST NOTIFICATION ── */
+  .feed-toast {
+    position: absolute;
+    bottom: 74px;
+    left: 16px;
+    right: 16px;
+    background: #171E30;
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 14px;
+    padding: 11px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 40;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    transform: translateY(140%);
+    opacity: 0;
+    transition: all 0.25s ease;
+    pointer-events: none;
+  }
+  .feed-toast.show {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .feed-toast .msg {
+    font-size: 13px;
+    font-weight: 650;
+    color: #fff;
+  }
+  .feed-toast .undo-link {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--tinder-gold);
+    text-transform: uppercase;
+    font-family: var(--mono);
+  }
+
+  /* ── POPUP MODALS (Send Interest / Apply Modal) ── */
+  .modal-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(8px);
+    z-index: 60;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.open {
+    display: flex;
+  }
+  .modal-box {
+    background: #141926;
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 20px;
+    padding: 20px;
+    width: 100%;
+    max-width: 340px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .modal-box h3 { font-size: 17px; font-weight: 800; color: #fff; }
+  .modal-box p { font-size: 13px; color: var(--text-mid); line-height: 1.45; }
+  .modal-box textarea {
+    width: 100%;
+    height: 70px;
+    background: #090B10;
+    border: 1px solid var(--border-dim);
+    border-radius: 10px;
+    padding: 10px;
+    color: #fff;
+    font-family: var(--sans);
+    font-size: 13px;
+    resize: none;
+  }
+</style>
+</head>
+<body>
+
+<header class="studio-header">
+  <div class="studio-brand">
+    <div class="studio-logo">&rsquo;</div>
+    <div class="studio-title">
+      <h1>Tinder Feed Studio <span class="badge-tag">Video-First Engine</span></h1>
+      <p>Real Auto-Playing Video Feed with 4 Validated Production Actions (Undo, Pass, Shortlist/Save, Interest/Apply)</p>
+    </div>
+  </div>
+
+  <div class="studio-nav-group">
+    <!-- Real-time Mode Switcher -->
+    <div class="mode-switch">
+      <button class="mode-btn active" id="btn-mode-candidate" onclick="switchMode('candidate')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Employer Mode (Candidate Videos)
+      </button>
+      <button class="mode-btn" id="btn-mode-student" onclick="switchMode('student')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+        Student Mode (Job Pitches)
+      </button>
+    </div>
+
+    <div class="view-tabs">
+      <button class="view-tab active" onclick="setZoom(1)">100%</button>
+      <button class="view-tab" onclick="setZoom(0.85)">85%</button>
+      <button class="view-tab" onclick="triggerSimSwipe('pass')">Demo Pass</button>
+      <button class="view-tab" onclick="triggerSimSwipe('like')">Demo Shortlist</button>
+    </div>
+  </div>
+</header>
+
+<!-- Gesture & Feature Hints Strip -->
+<div class="gesture-hints">
+  <div class="gesture-hint-item">
+    <span class="gesture-pill-key">Drag Right →</span>
+    <span><strong>Shortlist / Save (♥)</strong> (Private shortlist / Save job)</span>
+  </div>
+  <div class="gesture-hint-item">
+    <span class="gesture-pill-key">← Drag Left</span>
+    <span><strong>Pass (✕)</strong> (Suppressed for 60 days)</span>
+  </div>
+  <div class="gesture-hint-item">
+    <span class="gesture-pill-key">↑ Drag Up</span>
+    <span><strong>Skip Card</strong> (Free walk, stays in quota pool)</span>
+  </div>
+  <div class="gesture-hint-item">
+    <span class="gesture-pill-key">Top Segments</span>
+    <span>Switch Video: Verified Interview vs. Self-Uploaded Project Clips</span>
+  </div>
+  <div class="gesture-hint-item">
+    <span class="gesture-pill-key">Tap (↑) Arrow</span>
+    <span>Slide up full profile / job post drawer with all self-videos & documents</span>
+  </div>
+</div>
+
+<!-- 4 DESIGN VARIATIONS -->
+<main class="showcase-grid" id="grid-container">
+
+  <!-- ══════════════════════════════════════════════════
+       DESIGN 1: TINDER PURE (Faithful Screenshot Replica)
+       ══════════════════════════════════════════════════ -->
+  <div class="design-column">
+    <div class="design-meta">
+      <h3>1. Tinder Video Card (Twin)</h3>
+      <span class="design-pill">Faithful Replica</span>
+    </div>
+
+    <div class="phone-frame d1-frame" id="frame-1">
+      <div class="status-bar">
+        <span>1:07</span>
+        <div class="status-camera-punch"></div>
+        <div class="status-icons"><span>5G</span><span>99%</span></div>
+      </div>
+
+      <!-- App Header -->
+      <div class="app-topbar">
+        <button class="top-btn" title="Filters" onclick="showToast('Feed Filters: 3 active', 1)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+          <div class="badge-dot">3</div>
+        </button>
+
+        <div class="top-title"><span>For you</span></div>
+
+        <button class="top-btn" title="Quota & Reset">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="#FF5864"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        </button>
+      </div>
+
+      <!-- Draggable Card Stage -->
+      <div class="card-stage d1-card" id="card-1">
+        <!-- Story / Video Progress Bars -->
+        <div class="story-bars">
+          <div class="story-bar active" onclick="setVideoClip(0, 1)"><div class="story-progress"></div></div>
+          <div class="story-bar" onclick="setVideoClip(1, 1)"><div class="story-progress"></div></div>
+          <div class="story-bar" onclick="setVideoClip(2, 1)"><div class="story-progress"></div></div>
+        </div>
+
+        <div class="video-chip-tag" id="vid-badge-1">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+          <span id="vid-lbl-1">Verified Interview (8.4 Score)</span>
+        </div>
+
+        <button class="sound-btn-overlay" id="snd-btn-1" onclick="toggleSound(1)" title="Sound Mute/Unmute">
+          <svg id="snd-ico-1" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/></svg>
+        </button>
+
+        <!-- Real HTML5 Video Player inside Feed Card -->
+        <div class="card-video-wrap">
+          <video id="vid-player-1" autoplay loop muted playsinline>
+            <source src="https://assets.mixkit.co/videos/preview/mixkit-young-woman-talking-on-a-video-call-with-her-laptop-42998-large.mp4" type="video/mp4">
+          </video>
+          <div class="card-media-tap-left" onclick="prevVideoClip(1)"></div>
+          <div class="card-media-tap-right" onclick="nextVideoClip(1)"></div>
+        </div>
+        <div class="card-shade"></div>
+
+        <!-- Stamps -->
+        <div class="stamp-badge pass" id="stamp-pass-1">PASS</div>
+        <div class="stamp-badge like" id="stamp-like-1">SHORTLIST</div>
+        <div class="stamp-badge skip" id="stamp-skip-1">SKIP</div>
+
+        <!-- Bottom Info HUD -->
+        <div class="card-info-hud">
+          <div class="hud-name-row">
+            <div class="hud-name-group">
+              <span class="hud-name" id="name-1">KHUSHI</span>
+              <span class="hud-age" id="age-1">23</span>
+              <svg class="hud-verified-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+            </div>
+            <button class="hud-up-btn" onclick="openSheet(1)" title="Open Full Details">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+            </button>
+          </div>
+
+          <div class="hud-section-label" id="sec-label-1">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            <span>Interests & Verified Skills</span>
+          </div>
+
+          <div class="hud-pills" id="pills-1"></div>
+
+          <div class="hud-meta-line" id="meta-1">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span>11 km away · Tier 1 B.Tech CSE</span>
+          </div>
+        </div>
+
+        <!-- 4 Implementable Action Buttons -->
+        <div class="card-action-bar">
+          <button class="act-btn sm undo" onclick="handleAction('undo', 1)" title="Undo Swipe (↺)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+          </button>
+          <button class="act-btn lg pass" onclick="handleAction('pass', 1)" title="Pass (✕)">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+          <button class="act-btn lg like" onclick="handleAction('like', 1)" title="Shortlist / Save (♥)">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+          </button>
+          <button class="act-btn sm plane" onclick="openDirectAction(1)" title="Send Interest / Direct Apply (✈)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Slide-Up Details Sheet (With all self-uploaded videos & full data) -->
+      <div class="profile-sheet" id="sheet-1">
+        <div class="sheet-handle" onclick="closeSheet(1)"></div>
+        <div class="sheet-header">
+          <div class="sheet-header-left">
+            <div class="sheet-logo-initials" id="sheet-avatar-1">KS</div>
+            <div>
+              <h2 id="sheet-name-1">Khushi Sharma</h2>
+              <p id="sheet-sub-1">Senior Frontend Engineer · 2.5 Yrs</p>
+            </div>
+          </div>
+          <button class="sheet-close" onclick="closeSheet(1)">✕</button>
+        </div>
+        <div class="sheet-body">
+          <div class="sheet-grid">
+            <div class="sheet-stat-box"><div class="lbl" id="sheet-lbl-1">Expected CTC</div><div class="val" id="sheet-val-1">₹18.0L – ₹22.0L</div></div>
+            <div class="sheet-stat-box"><div class="lbl">Availability / Notice</div><div class="val" id="sheet-val-2">Immediate (15 Days)</div></div>
+            <div class="sheet-stat-box"><div class="lbl">Verified Score</div><div class="val" style="color:#20D575">8.4 / 10 Verified</div></div>
+            <div class="sheet-stat-box"><div class="lbl">Location & Mode</div><div class="val" id="sheet-val-4">Bangalore · Hybrid</div></div>
+          </div>
+
+          <!-- Self-Uploaded Video Clips & Verified Interview List -->
+          <div class="sheet-section">
+            <h4>Candidate Video Clips</h4>
+            <div class="self-clips-list" id="sheet-clips-1"></div>
+          </div>
+
+          <div class="sheet-section">
+            <h4 id="sheet-sec1-title-1">About & Experience</h4>
+            <p id="sheet-about-1">Frontend Engineer specializing in scalable React and React Native web/mobile applications. Built core checkout flows and atomic component libraries.</p>
+          </div>
+
+          <div class="sheet-section">
+            <h4 id="sheet-sec2-title-1">Key Highlights & Responsibilities</h4>
+            <ul class="sheet-bullet-list" id="sheet-bullets-1">
+              <li>Engineered high-performance React Native apps with 60fps gesture animations.</li>
+              <li>Architected micro-frontend state layer reducing load time by 42%.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="sheet-actions">
+          <button class="mode-btn" style="flex:1;background:var(--bg-subtle);color:#fff" onclick="handleAction('pass', 1); closeSheet(1)">Pass</button>
+          <button class="mode-btn" style="flex:2;background:var(--tinder-grad);color:#fff" id="sheet-cta-1" onclick="handleAction('like', 1); closeSheet(1)">Shortlist Candidate</button>
+        </div>
+      </div>
+
+      <!-- Direct Action Modal -->
+      <div class="modal-overlay" id="modal-1">
+        <div class="modal-box">
+          <h3 id="modal-title-1">Send Direct Interest</h3>
+          <p id="modal-sub-1">Send a personalized note to candidate along with interview invitation (Uses 1 Interest credit).</p>
+          <textarea placeholder="Hi! We loved your verified interview clip and would like to discuss our Senior Frontend role..."></textarea>
+          <div style="display:flex;gap:10px">
+            <button class="mode-btn" style="flex:1;background:var(--bg-subtle);color:#fff" onclick="closeModal(1)">Cancel</button>
+            <button class="mode-btn" style="flex:1.5;background:var(--tinder-grad);color:#fff" onclick="submitModal(1)">Send Now</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- App Bottom Bar -->
+      <div class="app-navbar">
+        <div class="nav-item active"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 6.5C17 4 15 2 12 2c-3.5 0-6 3.5-6 7.5 0 5 4 8.5 6 12.5 2-4 6-7.5 6-12.5 0-1-.5-2-.5-3z"/></svg><span class="nav-label">Feed</span></div>
+        <div class="nav-item"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg><span class="nav-label">Explore</span></div>
+        <div class="nav-item"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><span class="nav-label">Saved</span></div>
+        <div class="nav-item"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="nav-label">Chat</span></div>
+        <div class="nav-item"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span class="nav-label">Profile</span></div>
+      </div>
+      <div class="home-indicator"></div>
+      <div class="feed-toast" id="toast-1"><span class="msg" id="toast-msg-1">Action recorded</span><button class="undo-link" onclick="undoAction(1)">Undo</button></div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════════
+       DESIGN 2: PRO DARK GLASS GLOW (Apostrophe Violet)
+       ══════════════════════════════════════════════════ -->
+  <div class="design-column">
+    <div class="design-meta">
+      <h3>2. Pro Glass Dark (Electric)</h3>
+      <span class="design-pill">Apostrophe Violet</span>
+    </div>
+
+    <div class="phone-frame d2-frame" id="frame-2">
+      <div class="status-bar">
+        <span>1:07</span>
+        <div class="status-camera-punch"></div>
+        <div class="status-icons"><span>5G</span><span>99%</span></div>
+      </div>
+
+      <div class="app-topbar">
+        <button class="top-btn" title="Filters" onclick="showToast('Feed Filters: Active', 2)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+        </button>
+
+        <div class="top-title-pill" onclick="showToast('Top Ranked Matches', 2)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--apo-accent-light)"><circle cx="12" cy="12" r="10"/></svg>
+          <span>Top Matches</span>
+        </div>
+
+        <button class="top-btn" title="Saved Searches">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+        </button>
+      </div>
+
+      <div class="card-stage" id="card-2">
+        <div class="story-bars">
+          <div class="story-bar active" onclick="setVideoClip(0, 2)"><div class="story-progress"></div></div>
+          <div class="story-bar" onclick="setVideoClip(1, 2)"><div class="story-progress"></div></div>
+          <div class="story-bar" onclick="setVideoClip(2, 2)"><div class="story-progress"></div></div>
+        </div>
+
+        <div class="video-chip-tag" id="vid-badge-2">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+          <span id="vid-lbl-2">Verified Interview (8.8 Score)</span>
+        </div>
+
+        <button class="sound-btn-overlay" id="snd-btn-2" onclick="toggleSound(2)">
+          <svg id="snd-ico-2" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/></svg>
+        </button>
+
+        <div class="card-video-wrap">
+          <video id="vid-player-2" autoplay loop muted playsinline>
+            <source src="https://assets.mixkit.co/videos/preview/mixkit-young-man-giving-a-presentation-online-with-a-headset-43003-large.mp4" type="video/mp4">
+          </video>
+          <div class="card-media-tap-left" onclick="prevVideoClip(2)"></div>
+          <div class="card-media-tap-right" onclick="nextVideoClip(2)"></div>
+        </div>
+        <div class="card-shade"></div>
+
+        <div class="stamp-badge pass" id="stamp-pass-2">PASS</div>
+        <div class="stamp-badge like" id="stamp-like-2">SHORTLIST</div>
+        <div class="stamp-badge skip" id="stamp-skip-2">SKIP</div>
+
+        <div class="card-info-hud">
+          <div class="hud-name-row">
+            <div class="hud-name-group">
+              <span class="hud-name" id="name-2">ROHIT</span>
+              <span class="hud-age" id="age-2">26</span>
+              <svg class="hud-verified-icon" viewBox="0 0 24 24" fill="#6344F5"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+            </div>
+            <button class="hud-up-btn" onclick="openSheet(2)">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+            </button>
+          </div>
+
+          <div class="hud-section-label" id="sec-label-2">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#8364FF" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            <span>Verified 8.8 Score · Full Stack</span>
+          </div>
+
+          <div class="hud-pills" id="pills-2"></div>
+
+          <div class="hud-meta-line" id="meta-2">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span>Gurugram · Hybrid · 4 Yrs Exp</span>
+          </div>
+        </div>
+
+        <div class="card-action-bar">
+          <button class="act-btn sm undo" onclick="handleAction('undo', 2)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
+          <button class="act-btn lg pass" onclick="handleAction('pass', 2)"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          <button class="act-btn lg like" onclick="handleAction('like', 2)"><svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></button>
+          <button class="act-btn sm plane" onclick="openDirectAction(2)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+        </div>
+      </div>
+
+      <div class="profile-sheet" id="sheet-2">
+        <div class="sheet-handle" onclick="closeSheet(2)"></div>
+        <div class="sheet-header">
+          <div class="sheet-header-left">
+            <div class="sheet-logo-initials" id="sheet-avatar-2" style="background:#6344F5">RV</div>
+            <div>
+              <h2 id="sheet-name-2">Rohit Verma</h2>
+              <p id="sheet-sub-2">Senior Backend Engineer · 4 Yrs</p>
+            </div>
+          </div>
+          <button class="sheet-close" onclick="closeSheet(2)">✕</button>
+        </div>
+        <div class="sheet-body">
+          <div class="sheet-grid">
+            <div class="sheet-stat-box"><div class="lbl" id="sheet-lbl-2">Expected CTC</div><div class="val" id="sheet-val-2-1">₹28.0L – ₹34.0L</div></div>
+            <div class="sheet-stat-box"><div class="lbl">Notice Period</div><div class="val" id="sheet-val-2-2">30 Days</div></div>
+            <div class="sheet-stat-box"><div class="lbl">Score</div><div class="val" style="color:#6344F5">8.8 / 10</div></div>
+            <div class="sheet-stat-box"><div class="lbl">Tier / University</div><div class="val">Tier 1 · IIT Madras</div></div>
+          </div>
+          <div class="sheet-section">
+            <h4>Candidate Video Clips</h4>
+            <div class="self-clips-list" id="sheet-clips-2"></div>
+          </div>
+          <div class="sheet-section">
+            <h4 id="sheet-sec1-title-2">About & Summary</h4>
+            <p id="sheet-about-2">Senior Backend Engineer specializing in high-throughput distributed systems in Go, Node.js and Kafka. Scaled payments ledger to 40k QPS peak.</p>
+          </div>
+        </div>
+        <div class="sheet-actions">
+          <button class="mode-btn" style="flex:1;background:var(--bg-subtle);color:#fff" onclick="handleAction('pass', 2); closeSheet(2)">Pass</button>
+          <button class="mode-btn" style="flex:2;background:var(--apo-accent);color:#fff" id="sheet-cta-2" onclick="handleAction('like', 2); closeSheet(2)">Shortlist Candidate</button>
+        </div>
+      </div>
+
+      <div class="modal-overlay" id="modal-2">
+        <div class="modal-box">
+          <h3 id="modal-title-2">Send Direct Interest</h3>
+          <p id="modal-sub-2">Invite candidate for an immediate technical conversation.</p>
+          <textarea placeholder="We are hiring a Senior Backend Architect to lead our distributed ledger team..."></textarea>
+          <div style="display:flex;gap:10px">
+            <button class="mode-btn" style="flex:1;background:var(--bg-subtle);color:#fff" onclick="closeModal(2)">Cancel</button>
+            <button class="mode-btn" style="flex:1.5;background:var(--apo-accent);color:#fff" onclick="submitModal(2)">Send Now</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="app-navbar">
+        <div class="nav-item active"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 6.5C17 4 15 2 12 2c-3.5 0-6 3.5-6 7.5 0 5 4 8.5 6 12.5 2-4 6-7.5 6-12.5 0-1-.5-2-.5-3z"/></svg><span class="nav-label">Feed</span></div>
+        <div class="nav-item"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg><span class="nav-label">Explore</span></div>
+        <div class="nav-item"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><span class="nav-label">Saved</span></div>
+        <div class="nav-item"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="nav-label">Chat</span></div>
+        <div class="nav-item"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span class="nav-label">Profile</span></div>
+      </div>
+      <div class="home-indicator"></div>
+      <div class="feed-toast" id="toast-2"><span class="msg" id="toast-msg-2">Action recorded</span><button class="undo-link" onclick="undoAction(2)">Undo</button></div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════════
+       DESIGN 3: 3D STACK DECK (Layered Cards)
+       ══════════════════════════════════════════════════ -->
+  <div class="design-column">
+    <div class="design-meta">
+      <h3>3. 3D Stack Deck (Layered)</h3>
+      <span class="design-pill">Deck Depth</span>
+    </div>
+
+    <div class="phone-frame d3-frame" id="frame-3">
+      <div class="status-bar">
+        <span>1:07</span>
+        <div class="status-camera-punch"></div>
+        <div class="status-icons"><span>5G</span><span>99%</span></div>
+      </div>
+
+      <div class="app-topbar">
+        <button class="top-btn" title="Close" onclick="showToast('Home Feed', 3)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+
+        <div class="top-title-pill" onclick="showToast('Category: Design Leadership', 3)">
+          <span id="d3-cat-pill">Short-term fun</span>
+        </div>
+
+        <button class="top-btn" title="Options">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+        </button>
+      </div>
+
+      <!-- 3D Stack Cards behind -->
+      <div class="d3-deck-back-2"></div>
+      <div class="d3-deck-back"></div>
+
+      <!-- Main Elevated Card -->
+      <div class="card-stage" id="card-3">
+        <div class="story-bars">
+          <div class="story-bar active" onclick="setVideoClip(0, 3)"><div class="story-progress"></div></div>
+          <div class="story-bar" onclick="setVideoClip(1, 3)"><div class="story-progress"></div></div>
+        </div>
+
+        <div class="video-chip-tag" id="vid-badge-3">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+          <span id="vid-lbl-3">Verified Interview (9.0 Score)</span>
+        </div>
+
+        <button class="sound-btn-overlay" id="snd-btn-3" onclick="toggleSound(3)">
+          <svg id="snd-ico-3" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/></svg>
+        </button>
+
+        <div class="card-video-wrap">
+          <video id="vid-player-3" autoplay loop muted playsinline>
+            <source src="https://assets.mixkit.co/videos/preview/mixkit-young-woman-working-with-headphones-in-an-office-42994-large.mp4" type="video/mp4">
+          </video>
+          <div class="card-media-tap-left" onclick="prevVideoClip(3)"></div>
+          <div class="card-media-tap-right" onclick="nextVideoClip(3)"></div>
+        </div>
+        <div class="card-shade"></div>
+
+        <div class="stamp-badge pass" id="stamp-pass-3">PASS</div>
+        <div class="stamp-badge like" id="stamp-like-3">SHORTLIST</div>
+        <div class="stamp-badge skip" id="stamp-skip-3">SKIP</div>
+
+        <div class="card-info-hud">
+          <div class="hud-name-row">
+            <div class="hud-name-group">
+              <span class="hud-name" id="name-3">REEMREY</span>
+              <span class="hud-age" id="age-3">30</span>
+            </div>
+            <button class="hud-up-btn" onclick="openSheet(3)">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+            </button>
+          </div>
+
+          <div class="hud-pills" id="pills-3"></div>
+
+          <div class="hud-meta-line" id="meta-3">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span>11 km away · Immediate Availability</span>
+          </div>
+        </div>
+
+        <div class="card-action-bar">
+          <button class="act-btn sm undo" onclick="handleAction('undo', 3)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
+          <button class="act-btn lg pass" onclick="handleAction('pass', 3)"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          <button class="act-btn lg like" onclick="handleAction('like', 3)"><svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></button>
+          <button class="act-btn sm plane" onclick="openDirectAction(3)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+        </div>
+      </div>
+
+      <div class="profile-sheet" id="sheet-3">
+        <div class="sheet-handle" onclick="closeSheet(3)"></div>
+        <div class="sheet-header">
+          <div class="sheet-header-left">
+            <div class="sheet-logo-initials" id="sheet-avatar-3" style="background:#FD3A73">RM</div>
+            <div>
+              <h2 id="sheet-name-3">Reemrey Malik</h2>
+              <p id="sheet-sub-3">Lead Product Designer · 7 Yrs</p>
+            </div>
+          </div>
+          <button class="sheet-close" onclick="closeSheet(3)">✕</button>
+        </div>
+        <div class="sheet-body">
+          <div class="sheet-grid">
+            <div class="sheet-stat-box"><div class="lbl" id="sheet-lbl-3">Expected CTC</div><div class="val" id="sheet-val-3-1">₹24.0L – ₹30.0L</div></div>
+            <div class="sheet-stat-box"><div class="lbl">Notice</div><div class="val" id="sheet-val-3-2">15 Days</div></div>
+          </div>
+          <div class="sheet-section">
+            <h4>Candidate Video Clips</h4>
+            <div class="self-clips-list" id="sheet-clips-3"></div>
+          </div>
+          <div class="sheet-section">
+            <h4 id="sheet-sec1-title-3">Design Leadership</h4>
+            <p id="sheet-about-3">7 years crafting mobile-first consumer apps. Built complete design tokens and component libraries for fintech and social products.</p>
+          </div>
+        </div>
+        <div class="sheet-actions">
+          <button class="mode-btn" style="flex:1;background:var(--bg-subtle);color:#fff" onclick="handleAction('pass', 3); closeSheet(3)">Pass</button>
+          <button class="mode-btn" style="flex:2;background:var(--tinder-grad);color:#fff" id="sheet-cta-3" onclick="handleAction('like', 3); closeSheet(3)">Shortlist Candidate</button>
+        </div>
+      </div>
+
+      <div class="modal-overlay" id="modal-3">
+        <div class="modal-box">
+          <h3 id="modal-title-3">Send Direct Interest</h3>
+          <p id="modal-sub-3">Send a message to Reemrey.</p>
+          <textarea placeholder="Hi Reemrey! We're looking for a Lead Designer to head our mobile experiences..."></textarea>
+          <div style="display:flex;gap:10px">
+            <button class="mode-btn" style="flex:1;background:var(--bg-subtle);color:#fff" onclick="closeModal(3)">Cancel</button>
+            <button class="mode-btn" style="flex:1.5;background:var(--tinder-grad);color:#fff" onclick="submitModal(3)">Send Now</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="app-navbar">
+        <div class="nav-item active"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 6.5C17 4 15 2 12 2c-3.5 0-6 3.5-6 7.5 0 5 4 8.5 6 12.5 2-4 6-7.5 6-12.5 0-1-.5-2-.5-3z"/></svg><span class="nav-label">Feed</span></div>
+        <div class="nav-item"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg><span class="nav-label">Explore</span></div>
+        <div class="nav-item"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><span class="nav-label">Saved</span></div>
+        <div class="nav-item"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="nav-label">Chat</span></div>
+        <div class="nav-item"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span class="nav-label">Profile</span></div>
+      </div>
+      <div class="home-indicator"></div>
+      <div class="feed-toast" id="toast-3"><span class="msg" id="toast-msg-3">Action recorded</span><button class="undo-link" onclick="undoAction(3)">Undo</button></div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════════
+       DESIGN 4: REEL VIDEO SPOTLIGHT (Interview Reel)
+       ══════════════════════════════════════════════════ -->
+  <div class="design-column">
+    <div class="design-meta">
+      <h3>4. Reel Spotlight (Video-First)</h3>
+      <span class="design-pill">Audio Waveform</span>
+    </div>
+
+    <div class="phone-frame d4-frame" id="frame-4">
+      <div class="status-bar">
+        <span>1:07</span>
+        <div class="status-camera-punch"></div>
+        <div class="status-icons"><span>5G</span><span>99%</span></div>
+      </div>
+
+      <div class="app-topbar">
+        <button class="top-btn" title="Filters" onclick="showToast('Reel Filters: Active', 4)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+        </button>
+
+        <div class="top-title"><span>Verified Reel</span></div>
+
+        <button class="top-btn" title="Audio Toggle" onclick="toggleSound(4)">
+          <svg id="snd-ico-4" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+        </button>
+      </div>
+
+      <div class="card-stage" id="card-4">
+        <!-- Live Audio Wave Indicator -->
+        <div class="reel-audio-wave">
+          <div class="wave-bar"></div>
+          <div class="wave-bar"></div>
+          <div class="wave-bar"></div>
+          <span id="d4-wave-title">Verified Video Q1</span>
+        </div>
+
+        <div class="story-bars">
+          <div class="story-bar active" onclick="setVideoClip(0, 4)"><div class="story-progress"></div></div>
+          <div class="story-bar" onclick="setVideoClip(1, 4)"><div class="story-progress"></div></div>
+          <div class="story-bar" onclick="setVideoClip(2, 4)"><div class="story-progress"></div></div>
+        </div>
+
+        <div class="video-chip-tag" id="vid-badge-4">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+          <span id="vid-lbl-4">Verified Interview (9.1 Score)</span>
+        </div>
+
+        <div class="card-video-wrap">
+          <video id="vid-player-4" autoplay loop muted playsinline>
+            <source src="https://assets.mixkit.co/videos/preview/mixkit-woman-talking-on-a-video-call-with-a-laptop-42997-large.mp4" type="video/mp4">
+          </video>
+          <div class="card-media-tap-left" onclick="prevVideoClip(4)"></div>
+          <div class="card-media-tap-right" onclick="nextVideoClip(4)"></div>
+        </div>
+        <div class="card-shade"></div>
+
+        <div class="stamp-badge pass" id="stamp-pass-4">PASS</div>
+        <div class="stamp-badge like" id="stamp-like-4">SHORTLIST</div>
+        <div class="stamp-badge skip" id="stamp-skip-4">SKIP</div>
+
+        <div class="card-info-hud">
+          <div class="hud-name-row">
+            <div class="hud-name-group">
+              <span class="hud-name" id="name-4">ANANYA</span>
+              <span class="hud-age" id="age-4">24</span>
+              <svg class="hud-verified-icon" viewBox="0 0 24 24" fill="#20D575"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+            </div>
+            <button class="hud-up-btn" onclick="openSheet(4)">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+            </button>
+          </div>
+
+          <div class="hud-section-label" id="sec-label-4">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#20D575" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>
+            <span>Verified AI & ML Interview Clip</span>
+          </div>
+
+          <div class="hud-pills" id="pills-4"></div>
+
+          <div class="hud-meta-line" id="meta-4">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span>Mumbai · Hybrid · Score 9.1/10</span>
+          </div>
+        </div>
+
+        <div class="card-action-bar">
+          <button class="act-btn sm undo" onclick="handleAction('undo', 4)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
+          <button class="act-btn lg pass" onclick="handleAction('pass', 4)"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          <button class="act-btn lg like" onclick="handleAction('like', 4)"><svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></button>
+          <button class="act-btn sm plane" onclick="openDirectAction(4)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+        </div>
+      </div>
+
+      <div class="profile-sheet" id="sheet-4">
+        <div class="sheet-handle" onclick="closeSheet(4)"></div>
+        <div class="sheet-header">
+          <div class="sheet-header-left">
+            <div class="sheet-logo-initials" id="sheet-avatar-4" style="background:#20D575">AS</div>
+            <div>
+              <h2 id="sheet-name-4">Ananya Sen</h2>
+              <p id="sheet-sub-4">AI Research & Systems · 2 Yrs</p>
+            </div>
+          </div>
+          <button class="sheet-close" onclick="closeSheet(4)">✕</button>
+        </div>
+        <div class="sheet-body">
+          <div class="sheet-grid">
+            <div class="sheet-stat-box"><div class="lbl" id="sheet-lbl-4">Expected CTC</div><div class="val" id="sheet-val-4-1">₹22.0L – ₹26.0L</div></div>
+            <div class="sheet-stat-box"><div class="lbl">Notice</div><div class="val" id="sheet-val-4-2">Immediate</div></div>
+            <div class="sheet-stat-box"><div class="lbl">Score</div><div class="val" style="color:#20D575">9.1 / 10</div></div>
+            <div class="sheet-stat-box"><div class="lbl">Tier</div><div class="val">Tier 1 · IIT Bombay</div></div>
+          </div>
+          <div class="sheet-section">
+            <h4>Candidate Video Clips</h4>
+            <div class="self-clips-list" id="sheet-clips-4"></div>
+          </div>
+          <div class="sheet-section">
+            <h4 id="sheet-sec1-title-4">Research & Projects</h4>
+            <p id="sheet-about-4">Machine Learning Engineer focused on LLM fine-tuning, RAG pipelines, and high-performance inference servers with ONNX/TensorRT.</p>
+          </div>
+        </div>
+        <div class="sheet-actions">
+          <button class="mode-btn" style="flex:1;background:var(--bg-subtle);color:#fff" onclick="handleAction('pass', 4); closeSheet(4)">Pass</button>
+          <button class="mode-btn" style="flex:2;background:var(--tinder-grad);color:#fff" id="sheet-cta-4" onclick="handleAction('like', 4); closeSheet(4)">Shortlist Candidate</button>
+        </div>
+      </div>
+
+      <div class="modal-overlay" id="modal-4">
+        <div class="modal-box">
+          <h3 id="modal-title-4">Send Direct Interest</h3>
+          <p id="modal-sub-4">Send interview invitation to Ananya.</p>
+          <textarea placeholder="Hi Ananya! We are building an AI agents infrastructure team at our Bangalore office..."></textarea>
+          <div style="display:flex;gap:10px">
+            <button class="mode-btn" style="flex:1;background:var(--bg-subtle);color:#fff" onclick="closeModal(4)">Cancel</button>
+            <button class="mode-btn" style="flex:1.5;background:var(--tinder-grad);color:#fff" onclick="submitModal(4)">Send Now</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="app-navbar">
+        <div class="nav-item active"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 6.5C17 4 15 2 12 2c-3.5 0-6 3.5-6 7.5 0 5 4 8.5 6 12.5 2-4 6-7.5 6-12.5 0-1-.5-2-.5-3z"/></svg><span class="nav-label">Feed</span></div>
+        <div class="nav-item"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg><span class="nav-label">Explore</span></div>
+        <div class="nav-item"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><span class="nav-label">Saved</span></div>
+        <div class="nav-item"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="nav-label">Chat</span></div>
+        <div class="nav-item"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span class="nav-label">Profile</span></div>
+      </div>
+      <div class="home-indicator"></div>
+      <div class="feed-toast" id="toast-4"><span class="msg" id="toast-msg-4">Action recorded</span><button class="undo-link" onclick="undoAction(4)">Undo</button></div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+  // ── REAL VIDEO ASSETS & DATASETS ──
+  let currentMode = 'candidate'; // 'candidate' or 'student'
+  
+  const CANDIDATES = [
+    {
+      id: 'c1',
+      name: 'KHUSHI',
+      age: '23',
+      title: 'Frontend Software Engineer',
+      initials: 'KS',
+      videos: [
+        { title: 'Verified Technical Interview', badge: 'Verified · 8.4 Score', url: 'https://assets.mixkit.co/videos/preview/mixkit-young-woman-talking-on-a-video-call-with-her-laptop-42998-large.mp4', dur: '4:20' },
+        { title: 'Self-Video: React Native Checkout Demo', badge: 'Self-uploaded Clip', url: 'https://assets.mixkit.co/videos/preview/mixkit-woman-talking-on-a-video-call-with-a-laptop-42997-large.mp4', dur: '1:45' },
+        { title: 'Self-Video: Design System Architecture', badge: 'Self-uploaded Clip', url: 'https://assets.mixkit.co/videos/preview/mixkit-young-woman-working-with-headphones-in-an-office-42994-large.mp4', dur: '2:10' }
+      ],
+      section: 'Interests & Verified Skills',
+      highlightPills: ['React & React Native', '₹18.0L – ₹22.0L', 'Immediate (15d)'],
+      darkPills: ['TypeScript', 'Next.js 14', 'Redux', 'System Architecture'],
+      meta: '11 km away · Tier 1 B.Tech CSE',
+      score: '8.4 / 10 Verified',
+      exp: '2.5 Years',
+      notice: 'Immediate (15 Days)',
+      location: 'Bangalore · Hybrid',
+      about: 'Frontend Engineer with 2.5 years experience building scalable React/React Native consumer apps. Scored in top 5% of verified technical coding interview.',
+      bullets: [
+        'Engineered responsive mobile-first checkout screens with 60fps smooth gesture physics.',
+        'Architected reusable component design tokens syncing web and native apps.',
+        'Integrated live WebSockets for real-time messaging and order state tracking.'
+      ]
+    },
+    {
+      id: 'c2',
+      name: 'ROHIT',
+      age: '26',
+      title: 'Senior Backend Engineer',
+      initials: 'RV',
+      videos: [
+        { title: 'Verified Distributed Systems Interview', badge: 'Verified · 8.8 Score', url: 'https://assets.mixkit.co/videos/preview/mixkit-young-man-giving-a-presentation-online-with-a-headset-43003-large.mp4', dur: '5:10' },
+        { title: 'Self-Video: Kafka Ledger Architecture', badge: 'Self-uploaded Clip', url: 'https://assets.mixkit.co/videos/preview/mixkit-man-working-at-a-laptop-in-a-busy-coworking-space-43004-large.mp4', dur: '2:30' },
+        { title: 'Self-Video: Redis Sharding Deep Dive', badge: 'Self-uploaded Clip', url: 'https://assets.mixkit.co/videos/preview/mixkit-young-man-giving-a-presentation-online-with-a-headset-43003-large.mp4', dur: '1:50' }
+      ],
+      section: 'Verified 8.8 Score · Golang & Distributed Systems',
+      highlightPills: ['Golang & Node.js', '₹28.0L – ₹34.0L', 'IIT Madras'],
+      darkPills: ['PostgreSQL', 'Kafka', 'Microservices', 'Redis Cluster', 'Docker'],
+      meta: 'Gurugram · Hybrid · 4 Yrs Exp',
+      score: '8.8 / 10 Verified',
+      exp: '4.0 Years',
+      notice: '30 Days Notice',
+      location: 'Gurugram / Remote',
+      about: 'Senior Backend Engineer with 4 years experience leading high-throughput payment rails at Series-B fintech. Managed 40k peak transactions/sec.',
+      bullets: [
+        'Built event-driven distributed ledger architecture with zero financial reconciliation errors.',
+        'Migrated monolithic REST API to high-speed gRPC microservices reducing p99 latency by 65%.',
+        'Led team of 5 engineers delivering compliance-ready banking APIs.'
+      ]
+    },
+    {
+      id: 'c3',
+      name: 'REEMREY',
+      age: '30',
+      title: 'Lead Product Designer',
+      initials: 'RM',
+      videos: [
+        { title: 'Verified Product Design Portfolio Review', badge: 'Verified · 9.0 Score', url: 'https://assets.mixkit.co/videos/preview/mixkit-young-woman-working-with-headphones-in-an-office-42994-large.mp4', dur: '4:50' },
+        { title: 'Self-Video: Consumer App Case Study Walkthrough', badge: 'Self-uploaded Clip', url: 'https://assets.mixkit.co/videos/preview/mixkit-woman-talking-on-a-video-call-with-a-laptop-42997-large.mp4', dur: '3:15' }
+      ],
+      section: 'Product Leadership & Design Craft',
+      highlightPills: ['Lead Product Designer', '₹24.0L – ₹30.0L', 'Design Systems'],
+      darkPills: ['Figma Pro', 'User Research', 'Mobile-First', 'Micro-interactions'],
+      meta: '11 km away · Immediate Availability',
+      score: '9.0 / 10 Verified',
+      exp: '7.0 Years',
+      notice: '15 Days',
+      location: 'Bangalore · In-Office',
+      about: 'Product Designer obsessed with craft, typography and fluid motion. Designed award-winning fintech consumer apps and complete atomic token systems.',
+      bullets: [
+        'Spearheaded the redesign of core consumer app boosting 30-day retention by 28%.',
+        'Created cross-platform design token system maintaining 100% parity across Figma and React.',
+        'Mentored 6 junior designers and led qualitative usability research sprints.'
+      ]
+    },
+    {
+      id: 'c4',
+      name: 'ANANYA',
+      age: '24',
+      title: 'AI & Machine Learning Engineer',
+      initials: 'AS',
+      videos: [
+        { title: 'Verified AI & LLM Systems Interview', badge: 'Verified · 9.1 Score', url: 'https://assets.mixkit.co/videos/preview/mixkit-woman-talking-on-a-video-call-with-a-laptop-42997-large.mp4', dur: '5:35' },
+        { title: 'Self-Video: RAG Pipeline & Semantic Search Demo', badge: 'Self-uploaded Clip', url: 'https://assets.mixkit.co/videos/preview/mixkit-young-woman-talking-on-a-video-call-with-her-laptop-42998-large.mp4', dur: '2:40' },
+        { title: 'Self-Video: PyTorch Quantization Benchmark', badge: 'Self-uploaded Clip', url: 'https://assets.mixkit.co/videos/preview/mixkit-young-woman-working-with-headphones-in-an-office-42994-large.mp4', dur: '1:55' }
+      ],
+      section: 'Verified AI Interview Clip · Top 1%',
+      highlightPills: ['PyTorch & LLMs', '₹22.0L – ₹26.0L', 'IIT Bombay (Tier 1)'],
+      darkPills: ['RAG Pipelines', 'FastAPI', 'Vector DBs', 'TensorRT Inference'],
+      meta: 'Mumbai · Hybrid · Score 9.1/10',
+      score: '9.1 / 10 Verified',
+      exp: '2.0 Years',
+      notice: 'Immediate',
+      location: 'Mumbai / Bangalore',
+      about: 'AI Systems Engineer specializing in agentic LLM pipelines, prompt fine-tuning, and ultra low-latency GPU inference serving.',
+      bullets: [
+        'Built production RAG system serving 2M queries/day with semantic caching in Redis.',
+        'Optimized transformer model quantization reducing inference cost by 54% on AWS.',
+        'Published 2 papers on retrieval augmentation and multi-agent coordination.'
+      ]
+    }
+  ];
+
+  const JOBS = [
+    {
+      id: 'j1',
+      name: 'RAZORPAY',
+      age: 'Bangalore',
+      title: 'Senior Frontend Engineer',
+      initials: 'RZ',
+      videos: [
+        { title: 'Hiring Manager Role Pitch', badge: 'Recruiter Video Pitch', url: 'https://assets.mixkit.co/videos/preview/mixkit-young-man-giving-a-presentation-online-with-a-headset-43003-large.mp4', dur: '1:45' },
+        { title: 'Frontend Engineering Culture & Tech Stack', badge: 'Team Culture Video', url: 'https://assets.mixkit.co/videos/preview/mixkit-man-working-at-a-laptop-in-a-busy-coworking-space-43004-large.mp4', dur: '2:15' }
+      ],
+      section: 'Key Stack & Role Highlights',
+      highlightPills: ['₹28.0L – ₹36.0L / yr', 'Full-time', 'Koramangala · Hybrid'],
+      darkPills: ['React.js', 'Next.js 14', 'TypeScript', 'TailwindCSS', 'Micro-frontends'],
+      meta: '📍 Koramangala · 3 Open Vacancies · 15 Oct Deadline',
+      score: '96% Profile Match',
+      exp: '2–5 Years',
+      notice: 'Apply with Video Resume',
+      location: 'Bangalore · Hybrid (3 days in office)',
+      about: 'Razorpay is hiring a Senior Frontend Engineer to build world-class checkout and payment experiences powering over 10M+ businesses across India and SEA.',
+      bullets: [
+        'Own end-to-end frontend architecture for the core checkout modal viewed 50M+ times daily.',
+        'Collaborate closely with product, design and payments infrastructure teams to minimize drop-offs.',
+        'Full health insurance, generous ESOPs pool, and ₹1.5L annual learning stipend.'
+      ]
+    },
+    {
+      id: 'j2',
+      name: 'CRED',
+      age: 'Bangalore',
+      title: 'Backend Systems Architect',
+      initials: 'CR',
+      videos: [
+        { title: 'CTO / Architect Video Pitch', badge: 'Team Video Pitch', url: 'https://assets.mixkit.co/videos/preview/mixkit-man-working-at-a-laptop-in-a-busy-coworking-space-43004-large.mp4', dur: '2:20' },
+        { title: 'CRED Financial Infrastructure & Scale', badge: 'Tech Deep Dive', url: 'https://assets.mixkit.co/videos/preview/mixkit-young-man-giving-a-presentation-online-with-a-headset-43003-large.mp4', dur: '1:50' }
+      ],
+      section: 'High-Throughput Ledger Services',
+      highlightPills: ['₹40.0L – ₹55.0L / yr', 'Golang / Kafka', 'ESOPs Included'],
+      darkPills: ['Distributed Systems', 'PostgreSQL', 'High Concurrency', 'AWS ECS'],
+      meta: '📍 Indiranagar · Immediate Interview Slot',
+      score: '94% Profile Match',
+      exp: '4–8 Years',
+      notice: 'Apply before 20 Oct',
+      location: 'Indiranagar, Bangalore',
+      about: 'CRED backend engineering crafts high-concurrency financial engines with 99.999% availability and instant settlement speeds.',
+      bullets: [
+        'Architect distributed transaction engines processing millions of high-value credit card payments.',
+        'Ensure sub-10ms response times on mission-critical reward and member verification endpoints.',
+        'Top of market compensation, premium equipment allowance, and comprehensive wellness perks.'
+      ]
+    },
+    {
+      id: 'j3',
+      name: 'SWIGGY',
+      age: 'Remote / Blr',
+      title: 'Lead Product Designer',
+      initials: 'SW',
+      videos: [
+        { title: 'Design Director Role Video', badge: 'Hiring Lead Pitch', url: 'https://assets.mixkit.co/videos/preview/mixkit-woman-talking-on-a-video-call-with-a-laptop-42997-large.mp4', dur: '1:30' },
+        { title: 'Instamart 10-Minute UX Challenges', badge: 'Case Study Clip', url: 'https://assets.mixkit.co/videos/preview/mixkit-young-woman-working-with-headphones-in-an-office-42994-large.mp4', dur: '2:10' }
+      ],
+      section: 'Consumer Grocery Discovery',
+      highlightPills: ['₹32.0L – ₹42.0L / yr', 'Instamart Team', 'Remote Flexible'],
+      darkPills: ['Product Strategy', 'Figma Systems', 'User Research', 'Motion UI'],
+      meta: '📍 Bangalore / Remote · Apply with Portfolio',
+      score: '91% Profile Match',
+      exp: '3–6 Years',
+      notice: 'Apply before 12 Oct',
+      location: 'Bangalore / Flexible Remote',
+      about: 'Swiggy Instamart is looking for a Lead Product Designer to shape 10-minute grocery discovery, cart building, and live order tracking experiences.',
+      bullets: [
+        'Lead consumer design sprints from initial user empathy mapping to high-fidelity interactive prototypes.',
+        'Define design tokens and motion language across iOS and Android apps.',
+        'Work alongside senior leadership in shaping next-generation quick commerce products.'
+      ]
+    },
+    {
+      id: 'j4',
+      name: 'ZEPTO',
+      age: 'Mumbai',
+      title: 'AI Platform Engineer',
+      initials: 'ZP',
+      videos: [
+        { title: 'AI Engineering Lead Pitch', badge: 'Hiring Pitch', url: 'https://assets.mixkit.co/videos/preview/mixkit-young-man-giving-a-presentation-online-with-a-headset-43003-large.mp4', dur: '1:40' },
+        { title: 'Store Picking & Dynamic ETA Models', badge: 'Tech Preview', url: 'https://assets.mixkit.co/videos/preview/mixkit-man-working-at-a-laptop-in-a-busy-coworking-space-43004-large.mp4', dur: '2:00' }
+      ],
+      section: 'Predictive ETA & Store Batching',
+      highlightPills: ['₹30.0L – ₹45.0L / yr', 'PyTorch / Python', 'Quick Commerce'],
+      darkPills: ['Route Optimization', 'TensorRT', 'FastAPI', 'Real-time Graph AI'],
+      meta: '📍 Mumbai HQ · Video Pitch Enabled',
+      score: '98% Profile Match',
+      exp: '2–5 Years',
+      notice: 'Apply before 28 Oct',
+      location: 'Mumbai HQ · In-Office',
+      about: 'Zepto AI platform team builds intelligent dispatch and predictive demand modeling software handling millions of daily quick-delivery orders.',
+      bullets: [
+        'Build real-time routing algorithms optimizing rider batching and dark-store picking sequences.',
+        'Deploy deep learning models on Triton inference server with microsecond response latencies.',
+        'Competitive equity grants and direct mentorship from top AI engineering leaders.'
+      ]
+    }
+  ];
+
+  // Story Tracking & Pointers
+  const videoIndices = { 1: 0, 2: 0, 3: 0, 4: 0 };
+  const cardPointers = { 1: 0, 2: 1, 3: 2, 4: 3 };
+  let lastAction = null;
+
+  function switchMode(mode) {
+    currentMode = mode;
+    document.getElementById('btn-mode-candidate').classList.toggle('active', mode === 'candidate');
+    document.getElementById('btn-mode-student').classList.toggle('active', mode === 'student');
+
+    if (mode === 'candidate') {
+      document.getElementById('d3-cat-pill').innerText = 'Short-term fun';
+    } else {
+      document.getElementById('d3-cat-pill').innerText = 'Full-Time Roles';
+    }
+
+    renderAllFrames();
+  }
+
+  function renderFrame(frameNum) {
+    const dataset = (currentMode === 'candidate') ? CANDIDATES : JOBS;
+    const ptr = cardPointers[frameNum] % dataset.length;
+    const item = dataset[ptr];
+
+    // Card Header Info
+    document.getElementById(`name-${frameNum}`).innerText = item.name;
+    document.getElementById(`age-${frameNum}`).innerText = item.age;
+    
+    // Video Clip
+    const vidIdx = videoIndices[frameNum] % item.videos.length;
+    const currentVid = item.videos[vidIdx];
+    const player = document.getElementById(`vid-player-${frameNum}`);
+    if (player && player.src !== currentVid.url) {
+      player.src = currentVid.url;
+      player.play().catch(() => {});
+    }
+
+    // Video Tag & Badge
+    if (document.getElementById(`vid-lbl-${frameNum}`)) {
+      document.getElementById(`vid-lbl-${frameNum}`).innerText = currentVid.badge;
+    }
+
+    // Story / Segment Bars update
+    const frameEl = document.getElementById(`frame-${frameNum}`);
+    const storyBars = frameEl.querySelectorAll('.story-bar');
+    storyBars.forEach((b, idx) => {
+      b.classList.toggle('active', idx === vidIdx);
+      b.classList.toggle('seen', idx < vidIdx);
+    });
+
+    // Section Label
+    if (document.getElementById(`sec-label-${frameNum}`)) {
+      document.getElementById(`sec-label-${frameNum}`).querySelector('span').innerText = item.section;
+    }
+
+    // Pills Cloud
+    const pillsWrap = document.getElementById(`pills-${frameNum}`);
+    if (pillsWrap) {
+      let pillsHtml = '';
+      item.highlightPills.forEach(p => {
+        pillsHtml += `<span class="hud-pill highlight">${p}</span>`;
+      });
+      item.darkPills.forEach(p => {
+        pillsHtml += `<span class="hud-pill dark">${p}</span>`;
+      });
+      pillsWrap.innerHTML = pillsHtml;
+    }
+
+    // Meta Line
+    const metaEl = document.getElementById(`meta-${frameNum}`);
+    if (metaEl) {
+      metaEl.querySelector('span').innerText = item.meta;
+    }
+
+    // Sheet Drawer Elements
+    if (document.getElementById(`sheet-avatar-${frameNum}`)) {
+      document.getElementById(`sheet-avatar-${frameNum}`).innerText = item.initials;
+    }
+    document.getElementById(`sheet-name-${frameNum}`).innerText = (currentMode === 'candidate') ? `${item.name}, ${item.age}` : `${item.name}`;
+    if (document.getElementById(`sheet-sub-${frameNum}`)) {
+      document.getElementById(`sheet-sub-${frameNum}`).innerText = `${item.title} · ${item.exp}`;
+    }
+
+    if (document.getElementById(`sheet-lbl-${frameNum}`)) {
+      document.getElementById(`sheet-lbl-${frameNum}`).innerText = (currentMode === 'candidate') ? 'Expected CTC' : 'Annual Salary';
+    }
+    if (document.getElementById(`sheet-val-${frameNum}`)) {
+      document.getElementById(`sheet-val-${frameNum}`).innerText = item.highlightPills[0];
+    }
+    if (document.getElementById(`sheet-val-2`)) {
+      document.getElementById(`sheet-val-2`).innerText = item.notice;
+    }
+    if (document.getElementById(`sheet-val-4`)) {
+      document.getElementById(`sheet-val-4`).innerText = item.location;
+    }
+    if (document.getElementById(`sheet-about-${frameNum}`)) {
+      document.getElementById(`sheet-about-${frameNum}`).innerText = item.about;
+    }
+
+    // Render All Video Clips inside Drawer
+    const sheetClipsWrap = document.getElementById(`sheet-clips-${frameNum}`);
+    if (sheetClipsWrap) {
+      let clipsHtml = '';
+      item.videos.forEach((v, vidx) => {
+        clipsHtml += `
+          <div class="self-clip-card" onclick="setVideoClip(${vidx}, ${frameNum}); closeSheet(${frameNum})">
+            <div class="clip-left">
+              <div class="clip-play-icon">▶</div>
+              <div>
+                <div class="clip-title">${v.title}</div>
+                <div class="clip-badge">${v.badge}</div>
+              </div>
+            </div>
+            <div class="clip-dur">${v.dur}</div>
+          </div>
+        `;
+      });
+      sheetClipsWrap.innerHTML = clipsHtml;
+    }
+
+    // Bullets in Drawer
+    const bulletsWrap = document.getElementById(`sheet-bullets-${frameNum}`);
+    if (bulletsWrap && item.bullets) {
+      let bHtml = '';
+      item.bullets.forEach(b => {
+        bHtml += `<li>${b}</li>`;
+      });
+      bulletsWrap.innerHTML = bHtml;
+    }
+
+    // Drawer CTA text
+    const ctaBtn = document.getElementById(`sheet-cta-${frameNum}`);
+    if (ctaBtn) {
+      ctaBtn.innerText = (currentMode === 'candidate') ? 'Shortlist Candidate' : 'Apply with Video Resume';
+    }
+
+    // Modal Titles
+    if (document.getElementById(`modal-title-${frameNum}`)) {
+      document.getElementById(`modal-title-${frameNum}`).innerText = (currentMode === 'candidate') ? 'Send Direct Interest' : 'Apply with Video Resume';
+      document.getElementById(`modal-sub-${frameNum}`).innerText = (currentMode === 'candidate') 
+        ? `Send an interview invitation to ${item.name} with 1 Interest credit.`
+        : `Submit your published 8.4 verified video resume to ${item.name}.`;
+    }
+  }
+
+  function renderAllFrames() {
+    [1, 2, 3, 4].forEach(f => renderFrame(f));
+  }
+
+  function setVideoClip(idx, frameNum) {
+    videoIndices[frameNum] = idx;
+    renderFrame(frameNum);
+  }
+
+  function prevVideoClip(frameNum) {
+    const dataset = (currentMode === 'candidate') ? CANDIDATES : JOBS;
+    const ptr = cardPointers[frameNum] % dataset.length;
+    const len = dataset[ptr].videos.length;
+    videoIndices[frameNum] = (videoIndices[frameNum] - 1 + len) % len;
+    renderFrame(frameNum);
+  }
+
+  function nextVideoClip(frameNum) {
+    const dataset = (currentMode === 'candidate') ? CANDIDATES : JOBS;
+    const ptr = cardPointers[frameNum] % dataset.length;
+    const len = dataset[ptr].videos.length;
+    videoIndices[frameNum] = (videoIndices[frameNum] + 1) % len;
+    renderFrame(frameNum);
+  }
+
+  function toggleSound(frameNum) {
+    const player = document.getElementById(`vid-player-${frameNum}`);
+    if (!player) return;
+    player.muted = !player.muted;
+    showToast(player.muted ? 'Audio Muted' : 'Audio Playing (Unmuted)', frameNum);
+    const ico = document.getElementById(`snd-ico-${frameNum}`);
+    if (ico) {
+      ico.innerHTML = player.muted 
+        ? '<line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/>'
+        : '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>';
+    }
+  }
+
+  function openSheet(frameNum) {
+    document.getElementById(`sheet-${frameNum}`).classList.add('open');
+  }
+
+  function closeSheet(frameNum) {
+    document.getElementById(`sheet-${frameNum}`).classList.remove('open');
+  }
+
+  function openDirectAction(frameNum) {
+    document.getElementById(`modal-${frameNum}`).classList.add('open');
+  }
+
+  function closeModal(frameNum) {
+    document.getElementById(`modal-${frameNum}`).classList.remove('open');
+  }
+
+  function submitModal(frameNum) {
+    closeModal(frameNum);
+    const dataset = (currentMode === 'candidate') ? CANDIDATES : JOBS;
+    const item = dataset[cardPointers[frameNum] % dataset.length];
+    showToast((currentMode === 'candidate') ? `Interest Sent to ${item.name}` : `Applied to ${item.name} with Video Resume`, frameNum);
+    handleAction('like', frameNum);
+  }
+
+  // ── TOUCH & MOUSE SWIPE GESTURE PHYSICS ──
+  function setupDragPhysics(frameNum) {
+    const card = document.getElementById(`card-${frameNum}`);
+    if (!card) return;
+
+    let startX = 0, startY = 0, currentX = 0, currentY = 0, isDragging = false;
+
+    function onPointerDown(e) {
+      if (e.target.closest('button') || e.target.closest('.story-bar') || e.target.closest('.card-media-tap-left') || e.target.closest('.card-media-tap-right') || e.target.closest('.sound-btn-overlay')) {
+        return;
+      }
+      isDragging = true;
+      startX = e.clientX || (e.touches && e.touches[0].clientX);
+      startY = e.clientY || (e.touches && e.touches[0].clientY);
+      card.classList.add('dragging');
+    }
+
+    function onPointerMove(e) {
+      if (!isDragging) return;
+      const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+      const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+      currentX = clientX - startX;
+      currentY = clientY - startY;
+
+      const rotation = currentX * 0.08;
+      card.style.transform = `translate(${currentX}px, ${currentY}px) rotate(${rotation}deg)`;
+
+      // Stamp dynamic opacity
+      const passStamp = document.getElementById(`stamp-pass-${frameNum}`);
+      const likeStamp = document.getElementById(`stamp-like-${frameNum}`);
+      const skipStamp = document.getElementById(`stamp-skip-${frameNum}`);
+
+      if (currentX > 30) {
+        likeStamp.style.opacity = Math.min(1, (currentX - 30) / 70);
+        passStamp.style.opacity = 0;
+        skipStamp.style.opacity = 0;
+      } else if (currentX < -30) {
+        passStamp.style.opacity = Math.min(1, (-currentX - 30) / 70);
+        likeStamp.style.opacity = 0;
+        skipStamp.style.opacity = 0;
+      } else if (currentY < -40) {
+        skipStamp.style.opacity = Math.min(1, (-currentY - 40) / 60);
+        likeStamp.style.opacity = 0;
+        passStamp.style.opacity = 0;
+      } else {
+        if (likeStamp) likeStamp.style.opacity = 0;
+        if (passStamp) passStamp.style.opacity = 0;
+        if (skipStamp) skipStamp.style.opacity = 0;
+      }
+    }
+
+    function onPointerUp() {
+      if (!isDragging) return;
+      isDragging = false;
+      card.classList.remove('dragging');
+
+      const passStamp = document.getElementById(`stamp-pass-${frameNum}`);
+      const likeStamp = document.getElementById(`stamp-like-${frameNum}`);
+      const skipStamp = document.getElementById(`stamp-skip-${frameNum}`);
+
+      if (currentX > 85) {
+        // Committed Right Swipe
+        card.style.transform = `translate(450px, ${currentY}px) rotate(25deg)`;
+        card.style.opacity = '0';
+        setTimeout(() => {
+          handleAction('like', frameNum, false);
+          resetCardPos();
+        }, 250);
+      } else if (currentX < -85) {
+        // Committed Left Swipe
+        card.style.transform = `translate(-450px, ${currentY}px) rotate(-25deg)`;
+        card.style.opacity = '0';
+        setTimeout(() => {
+          handleAction('pass', frameNum, false);
+          resetCardPos();
+        }, 250);
+      } else if (currentY < -75) {
+        // Committed Up Skip
+        card.style.transform = `translate(${currentX}px, -450px)`;
+        card.style.opacity = '0';
+        setTimeout(() => {
+          handleAction('skip', frameNum, false);
+          resetCardPos();
+        }, 250);
+      } else {
+        // Snap back
+        resetCardPos();
+      }
+    }
+
+    function resetCardPos() {
+      card.style.transform = '';
+      card.style.opacity = '1';
+      const passStamp = document.getElementById(`stamp-pass-${frameNum}`);
+      const likeStamp = document.getElementById(`stamp-like-${frameNum}`);
+      const skipStamp = document.getElementById(`stamp-skip-${frameNum}`);
+      if (passStamp) passStamp.style.opacity = 0;
+      if (likeStamp) likeStamp.style.opacity = 0;
+      if (skipStamp) skipStamp.style.opacity = 0;
+      currentX = 0;
+      currentY = 0;
+    }
+
+    card.addEventListener('mousedown', onPointerDown);
+    window.addEventListener('mousemove', onPointerMove);
+    window.addEventListener('mouseup', onPointerUp);
+
+    card.addEventListener('touchstart', onPointerDown, { passive: true });
+    window.addEventListener('touchmove', onPointerMove, { passive: true });
+    window.addEventListener('touchend', onPointerUp);
+  }
+
+  function handleAction(type, frameNum, animateStamp = true) {
+    const dataset = (currentMode === 'candidate') ? CANDIDATES : JOBS;
+    const currentItem = dataset[cardPointers[frameNum] % dataset.length];
+
+    if (type === 'undo') {
+      undoAction(frameNum);
+      return;
+    }
+
+    if (animateStamp) {
+      const stampEl = document.getElementById(`stamp-${type}-${frameNum}`);
+      if (stampEl) {
+        stampEl.classList.add('show');
+        setTimeout(() => stampEl.classList.remove('show'), 420);
+      }
+    }
+
+    lastAction = {
+      type,
+      frameNum,
+      item: currentItem,
+      pointer: cardPointers[frameNum]
+    };
+
+    setTimeout(() => {
+      cardPointers[frameNum]++;
+      videoIndices[frameNum] = 0;
+      renderFrame(frameNum);
+
+      const verb = (type === 'pass') ? 'Passed' : (type === 'like' ? (currentMode === 'candidate' ? 'Shortlisted' : 'Saved') : 'Skipped');
+      showToast(`${verb} ${currentItem.name}`, frameNum);
+    }, animateStamp ? 320 : 50);
+  }
+
+  function undoAction(frameNum) {
+    if (!lastAction) {
+      showToast('Nothing to undo', frameNum);
+      return;
+    }
+    cardPointers[frameNum] = lastAction.pointer;
+    videoIndices[frameNum] = 0;
+    renderFrame(frameNum);
+    showToast(`Restored ${lastAction.item.name}`, frameNum);
+    lastAction = null;
+  }
+
+  function showToast(msg, frameNum = 1) {
+    const toast = document.getElementById(`toast-${frameNum}`);
+    if (!toast) return;
+    document.getElementById(`toast-msg-${frameNum}`).innerText = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 3200);
+  }
+
+  function setZoom(scale) {
+    document.querySelectorAll('.phone-frame').forEach(el => {
+      el.style.transform = `scale(${scale})`;
+      el.style.transformOrigin = 'top center';
+    });
+  }
+
+  function triggerSimSwipe(type) {
+    [1, 2, 3, 4].forEach(f => handleAction(type, f));
+  }
+
+  // Initialize
+  renderAllFrames();
+  [1, 2, 3, 4].forEach(f => setupDragPhysics(f));
+</script>
+
+</body>
+</html>

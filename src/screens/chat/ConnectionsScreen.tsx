@@ -11,7 +11,8 @@ import { borderWidth, color, fontFamilyNative as FF } from '../../theme'
 import { StatusPill } from '../../components/ui'
 import type { Tone } from '../../components/ui/status'
 import { Btn, DetailHeader, GroupLabel, Panel, Skel, StateBlock, TextLink } from '../../components/tab/kit'
-import { BlockSheet, CompanyMark } from './parts'
+import { BlockSheet } from './parts'
+import { LogoTile } from './LogoTile'
 
 /**
  * ST-42 — Connections. Each row states its origin in mono (INTEREST | APPLICATION
@@ -25,16 +26,36 @@ export function ConnectionsScreen({ onBack, onChats, onOpenThread, onBrowseJobs,
   onBrowseJobs: () => void; onInterests: () => void
 }) {
   const insets = useSafeAreaInsets()
-  const qc = useQueryClient()
-  const [blocking, setBlocking] = useState<ConnectionRow | null>(null)
+  return (
+    <View style={[styles.page, { paddingTop: insets.top }]}>
+      <DetailHeader title="Connections" onBack={onBack} right={<TextLink label="Chats" onPress={onChats} />} />
+      <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
+        <ConnectionsBody onChats={onChats} onOpenThread={onOpenThread} onBrowseJobs={onBrowseJobs} onInterests={onInterests} />
+      </ScrollView>
+    </View>
+  )
+}
 
-  const q = useQuery({
+/** Every connection (active, withdrawn, blocked); the tab shares this query for its segment count. */
+export function useConnectionRows() {
+  return useQuery({
     queryKey: ['connections'],
     queryFn: async () => {
       const [a, c, b] = await Promise.all([getConnections('ACTIVE'), getConnections('CLOSED'), getConnections('BLOCKED')])
       return [...a.rows, ...c.rows, ...b.rows]
     },
   })
+}
+
+/** The Connections content (cards, archived list, block sheet) with no frame, so it renders inside the Interests tab's second segment or the pushed screen. */
+export function ConnectionsBody({ onChats, onOpenThread, onBrowseJobs, onInterests }: {
+  onChats: () => void; onOpenThread: (threadId: string) => void
+  onBrowseJobs: () => void; onInterests: () => void
+}) {
+  const qc = useQueryClient()
+  const [blocking, setBlocking] = useState<ConnectionRow | null>(null)
+
+  const q = useConnectionRows()
   const act = useMutation({
     mutationFn: ({ id, action }: { id: string; action: 'WITHDRAW' | 'BLOCK' }) => actOnConnection(id, action),
     onSettled: () => { setBlocking(null); qc.invalidateQueries({ queryKey: ['connections'] }) },
@@ -46,21 +67,19 @@ export function ConnectionsScreen({ onBack, onChats, onOpenThread, onBrowseJobs,
     else onChats()
   }
 
-  const bar = <DetailHeader title="Connections" onBack={onBack} right={<TextLink label="Chats" onPress={onChats} />} />
-  const frame = (c: React.ReactNode) => <View style={[styles.page, { paddingTop: insets.top }]}>{bar}{c}</View>
   if (q.isPending) {
-    return frame(
-      <View style={styles.body}>
+    return (
+      <View style={styles.stack}>
         {[0, 1].map((i) => (
-          <Panel key={i}>
+          <Panel key={i} style={styles.strong}>
             <View style={styles.head}><Skel w={44} h={44} /><View style={styles.skelText}><Skel w="55%" h={16} /><Skel w="70%" h={11} /></View></View>
             <Skel w="100%" h={46} />
           </Panel>
         ))}
-      </View>,
+      </View>
     )
   }
-  if (q.isError) return frame(<StateBlock icon="alert" title="Could not load your connections." body="Nothing has changed. Try again in a moment." action="Try again" onAction={() => { void q.refetch() }} />)
+  if (q.isError) return <StateBlock icon="alert" title="Could not load your connections." body="Nothing has changed. Try again in a moment." action="Try again" onAction={() => { void q.refetch() }} />
 
   const rows = q.data!
   const active = rows.filter((r) => r.status === 'ACTIVE')
@@ -68,27 +87,23 @@ export function ConnectionsScreen({ onBack, onChats, onOpenThread, onBrowseJobs,
   const busy = act.isPending
 
   return (
-    <View style={[styles.page, { paddingTop: insets.top }]}>
-      {bar}
-      <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
-        {rows.length === 0 ? (
-          <EmptyConnections onInterests={onInterests} onBrowseJobs={onBrowseJobs} />
-        ) : (
-          <>
-            {active.map((r) => (
-              <ActiveCard key={r.id} row={r} busy={busy}
-                onOpen={() => openChat(r.id)} onWithdraw={() => act.mutate({ id: r.id, action: 'WITHDRAW' })} onBlock={() => setBlocking(r)} />
-            ))}
-            {archived.length > 0 && (
-              <GroupLabel style={styles.archHead}>{`Archived · ${archived.length}`}</GroupLabel>
-            )}
-            {archived.map((r) => (
-              <ArchivedCard key={r.id} row={r} busy={busy} onRead={() => openChat(r.id)} onBlock={() => setBlocking(r)} />
-            ))}
-          </>
-        )}
-      </ScrollView>
-
+    <View style={styles.stack}>
+      {rows.length === 0 ? (
+        <EmptyConnections onInterests={onInterests} onBrowseJobs={onBrowseJobs} />
+      ) : (
+        <>
+          {active.map((r) => (
+            <ActiveCard key={r.id} row={r} busy={busy}
+              onOpen={() => openChat(r.id)} onWithdraw={() => act.mutate({ id: r.id, action: 'WITHDRAW' })} onBlock={() => setBlocking(r)} />
+          ))}
+          {archived.length > 0 && (
+            <GroupLabel style={styles.archHead}>{`Archived · ${archived.length}`}</GroupLabel>
+          )}
+          {archived.map((r) => (
+            <ArchivedCard key={r.id} row={r} busy={busy} onRead={() => openChat(r.id)} onBlock={() => setBlocking(r)} />
+          ))}
+        </>
+      )}
       <BlockSheet open={!!blocking} name={blocking?.counterparty.name ?? 'this company'} busy={busy}
         onConfirm={() => blocking && act.mutate({ id: blocking.id, action: 'BLOCK' })} onClose={() => setBlocking(null)} />
     </View>
@@ -105,7 +120,7 @@ const originDate = (r: ConnectionRow) => `${originLabel(r.origin)} · ${r.origin
 function Head({ row, muted }: { row: ConnectionRow; muted?: boolean }) {
   return (
     <View style={styles.head}>
-      <CompanyMark name={row.counterparty.name} size={44} />
+      <LogoTile name={row.counterparty?.name} size={44} />
       <View style={styles.headText}>
         <Text style={[styles.name, muted && styles.mutedText]} numberOfLines={1}>{row.counterparty.name ?? 'A company'}</Text>
         <View style={styles.pillRow}>
@@ -179,7 +194,9 @@ function EmptyConnections({ onInterests, onBrowseJobs }: { onInterests: () => vo
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.background },
   body: { paddingHorizontal: 20, paddingTop: 8, gap: 10, paddingBottom: 130 },
-  card: { gap: 12 },
+  card: { gap: 12, borderColor: color.borderStrong },
+  strong: { borderColor: color.borderStrong },
+  stack: { gap: 12 },
   flex: { flex: 1 },
   head: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   headText: { flex: 1, minWidth: 0, gap: 6 },

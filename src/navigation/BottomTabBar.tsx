@@ -5,9 +5,9 @@ import { api } from '../lib/api'
 import { color, height } from '../theme'
 import { Icon } from '../components/ui/Icon'
 import { useEmployerVerified } from '../lib/employer/useEmployer'
-import { useChatUnread } from '../lib/employer/useNavCounts'
 import { TabBar, type TabItem } from '../components/ui'
 import { tabBarInfoFor, type TabDef } from './tabConfig'
+import { useTabBarDark } from './tabBarTone'
 
 /**
  * A persistent bottom tab bar, added as an overlay on the existing flat
@@ -50,7 +50,8 @@ import { tabBarInfoFor, type TabDef } from './tabConfig'
 export function BottomTabBar({ routeName, onNavigate }: { routeName?: string; onNavigate: (root: string) => void }) {
   const info = tabBarInfoFor(routeName)
   const employerVerified = useEmployerVerified(info?.persona === 'employer')
-  const chatUnread = useChatUnread(info?.persona === 'employer' && employerVerified === true)
+  // The video feeds draw the bar on ink while a card is up (navigation/tabBarTone).
+  const dark = useTabBarDark(routeName)
   // ST-12: an unpaid student sees pricing and pays — no destinations to wander to.
   // Same `me` the screens read, so this costs no extra request once one has run.
   const me = useQuery({
@@ -66,16 +67,16 @@ export function BottomTabBar({ routeName, onNavigate }: { routeName?: string; on
     const on = tab.key === info.active
     // Gated tabs stay locked until the employer is known to be verified.
     const locked = !!tab.gated && employerVerified !== true
-    const tint = on ? color.accentText : locked ? color.textDisabled : color.textMuted
+    const tint = dark
+      ? (on ? color.accentMuted : color.textOnInkSubtle)
+      : on ? color.accentText : locked ? color.textDisabled : color.textMuted
     return {
       key: tab.key,
       label: tab.label,
       locked,
-      // The employer bar carries the unread count itself (Studio · the Chats badge).
-      badge: info.persona === 'employer' && tab.key === 'chat' && chatUnread > 0 ? chatUnread : undefined,
       glyph: tab.glyph
         ? <Icon name={tab.glyph} size={height.glyph - 4} tint={tint} weight={on ? 2.1 : 1.8} />
-        : <TabIcon icon={tab.icon} color={on ? color.accent : color.textSubtle} size={info.persona === 'student' ? 22 : 18} />,
+        : <TabIcon icon={tab.icon} color={dark ? tint : on ? color.accent : color.textSubtle} size={info.persona === 'student' ? 22 : 18} />,
     }
   })
 
@@ -84,6 +85,7 @@ export function BottomTabBar({ routeName, onNavigate }: { routeName?: string; on
       items={items}
       current={info.active}
       floating={info.persona === 'student'}
+      dark={dark}
       onSelect={(key) => {
         const tab = info.tabs.find((t) => t.key === key)
         if (tab) onNavigate(tab.root)

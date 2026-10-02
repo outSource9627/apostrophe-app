@@ -19,7 +19,8 @@ import { JobsTabs, Skel, StateBlock } from '../../components/tab/kit'
  * the chat.
  */
 const PALETTE = [color.accent, color.successFill, '#E0366B', '#2F6BFF', '#C77D00', color.accentDeep]
-const initialsOf = (name: string) => name.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase()
+// The API types the name as always present, but a row can arrive without one.
+const initialsOf = (name?: string | null) => (name ?? '').split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || '·'
 
 /** The employer-driven ladder a live application climbs; a rejection is an ending, not a rung. */
 const PIPELINE: ApplicationRow['status'][] = ['APPLIED', 'VIEWED', 'SHORTLISTED', 'CONNECTED']
@@ -64,11 +65,11 @@ export function ApplicationsScreen({ onFeed, onChat, onSaved }: {
       <View style={[styles.card, rejected && styles.cardOut]}>
         <View style={styles.top}>
           <View style={[styles.logo, { backgroundColor: rejected ? color.textSubtle : PALETTE[(index + 4) % PALETTE.length] }]}>
-            <Text style={styles.logoText}>{initialsOf(r.company.name)}</Text>
+            <Text style={styles.logoText}>{initialsOf(r.company?.name)}</Text>
           </View>
           <View style={styles.grow}>
             <Text style={styles.title}>{r.title}</Text>
-            <Text style={styles.where} numberOfLines={2}>{`${r.company.name} · ${locationLine(r.location, r.remote)}`}</Text>
+            <Text style={styles.where} numberOfLines={2}>{[r.company?.name, locationLine(r.location, r.remote)].filter(Boolean).join(' · ')}</Text>
           </View>
           <StatusPill tone={mark.tone} label={mark.label} />
         </View>

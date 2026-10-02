@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apostrophe App – Interviewer Home (final)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FAFAFC; --surface:#fff; --muted:#F1F3F7; --sunken:#E6E8EE;
+    --text:#0B0F1A; --text2:#3A4256; --text3:#6B7385; --text4:#8A91A2;
+    --border:#E3E6ED; --border-strong:#C9CED9;
+    --accent:#5B3DF5; --accent-hover:#4A2FE0; --accent-soft:#EFEBFF; --accent-wash:#F7F6FF;
+    --accent-muted:#C4B8FF; --accent-bright:#7258FF; --accent-deep:#3B2A8F; --accent-edge:#DCD3FF;
+    --ink:#0B0F1A; --ink-raised:#151B2B;
+    --ok:#0E9F6E; --ok-text:#0B7A55; --ok-soft:#E6F7F0; --ok-edge:#BFE8D6; --danger:#E5484D; --danger-text:#C22A30; --danger-soft:#FDECEC; --danger-edge:#F2B8BA; --warn:#935F00; --warn-soft:#FFF5E1; --warn-edge:#F5E2B8; --info:#2F6BFF; --info-soft:#E8EFFF;
+    --r-md:14px; --r-lg:18px; --r-xl:28px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{font-family:'Geist',system-ui,sans-serif;background:#E9EAF2;color:var(--text);padding:40px 24px 90px}
+  button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+  button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex:none}
+  .mono{font:500 11px 'Geist Mono',monospace;letter-spacing:.14em;text-transform:uppercase}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+  /* ---------- page ---------- */
+  .intro{max-width:1240px;margin:0 auto 20px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:28px 32px}
+  .intro h1{font-size:30px;letter-spacing:-.035em;line-height:1.1}
+  .intro .lede{font-size:16px;color:var(--text3);margin-top:8px;line-height:1.5;max-width:900px}
+  .legend{display:grid;gap:10px;margin-top:16px;font-size:14px;color:var(--text2);line-height:1.45}
+  .chooser{position:sticky;top:10px;z-index:200;max-width:1240px;margin:0 auto 34px;background:var(--surface);border:1px solid var(--border);border-radius:22px;padding:6px;display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+  .chooser .mono{color:var(--text3);padding:0 12px}
+  .chooser button{padding:10px 16px;border-radius:99px;font-size:14.5px;font-weight:600;color:var(--text3);white-space:nowrap}
+  .chooser button.on{background:var(--accent);color:#fff}
+  .section{max-width:1760px;margin:0 auto 80px}
+  .section>h2{font-size:28px;letter-spacing:-.035em}
+  .section>p{font-size:15px;color:var(--text3);margin:4px 0 18px;max-width:880px;line-height:1.5}
+  .states{display:flex;flex-wrap:wrap;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:22px;padding:4px;margin-bottom:22px;width:fit-content;max-width:100%}
+  .states button{padding:8px 12px;border-radius:99px;font-size:13.5px;font-weight:600;color:var(--text3);white-space:nowrap}
+  .states button.on{background:var(--accent);color:#fff}
+  .row{display:flex;flex-wrap:wrap;gap:40px;align-items:flex-start}
+  .cell{width:390px}
+  .opthead{margin-bottom:12px}
+  .opthead b{font-size:20px;letter-spacing:-.025em;display:block}
+  .opthead span{font-size:14px;color:var(--text3)}
+  .notes{width:390px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:20px 22px;margin-top:14px}
+  .notes ul{padding-left:18px;font-size:13.5px;line-height:1.55;color:var(--text2)}
+  .notes li{margin-bottom:5px}
+  .notes .mono{color:var(--accent);margin:10px 0 4px;display:block;font-size:10.5px}
+  .notes .mono:first-child{margin-top:0}
+  .notes.side{width:440px;margin-top:62px}
+
+  /* proposal marking */
+  .ptag{display:inline-block;font:500 9.5px 'Geist Mono',monospace;letter-spacing:.1em;text-transform:uppercase;border:1.5px dashed var(--accent);color:var(--accent);border-radius:99px;padding:2px 7px;background:var(--surface);white-space:nowrap;vertical-align:middle}
+  .pd{border:1.5px dashed var(--accent-muted)!important}
+
+  /* ---------- phone ---------- */
+  .phone{width:390px;height:812px;background:var(--bg);border-radius:44px;border:10px solid #0B0F1A;overflow:hidden;position:relative}
+  .status{height:44px;display:flex;justify-content:space-between;align-items:center;padding:0 26px;font-size:14px;font-weight:600;position:absolute;top:0;left:0;right:0;z-index:40;pointer-events:none}
+  .status i{width:90px;height:24px;background:#0B0F1A;border-radius:14px;position:absolute;left:50%;top:8px;transform:translateX(-50%)}
+  .scroll{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none;padding-top:44px;padding-bottom:110px}
+  .scroll::-webkit-scrollbar{display:none}
+  .compact{position:absolute;top:0;left:0;right:0;height:96px;padding:44px 20px 0;display:flex;align-items:center;justify-content:space-between;background:rgba(250,250,252,.96);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);z-index:30;opacity:0;transform:translateY(-8px);pointer-events:none;transition:.2s}
+  .compact.on{opacity:1;transform:none}
+  .compact b{font-size:18px;letter-spacing:-.02em}
+  .tab{position:absolute;left:14px;right:14px;bottom:14px;height:68px;background:rgba(255,255,255,.96);backdrop-filter:blur(14px);border:1px solid var(--border);border-radius:24px;display:flex;justify-content:space-around;align-items:center;z-index:25}
+  .tab button{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10.5px;font-weight:600;color:var(--text4);padding:7px 2px;border-radius:14px;min-width:60px;min-height:48px;justify-content:center}
+  .tab button.on{color:var(--accent);background:var(--accent-soft)}
+
+  /* ---------- shared ---------- */
+  .pill{font:500 10.5px 'Geist Mono',monospace;letter-spacing:.1em;text-transform:uppercase;border-radius:99px;padding:5px 10px;display:inline-block;white-space:nowrap}
+  .pill.ok{background:var(--ok-soft);color:var(--ok-text)}.pill.acc{background:var(--accent-soft);color:var(--accent-hover)}
+  .pill.warn{background:var(--warn-soft);color:var(--warn)}.pill.neutral{background:var(--muted);color:var(--text3)}
+  .pill.info{background:var(--info-soft);color:#1F4FD1}.pill.danger{background:var(--danger-soft);color:var(--danger-text)}
+  .pill.onink{background:rgba(255,255,255,.14);color:#fff}
+  .pill.live::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--ok);margin-right:6px;vertical-align:1px}
+  .rowc{display:flex;align-items:center;gap:14px}
+  .grow{flex:1;min-width:0}
+  .ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sub{font-size:14px;color:var(--text3);line-height:1.4}
+  .title{font-size:30px;font-weight:800;letter-spacing:-.04em;line-height:1.05}
+  .head{padding:12px 20px 12px}
+  .head .mono{color:var(--text3);margin-top:6px;font-size:11px}
+  .btn{height:46px;min-width:44px;border-radius:var(--r-md);font-weight:700;font-size:15px;padding:0 18px;display:inline-flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap}
+  .btn.pri{background:var(--accent);color:#fff}.btn.out{border:1.5px solid var(--border-strong);background:var(--surface)}
+  .btn.full{width:100%}
+  .btn.sm{height:38px;font-size:14px;padding:0 14px;border-radius:12px}
+  .btn.dtxt{color:var(--danger-text)}
+  .pbtn{height:50px;border-radius:99px;width:100%;font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:center;white-space:nowrap}
+  .pbtn.on{background:var(--accent);color:#fff}.pbtn.off{background:var(--sunken);color:var(--text3)}.pbtn.white{background:#fff;color:var(--accent-deep)}.pbtn.outl{background:var(--surface);color:var(--text);border:1.5px solid var(--border-strong)}
+  .pbtn.sm{height:42px;font-size:14px}
+  .chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:0 20px 4px}
+  .chips::-webkit-scrollbar{display:none}
+  .chip{white-space:nowrap;padding:0 14px;height:40px;display:inline-flex;align-items:center;border-radius:99px;font-size:14px;font-weight:600;background:var(--surface);border:1px solid var(--border);color:var(--text2);flex:none}
+  .chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px}
+  .pad{padding:0 20px}
+  .stack{display:grid;gap:12px;grid-template-columns:minmax(0,1fr)}
+  .stack>*{min-width:0}
+  .lbl{color:var(--text3);font-size:11px}
+  .sec{font:500 11px 'Geist Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--text3);padding:10px 4px 0;display:flex;align-items:center;gap:8px}
+  .skel{background:linear-gradient(90deg,var(--muted) 0%,#E9ECF2 50%,var(--muted) 100%);background-size:200% 100%;animation:sh 1.3s infinite linear;border-radius:10px}
+  @keyframes sh{to{background-position:-200% 0}}
+  .center{display:grid;place-items:center;text-align:center;padding:60px 36px 0}
+  .center .ic{width:64px;height:64px;border-radius:20px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;margin-bottom:16px}
+  .center .ic svg{width:30px;height:30px}
+  .center b{font-size:22px;letter-spacing:-.03em;display:block}
+  .center p{font-size:15px;color:var(--text3);margin:8px 0 18px;line-height:1.5}
+  .band{display:flex;gap:10px;align-items:flex-start;padding:10px 20px;background:var(--danger-soft);border-bottom:1px solid var(--danger-edge);color:var(--danger-text);font-size:13px;line-height:1.4}
+  .band svg{width:18px;height:18px;margin-top:1px}
+  .none{border-radius:var(--r-md);background:var(--ok-soft);border:1px solid var(--ok-edge);padding:12px 14px;font-size:14px;color:var(--ok-text)}
+  .nonetxt{padding:22px 4px;text-align:center;font-size:15px;color:var(--text3)}
+  [data-act]{cursor:pointer}
+  .toast{position:absolute;left:14px;right:14px;bottom:100px;background:var(--ink);color:#fff;border-radius:var(--r-md);padding:13px 14px;z-index:60;font-size:14px;font-weight:600;transform:translateY(20px);opacity:0;pointer-events:none;transition:.25s}
+  .toast.on{transform:none;opacity:1}
+
+  .brandbar{height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 20px}
+  .brand{display:flex;align-items:center;gap:10px;font-size:17px;font-weight:600;letter-spacing:-.01em}
+  .mark{width:30px;height:30px;border-radius:9px;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:800;font-size:19px;line-height:1;padding-bottom:3px}
+  .disc{width:40px;height:40px;border-radius:50%;background:var(--ink-raised);color:#fff;display:grid;place-items:center;font-size:13.5px;font-weight:600;flex:none}
+
+  /* home pieces */
+  .stat{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px 16px;display:grid;gap:8px;min-width:0}
+  .stat .fig{font:500 22px 'Geist Mono',monospace;letter-spacing:0}
+  .stat .fig.ok,.tile .fig.ok,.strip .fig.ok{color:var(--ok)}
+  .two{display:flex;gap:10px}
+  .hero{position:relative;overflow:hidden;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:18px;display:grid;gap:14px}
+  .hero::before{content:"";position:absolute;inset:0;background:radial-gradient(70% 60% at 100% 0%,rgba(91,61,245,.11),rgba(91,61,245,0) 70%);pointer-events:none}
+  .hero>*{position:relative}
+  .nm2{font-size:24px;font-weight:700;letter-spacing:-.03em}
+  .figc{font:500 22px 'Geist Mono',monospace}
+  .owed{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px 16px}
+  .owed.urgent{border-color:var(--danger-edge)}
+  .owed .ck{font:500 15px 'Geist Mono',monospace;color:var(--text)}
+  .owed.urgent .ck{color:var(--danger-text)}
+  .owed .ck.dim{color:var(--text4)}
+  .ink{background:var(--ink);color:#fff;border-radius:var(--r-xl);padding:18px;display:grid;gap:12px}
+  .ink .p{font-size:14px;color:#A6ACBA}
+  .ink .nm2{font-size:22px}
+  .tile{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:13px 14px;display:grid;gap:6px;min-width:0}
+  .tile .fig{font:500 20px 'Geist Mono',monospace;letter-spacing:0}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .strip{display:flex;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg)}
+  .strip>div{flex:1;padding:12px 4px;text-align:center;border-right:1px solid var(--border);min-width:0}
+  .strip>div:last-child{border-right:0}
+  .strip .fig{font:500 15px 'Geist Mono',monospace;margin-top:5px}
+  .strip .mono{font-size:8.5px;letter-spacing:.08em;color:var(--text3)}
+
+  .menu{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
+  .mrow{display:flex;align-items:center;gap:12px;padding:12px 16px;min-height:64px;border-bottom:1px solid var(--border)}
+  .mrow:last-child{border-bottom:0}
+  .mrow .t{font:500 10px 'Geist Mono',monospace;letter-spacing:.06em;color:var(--text3);width:44px;flex:none;text-transform:uppercase;line-height:1.5}
+  
+  .wrap{max-width:1000px;margin:0 auto}
+  .layout{display:flex;flex-wrap:wrap;gap:40px;align-items:flex-start}
+  .notes{width:480px;max-width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:22px 24px}
+  .notes ul{padding-left:18px;font-size:13.5px;line-height:1.55;color:var(--text2)}
+  .notes li{margin-bottom:5px}
+  .notes .mono{color:var(--accent);margin:14px 0 6px;display:block;font-size:10.5px}
+  .notes .mono:first-child{margin-top:0}
+  .notes.side{position:sticky;top:20px}
+  /* ---------- premium type scale (final) ---------- */
+  .brandbar{height:60px}
+  .brand{font-size:18px;font-weight:700}
+  .greet{padding:6px 20px 18px}
+  .greet h2{font-size:30px;font-weight:700;letter-spacing:-.04em;line-height:1.1}
+  .greet p{font-size:15px;font-weight:500;color:var(--text3);margin-top:6px;letter-spacing:-.005em}
+  .stack{gap:14px}
+  /* next card (hero) */
+  .nx{background:var(--ink);color:#fff;border-radius:24px;padding:16px 20px;display:grid;gap:12px;position:relative;overflow:hidden}
+  .nx::before{content:"";position:absolute;inset:0;background:radial-gradient(70% 60% at 100% 0%,rgba(114,88,255,.30),rgba(114,88,255,0) 70%);pointer-events:none}
+  .nx>*{position:relative;min-width:0}
+  .nx{grid-template-columns:minmax(0,1fr)}
+  .nxtop{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .nxtop .mono{color:var(--accent-muted);font-size:12px;letter-spacing:.1em}
+  .nx .pill{font-size:12px;padding:6px 11px;letter-spacing:.06em}
+  .cd{display:flex;align-items:baseline;gap:12px;flex-wrap:nowrap}
+  .cd b{font:500 54px/1 'Geist Mono',monospace;letter-spacing:-.04em;white-space:nowrap}
+  .cd>span{font:500 14px 'Geist',sans-serif;color:#A6ACBA;letter-spacing:0;text-transform:none}
+  .nx .nm2{font-size:23px;font-weight:700;letter-spacing:-.035em;line-height:1.2}
+  .nx .p{font-size:15px;color:#B4BAC8;margin-top:5px;line-height:1.4}
+  .nx .none-p{white-space:normal}
+  .who.nodiv{border-top:0;padding-top:0}
+  .who{border-top:1px solid rgba(255,255,255,.12);padding-top:12px}
+  .jb{height:56px;border-radius:99px;width:100%;font-weight:700;font-size:17px;letter-spacing:-.01em;display:flex;align-items:center;justify-content:center;gap:10px;white-space:nowrap}
+  .jb svg{width:20px;height:20px}
+  .jb.open{background:#fff;color:var(--accent-deep)}
+  .jb.live{background:var(--accent);color:#fff}
+  .jb.off{background:rgba(255,255,255,.09);color:#B4BAC8;cursor:default}
+  .jb .dot{width:9px;height:9px;border-radius:50%;background:var(--ok)}
+  .jb.live .dot{background:#fff}
+  .jb .t{font-family:'Geist Mono',monospace;font-weight:500}
+  .pill.okink{background:rgba(14,159,110,.2);color:#6FE0B5}
+  .pill.okink::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:#2CC891;margin-right:6px;vertical-align:1px}
+  .pill.offink{background:rgba(255,255,255,.1);color:#C9CED9}
+  /* tiles */
+  .grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;align-items:stretch}
+  .tile{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:14px 16px;display:grid;grid-template-rows:auto auto;align-content:center;gap:5px;min-width:0;position:relative}
+  .tile.pd{background:var(--accent-wash)}
+  .tile .top{display:flex;align-items:center;gap:7px;min-width:0}
+  .chipi{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;flex:none}
+  .chipi svg{width:19px;height:19px}
+  .tile .chipi{width:20px;height:20px;border-radius:7px}
+  .tile .chipi svg{width:13px;height:13px}
+  .chipi.acc{background:var(--accent-soft);color:var(--accent)}
+  .chipi.ok{background:var(--ok-soft);color:var(--ok-text)}
+  .chipi.info{background:var(--info-soft);color:#1F4FD1}
+  .chipi.warn{background:var(--warn-soft);color:var(--warn)}
+  .tile .lbl{font:500 14px 'Geist',sans-serif;letter-spacing:-.005em;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2;min-width:0}
+  .tile .fig{font:700 33px/1 'Geist',sans-serif;letter-spacing:-.045em;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--text)}
+  .tile .fig{min-height:33px;display:flex;align-items:center}
+  .tile .fig.l7{font-size:29px}.tile .fig.l8{font-size:26px}.tile .fig.l9{font-size:22px}
+  .tile .fig.ok{color:var(--ok-text)}
+  .tile .fig.dim{color:var(--text4)}
+  .tile .ptag{position:absolute;top:-9px;right:12px;font-size:11.5px;padding:2px 8px;letter-spacing:.04em;border-width:1px;background:var(--accent-wash)}
+  /* owed */
+  .oh{display:flex;align-items:center;justify-content:space-between;padding:12px 2px 0}
+  .oh h3{font-size:19px;font-weight:700;letter-spacing:-.03em}
+  .oh .ct{font:600 13px 'Geist',sans-serif;color:var(--accent-hover);background:var(--accent-soft);border-radius:99px;min-width:28px;height:28px;padding:0 10px;display:grid;place-items:center}
+  .ow{background:var(--surface);border:1px solid var(--border);border-radius:20px;overflow:hidden}
+  .or{display:flex;align-items:center;gap:12px;padding:12px 18px;min-height:68px;border-bottom:1px solid var(--border);cursor:pointer}
+  .or:last-child{border-bottom:0}
+  .or .nmx{font-size:16.5px;font-weight:600;letter-spacing:-.02em;line-height:1.25}
+  .or .sub{font-size:14px;margin-top:3px;line-height:1.35}
+  .ck{font:500 13px 'Geist Mono',monospace;border-radius:99px;padding:6px 11px;background:var(--muted);color:var(--text);white-space:nowrap}
+  .ck.urg{background:var(--danger-soft);color:var(--danger-text)}
+  .ck.dim{background:transparent;color:var(--text4);padding-right:0}
+  .or.urg{background:linear-gradient(90deg,var(--danger-soft),rgba(253,236,236,0) 55%)}
+  .or.cl .nmx{color:var(--text2)}
+  .none{border-radius:20px;background:var(--ok-soft);border:1px solid var(--ok-edge);padding:18px;font-size:16px;font-weight:600;color:var(--ok-text);display:flex;align-items:center;gap:12px;line-height:1.35}
+  .none .chipi{background:#fff;color:var(--ok-text)}
+  /* states */
+  .band{padding:14px 20px;font-size:14.5px;line-height:1.45;margin-bottom:14px}
+  .band svg{width:20px;height:20px}
+  .center{padding:72px 32px 0}
+  .center .ic{width:72px;height:72px;border-radius:24px}
+  .center .ic svg{width:32px;height:32px}
+  .center b{font-size:24px;font-weight:700}
+  .center p{font-size:16px;margin:10px 0 22px}
+  .center .btn{height:52px;font-size:16px;padding:0 26px;border-radius:16px}
+  .note{font-size:12.5px;color:var(--text3);line-height:1.4;padding:0 4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="intro" style="margin-bottom:20px">
+  <div class="mono" style="color:var(--accent)">Interviewer app · Home · final</div>
+  <h1>Home, compact grid, premium</h1>
+  <p class="lede">Option D from the design round, polished. Reads <span class="mono" style="letter-spacing:.04em;font-size:12px">GET /interviewers/me</span> and <span class="mono" style="letter-spacing:.04em;font-size:12px">/config</span>. Names, times, rupee amounts and counts are placeholder-shaped samples; the interviewer app shows full candidate names. Switch the state, scroll the phone, tap anything.</p>
+</div>
+<div class="states" id="hStates"></div>
+<div class="layout">
+<div id="ph"></div>
+<div class="notes side">
+  <span class="mono">Type scale (this pass)</span>
+  <ul>
+   <li>Greeting 30/700 (time of day and date from the device clock; the dashboard carries no name, so none is shown) with a 15/500 date line.</li>
+   <li>Stat tiles: figure 33/700 Geist, tight tracking, tabular; label 14/500 sentence case; compact tile: row 1 is a 20px tinted icon chip (13px glyph) inline with the 14/500 label, row 2 is the figure (size-steps 33 / 29 / 26 / 22 for long values). Height follows content (about 88px), 14px 16px padding, 5px row gap, 18px radius, 10px grid gap, equal heights per row only. The dashed Proposal tag now straddles the top edge of its tile.</li>
+   <li>Next-session card (24px radius, 16px 20px padding, 12px gaps): countdown 54 mono, “to start” 14, name 23/700, tier · domain · languages 15, status pill 12, join button 56px high with a 17/700 label.</li>
+   <li>Scorecards owed: section title 19/700 with a count chip; candidate 16.5/600, meta 14, clock pill 13 mono; rows 68px min, 12px 18px padding.</li>
+   <li>Smallest mono text anywhere on Home is 11.5 (the Proposal tag and the NEXT label at 12). Hairline borders, no shadows. Tab bar and status bar unchanged.</li>
+   <li>Empty, suspended, loading and error states use the same scale (24/700 titles, 16 body, 52px retry).</li>
+  </ul>
+  <span class="mono">What changed vs. option D</span>
+  <ul>
+   <li>Next-session card: the countdown is the hero, then a divider, full candidate name and tier · domain · languages, then the join button.</li>
+   <li>Status pill on the card (Join locked, Join open, In progress, Closed, Paused) so the state reads before the button does.</li>
+   <li>Join button states are distinct: locked = muted with lock and a live “Join opens in mm:ss”; open = white with a green dot; rejoin = violet with a white dot; closed and suspended = locked and not tappable.</li>
+   <li>Tile labels are now sentence case (“Done”, “On-time”) rather than mono caps; dashed proposal tiles sit last, with a wash fill.</li>
+   <li>Owed scorecards sit in one grouped card with a count, hh:mm:ss clocks in pills (red pill and soft red wash when urgent), closed rows muted without a pill.</li>
+   <li>The title bar “Home” fades in once you scroll (the existing compact-header pattern). Countdowns tick in this mockup.</li>
+  </ul>
+  <span class="mono">Real content (in the app today)</span>
+  <ul>
+   <li>DONE, COMPLETION, ON-TIME (a dash when the server has none) and the month’s earnings (label “THIS MONTH” with none).</li>
+   <li>Next session: start time (weekday added when not today), countdown, join button counting down to <span class="mono" style="display:inline;margin:0;letter-spacing:.04em">joinOpensAt</span>, “Rejoin room”, “Join window closed”, disabled when suspended.</li>
+   <li>No booking: “No interviews booked.” plus open-slot copy and “Open more hours” / “Publish hours”.</li>
+   <li>Owed rows: “₹… releases on submit” or “Submit to close the interview”, own deadline as hh:mm:ss, urgent under the config reminder hours; “Closed · fee withheld” at 00:00:00; “None to write. Every scorecard is in.”</li>
+   <li>Suspension band, loading and “Couldn’t load your home.” with Try again. A forced password change redirects before Home draws.</li>
+   <li>Samples: join window, scorecard window, urgent threshold and fees are admin config values.</li>
+  </ul>
+  <span class="mono"><span class="ptag">PROPOSAL</span> &nbsp;only these two</span>
+  <ul>
+   <li>Wallet tile (server sends <span class="mono" style="display:inline;margin:0;letter-spacing:.04em">wallet.availablePaise</span>) and Open slots tile (<span class="mono" style="display:inline;margin:0;letter-spacing:.04em">availability.openSlots</span>); neither is on Home today.</li>
+   <li>Presentation-only additions (not new data): the greeting and date from the device clock, the status pill derived from the join state, the count beside the owed heading.</li>
+  </ul>
+</div>
+</div>
+<div class="legend" style="margin-top:24px;font-size:13.5px;color:var(--text2)"><div><span class="ptag">PROPOSAL</span>&nbsp; Dashed tag and outline: not in the app today.</div></div>
+</div>
+<script>
+const I={
+ home:'<svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z"/></svg>',
+ cal:'<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
+ clock:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+ wallet:'<svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M3 10h18M16 15h2"/></svg>',
+ user:'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>',
+ alert:'<svg viewBox="0 0 24 24"><path d="M12 3l10 18H2zM12 10v5M12 18v.5"/></svg>',
+ lock:'<svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>',
+ check:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/></svg>',
+ pie:'<svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 109 9h-9z"/><path d="M15 3.5A9 9 0 0120.5 9H15z"/></svg>',
+ rupee:'<svg viewBox="0 0 24 24"><path d="M7 5h10M7 9h10M7 5c5 0 7 1.5 7 4s-2 4-7 4l7 6"/></svg>',
+ chev:'<svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>'
+};
+const TABS=[['home','Home','home'],['cal','Interviews','interviews'],['clock','Availability','availability'],['wallet','Wallet','wallet'],['user','Account','account']];
+const tab=a=>`<nav class="tab" aria-label="Main">${TABS.map(t=>`<button data-act="toast:Opens ${t[1]}" class="${t[2]===a?'on':''}" ${t[2]===a?'aria-current="page"':''}>${I[t[0]]}<span>${t[1]}</span></button>`).join('')}</nav>`;
+const status=()=>`<div class="status"><span>9:41</span><i></i><span>5G ▮▮▮</span></div>`;
+const ptag=()=>`<span class="ptag">PROPOSAL</span>`;
+const pill=(t,c)=>`<span class="pill ${c}">${t}</span>`;
+const pad2=n=>String(n).padStart(2,'0');
+const clk=(s,f)=>f==='hms'?`${pad2(Math.floor(s/3600))}:${pad2(Math.floor(s%3600/60))}:${pad2(s%60)}`:`${pad2(Math.floor(s/60))}:${pad2(s%60)}`;
+const T=(s,f)=>`<span class="t" data-s="${s}" data-f="${f}">${clk(s,f)}</span>`;
+const errBlock=(t,b,act)=>`<div class="center"><div class="ic">${I.alert}</div><b>${t}</b><p>${b}</p><button class="btn out" data-act="${act}">Try again</button></div>`;
+const bandHTML=`<div class="band" role="alert">${I.alert}<div><b>Account suspended.</b> Reason text from the server. New interviews and withdrawals are paused; you can still submit owed scorecards.</div></div>`;
+const brandBar=`<div class="brandbar"><div class="brand"><div class="mark">’</div>Apostrophe</div><button class="disc" data-act="toast:Opens Account" aria-label="Account">RK</button></div>`;
+const _n=new Date(),_h=_n.getHours();
+const dateLn=`<div class="greet"><h2>${_h<12?'Good morning':_h<17?'Good afternoon':'Good evening'}</h2><p>${_n.toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'})}</p></div>`;
+let S={h:'normal'};
+try{const q=new URLSearchParams(location.hash.slice(1));if(q.get('h'))S.h=q.get('h')}catch(e){}
+
+const FULL={done:'38',comp:'92%',ot:'88%',mon:'OCTOBER',earn:'₹9,500'};
+const NONE={done:'—',comp:'—',ot:'—',mon:'THIS MONTH',earn:'—'};
+const OWED=[
+ {n:'Karan Mehta',line:'₹250 releases on submit',s:8049,urgent:true},
+ {n:'Sana Iqbal',line:'₹250 releases on submit',s:18760},
+ {n:'Aman Verma',line:'Submit to close the interview',s:30120}
+];
+const CLOSED=[{n:'Dev Patel',line:'Closed · fee withheld'}];
+const NXT={n:'Riya Sharma',when:'4:00 PM',line:'T2 · Frontend · EN, HI'};
+function HD(st){
+ const d={st,stats:FULL,owed:OWED,closed:CLOSED,susp:false,slots:18,wallet:'₹3,400',
+  next:{...NXT,toStart:2530,join:'locked',opens:1930}};
+ if(st==='open')d.next={...NXT,toStart:500,join:'open'};
+ if(st==='live')d.next={...NXT,toStart:0,join:'live'};
+ if(st==='closed')d.next={...NXT,toStart:0,join:'closed'};
+ if(st==='suspended'){d.next={...NXT,toStart:500,join:'open'};d.susp=true}
+ if(st==='none'){d.next=null;d.slots=12;d.owed=[];d.closed=[]}
+ if(st==='unpub'){d.next=null;d.slots=0;d.owed=[];d.closed=[];d.stats=NONE;d.wallet='—'}
+ return d;
+}
+function joinBtn(d){
+ const n=d.next,sus=d.susp;
+ if(sus)return `<button class="jb off" disabled aria-disabled="true">${I.lock}Join room</button>`;
+ if(n.join==='open')return `<button class="jb open" data-act="toast:Opens the room"><span class="dot"></span>Join room</button>`;
+ if(n.join==='live')return `<button class="jb live" data-act="toast:Opens the room"><span class="dot"></span>Rejoin room</button>`;
+ if(n.join==='closed')return `<button class="jb off" disabled aria-disabled="true">${I.lock}Join window closed</button>`;
+ return `<button class="jb off" disabled aria-disabled="true">${I.lock}<span>Join opens in ${T(n.opens,'ms')}</span></button>`;
+}
+function statePill(d){
+ const n=d.next;
+ if(d.susp)return pill('Paused','offink');
+ if(n.join==='live')return pill('In progress','okink');
+ if(n.join==='open')return pill('Join open','okink');
+ if(n.join==='closed')return pill('Closed','offink');
+ return pill('Join locked','offink');
+}
+function nextCard(d){
+ const n=d.next;
+ if(!n){
+  const t=d.slots>0?`${d.slots} open ${d.slots===1?'slot is':'slots are'} published for students to book.`:'Publish hours so students can book you.';
+  return `<div class="nx"><div class="nxtop"><span class="mono">NEXT</span></div><div class="who nodiv"><div class="nm2">No interviews booked.</div><div class="p none-p">${t}</div></div><button class="jb open" data-act="toast:Opens Availability">${d.slots>0?'Open more hours':'Publish hours'}</button></div>`;
+ }
+ const cd=(n.join==='live'||n.join==='closed')?`<div class="cd"><b>00:00</b><span>Started</span></div>`:`<div class="cd"><b>${T(n.toStart,'ms')}</b><span>to start</span></div>`;
+ return `<div class="nx" role="button" tabindex="0" data-act="toast:Opens the interview detail"><div class="nxtop"><span class="mono">NEXT · ${n.when.toUpperCase()}</span>${statePill(d)}</div>${cd}<div class="who"><div class="nm2 ell">${n.n}</div><div class="p ell">${n.line}</div></div>${joinBtn(d)}</div>`;
+}
+const tile=(k,v,ok,ic,tone)=>`<div class="tile"><div class="top"><span class="chipi ${tone}">${I[ic]}</span><span class="lbl">${k}</span></div><div class="fig ${fs(v)} ${ok&&v!=='—'?'ok':''} ${v==='—'?'dim':''}">${v}</div></div>`;
+const ptile=(k,v,act,ic)=>`<div class="tile pd" role="button" tabindex="0" data-act="toast:${act}">${ptag()}<div class="top"><span class="chipi acc">${I[ic]}</span><span class="lbl">${k}</span></div><div class="fig ${fs(v)} ${v==='—'?'dim':''}">${v}</div></div>`;
+const fs=v=>v.length>=9?'l9':v.length===8?'l8':v.length===7?'l7':'';
+const sc=k=>k==='THIS MONTH'?'This month':k[0]+k.slice(1).toLowerCase();
+function tiles(d){
+ const s=d.stats;
+ return `<div class="grid2">${tile('Done',s.done,0,'check','info')}${tile('Completion',s.comp,1,'pie','ok')}${tile('On-time',s.ot,1,'clock','warn')}${tile(sc(s.mon),s.earn,0,'rupee','acc')}${ptile('Wallet',d.wallet,'Opens Wallet','wallet')}${ptile('Open slots',String(d.slots),'Opens Availability','cal')}</div>`;
+}
+function owedRow(r){
+ if(r.closed)return `<div class="or cl" role="button" tabindex="0" data-act="toast:Opens the interview"><div class="grow"><div class="nmx ell">${r.n}</div><div class="sub ell">${r.line}</div></div><span class="ck dim">00:00:00</span></div>`;
+ return `<div class="or ${r.urgent?'urg':''}" role="button" tabindex="0" data-act="toast:Opens the scorecard"><div class="grow"><div class="nmx ell">${r.n}</div><div class="sub ell">${r.line}</div></div><span class="ck ${r.urgent?'urg':''}">${T(r.s,'hms')}</span></div>`;
+}
+function owedBlock(d){
+ const rows=[...d.owed,...d.closed.map(c=>({...c,closed:1}))];
+ const body=rows.length?`<div class="ow">${rows.map(owedRow).join('')}</div>`:`<div class="none"><span class="chipi">${I.check}</span>None to write. Every scorecard is in.</div>`;
+ return `<div class="oh"><h3>Scorecards owed</h3>${d.owed.length?`<span class="ct">${d.owed.length}</span>`:''}</div>${body}`;
+}
+function home(d){
+ return `${brandBar}${dateLn}${d.susp?bandHTML:''}<div class="pad stack">${nextCard(d)}${tiles(d)}${owedBlock(d)}</div>`;
+}
+function homeInner(){
+ if(S.h==='loading')return `${brandBar}${dateLn}<div class="pad stack"><div class="skel" style="height:270px;border-radius:24px"></div><div class="grid2">${'<div class="skel" style="height:88px;border-radius:18px"></div>'.repeat(6)}</div><div class="skel" style="height:22px;width:45%"></div><div class="skel" style="height:140px;border-radius:20px"></div></div>`;
+ if(S.h==='error')return brandBar+errBlock('Couldn’t load your home.','Error message from the server.','retryH');
+ return home(HD(S.h));
+}
+function phoneHTML(){
+ return `<div class="phone">${status()}<div class="compact"><b>Home</b></div><div class="scroll">${homeInner()}</div>${tab('home')}<div class="toast" role="status"></div></div>`;
+}
+function wire(ph){const sc=ph.querySelector('.scroll'),cp=ph.querySelector('.compact');sc.addEventListener('scroll',()=>cp.classList.toggle('on',sc.scrollTop>40))}
+function render(){
+ const host=document.getElementById('ph');const old=host.querySelector('.scroll');const y=old?old.scrollTop:0;
+ host.innerHTML=phoneHTML();const sc=host.querySelector('.scroll');sc.scrollTop=y;wire(host.firstElementChild);
+}
+const sw=document.getElementById('hStates');
+const OPTS=[['normal','Normal · join locked'],['open','Join open'],['live','In progress (rejoin)'],['closed','Join window closed'],['none','Nothing booked · slots open'],['unpub','Nothing booked · no hours'],['suspended','Suspended'],['loading','Loading'],['error','Error']];
+function drawSw(){sw.innerHTML=OPTS.map(o=>`<button class="${o[0]===S.h?'on':''}" data-s="${o[0]}">${o[1]}</button>`).join('');sw.querySelectorAll('button').forEach(b=>b.onclick=()=>{S.h=b.dataset.s;drawSw();render()})}
+let tt;
+function toast(m){const t=document.querySelector('.toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),1600)}
+document.addEventListener('click',e=>{
+ const a=e.target.closest('[data-act]');if(!a||!a.closest('.phone'))return;const x=a.dataset.act;
+ if(x.startsWith('toast:'))return toast(x.slice(6));
+ if(x==='retryH'){S.h='loading';drawSw();render();return setTimeout(()=>{S.h='normal';drawSw();render()},900)}
+});
+setInterval(()=>{document.querySelectorAll('.t[data-s]').forEach(el=>{let s=+el.dataset.s;if(s>0){s--;el.dataset.s=s;el.textContent=clk(s,el.dataset.f)}})},1000);
+drawSw();render();
+</script>
+</body>
+</html>

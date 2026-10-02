@@ -94,7 +94,7 @@ export function EmployerAccountScreen() {
   ]
 
   return (
-    <EmployerShell back={() => navigation.goBack()} title="Account" big right={null}>
+    <EmployerShell title="Account" big>
       {company && (
         <EmCard>
           <View style={styles.head}>

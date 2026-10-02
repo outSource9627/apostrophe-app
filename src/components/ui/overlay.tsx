@@ -145,15 +145,20 @@ export type TabItem = {
  * pass `glyph` to swap it 1:1 when the set arrives.
  */
 export function TabBar({
-  items, current, onSelect, floating = false,
-}: { items: readonly TabItem[]; current: string; onSelect?: (key: string) => void; floating?: boolean }) {
+  items, current, onSelect, floating = false, dark = false,
+}: {
+  items: readonly TabItem[]; current: string; onSelect?: (key: string) => void; floating?: boolean
+  /** Drawn on ink, under the black video feed (docs/tinder-feed-mockups.html). The glyphs are the caller's to tint. */
+  dark?: boolean
+}) {
   const insets = useSafeAreaInsets()
   const android = Platform.OS === 'android'
+  const onLabel = dark ? color.accentMuted : color.accentText
   // The student app's bar: a white pill floating over the page, the active tab lit in violet.
   if (floating) {
     return (
-      <View style={[styles.floatWrap, { paddingBottom: Math.max(insets.bottom, space.sm) + space.xs }]}>
-        <View style={styles.floatBar}>
+      <View style={[styles.floatWrap, dark && styles.floatWrapDark, { paddingBottom: Math.max(insets.bottom, space.sm) + space.xs }]}>
+        <View style={[styles.floatBar, dark && styles.floatBarDark]}>
           {items.map((it) => {
             const active = it.key === current
             return (
@@ -162,10 +167,10 @@ export function TabBar({
                 accessibilityRole="tab"
                 accessibilityState={{ selected: active }}
                 onPress={() => onSelect?.(it.key)}
-                style={({ pressed }) => [styles.floatTab, active && styles.floatTabOn, pressed && { opacity: opacity.pressed }]}
+                style={({ pressed }) => [styles.floatTab, active && (dark ? styles.floatTabOnDark : styles.floatTabOn), pressed && { opacity: opacity.pressed }]}
               >
                 {it.glyph}
-                <Text style={[text.uiXsSemi, { color: active ? color.accentText : color.textSubtle }]}>{it.label}</Text>
+                <Text style={[text.uiXsSemi, { color: active ? onLabel : dark ? color.textOnInkSubtle : color.textSubtle }]}>{it.label}</Text>
               </Pressable>
             )
           })}
@@ -173,8 +178,9 @@ export function TabBar({
       </View>
     )
   }
+  const offLabel = dark ? color.textOnInkSubtle : android ? color.textMuted : color.textSubtle
   return (
-    <View style={[styles.tabBar, android ? styles.tabBarAndroid : styles.tabBarIos, { paddingBottom: insets.bottom }]}>
+    <View style={[styles.tabBar, dark ? styles.tabBarDark : android ? styles.tabBarAndroid : styles.tabBarIos, { paddingBottom: insets.bottom }]}>
       {items.map((it) => {
         const active = it.key === current
         return (
@@ -187,7 +193,7 @@ export function TabBar({
             onPress={() => onSelect?.(it.key)}
             style={({ pressed }) => [styles.tab, pressed && { opacity: opacity.pressed }]}
           >
-            <View style={android && active ? styles.tabIndicator : styles.tabIndicatorOff}>
+            <View style={android && active ? [styles.tabIndicator, dark && styles.tabIndicatorDark] : styles.tabIndicatorOff}>
               {it.glyph ? it.glyph : <View style={[styles.glyph, active ? styles.glyphOn : styles.glyphOff]} />}
               {it.locked && (
                 <View style={styles.lock}><Icon name="lock" size={space.md - 1} tint={color.textDisabled} weight={borderWidth.accent + 0.2} /></View>
@@ -204,7 +210,7 @@ export function TabBar({
             <Text
               style={[
                 active ? text.uiXsSemi : text.uiXsMedium,
-                { color: active ? color.accentText : it.locked ? color.textDisabled : android ? color.textMuted : color.textSubtle },
+                { color: active ? onLabel : it.locked ? (dark ? color.textOnInkSubtle : color.textDisabled) : offLabel },
               ]}
             >
               {it.label}
@@ -302,8 +308,12 @@ const styles = StyleSheet.create({
   },
   floatTab: { alignItems: 'center', gap: space['2xs'], paddingVertical: 7, paddingHorizontal: space.sm, borderRadius: 14, minWidth: 60 },
   floatTabOn: { backgroundColor: color.accentSoft },
+  floatWrapDark: { backgroundColor: color.inkDeep },
+  floatBarDark: { backgroundColor: color.inkRaised, borderColor: color.onInkHairline },
+  floatTabOnDark: { backgroundColor: color.accentOnInkSoft },
   tabBarIos: { backgroundColor: color.surfaceMuted },
   tabBarAndroid: { backgroundColor: color.surface },
+  tabBarDark: { backgroundColor: color.inkDeep, borderTopWidth: 0 },
   tab: { flex: 1, alignItems: 'center', gap: space.xs, paddingVertical: space.xs },
   tabIndicator: {
     width: height['tab-pill-w'],
@@ -313,6 +323,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  tabIndicatorDark: { backgroundColor: color.accentOnInkSoft },
   tabIndicatorOff: { alignItems: 'center', justifyContent: 'center' },
   glyph: {
     width: height.glyph,

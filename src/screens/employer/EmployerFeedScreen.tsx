@@ -10,8 +10,9 @@ import { borderWidth, color, height, opacity, radius, space, spaceHalf } from '.
 import { Button, text } from '../../components/ui'
 import { Icon } from '../../components/ui/Icon'
 import { EmployerShell } from '../../components/employer'
-import { DeckCard, FEED_HOW, FeedChips, FeedControls, FeedLockCard, FeedStamp, FeedTop } from '../../components/employer/feed'
-import { StudioCard, StudioLabel, StudioState, StudioToast } from '../../components/employer/studio'
+import { DeckCard, FEED_HOW, FeedChips, FeedLockCard, FeedTop } from '../../components/employer/feed'
+import { StudioCard, StudioLabel, StudioState } from '../../components/employer/studio'
+import { FeedActions, FeedSkeleton, FeedStamp, FeedToast } from '../../components/ui/feed-deck'
 import { ApiClientError } from '../../lib/api'
 import {
   clearFeedFilters, fetchFeedFilters, fetchLastSwipe, fetchMatchCount, listSavedSearches, postSwipe,
@@ -25,6 +26,9 @@ import {
   advanceDeck, ensureDeck, loadDeck, markCardLimit, patchCards, refreshDeckMedia, resetDeck, restoreCard, useFeedDeck,
 } from '../../lib/employer/feedDeck'
 import { filterChips, filterCount, normalize, rowLabel, withoutChip, withoutRow } from '../../lib/employer/feedFilters'
+import { useLightStatusBar } from '../../lib/useLightStatusBar'
+import { useDarkTabBar } from '../../navigation/tabBarTone'
+import { CandidateProfileSheet } from './CandidateProfileSheet'
 import { FeedFiltersSheet } from './FeedFiltersModal'
 import { SavedSearchesSheet } from './SavedSearchesModal'
 import { SendInterestSheet } from './SendInterestModal'
@@ -55,7 +59,11 @@ function untilReset(resetAt: string | undefined, now: number) {
 }
 
 /**
- * The candidate feed (docs/employer-app-studio.html · F0–F7).
+ * The candidate feed (docs/employer-app-studio.html · F0–F7, drawn as the video
+ * feed of docs/tinder-feed-mockups.html · design 1). While a card is up the
+ * page and the tab bar are ink, the card runs down to the bar, and the four
+ * round buttons sit over its foot; the lock, limit, caught-up and error states
+ * keep the light page.
  *
  * Gestures (one card, four of them; the axis is chosen once per drag):
  * - swipe right → Shortlist, privately (as before);
@@ -83,6 +91,9 @@ export function EmployerFeedScreen() {
   const known = state !== null
   const verified = Boolean(state?.verified)
   const deck = useFeedDeck()
+  // The latest deck for effects that run on focus, without re-running on every deck change.
+  const deckRef = useRef(deck)
+  deckRef.current = deck
 
   const [filters, setFilters] = useState<CandidateFilters>({})
   const [filtersReady, setFiltersReady] = useState(false)
@@ -94,6 +105,7 @@ export function EmployerFeedScreen() {
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [savedOpen, setSavedOpen] = useState(false)
   const [interestOpen, setInterestOpen] = useState(false)
+  const [profileCard, setProfileCard] = useState<CandidateCard | null>(null)
   const [saveDraft, setSaveDraft] = useState<CandidateFilters | null>(null)
   const [now, setNow] = useState(() => Date.now())
 
@@ -117,6 +129,23 @@ export function EmployerFeedScreen() {
   useEffect(() => {
     if (verified && filtersReady) ensureDeck(PAGE)
   }, [verified, filtersReady])
+
+  /**
+   * A deck that ran out starts again from page one each time the feed comes
+   * back into view. A walk keeps its order for the day, so candidates published
+   * after it began — or ranked above where it had reached — would otherwise
+   * never appear. Free on the server: a candidate already dealt today is never
+   * charged again (one card per candidate per day), so the restart re-shows the
+   * ones skipped and adds the new ones.
+   */
+  useEffect(() => {
+    if (!focused || !verified || !filtersReady) return
+    const d = deckRef.current
+    if (d.started && !d.loading && !d.more && !d.cardLimit && d.items.length <= d.i) {
+      resetDeck()
+      loadDeck(true, PAGE)
+    }
+  }, [focused, verified, filtersReady])
 
   // How many match the filters (free, no card charged).
   useEffect(() => {
@@ -142,7 +171,6 @@ export function EmployerFeedScreen() {
 
   const current = items[i]
   const next = items[i + 1] ?? null
-  const third = items[i + 2] ?? null
   const caughtUp = verified && filtersReady && !deck.loading && deck.started && !current && !deck.error && !deck.cardLimit
 
   useEffect(() => {
@@ -226,8 +254,11 @@ export function EmployerFeedScreen() {
       return
     }
     const card = current
+    // Held for the 240 ms the card takes to leave, so an Undo or Back can't land mid-flight.
+    setBusy(true)
     lockX.setValue(0)
     Animated.timing(gy, { toValue: -screenH, duration: 240, useNativeDriver: true }).start(() => {
+      setBusy(false)
       advanceDeck()
       setToast({ kind: 'skip', card, message: `Skipped ${card.name.split(/\s+/)[0]} — may show up again later` })
     })
@@ -291,7 +322,7 @@ export function EmployerFeedScreen() {
     refreshDeckMedia()
   }, [])
 
-  const rotate = tx.interpolate({ inputRange: [-300, 0, 300], outputRange: ['-7deg', '0deg', '7deg'] })
+  const rotate = tx.interpolate({ inputRange: [-width, 0, width], outputRange: ['-10deg', '0deg', '10deg'] })
   const shortOpacity = tx.interpolate({ inputRange: [FLICK_X, COMMIT_X + 20], outputRange: [0, 1], extrapolate: 'clamp' })
   const passOpacity = tx.interpolate({ inputRange: [-(COMMIT_X + 20), -FLICK_X], outputRange: [1, 0], extrapolate: 'clamp' })
   const skipOpacity = ty.interpolate({ inputRange: [-(COMMIT_Y + 20), -FLICK_Y], outputRange: [1, 0], extrapolate: 'clamp' })
@@ -311,12 +342,19 @@ export function EmployerFeedScreen() {
   const openFull = () =>
     current?.hasVideo &&
     navigation.navigate('CandidateVideo', { id: current.id, name: current.name, photoUrl: current.photoUrl, interviewAt: current.verifiedInterview?.at })
-  const openProfile = () => current && navigation.navigate('CandidateProfile', { id: current.id })
+  const openProfile = () => current && setProfileCard(current)
 
   let stage: React.ReactNode
   const waiting = !known || (verified && !deck.gated && (!filtersReady || ((!deck.started || deck.loading) && items.length <= i && !deck.error && !deck.cardLimit)))
+  const showCards = !waiting && !pending && !deck.cardLimit && !(deck.error && items.length <= i) && !!current
+  // The light page until the account is known to be verified; after that, loading draws the dark card.
+  const loadingDark = known && verified && !deck.gated && !deck.cardLimit && !(deck.error && items.length <= i) && !current && !caughtUp
+  const dark = showCards || loadingDark
+  useLightStatusBar(dark)
+  useDarkTabBar(dark)
+
   if (waiting) {
-    stage = <View style={styles.skeleton} accessibilityLabel="Loading candidates" />
+    stage = known ? <FeedSkeleton label="Loading candidates" /> : <View style={styles.skeleton} accessibilityLabel="Loading candidates" />
   } else if (pending) {
     stage = <FeedLockCard />
   } else if (deck.cardLimit) {
@@ -332,11 +370,6 @@ export function EmployerFeedScreen() {
   } else if (current) {
     stage = (
       <>
-        {third && (
-          <View style={[styles.layer, styles.third]} pointerEvents="none">
-            <View style={styles.ghost} />
-          </View>
-        )}
         {next && (
           <Animated.View style={[styles.layer, { transform: [{ translateY: nextLift }, { scale: nextScale }] }]} pointerEvents="none">
             <DeckCard card={next} active={false} muted />
@@ -351,7 +384,7 @@ export function EmployerFeedScreen() {
           >
             <DeckCard
               card={current}
-              active={focused && !filtersOpen && !savedOpen && !interestOpen}
+              active={focused && !filtersOpen && !savedOpen && !interestOpen && !profileCard}
               muted={muted}
               position={position}
               onToggleMute={() => setMuted((m) => !m)}
@@ -360,20 +393,32 @@ export function EmployerFeedScreen() {
               onStreamFail={refreshStreams}
               stamps={
                 <>
-                  <Animated.View style={[styles.stamp, styles.stampLeft, { opacity: shortOpacity }]} pointerEvents="none">
-                    <FeedStamp kind="shortlist" />
+                  <Animated.View style={[styles.layer, { opacity: shortOpacity }]} pointerEvents="none">
+                    <FeedStamp kind="like" label="SHORTLIST" />
                   </Animated.View>
-                  <Animated.View style={[styles.stamp, styles.stampRight, { opacity: passOpacity }]} pointerEvents="none">
-                    <FeedStamp kind="pass" passDays={passDays} />
+                  <Animated.View style={[styles.layer, { opacity: passOpacity }]} pointerEvents="none">
+                    <FeedStamp kind="pass" label={passDays ? `PASS · ${passDays}D` : 'PASS'} />
                   </Animated.View>
-                  <Animated.View style={[styles.skipStamp, { opacity: skipOpacity }]} pointerEvents="none">
-                    <FeedStamp kind="skip" />
+                  <Animated.View style={[styles.layer, { opacity: skipOpacity }]} pointerEvents="none">
+                    <FeedStamp kind="skip" label="SKIP" />
                   </Animated.View>
                 </>
               }
             />
           </Animated.View>
         </PanGestureHandler>
+        <FeedActions
+          canUndo={!!last}
+          disabled={busy}
+          passLabel="Pass"
+          likeLabel="Shortlist"
+          planeLabel={current.interest === 'SENT' ? 'Interest sent' : 'Send an Interest'}
+          planeDisabled={current.interest === 'SENT'}
+          onUndo={() => { undo() }}
+          onPass={() => fling('LEFT')}
+          onLike={() => fling('RIGHT')}
+          onPlane={() => setInterestOpen(true)}
+        />
       </>
     )
   } else if (caughtUp) {
@@ -390,14 +435,15 @@ export function EmployerFeedScreen() {
       />
     )
   } else {
-    stage = <View style={styles.skeleton} accessibilityLabel="Loading candidates" />
+    stage = <FeedSkeleton label="Loading candidates" />
   }
 
   return (
-    <EmployerShell bar={false} scroll={false}>
+    <EmployerShell bar={false} scroll={false} dark={dark}>
       <FeedTop
         filterCount={filterCount(filters)}
         locked={pending}
+        dark={dark}
         onSaved={() => {
           setSaveDraft(null)
           setSavedOpen(true)
@@ -408,13 +454,27 @@ export function EmployerFeedScreen() {
         matches={pending || !filtersReady ? null : matches?.matches ?? null}
         chips={chips}
         locked={pending || !filtersReady}
+        dark={dark}
         onRemove={(key) => { applyFilters(withoutChip(filters, key)) }}
         onClear={() => { applyFilters({}) }}
       />
 
-      <View style={styles.stack}>{stage}</View>
+      <View style={styles.stack}>
+        {stage}
+        {!!toast && (
+          <FeedToast
+            message={toast.message}
+            action={toast.kind === 'skip' ? 'Back' : last ? 'Undo' : undefined}
+            disabled={busy}
+            onAction={() => {
+              if (toast.kind === 'skip') back(toast.card)
+              else undo()
+            }}
+          />
+        )}
+      </View>
 
-      {pending ? (
+      {pending && (
         <View style={styles.how}>
           {FEED_HOW.map((h) => (
             <View key={h.text} style={styles.howRow}>
@@ -423,31 +483,6 @@ export function EmployerFeedScreen() {
             </View>
           ))}
         </View>
-      ) : (current || (deck.loading && items.length <= i)) && !deck.cardLimit ? (
-        <FeedControls
-          canUndo={!!last}
-          disabled={busy || !current}
-          onUndo={() => { undo() }}
-          onPass={() => fling('LEFT')}
-          onShortlist={() => fling('RIGHT')}
-          onInterest={() => setInterestOpen(true)}
-        />
-      ) : (
-        <View style={styles.ctlSpacer} />
-      )}
-
-      {!!toast && (
-        <StudioToast
-          style={styles.toast}
-          message={toast.message}
-          icon={toast.kind === 'skip' ? 'arrowU' : undefined}
-          action={toast.kind === 'skip' ? 'Back' : 'Undo'}
-          disabled={busy}
-          onAction={() => {
-            if (toast.kind === 'skip') back(toast.card)
-            else undo()
-          }}
-        />
       )}
 
       {current && (
@@ -459,6 +494,27 @@ export function EmployerFeedScreen() {
           }}
           onClose={() => setInterestOpen(false)}
           onSent={() => patchCards((c) => (c.id === current.id ? { ...c, interest: 'SENT' } : c))}
+        />
+      )}
+
+      {profileCard && (
+        <CandidateProfileSheet
+          open={!!profileCard}
+          card={profileCard}
+          passDays={passDays}
+          onClose={() => setProfileCard(null)}
+          onPass={() => {
+            const c = profileCard
+            setProfileCard(null)
+            if (c) fling('LEFT')
+          }}
+          onShortlist={() => {
+            const c = profileCard
+            setProfileCard(null)
+            if (c) fling('RIGHT')
+          }}
+          onOpenFull={openFull}
+          onInterestSent={(candidateId) => patchCards((c) => (c.id === candidateId ? { ...c, interest: 'SENT' } : c))}
         />
       )}
 
@@ -581,20 +637,13 @@ const styles = StyleSheet.create({
   pressed: { opacity: opacity.pressed },
   muted: { color: color.textMuted },
   secondary: { color: color.textSecondary },
-  stack: { flex: 1, marginHorizontal: spaceHalf['3.5'], marginTop: space.xs },
+  /** The card runs from under the chips straight into the tab bar; its foot fades into the same black. */
+  stack: { flex: 1, marginHorizontal: spaceHalf['2.5'] },
   layer: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
-  third: { transform: [{ translateY: space.xl + space.xs }, { scale: 0.9 }] },
-  ghost: { flex: 1, borderRadius: radius.deck, backgroundColor: color.surface, borderWidth: borderWidth.thin, borderColor: color.border },
   skeleton: { flex: 1, borderRadius: radius.deck, backgroundColor: color.surfaceSunken },
   center: { flex: 1, justifyContent: 'center' },
-  stamp: { position: 'absolute', top: height.fab },
-  stampLeft: { left: spaceHalf['4.5'] },
-  stampRight: { right: spaceHalf['4.5'] },
-  skipStamp: { position: 'absolute', bottom: height.fab + space.xl, left: 0, right: 0, alignItems: 'center' },
   how: { paddingHorizontal: space.lg, paddingTop: space.md, paddingBottom: spaceHalf['2.5'], gap: spaceHalf['1.5'] },
   howRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  ctlSpacer: { height: space.lg },
-  toast: { position: 'absolute', left: space.lg, right: space.lg, bottom: space.sm },
 
   limit: { flex: 1, justifyContent: 'center', gap: space['2xl'] },
   resetPill: { flexDirection: 'row', alignItems: 'center', gap: spaceHalf['1.5'], height: space.xl + spaceHalf['1.5'], paddingHorizontal: spaceHalf['2.5'], borderRadius: radius.pill, backgroundColor: color.surfaceMuted },

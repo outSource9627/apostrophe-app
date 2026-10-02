@@ -49,7 +49,20 @@ export function CompanyMark({ name, size = 44 }: { name: string | null | undefin
 }
 
 // ── the counterparty plate (SC-16) ───────────────────────────────────────────
-export function CounterpartyPlate({ thread, size = 44 }: { thread: Pick<ThreadDto, 'kind' | 'counterparty'>; size?: number }) {
+/** Soft fill + text pairs for a company tile (chat option A); picked by company name so neighbours differ. */
+const TILE_PAL = [
+  { bg: color.accentSoft, fg: color.accentText },
+  { bg: color.successSoft, fg: color.success },
+  { bg: color.warningSoft, fg: color.warning },
+  { bg: color.surfaceSunken, fg: color.textSecondary },
+] as const
+export function tileTone(name: string | null | undefined) {
+  let h = 0
+  for (const ch of name ?? '') h = (h * 31 + ch.charCodeAt(0)) >>> 0
+  return TILE_PAL[h % TILE_PAL.length]
+}
+
+export function CounterpartyPlate({ thread, size = 44, tinted }: { thread: Pick<ThreadDto, 'kind' | 'counterparty'>; size?: number; /** Company tile in a soft fill + text pair instead of the grey monogram. */ tinted?: boolean }) {
   const { kind, counterparty } = thread
   const base = { width: size, height: size, alignItems: 'center' as const, justifyContent: 'center' as const, borderWidth: borderWidth.thin }
   if (kind === 'USER_ADMIN') {
@@ -61,6 +74,14 @@ export function CounterpartyPlate({ thread, size = 44 }: { thread: Pick<ThreadDt
     }
     return <View style={[base, { borderRadius: radius.pill, backgroundColor: color.surfaceMuted, borderColor: color.border, overflow: 'hidden' }]}><PersonFigure size={size} /></View>
   }
+  if (tinted) {
+    const tone = tileTone(counterparty.name)
+    return (
+      <View style={[base, { borderRadius: size >= 44 ? 14 : size >= 36 ? 11 : 9, backgroundColor: tone.bg, borderColor: tone.bg }]}>
+        <Text style={{ fontFamily: FF.monoMedium, fontSize: size >= 44 ? 13 : 11, letterSpacing: 0.66, color: tone.fg }}>{monogram(counterparty.name)}</Text>
+      </View>
+    )
+  }
   return (
     <View style={[base, { borderRadius: radius.md, backgroundColor: color.surfaceMuted, borderColor: color.border }]}>
       <Text style={[size >= 44 ? text.metaLg : text.metaMd, styles.monogram]}>{monogram(counterparty.name)}</Text>
@@ -69,7 +90,16 @@ export function CounterpartyPlate({ thread, size = 44 }: { thread: Pick<ThreadDt
 }
 
 // ── transcript pieces ────────────────────────────────────────────────────────
-export function DayDivider({ label }: { label: string }) {
+export function DayDivider({ label, ruled }: { label: string; /** Option A: a mono label between two hairlines. */ ruled?: boolean }) {
+  if (ruled) {
+    return (
+      <View style={styles.dayRuled}>
+        <View style={styles.dayRule} />
+        <Text style={styles.dayRuledText}>{label.toUpperCase()}</Text>
+        <View style={styles.dayRule} />
+      </View>
+    )
+  }
   return <Text style={styles.day}>{label.toUpperCase()}</Text>
 }
 
@@ -106,11 +136,17 @@ function Spinner() {
 }
 
 /** One message. `mine` decides the side; the server never sends a sender name. */
-export function Bubble({ msg, now }: { msg: MessageDto; now: number }) {
+export function Bubble({ msg, now, run }: {
+  msg: MessageDto; now: number
+  /** Option A grouping: where this message sits in a run of same-side messages. Omit for the ungrouped bubble. */
+  run?: { first: boolean; last: boolean }
+}) {
   const mine = msg.mine
+  const r = run ? 20 : 18
+  const edge = run ? (run.last ? 4 : 6) : 4
   const corner = mine
-    ? { borderTopLeftRadius: 18, borderTopRightRadius: 18, borderBottomRightRadius: 4, borderBottomLeftRadius: 18 }
-    : { borderTopLeftRadius: 18, borderTopRightRadius: 18, borderBottomRightRadius: 18, borderBottomLeftRadius: 4 }
+    ? { borderTopLeftRadius: r, borderTopRightRadius: r, borderBottomRightRadius: edge, borderBottomLeftRadius: r }
+    : { borderTopLeftRadius: r, borderTopRightRadius: r, borderBottomRightRadius: r, borderBottomLeftRadius: edge }
   const delivery: DeliveryState | null = !mine ? null : msg.readAt ? 'read' : msg.deliveredAt ? 'delivered' : 'sent'
 
   return (
@@ -122,9 +158,9 @@ export function Bubble({ msg, now }: { msg: MessageDto; now: number }) {
           <Text style={[styles.bubbleText, { color: mine ? color.textInverse : color.text }]}>{msg.body}</Text>
         </View>
       )}
-      {mine
+      {(!run || run.last) && (mine
         ? delivery && <DeliveryMark state={delivery} at={msg.readAt ?? msg.deliveredAt} now={now} />
-        : <Meta style={{ color: color.textSubtle, paddingLeft: space.xs }}>{fmtClock(msg.createdAt)}</Meta>}
+        : <Meta style={{ color: color.textSubtle, paddingLeft: space.xs }}>{fmtClock(msg.createdAt)}</Meta>)}
     </View>
   )
 }
@@ -379,6 +415,9 @@ const styles = StyleSheet.create({
   deliveryRow: { flexDirection: 'row', alignItems: 'center', gap: space.xs, paddingRight: space.xs },
   spinner: { width: space.md, height: space.md, borderRadius: radius.pill, borderWidth: borderWidth.accent, borderColor: color.borderStrong, borderTopColor: color.textSubtle },
   bubbleWrap: { gap: space.xs },
+  dayRuled: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 12, marginBottom: 8 },
+  dayRule: { flex: 1, height: borderWidth.thin, backgroundColor: color.border },
+  dayRuledText: { fontFamily: FF.monoMedium, fontSize: 10.5, letterSpacing: 1.26, color: color.textSubtle },
   bubble: { maxWidth: '82%', paddingHorizontal: 13, paddingVertical: 10 },
   bubbleText: { fontFamily: FF.body, fontSize: 15, lineHeight: 21 },
   imageBubble: { width: height['bubble-image-w'], padding: space.xs, gap: space.xs },

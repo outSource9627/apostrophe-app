@@ -7,6 +7,7 @@ import { getMe, logout, resendVerificationEmail } from '../../lib/api/account'
 import { borderWidth, color, fontFamilyNative as FF, opacity } from '../../theme'
 import { StatusPill } from '../../components/ui'
 import { Icon, type IconName } from '../../components/ui/Icon'
+import { ChatButton } from '../../components/tab/ChatButton'
 import { CompactBar, GroupLabel, LargeTitle, Skel, StateBlock, useCollapsingTitle } from '../../components/tab/kit'
 
 /**
@@ -20,7 +21,7 @@ import { CompactBar, GroupLabel, LargeTitle, Skel, StateBlock, useCollapsingTitl
  */
 export function AccountScreen({
   onSignedOut, onReceipts, onVisibility, onNotificationSettings, onData,
-  onProfile, onProfileView, onVideos, onApplications, onConnections, onNotifications, onStats,
+  onProfile, onProfileView, onVideos, onApplications, onConnections, onNotifications, onStats, onChat,
 }: {
   /** Profile is a tab now: there is nothing to go back to. Kept optional so the route's wiring does not change. */
   onBack?: () => void
@@ -29,6 +30,7 @@ export function AccountScreen({
   /** The destinations the dashboard Home no longer lists — reached from here instead. */
   onProfile: () => void; onProfileView: () => void; onVideos: () => void
   onApplications: () => void; onConnections: () => void; onNotifications: () => void; onStats: () => void
+  onChat: () => void
 }) {
   const insets = useSafeAreaInsets()
   const q = useQuery({ queryKey: ['me'], queryFn: () => getMe() })
@@ -38,7 +40,7 @@ export function AccountScreen({
 
   const frame = (c: React.ReactNode) => (
     <View style={[s.page, { paddingTop: insets.top }]}>
-      <LargeTitle title="Account" />
+      <LargeTitle title="Account" right={<ChatButton onPress={onChat} />} />
       {c}
     </View>
   )
@@ -122,7 +124,7 @@ export function AccountScreen({
     <View style={[s.page, { paddingTop: insets.top }]}>
       <CompactBar title="Account" opacity={title.barOpacity} />
       <Animated.ScrollView onScroll={title.onScroll} scrollEventThrottle={16} showsVerticalScrollIndicator={false} contentContainerStyle={s.content}>
-        <LargeTitle title="Account" />
+        <LargeTitle title="Account" right={<ChatButton onPress={onChat} />} />
 
         <View style={[s.pad, s.who]}>
           <View style={s.avatar}><Text style={s.avatarText}>{initials || '·'}</Text></View>

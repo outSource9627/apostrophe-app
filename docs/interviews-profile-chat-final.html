@@ -148,8 +148,9 @@
   .vchip svg{width:14px;stroke:var(--ok);stroke-width:2.6}
 
   /* ===== CHAT ===== */
-  .crow{display:flex;gap:14px;padding:14px 0;border-top:1px solid var(--border);min-height:88px}
-  .crow:first-child{border-top:0}
+  .crow{display:flex;gap:14px;padding:14px;margin-bottom:10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);min-height:88px}
+  .crow.unread{border-color:var(--accent-edge);background:var(--accent-wash)}
+  .crow.muted{background:var(--muted)}
   .crow .nm{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
   .crow .nm b{font-size:17px;letter-spacing:-.01em;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .crow .nm b.u{font-weight:700}
@@ -405,7 +406,7 @@ const TH=[
 const plate=(t,s=48)=>t.masked?`<div class="avatar" style="width:${s}px;height:${s}px;background:var(--muted);color:var(--text3)">${I.user.replace('<svg','<svg style="width:'+Math.round(s*.46)+'px"')}</div>`:`<div class="avatar" style="width:${s}px;height:${s}px;background:${COL[t.c%4]};font-size:${Math.round(s*.34)}px">${t.init}</div>`;
 const live=TH.filter(t=>!t.archived),arch=TH.filter(t=>t.archived);
 const unreadTotal=live.reduce((n,t)=>n+t.unread,0);
-const crow=(t,muted)=>`<div class="crow" data-act="th:${t.id}" role="button" tabindex="0" aria-label="${t.name}${t.unread?', '+t.unread+' unread':''}">${plate(t)}<div class="grow"><div class="nm"><b class="${t.unread?'u':''}" style="${muted?'color:var(--text3)':''}">${t.name}</b><span>${t.time}</span></div><div class="ctx">${t.ctx}</div><div class="pv ${t.unread?'u':''}"><p>${t.pv}</p>${t.unread?`<span class="uchip">${t.unread}</span>`:''}</div></div></div>`;
+const crow=(t,muted)=>`<div class="crow${t.unread?' unread':''}${muted?' muted':''}" data-act="th:${t.id}" role="button" tabindex="0" aria-label="${t.name}${t.unread?', '+t.unread+' unread':''}">${plate(t)}<div class="grow"><div class="nm"><b class="${t.unread?'u':''}" style="${muted?'color:var(--text3)':''}">${t.name}</b><span>${t.time}</span></div><div class="ctx">${t.ctx}</div><div class="pv ${t.unread?'u':''}"><p>${t.pv}</p>${t.unread?`<span class="uchip">${t.unread}</span>`:''}</div></div></div>`;
 const CH={state:'normal',el:document.getElementById('ch')};
 function chHTML(){
   const head=`<div class="compact"><b>Chats</b></div>`;

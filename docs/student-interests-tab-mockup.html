@@ -1,0 +1,547 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apostrophe App – Interests tab, four options</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FAFAFC; --surface:#fff; --muted:#F1F3F7; --sunken:#E6E8EE;
+    --text:#0B0F1A; --text2:#3A4256; --text3:#6B7385; --text4:#8A91A2;
+    --border:#E3E6ED; --border-strong:#C9CED9;
+    --accent:#5B3DF5; --accent-soft:#EFEBFF; --accent-edge:#DCD3FF; --border-strong:#C9CFDB;
+    --ink:#0B0F1A;
+    --ok:#0E9F6E; --ok-text:#0B7A55; --ok-soft:#E6F7F0; --danger:#C22A30; --danger-soft:#FDECEC; --danger-edge:#F2B8BA; --warn:#935F00; --warn-soft:#FFF5E1; --warn-edge:#F5E2B8; --info-soft:#E8EFFF;
+    --r-md:14px; --r-lg:20px; --r-xl:28px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{font-family:'Geist',system-ui,sans-serif;background:#E9EAF2;color:var(--text);padding:40px 24px 90px}
+  button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+  button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex:none}
+  .mono{font:500 11px 'Geist Mono',monospace;letter-spacing:.14em;text-transform:uppercase}
+  .intro{max-width:1300px;margin:0 auto 24px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:26px 30px}
+  .intro h1{font-size:28px;letter-spacing:-.035em}
+  .intro p{font-size:15px;color:var(--text3);margin-top:8px;line-height:1.5;max-width:900px}
+  .intro ul{margin:14px 0 0 18px;font-size:14px;line-height:1.7;color:var(--text2)}
+  .ptag{display:inline-block;font:500 9.5px 'Geist Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);border:1px dashed var(--accent);border-radius:99px;padding:2px 7px;background:var(--accent-wash,#F7F6FF);vertical-align:1px;white-space:nowrap}
+  .chooser{max-width:1300px;margin:0 auto 22px;display:flex;flex-wrap:wrap;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:24px;padding:5px}
+  .chooser button{flex:1;min-width:150px;padding:11px 14px;border-radius:99px;font-size:15px;font-weight:700;color:var(--text3);text-align:center;white-space:nowrap}
+  .chooser button small{display:block;font:500 10.5px 'Geist Mono',monospace;letter-spacing:.1em;text-transform:uppercase;font-weight:500;opacity:.8;margin-top:2px}
+  .chooser button.on{background:var(--ink);color:#fff}
+  .stage{display:flex;flex-wrap:wrap;gap:40px;justify-content:center;max-width:1300px;margin:0 auto;align-items:flex-start}
+  .cell{width:410px}
+  .states{display:flex;flex-wrap:wrap;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:22px;padding:4px;margin-bottom:14px}
+  .states button{padding:8px 11px;border-radius:99px;font-size:13px;font-weight:600;color:var(--text3);white-space:nowrap}
+  .states button.on{background:var(--accent);color:#fff}
+  .cap{margin-top:14px;font-size:14px;color:var(--text3);line-height:1.45}
+  .cap b{font-size:17px;letter-spacing:-.02em;display:block;color:var(--text)}
+  .notes{width:420px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:22px}
+  .notes h3{font-size:18px;letter-spacing:-.02em;margin-bottom:6px}
+  .notes ul{padding-left:18px;font-size:14px;line-height:1.55;color:var(--text2);margin-bottom:14px}
+  .notes li{margin-bottom:5px}
+  .notes .mono{color:var(--accent);margin:12px 0 6px;display:block}
+  .cmp{display:flex;flex-wrap:wrap;gap:28px 22px;justify-content:center;max-width:1700px;margin:0 auto}
+  .cmp .cell{zoom:.8}
+  .cmp .cell h4{font-size:20px;letter-spacing:-.03em;margin-bottom:4px}
+  .cmp .cell p{font-size:14px;color:var(--text3);margin-bottom:12px;max-width:390px;line-height:1.4}
+
+  /* ---------- phone ---------- */
+  .phone{width:390px;height:812px;background:var(--bg);border-radius:44px;border:10px solid #0B0F1A;overflow:hidden;position:relative}
+  .status{height:44px;display:flex;justify-content:space-between;align-items:center;padding:0 26px;font-size:14px;font-weight:600;position:absolute;top:0;left:0;right:0;z-index:40;pointer-events:none}
+  .status i{width:90px;height:24px;background:#0B0F1A;border-radius:14px;position:absolute;left:50%;top:8px;transform:translateX(-50%)}
+  .scroll{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none;padding-top:44px;padding-bottom:130px}
+  .scroll::-webkit-scrollbar{display:none}
+  .compact{position:absolute;top:0;left:0;right:0;height:96px;padding:44px 20px 0;display:flex;align-items:center;justify-content:space-between;background:rgba(250,250,252,.96);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);z-index:30;opacity:0;transform:translateY(-8px);pointer-events:none;transition:.2s}
+  .compact.on{opacity:1;transform:none}
+  .compact b{font-size:18px;letter-spacing:-.02em}
+  .tab{position:absolute;left:14px;right:14px;bottom:14px;height:68px;background:rgba(255,255,255,.96);backdrop-filter:blur(14px);border:1px solid var(--border);border-radius:24px;display:flex;justify-content:space-around;align-items:center;z-index:25}
+  .tab button{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11.5px;font-weight:600;color:var(--text4);padding:7px 8px;border-radius:14px;min-width:60px;min-height:48px;justify-content:center}
+  .tab button.on{color:var(--accent);background:var(--accent-soft)}
+  .toast{position:absolute;left:14px;right:14px;bottom:100px;background:var(--ink);color:#fff;border-radius:var(--r-md);padding:13px 14px;z-index:60;font-size:14px;font-weight:600;transform:translateY(20px);opacity:0;pointer-events:none;transition:.25s}
+  .toast.on{transform:none;opacity:1}
+
+  /* ---------- kit ---------- */
+  .head{padding:12px 20px}
+  .titlerow{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .title{font-size:30px;font-weight:800;letter-spacing:-.04em;line-height:1.05}
+  .link{font-size:15px;font-weight:600;color:var(--accent);padding:8px 0}
+  .pad{padding:0 20px}
+  .stack{display:grid;gap:12px}
+  .grow{flex:1;min-width:0}
+  .rowc{display:flex;align-items:center;gap:12px}
+  .rowtop{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .group{font:500 10.5px 'Geist Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--text3)}
+  .mono-s{font:500 10.5px/15px 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--text4);margin-top:2px}
+  .mono-l{font:500 10.5px 'Geist Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--text3)}
+  .panel{background:var(--surface);border:1px solid var(--border-strong);border-radius:18px;padding:16px;display:grid;gap:12px}
+  .panel.muted{background:var(--muted)}.panel.muted .pill.neutral,.tcard.m .pill.neutral{background:var(--sunken)}
+  .name{font-size:17px;font-weight:600;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .name.m{color:var(--text3)}
+  .mark{border:1px solid var(--border);background:var(--muted);border-radius:var(--r-md);display:grid;place-items:center;font:500 11px 'Geist Mono',monospace;letter-spacing:.06em;color:var(--text3);flex:none}
+  .quote{font-size:14.5px;line-height:1.45;color:var(--text3)}
+  .quote.m{color:var(--text4)}
+  .well{border-radius:14px;background:var(--muted);padding:11px 14px;display:grid;gap:3px}
+  .well.m{background:var(--sunken)}
+  .well b{font-size:15.5px;font-weight:600}
+  .well b.m{color:var(--text3)}
+  .well span.s{font-size:13px;color:var(--text3)}
+  .note{font-size:13.5px;line-height:1.4;color:var(--text3)}
+  .btn{height:46px;min-width:44px;border-radius:var(--r-md);font-weight:700;font-size:15px;padding:0 18px;display:inline-flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap}
+  .btn.pri{background:var(--accent);color:#fff}.btn.ink{background:var(--ink);color:#fff}.btn.out{border:1.5px solid var(--border-strong);background:var(--surface)}
+  .btn.dest{background:var(--danger);color:#fff}.btn.quiet{color:var(--text3)}
+  .btn.dis{background:var(--muted);color:var(--text4);pointer-events:none}.btn.full{width:100%}.btn.fl{flex:1}
+  .btn.sm{height:40px;font-size:14px;padding:0 14px;border-radius:12px}
+  .btn.busy{opacity:.6;pointer-events:none}
+  .btn svg{width:18px}
+  .acts{display:flex;gap:8px;align-items:center}
+  .quiet{display:flex;justify-content:center;align-items:center;gap:8px}
+  .quiet button{min-height:44px;padding:0 10px;font-size:14px;font-weight:600;color:var(--text3)}
+  .quiet button.d{color:var(--danger)}
+  .quiet i{font-style:normal;color:var(--text4)}
+  .pill{font:500 10.5px 'Geist Mono',monospace;letter-spacing:.1em;text-transform:uppercase;border-radius:99px;padding:5px 10px;display:inline-block;white-space:nowrap}
+  .pill.ok{background:var(--ok-soft);color:var(--ok-text)}.pill.acc{background:var(--accent-soft);color:#4A2FE0}
+  .pill.warn{background:var(--warn-soft);color:var(--warn)}.pill.neutral{background:var(--muted);color:var(--text3)}
+  .pill.danger{background:var(--danger-soft);color:var(--danger)}
+  .seg{display:flex;background:var(--muted);border-radius:var(--r-md);padding:4px;margin:0 20px}
+  .seg button{flex:1;height:40px;border-radius:11px;font-size:14.5px;font-weight:600;color:var(--text3)}
+  .seg button.on{background:var(--surface);color:var(--accent);border:1px solid var(--border)}
+  /* Option A: small pinned header + compact segment */
+  .astick{position:sticky;top:44px;z-index:25;background:var(--bg,#FAFAFC);padding:4px 0 10px;border-bottom:1px solid var(--border)}
+  .atitle{font-size:20px;font-weight:700;letter-spacing:-.02em;line-height:1.1;padding:0 20px 10px}
+  .seg.sm{padding:3px;border-radius:12px}
+  .seg.sm button{height:32px;border-radius:9px;font-size:13px}
+  .seg.sm button em{font-size:10px;margin-left:3px}
+  .seg button em{font-style:normal;font:500 11px 'Geist Mono',monospace;margin-left:4px;opacity:.7}
+  .skel{background:linear-gradient(90deg,var(--muted) 0%,#E9ECF2 50%,var(--muted) 100%);background-size:200% 100%;animation:sh 1.3s infinite linear;border-radius:10px}
+  @keyframes sh{to{background-position:-200% 0}}
+  .center{display:grid;place-items:center;text-align:center;padding:60px 36px 0}
+  .center .ic{width:68px;height:68px;border-radius:22px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;margin-bottom:16px}
+  .center .ic svg{width:30px;height:30px}
+  .center b{font-size:22px;letter-spacing:-.03em;display:block}
+  .center p{font-size:15px;color:var(--text3);margin:8px 0 20px;line-height:1.5}
+  [data-act]{cursor:pointer}
+  .empt{font-size:20px;font-weight:700;letter-spacing:-.02em}
+  .fine{font:500 10.5px/15px 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--text4)}
+  .closedcard{background:var(--surface);border:1px solid var(--border-strong);border-radius:18px;padding:0 14px}
+  .crow{display:flex;gap:12px;align-items:flex-start;padding:14px 0;border-top:1px solid var(--border)}
+  .crow:first-child{border-top:0}
+  .dwell{border-radius:14px;border:1px solid var(--danger-edge);background:var(--danger-soft);padding:12px;font-size:13.5px;line-height:1.4}
+  .swell{border-radius:14px;background:var(--sunken);padding:12px;font-size:13.5px;line-height:1.4;color:var(--text3)}
+  /* clock */
+  .clk{display:grid;gap:8px}
+  .clk .r{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .cp{display:inline-flex;align-items:center;gap:6px;border-radius:99px;padding:5px 10px;font:500 10.5px 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase}
+  .cp svg{width:12px;height:12px;stroke-width:2.4}
+  .clk .a{font:500 10.5px 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase}
+  .trk{height:5px;border-radius:99px;background:var(--sunken);overflow:hidden}.trk i{display:block;height:100%;border-radius:99px}
+  /* sheet */
+  .scrim{position:absolute;inset:0;background:rgba(11,15,26,.45);z-index:70;display:flex;align-items:flex-end}
+  .sheet{background:var(--surface);border-radius:28px 28px 0 0;padding:10px 20px 22px;width:100%;display:grid;gap:12px}
+  .sheet .h{width:40px;height:4px;border-radius:4px;background:var(--border-strong);margin:0 auto 4px}
+  .sheet h3{font-size:20px;letter-spacing:-.03em}
+  .cons{border:1px solid var(--border);border-radius:14px;padding:11px 14px;display:grid;gap:3px}
+  .cons p{font-size:14px;line-height:1.4;color:var(--text2)}
+  /* option B */
+  .strip{display:grid;grid-template-columns:repeat(3,1fr);margin:14px 20px 0;border:1px solid var(--border);border-radius:var(--r-lg);background:var(--surface)}
+  .strip div{padding:12px 14px;border-right:1px solid var(--border);text-align:left}.strip div:last-child{border-right:0}
+  .strip small{display:block;font:500 10px 'Geist Mono',monospace;letter-spacing:.1em;color:var(--text3);text-transform:uppercase}
+  .strip b{display:block;font-size:22px;margin-top:2px;letter-spacing:-.03em}
+  .big{background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--r-xl);overflow:hidden}
+  .big .top{padding:18px 18px 14px;display:flex;gap:14px;align-items:center}
+  .big .top .name{font-size:20px;font-weight:700;letter-spacing:-.03em}
+  .big .q{margin:0 18px;border-left:3px solid var(--border-strong);padding:2px 0 2px 12px;font-size:15.5px;line-height:1.5;color:var(--text2)}
+  .big .q small{display:block;font:500 10.5px 'Geist Mono',monospace;letter-spacing:.1em;color:var(--text4);margin-bottom:4px;text-transform:uppercase}
+  .big .body{padding:14px 18px 18px;display:grid;gap:14px}
+  .big .foot{border-top:1px solid var(--border);padding:14px 18px 16px;display:grid;gap:12px;background:var(--bg)}
+  .big.out{background:var(--muted);border-color:transparent}
+  .fold{display:flex;align-items:center;justify-content:space-between;width:100%;padding:14px 16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg)}
+  .fold svg{width:18px;color:var(--text3);transition:.2s}.fold.open svg{transform:rotate(90deg)}
+  .dhead{display:flex;align-items:center;gap:12px;padding:8px 14px}
+  .dhead .back{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--border);background:var(--surface);flex:none}
+  .dhead b{font-size:18px;letter-spacing:-.02em;flex:1}
+  /* option C */
+  .chips{display:flex;gap:8px;padding:0 20px;overflow-x:auto;scrollbar-width:none}
+  .chips button{height:38px;padding:0 14px;border-radius:99px;border:1.5px solid var(--border-strong);background:var(--surface);font-size:14px;font-weight:600;color:var(--text2);white-space:nowrap;display:inline-flex;align-items:center;gap:6px}
+  .chips button em{font:500 11px 'Geist Mono',monospace;font-style:normal;opacity:.7}
+  .chips button.on{background:var(--ink);border-color:var(--ink);color:#fff}
+  .inbox{margin:14px 20px 0;background:var(--surface);border:1px solid var(--border);border-radius:18px;overflow:hidden}
+  .sw{position:relative;border-top:1px solid var(--border);overflow:hidden}.sw:first-child{border-top:0}
+  .swbg{position:absolute;inset:0;display:flex;justify-content:space-between}
+  .swbg span{width:96px;display:grid;place-items:center;font-weight:700;font-size:14px;color:#fff}
+  .swbg .a{background:var(--ink)}.swbg .d{background:var(--text3)}
+  .swfg{position:relative;background:var(--surface);transition:transform .2s;touch-action:pan-y}
+  .swfg.drag{transition:none}
+  .irow{display:flex;gap:12px;align-items:flex-start;padding:14px 14px 14px 16px;position:relative}
+  .irow.urg::before{content:'';position:absolute;left:0;top:12px;bottom:12px;width:4px;border-radius:0 4px 4px 0;background:var(--warn)}
+  .irow .when{font:500 10.5px 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;color:var(--text4)}
+  .irow .when.u{color:var(--warn)}
+  .irow .t{font-size:14.5px;color:var(--text2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .irow .q1{font-size:13.5px;color:var(--text3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .exp{padding:0 16px 16px;display:grid;gap:12px}
+  .hintbar{margin:12px 20px 0;display:flex;align-items:center;justify-content:space-between;gap:8px}
+  @keyframes peek{0%,100%{transform:none}35%,65%{transform:translateX(-56px)}}
+  .swfg.peek{animation:peek 1.8s 1s ease-in-out 1}
+  /* option D */
+  .tl{position:relative;padding:0 20px 0 54px;margin-top:2px}
+  .tl::before{content:'';position:absolute;left:33px;top:0;bottom:0;width:2px;background:var(--border)}
+  .tls{margin:18px 0 10px;position:relative}
+  .tls .group{display:flex;align-items:center;gap:8px}
+  .tls::before{content:'';position:absolute;left:-26px;top:2px;width:14px;height:14px;border-radius:4px;background:var(--ink);transform:rotate(45deg) scale(.7)}
+  .tls.w::before{background:var(--warn)}.tls.o::before{background:var(--ok)}.tls.n::before{background:var(--border-strong)}
+  .tn{position:relative;margin-bottom:10px;min-width:0}.tcard{min-width:0}
+  .tn::before{content:'';position:absolute;left:-26px;top:20px;width:10px;height:10px;border-radius:50%;background:var(--border-strong);border:2px solid var(--bg)}
+  .tn.w::before{background:var(--warn);box-shadow:none}.tn.a::before{background:var(--accent)}.tn.o::before{background:var(--ok)}.tn.d::before{background:var(--danger)}
+  .tn .date{font:500 10px 'Geist Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--text4);position:absolute;left:-54px;top:1px;width:0}
+  .tcard{background:var(--surface);border:1px solid var(--border-strong);border-radius:18px;padding:14px;display:grid;gap:11px}
+  .tcard.m{background:var(--muted);border-color:transparent}
+  .tcard .qq{font-size:14px;line-height:1.4;color:var(--text3);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .tdate{font:500 10.5px 'Geist Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--text4);margin-bottom:5px}
+  body.solo .intro,body.solo .chooser,body.solo .notes,body.solo .states{display:none}body.solo{padding:10px}body.solo .stage{justify-content:flex-start}
+</style>
+</head>
+<body>
+<div class="intro">
+  <div class="mono" style="color:var(--accent)">Student app · Interests tab · four options</div>
+  <h1>Interests: A / B / C / D</h1>
+  <p>The Interests tab shows employers' <b>Interests</b> sent to the student: pending ones with a clock, the Accept / Decline answer, and a permanent closed list. Accepting opens a connection and a chat. Today the tab is one screen with a link to a pushed Connections screen. All four options use only today's fields, actions and copy; names, dates and numbers are placeholder samples. Rules such as expiry and cooldown come from <code>/config</code> (<code>employer.interest.expiryDays</code>, <code>cooldownDays</code>) and are shown with sample values (14 and 30) in this mockup only. <span class="ptag">Proposal</span> marks anything the app does not do today.</p>
+  <ul>
+    <li><b>Same system as the approved screens:</b> Geist / Geist Mono, large title collapsing to a compact bar (scroll the phone), 18-radius bordered panels, 46-high buttons, floating tab bar, no shadows. Accept and Open chat are ink (not violet) because several cards can show them at once.</li>
+    <li><b>Try it:</b> pick an option, switch the state above the phone, tap Accept / Decline, expand rows, tap Block. Use <i>Compare all 4</i> for a side-by-side.</li>
+  </ul>
+</div>
+<div class="chooser" id="chooser"></div>
+<div id="view"></div>
+
+<script>
+/* ===== icons ===== */
+const I={
+ home:'<svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z"/></svg>',
+ cal:'<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
+ brief:'<svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V4h6v3M3 12h18"/></svg>',
+ heart:'<svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 017-2.6A4 4 0 0119 10c0 5.6-7 10-7 10z"/></svg>',
+ user:'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>',
+ back:'<svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>',
+ chev:'<svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>',
+ alert:'<svg viewBox="0 0 24 24"><path d="M12 3l10 18H2zM12 10v5M12 18v.5"/></svg>',
+ chat:'<svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg>',
+ clock:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>'
+};
+const status=()=>`<div class="status"><span>9:41</span><i></i><span>5G ▮▮▮</span></div>`;
+const TABS=[['home','Home'],['cal','Interviews'],['brief','Jobs'],['heart','Interests'],['user','Profile']];
+const tabbar=()=>`<nav class="tab">${TABS.map(t=>`<button data-act="toast:Opens ${t[1]}" class="${t[1]==='Interests'?'on':''}">${I[t[0]]}<span>${t[1]}</span></button>`).join('')}</nav>`;
+
+/* ===== sample data (placeholder-shaped) ===== */
+const NOW=Date.parse('2026-10-02T10:00:00Z');
+const CFG={expiryDays:14,cooldownDays:30}; /* sample; real values come from /config */
+const D=(s)=>new Date(s).toISOString();
+const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const dm=s=>{const d=new Date(s);return d.getUTCDate()+' '+MON[d.getUTCMonth()]};
+const dml=s=>dm(s)+' '+new Date(s).getUTCFullYear();
+const dt=s=>{const d=new Date(s);return dm(s)+', '+String(d.getUTCHours()).padStart(2,'0')+':'+String(d.getUTCMinutes()).padStart(2,'0')};
+const baseData=()=>({
+ interests:[
+  {id:'i1',co:{name:'Company A',industry:'Industry',size:'Size',loc:'Bengaluru'},msg:'Sample message from the employer.',role:{title:'UI/UX Designer',loc:'Bengaluru',type:'Full-time'},status:'SENT',sentAt:D('2026-09-19T10:00:00Z'),expiresAt:D('2026-10-03T00:00:00Z'),respondedAt:null},
+  {id:'i2',co:{name:'Company B',industry:'Industry',size:'Size',loc:'Remote'},msg:'Sample message from the employer, a little longer so it wraps onto a second line in the card.',role:{title:'Frontend Engineer',loc:'Remote',type:'Full-time'},status:'SENT',sentAt:D('2026-09-21T10:00:00Z'),expiresAt:D('2026-10-05T10:00:00Z'),respondedAt:null},
+  {id:'i3',co:{name:'Company C',industry:'Industry',size:'Size',loc:'Mumbai'},msg:'Sample message from the employer.',role:{title:'Brand Strategist',loc:'Mumbai',type:'Contract'},status:'SENT',sentAt:D('2026-09-30T10:00:00Z'),expiresAt:D('2026-10-14T10:00:00Z'),respondedAt:null},
+  {id:'c1',co:{name:'Company D',industry:'Industry',size:'Size',loc:'Pune'},msg:'Sample message from the employer.',role:{title:'Data Analyst',loc:'Pune',type:'Full-time'},status:'ACCEPTED',sentAt:D('2026-09-26T10:00:00Z'),expiresAt:D('2026-10-10T10:00:00Z'),respondedAt:D('2026-09-28T10:00:00Z')},
+  {id:'c2',co:{name:'Company E',industry:'Industry',size:'Size',loc:'Delhi'},msg:null,role:{title:'Content Writer',loc:'Delhi',type:'Part-time'},status:'DECLINED',sentAt:D('2026-09-22T10:00:00Z'),expiresAt:D('2026-10-06T10:00:00Z'),respondedAt:D('2026-09-25T10:00:00Z')},
+  {id:'c3',co:{name:'Company F',industry:'Industry',size:'Size',loc:'Remote'},msg:'Sample message from the employer.',role:{title:'Support Associate',loc:'Remote',type:'Full-time'},status:'EXPIRED',sentAt:D('2026-09-06T10:00:00Z'),expiresAt:D('2026-09-20T10:00:00Z'),respondedAt:null}
+ ],
+ conns:[
+  {id:'n1',from:'c1',status:'ACTIVE',origin:'INTEREST',openedAt:D('2026-09-28T10:00:00Z'),closedAt:null,name:'Company D'},
+  {id:'n2',status:'ACTIVE',origin:'APPLICATION',openedAt:D('2026-09-20T10:00:00Z'),closedAt:null,name:'Company G'},
+  {id:'n3',status:'CLOSED',origin:'APPLICATION',openedAt:D('2026-09-08T10:00:00Z'),closedAt:D('2026-09-15T10:00:00Z'),name:'Company H'},
+  {id:'n4',status:'BLOCKED',origin:'INTEREST',openedAt:D('2026-09-01T10:00:00Z'),closedAt:D('2026-09-10T10:00:00Z'),name:'Company I'}
+ ]
+});
+const mono=n=>(n||'?').split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase();
+// Same logo-tile palette as Saved jobs / Applications, picked by company name so two companies never look alike.
+const PAL=['#5B3DF5','#0E9F6E','#E0366B','#2F6BFF','#C77D00','#3B2A8F'];
+const palOf=n=>PAL[[...(n||'?')].reduce((a,c)=>a+c.charCodeAt(0),0)%PAL.length];
+const mark=(n,s=44)=>`<div class="mark" style="width:${s}px;height:${s}px;background:${palOf(n)};border-color:transparent;color:#fff;font-weight:700;${s<40?'font-size:10px;border-radius:12px':''}">${mono(n)}</div>`;
+
+/* ===== clock (same rules as interestClock) ===== */
+function clock(r){
+ const end=Date.parse(r.expiresAt),start=Date.parse(r.sentAt),rem=end-NOW,total=Math.max(1,end-start);
+ const pct=Math.max(0,Math.min(100,(NOW-start)/total*100));
+ if(rem<=0)return{reading:'spent',rel:'Expired',abs:'until '+dt(r.expiresAt),pct:100};
+ const h=rem/3600000;let rel,rd;
+ if(h<24){rd='urgent';const n=Math.round(h);rel=n<=0?'under an hour left':n+' hour'+(n===1?'':'s')+' left'}
+ else{const d=Math.max(1,Math.round(h/24));rel=d+' day'+(d===1?'':'s')+' left';rd=h<=72?'soon':'fresh'}
+ return{reading:rd,rel,abs:'until '+dt(r.expiresAt),pct};
+}
+const CK={fresh:{bg:'var(--sunken)',fg:'var(--text3)',fill:'var(--border-strong)',abs:'var(--text4)'},soon:{bg:'var(--warn-soft)',fg:'var(--warn)',fill:'var(--warn)',abs:'var(--warn)'},urgent:{bg:'var(--warn)',fg:'#fff',fill:'var(--warn)',abs:'var(--warn)'}};
+const clockHTML=(r,bar=true)=>{const c=clock(r),t=CK[c.reading==='spent'?'urgent':c.reading];
+ return `<div class="clk"><div class="r"><span class="cp" style="background:${t.bg};color:${t.fg}">${I.clock}${c.rel}</span><span class="a" style="color:${t.abs}">${c.abs}</span></div>${bar?`<div class="trk"><i style="width:${c.pct}%;background:${t.fill}"></i></div>`:''}</div>`};
+const split=rows=>{
+ const live=r=>r.status==='SENT'&&clock(r).reading!=='spent';
+ const pending=rows.filter(live).sort((a,b)=>Date.parse(a.expiresAt)-Date.parse(b.expiresAt));
+ const closed=rows.filter(r=>!live(r));
+ const lapsed=closed.filter(r=>r.status==='EXPIRED'||r.status==='SENT').sort((a,b)=>Date.parse(b.respondedAt||b.expiresAt)-Date.parse(a.respondedAt||a.expiresAt));
+ const top=pending.length===0?(lapsed[0]||null):null;
+ return{pending,closed,top,rest:top?closed.filter(r=>r.id!==top.id):closed};
+};
+
+/* ===== shared fragments (real copy) ===== */
+const skel=(w,h)=>`<div class="skel" style="width:${w};height:${h}px"></div>`;
+const errBlock=t=>`<div class="center"><div class="ic">${I.alert}</div><b>${t}</b><p>Nothing has changed. Try again in a moment.</p><button class="btn out" data-act="retry">Try again</button></div>`;
+const headOf=(r,s=44,muted)=>{const c=r.co;return `<div class="rowc">${mark(c&&c.name,s)}<div class="grow"><div class="name ${muted?'m':''}">${c?c.name:'A company'}</div>${c?`<div class="mono-s">${[c.industry,c.size,c.loc].filter(Boolean).join(' · ')}</div>`:''}</div></div>`};
+const roleWell=(r,m)=>r.role?`<div class="well ${m?'m':''}"><span class="mono-l">For this role</span><b class="${m?'m':''}">${r.role.title}</b><span class="s">${[r.role.loc,r.role.type].filter(Boolean).join(' · ')}</span></div>`:'';
+const cooldownOf=r=>dml(new Date(Date.parse(r.sentAt)+CFG.cooldownDays*86400000).toISOString());
+function pendingCard(r,busy,anyBusy){
+ return `<div class="panel">${headOf(r)}${r.msg?`<div class="quote">“${r.msg}”</div>`:''}${roleWell(r)}${clockHTML(r)}
+ <div class="acts"><button class="btn ink fl ${busy?'busy':''}" data-act="acc:${r.id}">Accept</button><button class="btn out fl ${busy||anyBusy?'dis':''}" data-act="dec:${r.id}">Decline</button></div></div>`}
+const closedLine=r=>r.status==='ACCEPTED'?`Accepted ${dm(r.respondedAt||r.sentAt)} · now a connection`:r.status==='DECLINED'?`Declined ${dm(r.respondedAt||r.sentAt)}`:`Lapsed ${dm(r.respondedAt||r.expiresAt)} · sent ${dm(r.sentAt)}`;
+const closedNote=r=>{const n=r.co?r.co.name:'They';return r.status==='ACCEPTED'?'Chat opened the moment you accepted. Accepting is the only way an employer chat starts.':r.status==='DECLINED'?`${n} was not told. Their list shows only that it was not accepted, never whether you declined or let it lapse.`:`Nothing is ever removed from this list. ${n} may write again once the cooldown passes.`};
+const CPILL={ACCEPTED:['Accepted','ok'],DECLINED:['Declined','neutral'],EXPIRED:['Expired','neutral'],SENT:['Expired','neutral']};
+const closedRow=r=>{const p=CPILL[r.status];return `<div class="crow">${mark(r.co&&r.co.name,36)}<div class="grow"><div class="rowtop"><div class="name grow">${r.co?r.co.name:'A company'}</div><span class="pill ${p[1]}">${p[0]}</span></div><div class="mono-s">${closedLine(r)}</div><div class="note" style="margin-top:6px">${closedNote(r)}</div></div></div>`};
+const emptyBlock=()=>`<div class="panel"><div class="empt">Employers write after they watch you.</div><div class="note">Your video resume is in the feed. Keeping it there, and adding another film, is what you can do from here — nobody can be nudged into sending an Interest.</div><button class="btn pri full" data-act="toast:Opens your video resume">Check my video resume</button></div>`;
+const lapsedCard=r=>`<div class="panel">${headOf(r,44,true)}${r.msg?`<div class="quote m">“${r.msg}”</div>`:''}${roleWell(r,true)}<div class="rowtop"><span class="pill neutral">Expired ${dm(r.respondedAt||r.expiresAt)}</span><span class="mono-s" style="margin:0">Sent ${dm(r.sentAt)}</span></div><div class="note">${r.co.name} was not told. Their list shows only that it was not accepted — a lapse and a decline are the same thing from their side — and they may not write to you again until ${cooldownOf(r)}.</div></div>`;
+const fineLine=()=>`<div class="fine">An interest lapses ${CFG.expiryDays} days after it is sent · nothing is ever removed from this list</div>`;
+const grp=(a,c)=>`<div class="group">${a} awaiting your answer · ${c} closed</div>`;
+
+/* connections */
+const CPILLS={ACTIVE:['Accepted','ok'],CLOSED:['Withdrawn','neutral'],BLOCKED:['Blocked','danger']};
+const origin=n=>`${n.origin==='INTEREST'?'Their Interest':'Your application'} · ${n.origin==='INTEREST'?'accepted':'connected'} ${dm(n.openedAt)}`;
+const chead=(n,m)=>`<div class="rowc" style="align-items:flex-start">${mark(n.name,44)}<div class="grow" style="display:grid;gap:6px"><div class="name ${m?'m':''}">${n.name}</div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="pill ${CPILLS[n.status][1]}">${CPILLS[n.status][0]}</span><span class="mono-s" style="margin:0">${origin(n)}</span></div></div></div>`;
+const activeConn=n=>`<div class="panel">${chead(n)}<button class="btn ink full" data-act="chat:${n.name}">Open chat</button><div class="quiet"><button data-act="wd:${n.id}">Withdraw</button><i>·</i><button class="d" data-act="blk:${n.id}">Block</button></div></div>`;
+const archConn=n=>`<div class="panel muted">${chead(n,true)}${n.status==='BLOCKED'?`<div class="dwell">Blocked on ${dml(n.closedAt)}. ${n.name} will not see your profile in the feed again and cannot reach you. This cannot be undone from here.</div>`:`<div class="swell">Withdrawn on ${dml(n.closedAt)}. Neither side can write again; the conversation stays here to read, and the row stays on this list.</div><div class="acts"><button class="btn out fl" data-act="chat:${n.name}">Read the chat</button><button class="btn dest" data-act="blk:${n.id}">Block</button></div>`}</div>`;
+const noConn=()=>`<div class="panel"><div class="empt">No connections yet.</div><div class="swell" style="background:none;padding:0">One opens when you accept an Interest, or when you apply to an employer who had already shortlisted you. There is no third way in, and no way to follow anyone.</div><div class="acts"><button class="btn ink fl" data-act="tab:int">See your Interests</button><button class="btn out fl" data-act="toast:Opens Jobs">Browse jobs</button></div></div>`;
+function connBody(S){
+ const a=S.data.conns.filter(n=>n.status==='ACTIVE'),r=S.data.conns.filter(n=>n.status!=='ACTIVE');
+ if(S.mode==='noconn'||!S.data.conns.length)return noConn();
+ return a.map(activeConn).join('')+(r.length?`<div class="group" style="padding:14px 4px 0">Archived · ${r.length}</div>`:'')+r.map(archConn).join('');
+}
+function sheet(S){
+ if(!S.blocking)return '';const n=S.data.conns.find(x=>x.id===S.blocking);if(!n)return '';
+ return `<div class="scrim" data-act="blkno"><div class="sheet" data-act="stop"><div class="h"></div><h3>Block ${n.name}?</h3>
+ <div class="cons"><span class="mono-l">Right away</span><p>This chat stays archived, and closed to both of you for good.</p></div>
+ <div class="cons"><span class="mono-l">Permanently</span><p>${n.name} never sees your profile in the feed again, and cannot send you an Interest.</p></div>
+ <div class="cons"><span class="mono-l">Not undoable</span><p>Not from here. Support can, and will ask why.</p></div>
+ <div class="note">${n.name} is not told. A block and a withdrawal look the same from the other side.</div>
+ <button class="btn dest full" data-act="blkgo">Block ${n.name}</button><button class="btn quiet full" data-act="blkno">Keep the connection</button></div></div>`;
+}
+const titleHTML=(t,right)=>`<div class="head"><div class="titlerow"><div class="title">${t}</div>${right||''}</div></div>`;
+
+/* ===== OPTION A — segmented Interests | Connections ===== */
+const OA={
+ name:'A · Segmented',
+ blurb:'Interests and Connections as two compact segments under a small pinned “Interests” header. Today’s cards, one flow; no count line above the cards.',
+ render(S){
+  const {pending,closed,top,rest}=split(S.data.interests),conA=S.data.conns.filter(n=>n.status==='ACTIVE').length;
+  const hdr=`<div class="astick"><div class="atitle">Interests</div><div class="seg sm">${[['int','Interests',pending.length],['con','Connections',S.data.conns.length]].map(t=>`<button class="${S.tab===t[0]?'on':''}" data-act="tab:${t[0]}">${t[1]}${S.mode==='loading'||S.mode==='error'?'':`<em>${t[2]}</em>`}</button>`).join('')}</div></div>`;
+  let b;
+  if(S.mode==='loading')b=`<div class="pad stack" style="margin-top:14px">${[0,1].map(()=>`<div class="panel"><div class="rowc">${skel('44px',44)}<div class="grow" style="display:grid;gap:9px">${skel('55%',16)}${skel('75%',11)}</div></div>${skel('100%',56)}${skel('100%',46)}</div>`).join('')}</div>`;
+  else if(S.mode==='error')b=errBlock(S.tab==='con'?'Could not load your connections.':'Could not load your Interests.');
+  else if(S.tab==='con')b=`<div class="pad stack" style="margin-top:14px">${connBody(S)}</div>`;
+  else{
+   const busyId=S.busyId;
+   b=`<div class="pad stack" style="margin-top:14px">${pending.length?pending.map(r=>pendingCard(r,busyId===r.id,!!busyId)).join(''):emptyBlock()+(top?lapsedCard(top):'')+fineLine()}
+   ${rest.length?`<div class="group" style="padding-top:10px">${top?'The rest of the closed list':'Further down the list · closed'} · ${rest.length}</div><div class="closedcard">${rest.map(closedRow).join('')}</div>`:''}</div>`;
+  }
+  return `<div class="scroll">${hdr}${b}</div>`;
+ }
+};
+
+/* ===== OPTION B — employer-first rich cards, Connections pushed ===== */
+const OB={
+ name:'B · Employer-first',
+ blurb:'One tall, magazine-style card per employer: who wrote, what they said, which role, how long is left. Counts strip up top; Connections stays a pushed screen.',
+ render(S){
+  const {pending,closed,top,rest}=split(S.data.interests),act=S.data.conns.filter(n=>n.status==='ACTIVE').length;
+  if(S.pushed||S.tab==='con'){
+   let b;
+   if(S.mode==='loading')b=`<div class="pad stack" style="margin-top:8px">${[0,1].map(()=>`<div class="panel"><div class="rowc">${skel('44px',44)}<div class="grow" style="display:grid;gap:9px">${skel('55%',16)}${skel('70%',11)}</div></div>${skel('100%',46)}</div>`).join('')}</div>`;
+   else if(S.mode==='error')b=errBlock('Could not load your connections.');
+   else b=`<div class="pad stack" style="margin-top:8px">${connBody(S)}</div>`;
+   return `<div class="scroll"><div class="dhead"><button class="back" data-act="back" aria-label="Back">${I.back}</button><b>Connections</b><span class="link" data-act="toast:Opens Chats">Chats</span></div>${b}</div>`;
+  }
+  const hdr=titleHTML('Interests','<span class="link" data-act="tab:con">Connections</span>');
+  let b;
+  if(S.mode==='loading')b=`<div class="pad stack" style="margin-top:14px">${skel('100%',74)}<div class="big" style="padding:18px;display:grid;gap:14px"><div class="rowc">${skel('56px',56)}<div class="grow" style="display:grid;gap:9px">${skel('55%',18)}${skel('75%',11)}</div></div>${skel('100%',70)}${skel('100%',56)}${skel('100%',46)}</div></div>`;
+  else if(S.mode==='error')b=errBlock('Could not load your Interests.');
+  else{
+   const busyId=S.busyId;
+   const bigCard=r=>`<div class="big"><div class="top">${mark(r.co.name,56)}<div class="grow"><div class="name">${r.co.name}</div><div class="mono-s">${[r.co.industry,r.co.size,r.co.loc].join(' · ')}</div></div></div>
+   ${r.msg?`<div class="q"><small>Sent ${dm(r.sentAt)}</small>“${r.msg}”</div>`:''}
+   <div class="body">${roleWell(r)}${clockHTML(r)}</div>
+   <div class="foot"><div class="acts"><button class="btn ink fl ${busyId===r.id?'busy':''}" data-act="acc:${r.id}">Accept</button><button class="btn out fl ${busyId?'dis':''}" data-act="dec:${r.id}">Decline</button></div></div></div>`;
+   b=`<div class="strip" style="margin-top:6px"><div><small>Awaiting</small><b>${pending.length}</b></div><div><small>Closed</small><b>${closed.length}</b></div><div data-act="tab:con"><small>Connections</small><b>${S.data.conns.length}</b></div></div>
+   <div class="pad stack" style="margin-top:14px">${pending.length?pending.map(bigCard).join(''):emptyBlock()+(top?lapsedCard(top):'')+fineLine()}
+   ${rest.length?`<button class="fold ${S.fold?'open':''}" data-act="fold"><span><span class="group" style="display:block">${top?'The rest of the closed list':'Further down the list · closed'}</span><b style="font-size:15px">${rest.length} closed</b></span>${I.chev}</button>${S.fold?`<div class="closedcard">${rest.map(closedRow).join('')}</div>`:''}`:''}</div>`;
+  }
+  return `<div class="compact"><b>Interests</b></div><div class="scroll">${hdr}${b}</div>`;
+ }
+};
+
+/* ===== OPTION C — inbox rows, swipe hints, filter chips ===== */
+const OC={
+ name:'C · Inbox rows',
+ blurb:'Dense, scannable rows in the order they lapse. Tap a row to answer in place; swipe is a shortcut. One list with Awaiting / Connected / Closed chips.',
+ render(S){
+  const {pending,closed,top,rest}=split(S.data.interests),conA=S.data.conns.filter(n=>n.status==='ACTIVE'),conR=S.data.conns.filter(n=>n.status!=='ACTIVE');
+  const closedAll=closed.length+conR.length;
+  const f=S.filter||'aw';
+  const hdr=titleHTML('Interests')+`<div class="chips">${[['aw','Awaiting',pending.length],['cn','Connected',conA.length],['cl','Closed',closedAll]].map(c=>`<button class="${f===c[0]?'on':''}" data-act="chip:${c[0]}">${c[1]}${S.mode==='loading'||S.mode==='error'?'':`<em>${c[2]}</em>`}</button>`).join('')}</div>`;
+  let b;
+  if(S.mode==='loading')b=`<div class="inbox">${[0,1,2,3].map(()=>`<div class="sw"><div class="irow">${skel('44px',44)}<div class="grow" style="display:grid;gap:9px">${skel('50%',15)}${skel('70%',12)}${skel('90%',12)}</div></div></div>`).join('')}</div>`;
+  else if(S.mode==='error')b=errBlock('Could not load your Interests.');
+  else if(f==='aw'){
+   const busyId=S.busyId;
+   if(!pending.length)b=`<div class="pad stack" style="margin-top:14px">${emptyBlock()+(top?lapsedCard(top):'')+fineLine()}</div>`;
+   else b=`<div class="hintbar"><span class="group">${pending.length} awaiting · soonest first</span><span class="ptag">Proposal · swipe</span></div><div class="inbox">${pending.map((r,i)=>{
+     const c=clock(r),u=c.reading==='urgent',open=S.expanded===r.id||busyId===r.id;
+     return `<div class="sw" data-id="${r.id}"><div class="swbg"><span class="a" data-act="acc:${r.id}">Accept</span><span class="d" data-act="dec:${r.id}">Decline</span></div>
+     <div class="swfg ${i===0&&!S.peeked?'peek':''}"><div class="irow ${u?'urg':''}" data-act="exp:${r.id}">${mark(r.co.name,44)}<div class="grow"><div class="rowtop"><div class="name grow">${r.co.name}</div><span class="when ${u?'u':''}">${c.rel}</span></div><div class="t">${r.role.title}</div>${open?'':`<div class="q1">“${r.msg}”</div>`}</div></div>
+     ${open?`<div class="exp">${r.msg?`<div class="quote">“${r.msg}”</div>`:''}${roleWell(r)}${clockHTML(r)}<div class="acts"><button class="btn ink fl ${busyId===r.id?'busy':''}" data-act="acc:${r.id}">Accept</button><button class="btn out fl ${busyId?'dis':''}" data-act="dec:${r.id}">Decline</button></div></div>`:''}</div></div>`}).join('')}</div>
+     <div class="hintbar" style="justify-content:flex-start"><span class="fine">Swipe right to accept · left to decline</span></div>`;
+  }else if(f==='cn'){
+   b=`<div class="pad stack" style="margin-top:14px">${conA.length?conA.map(activeConn).join(''):noConn()}</div>`;
+  }else{
+   b=`<div class="pad stack" style="margin-top:14px">${top&&pending.length===0?'':''}${closed.length?`<div class="group">Interests · ${closed.length}</div><div class="closedcard">${closed.map(closedRow).join('')}</div>`:''}${conR.length?`<div class="group" style="padding-top:8px">Archived connections · ${conR.length}</div>${conR.map(archConn).join('')}`:''}${!closedAll?`<div class="note">Nothing here. ${fineLine()}</div>`:''}</div>`;
+  }
+  return `<div class="compact"><b>Interests</b></div><div class="scroll">${hdr}${b}</div>`;
+ }
+};
+
+/* ===== OPTION D — status timeline ===== */
+const OD={
+ name:'D · Status timeline',
+ blurb:'Everything on one rail, sectioned by where it stands: lapsing soon, awaiting, connected, closed. Interests and Connections read as one story.',
+ render(S){
+  const {pending,top,rest}=split(S.data.interests);
+  const urg=pending.filter(r=>clock(r).reading!=='fresh'),fresh=pending.filter(r=>clock(r).reading==='fresh');
+  const conA=S.data.conns.filter(n=>n.status==='ACTIVE'),conR=S.data.conns.filter(n=>n.status!=='ACTIVE');
+  const accWithConn=new Set(S.data.conns.filter(n=>n.from).map(n=>n.from));
+  const closedI=rest.filter(r=>!(r.status==='ACCEPTED'&&accWithConn.has(r.id)));
+  const hdr=titleHTML('Interests');
+  let b;
+  if(S.mode==='loading')b=`<div class="tl">${[0,1,2].map(()=>`<div class="tn"><div class="tcard"><div class="rowc">${skel('40px',40)}<div class="grow" style="display:grid;gap:9px">${skel('50%',15)}${skel('75%',11)}</div></div>${skel('100%',40)}</div></div>`).join('')}</div>`;
+  else if(S.mode==='error')b=errBlock(S.tab==='con'?'Could not load your connections.':'Could not load your Interests.');
+  else{
+   const busyId=S.busyId;
+   const pcard=r=>{const c=clock(r),rd=c.reading;return `<div class="tn ${rd==='fresh'?'':'w'}"><div class="tdate">Sent ${dm(r.sentAt)}</div><div class="tcard">${headOf(r,40)}${r.msg?`<div class="qq">“${r.msg}”</div>`:''}<div class="rowtop" style="gap:8px"><span class="well" style="padding:7px 11px;flex:1;min-width:0"><b style="font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.role.title}</b></span></div>${clockHTML(r)}<div class="acts"><button class="btn ink sm fl ${busyId===r.id?'busy':''}" data-act="acc:${r.id}">Accept</button><button class="btn out sm fl ${busyId?'dis':''}" data-act="dec:${r.id}">Decline</button></div></div></div>`};
+   const sec=(cls,t,n,inner)=>`<div class="tls ${cls}"><div class="group">${t} · ${n}</div></div>${inner}`;
+   const cnode=n=>`<div class="tn o"><div class="tdate">${origin(n)}</div><div class="tcard"><div class="rowc">${mark(n.name,40)}<div class="grow"><div class="name">${n.name}</div></div><span class="pill ok">Accepted</span></div><button class="btn ink sm full" data-act="chat:${n.name}">Open chat</button><div class="quiet" style="margin:-4px 0 -6px"><button data-act="wd:${n.id}">Withdraw</button><i>·</i><button class="d" data-act="blk:${n.id}">Block</button></div></div></div>`;
+   const xnode=(r)=>{const p=CPILL[r.status];return `<div class="tn n"><div class="tdate">${closedLine(r)}</div><div class="tcard m"><div class="rowc">${mark(r.co.name,36)}<div class="grow"><div class="name m" style="font-size:16px">${r.co.name}</div></div><span class="pill ${p[1]}">${p[0]}</span></div><div class="note">${closedNote(r)}</div></div></div>`};
+   const anode=n=>`<div class="tn ${n.status==='BLOCKED'?'d':'n'}"><div class="tdate">${n.status==='BLOCKED'?'Blocked '+dm(n.closedAt):'Withdrawn '+dm(n.closedAt)} · ${origin(n)}</div><div class="tcard m"><div class="rowc">${mark(n.name,36)}<div class="grow"><div class="name m" style="font-size:16px">${n.name}</div></div><span class="pill ${CPILLS[n.status][1]}">${CPILLS[n.status][0]}</span></div>${n.status==='BLOCKED'?`<div class="dwell">Blocked on ${dml(n.closedAt)}. ${n.name} will not see your profile in the feed again and cannot reach you. This cannot be undone from here.</div>`:`<div class="swell">Withdrawn on ${dml(n.closedAt)}. Neither side can write again; the conversation stays here to read, and the row stays on this list.</div><div class="acts"><button class="btn out sm fl" data-act="chat:${n.name}">Read the chat</button><button class="btn dest sm" data-act="blk:${n.id}">Block</button></div>`}</div></div>`;
+   if(S.mode==='noconn')b=`<div class="pad" style="margin-top:14px">${noConn()}</div>`;
+   else{
+    const parts=[];let pre='';
+    if(!pending.length)pre=`<div class="pad stack" style="margin-top:14px">${emptyBlock()+(top?lapsedCard(top):'')+fineLine()}</div>`;
+    if(urg.length)parts.push(sec('w','Lapsing soon',urg.length,urg.map(pcard).join('')));
+    if(fresh.length)parts.push(sec('','Awaiting your answer',fresh.length,fresh.map(pcard).join('')));
+    if(conA.length)parts.push(sec('o','Connected',conA.length,conA.map(cnode).join('')));
+    if(closedI.length||conR.length)parts.push(sec('n','Closed',closedI.length+conR.length,closedI.map(xnode).join('')+conR.map(anode).join('')));
+    b=pre+`<div class="tl">${parts.join('')}</div>`;
+   }
+  }
+  return `<div class="compact"><b>Interests</b></div><div class="scroll">${hdr}${b}</div>`;
+ }
+};
+const OPTS={A:OA,B:OB,C:OC,D:OD};
+
+/* ===== instance: state + events ===== */
+const MODES=[['list','List'],['loading','Loading'],['empty','Empty'],['error','Error'],['busy','Accepting'],['accepted','Accepted'],['expired','Expired / cooldown'],['conns','Connections'],['noconn','No connections'],['block','Block sheet']];
+function applyMode(S,m){
+ S.data=baseData();S.mode=m;S.busyId=null;S.blocking=null;S.expanded=null;S.pushed=false;S.tab='int';S.fold=false;S.filter='aw';
+ if(m==='empty')S.data.interests=[];
+ if(m==='busy'){S.busyId='i1';S.expanded='i1'}
+ if(m==='accepted')acceptRow(S,'i1',true);
+ if(m==='expired'){['i1','i2','i3'].forEach((id,k)=>{const r=S.data.interests.find(x=>x.id===id);r.status='EXPIRED';r.expiresAt=D(['2026-10-01T10:00:00Z','2026-09-29T10:00:00Z','2026-09-27T10:00:00Z'][k]);r.sentAt=D(['2026-09-17T10:00:00Z','2026-09-15T10:00:00Z','2026-09-13T10:00:00Z'][k])})}
+ if(m==='conns'||m==='noconn'||m==='block'){S.tab='con';S.pushed=true;S.filter='cn';if(m==='noconn')S.data.conns=[];if(m==='block')S.blocking='n1'}
+ if(m==='loading'||m==='error'){/* keeps tab 'int' */}
+}
+function acceptRow(S,id,noAnim){
+ const r=S.data.interests.find(x=>x.id===id);r.status='ACCEPTED';r.respondedAt=D('2026-10-02T10:00:00Z');
+ S.data.conns.unshift({id:'n0',from:id,status:'ACTIVE',origin:'INTEREST',openedAt:r.respondedAt,closedAt:null,name:r.co.name});
+ S.busyId=null;S.expanded=null;
+}
+let gtimer;
+function mount(optKey,host,withStates,statesHost){
+ const opt=OPTS[optKey];const S={opt,mode:'list'};applyMode(S,'list');
+ host.innerHTML='<div class="phone"></div>';const ph=host.firstChild;
+ const toast=m=>{let t=ph.querySelector('.toast');t.textContent=m;t.classList.add('on');clearTimeout(gtimer);gtimer=setTimeout(()=>t.classList.remove('on'),1800)};
+ const syncSw=()=>{if(statesHost)statesHost.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.s===S.mode))};
+ function render(){
+  const old=ph.querySelector('.scroll'),y=old?old.scrollTop:0;
+  ph.innerHTML=status()+opt.render(S)+tabbar()+sheet(S)+'<div class="toast"></div>';
+  const sc=ph.querySelector('.scroll'),cb=ph.querySelector('.compact');
+  if(sc){sc.scrollTop=y;sc.addEventListener('scroll',()=>cb&&cb.classList.toggle('on',sc.scrollTop>60))}
+  if(optKey==='C')wireSwipe();
+ }
+ function wireSwipe(){
+  ph.querySelectorAll('.sw[data-id]').forEach(sw=>{const fg=sw.querySelector('.swfg');let x0=null,dx=0,moved=false;
+   fg.addEventListener('pointerdown',e=>{x0=e.clientX;dx=0;moved=false;fg.classList.add('drag');fg.classList.remove('peek');S.peeked=true});
+   window.addEventListener('pointermove',e=>{if(x0===null||!sw.isConnected)return;dx=Math.max(-96,Math.min(96,e.clientX-x0));if(Math.abs(dx)>6){moved=true;fg.style.transform=`translateX(${dx}px)`}});
+   window.addEventListener('pointerup',()=>{if(x0===null)return;x0=null;fg.classList.remove('drag');if(!moved)return;fg.style.transform=dx>48?'translateX(96px)':dx<-48?'translateX(-96px)':'';fg._moved=true;setTimeout(()=>fg._moved=false,50)});
+   fg.addEventListener('click',e=>{if(fg._moved||(fg.style.transform&&fg.style.transform!=='none'&&fg.style.transform!=='')){e.stopPropagation();e.preventDefault();if(!fg._moved)fg.style.transform=''}},true);
+  });
+ }
+ function respond(id,resp){
+  if(S.busyId)return;S.busyId=id;S.expanded=id;render();
+  setTimeout(()=>{
+   if(resp==='ACCEPT'){acceptRow(S,id);}
+   else{const r=S.data.interests.find(x=>x.id===id);r.status='DECLINED';r.respondedAt=D('2026-10-02T10:00:00Z');S.busyId=null;S.expanded=null}
+   S.mode='list';syncSw();render();
+  },1100);
+ }
+ ph.addEventListener('click',e=>{const a=e.target.closest('[data-act]');if(!a)return;const x=a.dataset.act;
+  if(x==='stop'){e.stopPropagation();return}
+  if(x.startsWith('toast:'))return toast(x.slice(6));
+  if(x.startsWith('chat:'))return toast('Opens the chat with '+x.slice(5));
+  if(x==='retry'){S.mode='loading';syncSw();render();return setTimeout(()=>{S.mode='list';syncSw();render()},900)}
+  if(x.startsWith('acc:'))return respond(x.slice(4),'ACCEPT');
+  if(x.startsWith('dec:'))return respond(x.slice(4),'DECLINE');
+  if(x.startsWith('tab:')){const t=x.slice(4);S.tab=t;S.pushed=t==='con';if(S.mode!=='loading'&&S.mode!=='error'&&!['conns','noconn','block'].includes(S.mode)){S.mode=t==='con'?'conns':'list'}else if(t==='int'&&['conns','noconn','block'].includes(S.mode))S.mode='list';syncSw();return render()}
+  if(x==='back'){S.tab='int';S.pushed=false;S.mode='list';syncSw();return render()}
+  if(x==='fold'){S.fold=!S.fold;return render()}
+  if(x.startsWith('chip:')){S.filter=x.slice(5);return render()}
+  if(x.startsWith('exp:')){const id=x.slice(4);S.expanded=S.expanded===id?null:id;return render()}
+  if(x.startsWith('wd:')){const n=S.data.conns.find(k=>k.id===x.slice(3));n.status='CLOSED';n.closedAt=D('2026-10-02T10:00:00Z');return render()}
+  if(x.startsWith('blk:')){S.blocking=x.slice(4);return render()}
+  if(x==='blkno'){S.blocking=null;return render()}
+  if(x==='blkgo'){const n=S.data.conns.find(k=>k.id===S.blocking);n.status='BLOCKED';n.closedAt=D('2026-10-02T10:00:00Z');S.blocking=null;return render()}
+ });
+ render();
+ if(statesHost){
+  statesHost.innerHTML=MODES.map(m=>`<button data-s="${m[0]}" class="${m[0]==='list'?'on':''}">${m[1]}</button>`).join('');
+  statesHost.querySelectorAll('button').forEach(b=>b.onclick=()=>{applyMode(S,b.dataset.s);S.peeked=false;syncSw();render()});
+ }
+ return S;
+}
+
+/* ===== captions ===== */
+const REAL=`<ul><li>Large title “Interests” collapsing to a compact bar; “Connections” text link today.</li><li>Pending Interests sorted by expiry, soonest first: company, mono industry · size · location, employer message, “For this role” well, clock (hours/days left, until date, fill bar), Accept (ink) / Decline (outline).</li><li>Closed list never loses rows: Accepted / Declined / Expired pill, mono line, explanatory note.</li><li>Empty: “Employers write after they watch you.” + Check my video resume; most-recent lapsed card with cooldown date.</li><li>Connections: Open chat, Withdraw · Block, archived (Withdrawn: Read the chat + Block; Blocked: no actions), block consequences sheet, empty copy.</li><li>Loading skeleton panels and “Could not load…” / Try again.</li></ul>`;
+const PROPS={
+ A:`<li>Connections folded in as a second segment inside the tab, instead of the pushed screen (same cards and copy).</li><li>Segment counts (awaiting / total connections).</li>`,
+ B:`<li>Three-cell counts strip (awaiting · closed · connections); each is a number the screen already computes.</li><li>Closed list collapsed behind a fold row. Connections stays the existing pushed screen with its own back button.</li>`,
+ C:`<li>Inbox rows with in-place expand to Accept / Decline (buttons stay primary, per today).</li><li>Swipe right = Accept, left = Decline as a shortcut; the tag in the phone marks it.</li><li>Awaiting / Connected / Closed filter chips merging Connections into the tab.</li>`,
+ D:`<li>Timeline grouping: “Lapsing soon” is the clock’s own urgent / soon readings (72 h or less), “Awaiting”, “Connected”, “Closed”.</li><li>Active connections shown on the same rail with Open chat, Withdraw, Block (no separate Connections link).</li>`
+};
+const caption=k=>`<div class="notes"><span class="mono">${OPTS[k].name}</span><h3>${OPTS[k].blurb}</h3><div class="mono">Real today, kept</div>${REAL}<div class="mono">Proposal <span class="ptag">Proposal</span></div><ul>${PROPS[k]}</ul><div class="note">Expiry (${CFG.expiryDays} d) and cooldown (${CFG.cooldownDays} d) are sample values from <code>/config</code>; if absent the app drops the number from the sentence.</div></div>`;
+
+/* ===== views ===== */
+const H=location.hash.slice(1).split('/');let cur=OPTS[H[0]]||H[0]==='ALL'?H[0]:'A';
+const chooser=document.getElementById('chooser'),view=document.getElementById('view');
+function draw(){
+ chooser.innerHTML=Object.keys(OPTS).map(k=>`<button data-k="${k}" class="${cur===k?'on':''}">${OPTS[k].name}<small>${['Segments','Rich cards','Inbox rows','Timeline'][k.charCodeAt(0)-65]}</small></button>`).join('')+`<button data-k="ALL" class="${cur==='ALL'?'on':''}">Compare all 4<small>Side by side</small></button>`;
+ chooser.querySelectorAll('button').forEach(b=>b.onclick=()=>{cur=b.dataset.k;draw()});
+ if(cur==='ALL'){
+  view.innerHTML=`<div class="cmp">${Object.keys(OPTS).map(k=>`<div class="cell"><h4>${OPTS[k].name}</h4><p>${OPTS[k].blurb}</p><div id="p${k}"></div></div>`).join('')}</div>`;
+  Object.keys(OPTS).forEach(k=>mount(k,document.getElementById('p'+k)));
+ }else{
+  view.innerHTML=`<div class="stage"><div class="cell"><div class="states" id="st"></div><div id="ph"></div></div>${caption(cur)}</div>`;
+  mount(cur,document.getElementById('ph'),true,document.getElementById('st'));
+  if(H[1]){const b=document.querySelector('#st [data-s="'+H[1]+'"]');b&&b.click()}
+  if(H[2]){const sc=document.querySelector('#ph .scroll');sc&&(sc.scrollTop=+H[2])}
+ }
+}
+if(H.includes('solo'))document.body.classList.add('solo');
+draw();
+</script>
+</body>
+</html>

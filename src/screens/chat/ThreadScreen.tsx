@@ -172,7 +172,7 @@ export function ThreadScreen({ id, onBack, onSupport }: { id: string; onBack: ()
 
   return (
     <KeyboardAvoidingView style={[styles.page, { paddingTop: insets.top }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={insets.top}>
-      <Header onBack={onBack} plate={<CounterpartyPlate thread={thread} size={36} />} title={thread.counterparty.name} subtitle={subtitle}
+      <Header onBack={onBack} plate={<CounterpartyPlate thread={thread} size={38} tinted />} title={thread.counterparty.name} subtitle={subtitle}
         right={recording ? <RecordingPill /> : <Pressable accessibilityLabel="More" hitSlop={8} onPress={() => setMenuOpen(true)} style={styles.headerBtn}><Dots /></Pressable>} />
       {!sock.connected && open && <ReconnectingStrip />}
       {masked && open && <MaskInfoLine />}
@@ -183,16 +183,30 @@ export function ThreadScreen({ id, onBack, onSupport }: { id: string; onBack: ()
         ) : (
           <>
             {groups.map((g) => (
-              <View key={g.key} style={{ gap: space.md }}>
-                <DayDivider label={g.label} />
-                {g.items.map((m) => (m.kind === 'SYSTEM'
-                  ? m.systemKind === 'IDENTITY_REVEALED'
-                    ? <SystemLine key={m.id} media={<CounterpartyPlate thread={thread} size={44} />} text={`Your session started · your interviewer is ${thread.counterparty.name}`} time={fmtClock(m.createdAt)} />
-                    : <SystemLine key={m.id} text={SYSTEM_TEXT[m.systemKind ?? ''] ?? 'Update'} time={fmtClock(m.createdAt)} />
-                  : <Bubble key={m.id} msg={m} now={now} />))}
+              <View key={g.key} style={{ gap: 3 }}>
+                <DayDivider label={g.label} ruled />
+                {g.items.map((m, k) => {
+                  if (m.kind === 'SYSTEM') {
+                    return (
+                      <View key={m.id} style={styles.sysGap}>
+                        {m.systemKind === 'IDENTITY_REVEALED'
+                          ? <SystemLine media={<CounterpartyPlate thread={thread} size={36} />} text={`Your session started · your interviewer is ${thread.counterparty.name}`} time={fmtClock(m.createdAt)} />
+                          : <SystemLine text={SYSTEM_TEXT[m.systemKind ?? ''] ?? 'Update'} time={fmtClock(m.createdAt)} />}
+                      </View>
+                    )
+                  }
+                  const prev = g.items[k - 1], next = g.items[k + 1]
+                  const sameP = !!prev && prev.kind !== 'SYSTEM' && prev.mine === m.mine
+                  const sameN = !!next && next.kind !== 'SYSTEM' && next.mine === m.mine
+                  return (
+                    <View key={m.id} style={sameP ? undefined : styles.runGap}>
+                      <Bubble msg={m} now={now} run={{ first: !sameP, last: !sameN }} />
+                    </View>
+                  )
+                })}
               </View>
             ))}
-            {peerTyping && <View style={{ paddingTop: space.xs }}><TypingDots /></View>}
+            {peerTyping && <View style={{ paddingTop: 9 }}><TypingDots /></View>}
           </>
         )}
       </ScrollView>
@@ -260,5 +274,7 @@ const styles = StyleSheet.create({
   headerBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   headTitle: { fontFamily: FF.bodySemiBold, fontSize: 17, letterSpacing: -0.17, color: color.text },
   headSub: { fontFamily: FF.monoMedium, fontSize: 10.5, letterSpacing: 0.63, color: color.textSubtle },
-  transcript: { paddingHorizontal: 16, paddingVertical: 14, gap: 8, flexGrow: 1, justifyContent: 'flex-end' },
+  runGap: { marginTop: 6 },
+  sysGap: { marginVertical: 6 },
+  transcript: { paddingHorizontal: 16, paddingVertical: 14, gap: 3, flexGrow: 1, justifyContent: 'flex-end' },
 })

@@ -18,7 +18,8 @@ import { Btn, JobsTabs, Skel, StateBlock } from '../../components/tab/kit'
  */
 const PALETTE = [color.accent, color.successFill, '#E0366B', '#2F6BFF', '#C77D00', color.accentDeep]
 const DAY = 86_400_000
-const initialsOf = (name: string) => name.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase()
+// The API types the name as always present, but a row can arrive without one.
+const initialsOf = (name?: string | null) => (name ?? '').split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || '·'
 
 export function SavedJobsScreen({ onOpen, onApply, onFeed, onApplied }: {
   onBack?: () => void; onOpen: (jobId: string) => void; onApply: (jobId: string) => void; onFeed: () => void; onApplied?: () => void
@@ -62,12 +63,12 @@ export function SavedJobsScreen({ onOpen, onApply, onFeed, onApplied }: {
     const closed = !r.open && !applied
     const closesAt = r.applicationDeadline ? new Date(r.applicationDeadline).getTime() : null
     const soon = !closed && closesAt != null && closesAt > now && closesAt - now <= 7 * DAY
-    const where = [r.company.name, locationLine(r.location, r.remote), employmentLabel(r.employmentType)].filter(Boolean).join(' · ')
+    const where = [r.company?.name, locationLine(r.location, r.remote), employmentLabel(r.employmentType)].filter(Boolean).join(' · ')
     return (
       <View style={[styles.card, closed && styles.cardClosed]}>
         <Pressable accessibilityRole="button" onPress={() => onOpen(r.jobId)} style={styles.top}>
           <View style={[styles.logo, { backgroundColor: closed ? color.textSubtle : PALETTE[index % PALETTE.length] }]}>
-            <Text style={styles.logoText}>{initialsOf(r.company.name)}</Text>
+            <Text style={styles.logoText}>{initialsOf(r.company?.name)}</Text>
           </View>
           <View style={styles.grow}>
             <Text style={[styles.title, closed && styles.muted]}>{r.title}</Text>

@@ -226,6 +226,18 @@ The employer screens were rebuilt to the **Studio** direction the user chose for
   - A refused charge removes the claim.
   - Tests: 4 more in `tests/feed.test.ts` (51/51). The other suites that open profiles (`chat`, `feedFilters`, `selfVideoLifecycle`, `employers`, `routeGuards`, `eligibility`) pass. The 2 failures in `scorecard.test.ts` are in scorecard submission and the interviewer dashboard, not related to this change.
 - **Shortlist on a profile always goes back now** to wherever the profile was opened from (the feed, Interests, a chat), the same as Pass; to the feed if there is nothing behind it.
+- **The app crashed when any video started (the feed autoplays one)** with `NoSuchMethodError … androidx.media3.exoplayer.DefaultLoadControl.<init>` in `ReactExoplayerView$RNVLoadControl`.
+  - Cause: `react-native-vision-camera` depends on `androidx.camera` 1.7.0-alpha03, which pulls `androidx.media3` up to **1.9.0**. `react-native-video` 6.19.2 was built for 1.8.0, and 1.9.0 changed that constructor.
+  - Fix: `react-native-video` **6.19.3**, which builds its load control through `DefaultLoadControl.Builder` and supports Media3 1.8–1.10. Only that package changed in the lockfile.
+  - Pinning media3 back to 1.8.0 was rejected: camera-video's media3-muxer needs 1.9.0, so video recording could break.
+  - This needs a native rebuild (`npx react-native run-android`) on every machine after `npm install`.
+- **"296 match" but one card in the deck (2026-10-02).**
+  - Cause 1: the match count did not apply the feed's ready-video rule (RC-10), and the deck applied it only after the query. 290 seeded profiles with no recording were counted, and they made empty pages that the phone had to walk through.
+    - Fix: `READY_VIDEO_STAGES` (`feed/aggregation.ts`) runs in the deck query (aggregation and Atlas drivers) and in match-count. The count is now exactly what the deck can deal.
+  - Cause 2: a deck walk keeps its order for the day, so candidates published after it started, or ranked above where it had reached, never appeared.
+    - App fix: when the deck has run out, coming back to the feed starts it again from page one.
+    - Backend fix (so the restart is free): the feed charges only candidates not already dealt today. This is the same "one card per candidate per day" rule as profile views. At the day's limit, cards already paid for still come back, and the first new card is refused as before.
+  - Tests: `feed` 54/54 (3 new) and `employers` 343/343. One employers test was updated from "a second walk is refused" to the new rule.
 - **Small buttons are semibold again.** `Body` (`components/ui/Type.tsx`) now honours every weight it has a style for:
   - `sm` used to drop semibold, `xs` dropped medium and semibold, and `md`/`base` dropped medium.
   - Every `Button size="sm"` label, and the 15 `Body` uses that asked for those weights, now get the weight they asked for. This applies to every persona.
@@ -237,3 +249,34 @@ The employer screens were rebuilt to the **Studio** direction the user chose for
 ## Not verified
 - None of this has run on a device or emulator; it needs your manual pass. The swipe, skip and back gestures in particular need a feel check on a real phone.
 - Checks run: `tsc` (0 errors), `eslint` (clean on the rebuilt files), `check-raw-design-values` (none in the rebuilt files), `jest` (6 of 7 suites, 64/64 tests; App.test cannot load, see above), and the Android production bundle (builds).
+
+## Video feed — `docs/tinder-feed-mockups.html` design 1 (2026-10-02)
+
+The feed keeps the Studio bar and filter chips, as the user chose ("keep both rows, dark"). While a card is up, the page, the bar, the chips and the tab bar go to ink, and the card runs down to 10 pt above the tab bar. The four round buttons (Undo · Pass · Shortlist · Interest) are fixed over the foot of the card, and the toast sits at the top of the card. The shared pieces are in `src/components/ui/feed-deck.tsx`; the student feed uses the same file.
+
+- **Restored:** the **Full** button (watch the full interview) and the poster under the film while it loads. The uncommitted restyle had dropped both.
+  - The poster now sits over the film until its first frame (`onReadyForDisplay`, with the first progress tick as a fallback), so there is no black flash.
+- **Interest:** ✈ is disabled while an Interest is pending, and an "Interest sent" pill explains why. That matches the profile sheet.
+- **Skip holds the controls** for its 240 ms, so an Undo or Back can't land mid-flight.
+- **Dropped:** the white "third card" ghost behind the deck, which would show as a white slab on ink. The mockup draws two cards.
+- **Light page kept for:** the lock state (with the how-to list), the day's limit, caught up and the error state.
+- **Not verified on a device:** the emulator was signed in as a student.
+
+### Mockup A built — "Twin + dark sheet" (2026-10-02)
+
+Direction A of `docs/feed-details-mockups.html`, as on the student feed.
+
+- **Card:**
+  - The tag has no outline and reads "Verified interview · date".
+  - The name is 22 pt.
+  - The card has no bottom edge and fades into black straight into the tab bar.
+  - The tab bar has no top rule.
+- **Profile sheet:** `CandidateProfileSheet` is now the dark `FeedSheet`.
+  - Head: face, name, the green tick, "T2 · Graduation · city", ✕.
+  - The film row: the still, "Verified interview", and "Watch full interview".
+  - Facts: Expected (pink), Joins, Experience, Based in.
+  - Sections: experience, education, looking for, skills, languages, self-uploaded clips (they play in place), documents (a 15-minute link) and links.
+  - Foot: ✕ Pass, ♥ Shortlist, and the pink "Send Interest", which reads "Interest sent" when one is pending.
+  - Everything the old light sheet did still works: the Interest sheet, the clip player and the document download.
+- **Unused now:** `ProfileHead`, `ProfileFacts` and `ProfileSections` in `components/employer/profile.tsx` have no other users. They were left in place.
+- **Not verified on a device:** the emulator is signed in as a student.
