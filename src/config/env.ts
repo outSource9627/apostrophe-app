@@ -1,5 +1,3 @@
-import { Platform } from 'react-native'
-
 /**
  * React Native me .env file by default kaam nahi karti — na process.env hota hai
  * na dotenv. Isliye config yahan constants ke roop me hai.
@@ -11,14 +9,15 @@ import { Platform } from 'react-native'
  * Agora certificate, Razorpay secret, AWS keys — sab sirf server pe.
  */
 
-// 10.0.2.2 points to host Mac from the Android emulator, localhost for iOS simulator.
-const DEV_HOST = Platform.OS === 'android' ? '10.0.2.2' : 'localhost'
-const DEV_API = `http://${DEV_HOST}:3000`
+// Live backend: nginx serves the Next.js API and proxies the realtime socket (/socket)
+// on the same HTTPS host. For a local backend use `http://<LAN IP>:3000` here and
+// `http://<LAN IP>:4001` for SOCKET_URL (10.0.2.2 is the host Mac from the emulator).
+const BACKEND_URL = 'https://apostrophe.verdicto.co.in'
 
-export const API_BASE_URL = DEV_API + '/api/v1'
-export const SOCKET_URL = `http://${DEV_HOST}:4001`
-/** The web host (public /terms and /privacy pages), derived from the same dev host as the API. */
-export const WEB_BASE_URL = DEV_API
+export const API_BASE_URL = BACKEND_URL + '/api/v1'
+export const SOCKET_URL = BACKEND_URL
+/** The web host (public /terms and /privacy pages), same host as the API. */
+export const WEB_BASE_URL = BACKEND_URL
 
 // --- payments -------------------------------------------------- [P2] TODO
 // Razorpay key id public hai. Secret NAHI.

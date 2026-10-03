@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { StatusBar, StyleSheet, View } from 'react-native'
+import React, { useEffect, useState } from 'react'
+import { ActivityIndicator, StatusBar, StyleSheet, View } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { NavigationContainer, useNavigationContainerRef } from '@react-navigation/native'
@@ -101,7 +101,9 @@ import {
   InterviewerDataScreen,
 } from './src/screens/interviewer'
 import { threadIdForConnection } from './src/lib/api/chat'
-import { getMe } from './src/lib/api/account'
+import { getMe, type Me } from './src/lib/api/account'
+import { tokenStore } from './src/lib/api'
+import { color } from './src/theme'
 import type { EmployerRegistrationDraft, RegisterOtpResult } from './src/lib/api/employer'
 
 export type RootStackParamList = {
@@ -215,14 +217,15 @@ export type RootStackParamList = {
 
 const Stack = createNativeStackNavigator<RootStackParamList>()
 
+type HomeRoute = 'Home' | 'EmployerHome' | 'InterviewerDashboard'
+
 /**
  * Where a signed-in account lands. Mobile OTP and email sign-in are shared by
  * every role, so the role is read back rather than assumed: an employer goes to
  * the employer shell, an interviewer goes to the interviewer portal, everyone
  * else to the student home. Any role state cached under a previous session is dropped first.
  */
-async function signedInHome(): Promise<'Home' | 'EmployerHome' | 'InterviewerDashboard'> {
-  const me = await getMe().catch(() => null)
+function homeFor(me: Me | null): HomeRoute {
   if (me?.role === 'EMPLOYER') {
     queryClient.removeQueries({ queryKey: ['employer'] })
     return 'EmployerHome'
@@ -232,6 +235,35 @@ async function signedInHome(): Promise<'Home' | 'EmployerHome' | 'InterviewerDas
     return 'InterviewerDashboard'
   }
   return 'Home'
+}
+
+async function signedInHome(): Promise<HomeRoute> {
+  return homeFor(await getMe().catch(() => null))
+}
+
+/**
+ * Signing in or up ends the auth flow: the home becomes the ONLY screen, so the
+ * Android back button exits the app instead of returning to Welcome or SignIn.
+ */
+const homeStack = (name: HomeRoute) => ({ index: 0, routes: [{ name }] })
+
+/** How long a cold start waits on /auth/me before giving up and showing Welcome. */
+const RESTORE_TIMEOUT_MS = 8000
+
+/**
+ * The first screen on a cold start. A stored refresh token means the user never
+ * signed out, so they open on their home rather than Welcome; /auth/me (which
+ * refreshes the access token on the way) says which home. No token, a revoked
+ * session, or no answer in time → Welcome, where signing in still works.
+ */
+async function initialRoute(): Promise<'Welcome' | HomeRoute> {
+  const tokens = await tokenStore.get().catch(() => null)
+  if (!tokens?.refreshToken) return 'Welcome'
+  const me = await Promise.race([
+    getMe().catch(() => null),
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), RESTORE_TIMEOUT_MS)),
+  ])
+  return me ? homeFor(me) : 'Welcome'
 }
 
 const queryClient = new QueryClient({
@@ -263,6 +295,19 @@ export default function App() {
   const navRef = useNavigationContainerRef<RootStackParamList>()
   const [routeName, setRouteName] = useState<string | undefined>()
   const syncRoute = () => setRouteName(navRef.getCurrentRoute()?.name)
+  const [initial, setInitial] = useState<'Welcome' | HomeRoute>()
+
+  useEffect(() => {
+    initialRoute().then(setInitial, () => setInitial('Welcome'))
+  }, [])
+
+  if (!initial) {
+    return (
+      <View style={styles.restoring}>
+        <ActivityIndicator color={color.accent} />
+      </View>
+    )
+  }
 
   return (
     <GestureHandlerRootView style={styles.gestureRoot}>
@@ -275,7 +320,7 @@ export default function App() {
         <NavigationContainer ref={navRef} onReady={syncRoute} onStateChange={syncRoute}>
         <View style={styles.appShell}>
         <View style={styles.stackArea}>
-          <Stack.Navigator screenOptions={{ headerShown: false }}>
+          <Stack.Navigator initialRouteName={initial} screenOptions={{ headerShown: false }}>
             <Stack.Screen name="Welcome">
               {({ navigation }) => (
                 <WelcomeScreen
@@ -324,7 +369,7 @@ export default function App() {
                   initialCooldown={route.params.initialCooldown}
                   onBack={() => navigation.goBack()}
                   onVerified={async () =>
-                    navigation.replace(route.params.purpose === 'LOGIN' ? await signedInHome() : 'Home')
+                    navigation.reset(homeStack(route.params.purpose === 'LOGIN' ? await signedInHome() : 'Home'))
                   }
                   onSignIn={() => navigation.navigate('SignIn')}
                 />
@@ -337,8 +382,8 @@ export default function App() {
                   // One login for every role: the server says who this is, and that decides the home.
                   onSignedIn={async ({ mustChangePassword }) =>
                     mustChangePassword
-                      ? navigation.replace('InterviewerPassword', { forced: true })
-                      : navigation.replace(await signedInHome())
+                      ? navigation.reset({ index: 0, routes: [{ name: 'InterviewerPassword', params: { forced: true } }] })
+                      : navigation.reset(homeStack(await signedInHome()))
                   }
                   onBack={() => navigation.goBack()}
                   onRegister={() => navigation.navigate('GetStarted')}
@@ -970,4 +1015,5 @@ const styles = StyleSheet.create({
   gestureRoot: { flex: 1 },
   appShell: { flex: 1 },
   stackArea: { flex: 1 },
+  restoring: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: color.background },
 })

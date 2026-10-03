@@ -1,4 +1,5 @@
 import { deletionConfirmMatches, hasChanges, mobileLabel, profileChanges, validateProfileDraft, webUrl } from '../src/lib/interviewer/profile'
+import { WEB_BASE_URL } from '../src/config/env'
 
 const base = { name: 'Ravi Kumar', languages: ['English', 'Hindi'], bio: '' }
 
@@ -37,5 +38,8 @@ describe('formatters', () => {
     expect(deletionConfirmMatches('Ravi', who)).toBe(false)
     expect(deletionConfirmMatches('', who)).toBe(false)
   })
-  it('builds web URLs', () => expect(webUrl('/terms')).toMatch(/:3000\/terms$/))
+  it('builds web URLs', () => {
+    expect(webUrl('/terms')).toBe(`${WEB_BASE_URL}/terms`)
+    expect(webUrl('terms')).toBe(`${WEB_BASE_URL}/terms`)
+  })
 })
