@@ -39,83 +39,123 @@
  * them. The mono steps go to 9px because uppercase mono at a wide tracking
  * stays legible where a lowercase sans would not.
  */
+/**
+ * Re-brand 2026-10-06: violet → red (#B22222), neutral greys, black ink, and an
+ * orange-red danger so errors no longer read as the brand. Each changed value keeps
+ * its previous one in an `// old:` line just above it.
+ */
 export const color = {
   // grounds — a cool paper ground with white surfaces lifted off it
-  background: '#FAFAFC',
+  // old: background: '#FAFAFC',
+  background: '#FCFCFC',
   surface: '#FFFFFF',
-  surfaceMuted: '#F1F3F7',
-  surfaceSunken: '#E6E8EE',
+  // old: surfaceMuted: '#F1F3F7',
+  surfaceMuted: '#F3F3F3',
+  // old: surfaceSunken: '#E6E8EE',
+  surfaceSunken: '#E8E8E8',
 
   // text
-  text: '#0B0F1A',
+  // old: text: '#0B0F1A',
+  text: '#141414',
   /** Labels, secondary copy — one step darker than `textMuted`. */
-  textSecondary: '#3A4256',
-  textMuted: '#6B7385',
-  textSubtle: '#8A91A2',
+  // old: textSecondary: '#3A4256',
+  textSecondary: '#2C2C2C',
+  // old: textMuted: '#6B7385',
+  textMuted: '#777777',
+  // old: textSubtle: '#8A91A2',
+  textSubtle: '#8C8C8C',
   /** A struck-through, unavailable value — a taken time slot. */
-  textDisabled: '#B4BAC7',
+  // old: textDisabled: '#B4BAC7',
+  textDisabled: '#BDBDBD',
   /** A locked destination's ink — the employer nav item a pending account cannot open yet. */
-  textLocked: '#A6ACBA',
+  // old: textLocked: '#A6ACBA',
+  textLocked: '#AFAFAF',
   textInverse: '#FFFFFF',
 
   // structure — cool slate hairlines
-  border: '#E3E6ED',
-  borderStrong: '#C9CED9',
+  // old: border: '#E3E6ED',
+  border: '#E5E5E5',
+  // old: borderStrong: '#C9CED9',
+  borderStrong: '#D0D0D0',
   /** The row rule inside a card — lighter than a card's own edge. */
-  borderSoft: '#F1F3F7',
+  // old: borderSoft: '#F1F3F7',
+  borderSoft: '#F3F3F3',
 
   /**
    * Violet. The brand colour and the primary verb: the one primary action on a
    * screen, the active nav item, a selected tile or chip, a link, the focus
    * ring, progress. To re-brand the product, change these five values.
    */
-  accent: '#5B3DF5',
-  accentHover: '#4A2FE0',
+  // old: accent: '#5B3DF5',
+  accent: '#B22222',
+  // old: accentHover: '#4A2FE0',
+  accentHover: '#951C1C',
   /** Text set on `accentSoft` — the same step as the hover. */
-  accentText: '#4A2FE0',
-  accentSoft: '#EFEBFF',
+  // old: accentText: '#4A2FE0',
+  accentText: '#951C1C',
+  // old: accentSoft: '#EFEBFF',
+  accentSoft: '#F9EAEA',
   /** A selected row's wash, one step lighter than `accentSoft`. */
-  accentWash: '#F7F6FF',
+  // old: accentWash: '#F7F6FF',
+  accentWash: '#FDF5F5',
   /** A light violet: on-ink accent text, a spacing swatch, the leader rule. */
-  accentMuted: '#C4B8FF',
+  // old: accentMuted: '#C4B8FF',
+  accentMuted: '#E8B4B4',
   /** Hover and processing on a violet fill, and the progress fill on ink. */
-  accentBright: '#7258FF',
+  // old: accentBright: '#7258FF',
+  accentBright: '#C83333',
   /** The deep end of a violet gradient — an avatar or tile on ink. */
-  accentDeep: '#3B2A8F',
+  // old: accentDeep: '#3B2A8F',
+  accentDeep: '#6B1414',
   /** The hairline round a violet well — the reviewer's request on the employer status screen. */
-  accentEdge: '#DCD3FF',
+  // old: accentEdge: '#DCD3FF',
+  accentEdge: '#F0D2D2',
 
   /**
    * The ink ground and the darkest text. Ink appears as the mark, dark-fill
    * buttons, the letterbox behind footage and the featured card on a page.
    */
-  ink: '#0B0F1A',
+  // old: ink: '#0B0F1A',
+  ink: '#141414',
   /** A panel lifted off the ink ground. */
-  inkRaised: '#151B2B',
+  // old: inkRaised: '#151B2B',
+  inkRaised: '#1F1F1F',
   /** An ink control on hover, and the light end of a footage gradient. */
-  inkHover: '#2A3142',
+  // old: inkHover: '#2A3142',
+  inkHover: '#2E2E2E',
   /** The silhouette drawn on ink where a candidate's face goes — the employer landing's sample film. */
-  inkSilhouette: '#1E2433',
+  // old: inkSilhouette: '#1E2433',
+  inkSilhouette: '#252525',
   /** The live room's ground — darker than ink so footage owns the frame. */
-  inkDeep: '#07090F',
+  // old: inkDeep: '#07090F',
+  inkDeep: '#0A0A0A',
   /** The dark end of a footage gradient inside the room. */
-  inkDeeper: '#11151F',
+  // old: inkDeeper: '#11151F',
+  inkDeeper: '#161616',
 
   // text on the ink ground
   textOnInk: '#FFFFFF',
   /** A paragraph set on an ink card — a step softer than white, a step above `textOnInkMuted`. */
-  textOnInkSoft: '#E3E6ED',
-  textOnInkMuted: '#C9CED9',
-  textOnInkSubtle: '#8A91A2',
+  // old: textOnInkSoft: '#E3E6ED',
+  textOnInkSoft: '#E5E5E5',
+  // old: textOnInkMuted: '#C9CED9',
+  textOnInkMuted: '#D0D0D0',
+  // old: textOnInkSubtle: '#8A91A2',
+  textOnInkSubtle: '#9A9A9A',
   /** A step's description on the employer sign-up card — between `textOnInkMuted` and `textOnInkSubtle`. */
-  textOnInkBody: '#A6ACBA',
+  // old: textOnInkBody: '#A6ACBA',
+  textOnInkBody: '#AFAFAF',
   /** The wash behind a sheet, and the gradient foot under a video caption. */
-  scrim: 'rgba(11, 15, 26, 0.4)',
-  scrimStrong: 'rgba(11, 15, 26, 0.82)',
+  // old: scrim: 'rgba(11, 15, 26, 0.4)',
+  scrim: 'rgba(20, 20, 20, 0.4)',
+  // old: scrimStrong: 'rgba(11, 15, 26, 0.82)',
+  scrimStrong: 'rgba(20, 20, 20, 0.82)',
   /** The wash behind the job-details drawer — a step lighter than a sheet's, as the design draws it. */
-  scrimDrawer: 'rgba(11, 15, 26, 0.32)',
+  // old: scrimDrawer: 'rgba(11, 15, 26, 0.32)',
+  scrimDrawer: 'rgba(20, 20, 20, 0.32)',
   /** The backdrop behind a modal over the live room. */
-  scrimModal: 'rgba(7, 9, 15, 0.7)',
+  // old: scrimModal: 'rgba(7, 9, 15, 0.7)',
+  scrimModal: 'rgba(10, 10, 10, 0.7)',
 
   /**
    * ── the on-ink surface set ────────────────────────────────────────────
@@ -136,17 +176,20 @@ export const color = {
 
   /** The four marks that sit ON a still — nearly opaque where the room's are not. */
   onInkDisc: 'rgba(255, 255, 255, 0.94)',
-  onInkDiscPlaying: 'rgba(11, 15, 26, 0.55)',
+  // old: onInkDiscPlaying: 'rgba(11, 15, 26, 0.55)',
+  onInkDiscPlaying: 'rgba(20, 20, 20, 0.55)',
   onInkBadge: 'rgba(255, 255, 255, 0.92)',
   onInkTrack: 'rgba(255, 255, 255, 0.28)',
   /** A glass chip over footage — a blurred ink wash carrying a label. */
-  onInkGlass: 'rgba(11, 15, 26, 0.6)',
+  // old: onInkGlass: 'rgba(11, 15, 26, 0.6)',
+  onInkGlass: 'rgba(20, 20, 20, 0.6)',
   /** The hairline round a poster card on the ink ground — fainter than `onInkGround`. */
   onInkHairline: 'rgba(255, 255, 255, 0.1)',
   /** A fact tile lifted a shade off an ink card — white at 6%. */
   onInkWash: 'rgba(255, 255, 255, 0.06)',
   /** An accent pill on the ink ground ("UPCOMING") — `accentBright` at 25%; its text is `accentMuted`. */
-  accentOnInkSoft: 'rgba(114, 88, 255, 0.25)',
+  // old: accentOnInkSoft: 'rgba(114, 88, 255, 0.25)',
+  accentOnInkSoft: 'rgba(200, 51, 51, 0.25)',
   /** The unfilled track of a progress bar on the ink ground. */
   onInkBar: 'rgba(255, 255, 255, 0.12)',
   /** The job deck's play disc on a card (white at 16%), and the larger one in the details panel (18%). */
@@ -163,22 +206,30 @@ export const color = {
    * card says and what its four round buttons do.
    */
   /** Pass, the filter count and the film's progress. */
-  feedPink: '#FD3A73',
+  // old: feedPink: '#FD3A73',
+  feedPink: '#B22222',
   /** A highlight pill (pay, job type, salary, joining) — `feedPink` at 85%, so the film reads through. */
-  feedPinkPill: 'rgba(253, 58, 115, 0.85)',
+  // old: feedPinkPill: 'rgba(253, 58, 115, 0.85)',
+  feedPinkPill: 'rgba(178, 34, 34, 0.88)',
   /** Save / Shortlist, the live dot and the verified tick. */
   feedLike: '#20D575',
   /** Undo. */
   feedUndo: '#FFC000',
   /** A round feed button's fill (90%) and a skill pill over the film (75%). */
-  feedAction: 'rgba(18, 22, 34, 0.9)',
-  feedPill: 'rgba(18, 22, 34, 0.75)',
+  // old: feedAction: 'rgba(18, 22, 34, 0.9)',
+  feedAction: 'rgba(24, 24, 24, 0.9)',
+  // old: feedPill: 'rgba(18, 22, 34, 0.75)',
+  feedPill: 'rgba(24, 24, 24, 0.75)',
   /** The details sheet the card's ⌃ opens (mockup A · "Twin + dark sheet"), its fixed foot, and the scrim under it. */
-  feedSheet: '#0E121D',
-  feedSheetFoot: '#0A0D16',
-  feedScrim: 'rgba(7, 9, 15, 0.6)',
+  // old: feedSheet: '#0E121D',
+  feedSheet: '#121212',
+  // old: feedSheetFoot: '#0A0D16',
+  feedSheetFoot: '#0D0D0D',
+  // old: feedScrim: 'rgba(7, 9, 15, 0.6)',
+  feedScrim: 'rgba(10, 10, 10, 0.6)',
   /** The pay / expected-salary value in that sheet's fact grid — `feedPink` lifted for small type on ink. */
-  feedPinkSoft: '#FF8FB0',
+  // old: feedPinkSoft: '#FF8FB0',
+  feedPinkSoft: '#FF9C9C',
 
   /**
    * ── semantic state ────────────────────────────────────────────────────
@@ -196,7 +247,8 @@ export const color = {
   /** The ring round a live status dot — `successFill` at 18%. */
   successHalo: 'rgba(14, 159, 110, 0.18)',
   /** The ring round an idle status dot — `textSubtle` at 15%. */
-  neutralHalo: 'rgba(138, 145, 162, 0.15)',
+  // old: neutralHalo: 'rgba(138, 145, 162, 0.15)',
+  neutralHalo: 'rgba(140, 140, 140, 0.15)',
   successOnInk: '#6EE7B7',
   successOnInkSoft: 'rgba(14, 159, 110, 0.2)',
   warning: '#935F00',
@@ -214,24 +266,38 @@ export const color = {
   warningOnInk: '#FCC96B',
   /** The amber band laid on an ink card (a late join before it turns red). */
   warningOnInkSoft: 'rgba(252, 201, 107, 0.14)',
-  danger: '#C22A30',
-  dangerSoft: '#FDECEC',
-  dangerFill: '#E5484D',
-  dangerFillHover: '#D13A3F',
+  // old: danger: '#C22A30',
+  danger: '#C2410C',
+  // old: dangerSoft: '#FDECEC',
+  dangerSoft: '#FFEDE5',
+  // old: dangerFill: '#E5484D',
+  dangerFill: '#E5531A',
+  // old: dangerFillHover: '#D13A3F',
+  dangerFillHover: '#CC4512',
   /** The hairline on a destructive control. */
-  dangerBorder: '#F2B8BA',
-  dangerOnInk: '#FF8A8E',
-  dangerOnInkSoft: 'rgba(229, 72, 77, 0.16)',
+  // old: dangerBorder: '#F2B8BA',
+  dangerBorder: '#F7C1A8',
+  // old: dangerOnInk: '#FF8A8E',
+  dangerOnInk: '#FF9A7A',
+  // old: dangerOnInkSoft: 'rgba(229, 72, 77, 0.16)',
+  dangerOnInkSoft: 'rgba(229, 83, 26, 0.16)',
   /** An ink card turned red — a join more than the admin's late threshold overdue (docs/late-join-mockups.html, red fill). */
-  dangerInk: '#2A1216',
-  dangerInkDeep: '#1D0D10',
-  dangerInkEdge: 'rgba(255, 138, 142, 0.45)',
+  // old: dangerInk: '#2A1216',
+  dangerInk: '#2A150D',
+  // old: dangerInkDeep: '#1D0D10',
+  dangerInkDeep: '#1D0E08',
+  // old: dangerInkEdge: 'rgba(255, 138, 142, 0.45)',
+  dangerInkEdge: 'rgba(255, 154, 122, 0.45)',
   /** The wash under a hovered Not-interested circle on the job deck. */
-  dangerWash: '#FFF7F7',
+  // old: dangerWash: '#FFF7F7',
+  dangerWash: '#FFF8F4',
   /** A wrong code cell's ground. */
-  dangerGround: '#FFFBFA',
-  info: '#4A2FE0',
-  infoSoft: '#EFEBFF',
+  // old: dangerGround: '#FFFBFA',
+  dangerGround: '#FFFBF8',
+  // old: info: '#4A2FE0',
+  info: '#951C1C',
+  // old: infoSoft: '#EFEBFF',
+  infoSoft: '#F9EAEA',
 } as const
 
 /**
@@ -870,30 +936,44 @@ export const underlineOffset = { text: 3, /** The public bar's current-page link
  */
 export const shadow = {
   /** Lifts a floating surface — a sheet, a toast, an artboard. */
-  card: '0 1px 2px rgba(11, 15, 26, 0.06), 0 12px 40px rgba(11, 15, 26, 0.1)',
+  // old: card: '0 1px 2px rgba(11, 15, 26, 0.06), 0 12px 40px rgba(11, 15, 26, 0.1)',
+  card: '0 1px 2px rgba(20, 20, 20, 0.06), 0 12px 40px rgba(20, 20, 20, 0.1)',
   /** The hairline lift under a resting card or a selected segment. */
-  raised: '0 1px 2px rgba(11, 15, 26, 0.04)',
+  // old: raised: '0 1px 2px rgba(11, 15, 26, 0.04)',
+  raised: '0 1px 2px rgba(20, 20, 20, 0.04)',
   /** A card that stands off the page — the order summary. */
-  panel: '0 12px 32px rgba(11, 15, 26, 0.06)',
+  // old: panel: '0 12px 32px rgba(11, 15, 26, 0.06)',
+  panel: '0 12px 32px rgba(20, 20, 20, 0.06)',
   /** The 4px ring a field wears while it has the caret. */
-  focus: '0 0 0 4px rgba(91, 61, 245, 0.14)',
+  // old: focus: '0 0 0 4px rgba(91, 61, 245, 0.14)',
+  focus: '0 0 0 4px rgba(178, 34, 34, 0.14)',
   /** The ring around a selected tile, one shade softer than `focus`. */
-  ring: '0 0 0 4px rgba(91, 61, 245, 0.12)',
+  // old: ring: '0 0 0 4px rgba(91, 61, 245, 0.12)',
+  ring: '0 0 0 4px rgba(178, 34, 34, 0.12)',
   /** The glow under a primary action. */
-  accent: '0 6px 16px rgba(91, 61, 245, 0.28)',
+  // old: accent: '0 6px 16px rgba(91, 61, 245, 0.28)',
+  accent: '0 6px 16px rgba(178, 34, 34, 0.28)',
   /** What sits OVER FOOTAGE — the room's transient band. */
   lift: '0 12px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1)',
   /** The lobby's camera frame, floating on the muted ground beside the setup panel. */
-  frame: '0 24px 60px rgba(11, 15, 26, 0.25)',
+  // old: frame: '0 24px 60px rgba(11, 15, 26, 0.25)',
+  frame: '0 24px 60px rgba(20, 20, 20, 0.25)',
   /** The job deck (G2): the top card, the card waiting behind it, the two round actions, the undo toast and the details drawer. */
-  deck: '0 24px 60px rgba(11, 15, 26, 0.12)',
-  'deck-back': '0 8px 24px rgba(11, 15, 26, 0.05)',
-  'deck-skip': '0 6px 18px rgba(11, 15, 26, 0.07)',
-  'deck-save': '0 8px 20px rgba(11, 15, 26, 0.2)',
-  toast: '0 12px 30px rgba(11, 15, 26, 0.25)',
+  // old: deck: '0 24px 60px rgba(11, 15, 26, 0.12)',
+  deck: '0 24px 60px rgba(20, 20, 20, 0.12)',
+  // old: 'deck-back': '0 8px 24px rgba(11, 15, 26, 0.05)',
+  'deck-back': '0 8px 24px rgba(20, 20, 20, 0.05)',
+  // old: 'deck-skip': '0 6px 18px rgba(11, 15, 26, 0.07)',
+  'deck-skip': '0 6px 18px rgba(20, 20, 20, 0.07)',
+  // old: 'deck-save': '0 8px 20px rgba(11, 15, 26, 0.2)',
+  'deck-save': '0 8px 20px rgba(20, 20, 20, 0.2)',
+  // old: toast: '0 12px 30px rgba(11, 15, 26, 0.25)',
+  toast: '0 12px 30px rgba(20, 20, 20, 0.25)',
   /** The centred employer modal (EM-13, EM-15): a 22px sheet floating over a dimmed page. */
-  modal: '0 30px 80px rgba(11, 15, 26, 0.3)',
-  drawer: '-20px 0 50px rgba(11, 15, 26, 0.12)',
+  // old: modal: '0 30px 80px rgba(11, 15, 26, 0.3)',
+  modal: '0 30px 80px rgba(20, 20, 20, 0.3)',
+  // old: drawer: '-20px 0 50px rgba(11, 15, 26, 0.12)',
+  drawer: '-20px 0 50px rgba(20, 20, 20, 0.12)',
 } as const
 
 /**
