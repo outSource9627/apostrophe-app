@@ -138,6 +138,8 @@ export class RoomEngine {
   setSpeaker(on: boolean) { this.engine?.setEnableSpeakerphone(on) }
   /** Receive the remote video stream, or audio only. */
   receiveVideo(on: boolean) { this.engine?.muteAllRemoteVideoStreams(!on) }
+  /** Silence the other side on this device only — nothing changes for them or the recording. */
+  receiveAudio(on: boolean) { this.engine?.muteAllRemoteAudioStreams(!on) }
 
   leave() {
     if (!this.engine || !this.joined) return

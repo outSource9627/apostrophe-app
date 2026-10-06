@@ -6,7 +6,7 @@
     "android": "react-native run-android",
     "ios": "react-native run-ios",
     "lint": "eslint .",
-    "start": "react-native start",
+    "start": "node api.js && react-native start",
     "test": "jest",
     "theme:sync": "node scripts/sync-theme.mjs",
     "theme:check": "node scripts/sync-theme.mjs --check && node scripts/check-raw-design-values.mjs",

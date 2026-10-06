@@ -107,7 +107,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   badgeText: {
-    fontFamily: fontFamilyNative.mono,
+    fontFamily: fontFamilyNative.body,
+    fontVariant: ['tabular-nums'],
     fontSize: 9,
     fontWeight: '700',
     color: color.surface,

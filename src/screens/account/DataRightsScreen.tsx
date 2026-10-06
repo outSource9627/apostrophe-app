@@ -8,7 +8,7 @@ import {
   type DataExportRow, type DeletionRequest, type Me,
 } from '../../lib/api/account'
 import { fmtISODate, fmtStampFull } from '../../lib/chat/format'
-import { borderWidth, color, fontFamilyNative as FF } from '../../theme'
+import { borderWidth, color, fontFamilyNative as FF, fontSize } from '../../theme'
 import { Sheet, StatusPill } from '../../components/ui'
 import { Icon } from '../../components/ui/Icon'
 import { Btn, DetailHeader, Skel, StateBlock } from '../../components/tab/kit'
@@ -61,12 +61,12 @@ export function DataRightsScreen({ onBack }: { onBack: () => void }) {
           <Text style={styles.eyebrow}>Export</Text>
           {pendingExport ? (
             <View style={styles.card}>
-              <View style={styles.pillRow}><StatusPill tone="neutral" label="PREPARING" /></View>
+              <View style={styles.pillRow}><StatusPill tone="neutral" label="Preparing" /></View>
               <Text style={[styles.p, styles.gapTop]}>We&rsquo;re building your file. We&rsquo;ll email you when it&rsquo;s ready — you don&rsquo;t need to keep this open.</Text>
             </View>
           ) : readyExport ? (
             <View style={styles.card}>
-              <View style={styles.pillRow}><StatusPill tone="info" label="READY" /></View>
+              <View style={styles.pillRow}><StatusPill tone="info" label="Ready" /></View>
               <View style={styles.fileRow}>
                 <Text style={styles.fileName}>{`apostrophe-export-${fmtISODate(readyExport.readyAt ?? readyExport.requestedAt)}.zip`}</Text>
                 <Text style={styles.meta}>{fmtSize(readyExport.sizeBytes)}</Text>
@@ -143,7 +143,7 @@ function PendingDeletion({ request, busy, onCancel }: { request: DeletionRequest
   return (
     <View style={styles.gap18}>
       <View style={styles.pendCard}>
-        <View style={styles.pillRow}><StatusPill tone="warning" label="DELETION PENDING" /></View>
+        <View style={styles.pillRow}><StatusPill tone="warning" label="Deletion pending" /></View>
         <Text style={[styles.h, styles.hPend]}>{`We’re deleting your account by ${fmtDate(request.dueAt)}.`}</Text>
         <Text style={[styles.meta, styles.gapTop6]}>{`Requested ${fmtStampFull(request.requestedAt)}`}</Text>
       </View>
@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
   loading: { paddingHorizontal: 20, paddingTop: 8, gap: 14 },
   body: { paddingHorizontal: 20, paddingTop: 8, gap: 24, paddingBottom: 28 },
   section: { gap: 12 },
-  eyebrow: { fontFamily: FF.monoMedium, fontSize: 11, letterSpacing: 1.54, textTransform: 'uppercase', color: color.textMuted },
+  eyebrow: { fontFamily: FF.bodyMedium, fontSize: fontSize['meta-md'], color: color.textMuted },
   card: { backgroundColor: color.surface, borderWidth: borderWidth.thin, borderColor: color.border, borderRadius: 20, padding: 16 },
   pillRow: { flexDirection: 'row' },
   h: { fontFamily: FF.bodyBold, fontSize: 22, lineHeight: 25, letterSpacing: -0.66, color: color.text },
@@ -194,14 +194,14 @@ const styles = StyleSheet.create({
   hPend: { fontSize: 20, lineHeight: 23, letterSpacing: -0.6, marginTop: 10 },
   p: { fontFamily: FF.body, fontSize: 14, lineHeight: 21, color: color.textMuted },
   pDark: { fontFamily: FF.body, fontSize: 14.5, lineHeight: 22, color: color.text },
-  meta: { fontFamily: FF.monoMedium, fontSize: 11.5, letterSpacing: 0.46, color: color.textSubtle },
+  meta: { fontFamily: FF.bodyMedium, fontSize: fontSize['meta-base'], color: color.textSubtle },
   gapTop: { marginTop: 10 },
   gapTop6: { marginTop: 6 },
   gap14: { gap: 14 },
   gap18: { gap: 18 },
   gapTopLg: { marginTop: 14 },
   fileRow: { flexDirection: 'row', alignItems: 'baseline', gap: 10, marginTop: 10 },
-  fileName: { fontFamily: FF.monoMedium, fontSize: 11.5, letterSpacing: 0.46, color: color.text },
+  fileName: { fontFamily: FF.bodyMedium, fontSize: fontSize['meta-base'], fontVariant: ['tabular-nums'], color: color.text },
   dl: {
     alignSelf: 'flex-start', marginTop: 12, height: 40, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 16,
     backgroundColor: color.surface, borderWidth: borderWidth.medium, borderColor: color.borderStrong,
@@ -223,6 +223,6 @@ const styles = StyleSheet.create({
   dotDone: { backgroundColor: color.successFill },
   mixedText: { flex: 1, fontFamily: FF.body, fontSize: 14.5, lineHeight: 21, color: color.text },
   split: { flexDirection: 'row', gap: 12 },
-  splitLabel: { width: 96, paddingTop: 3, fontFamily: FF.monoMedium, fontSize: 10.5, letterSpacing: 1.05, textTransform: 'uppercase', color: color.textMuted },
+  splitLabel: { width: 96, paddingTop: 3, fontFamily: FF.bodyMedium, fontSize: fontSize['meta-sm'], color: color.textMuted },
   splitBody: { flex: 1, fontFamily: FF.body, fontSize: 14.5, lineHeight: 21, color: color.text },
 })

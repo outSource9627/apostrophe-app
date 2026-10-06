@@ -43,8 +43,8 @@ export {
 } from './video'
 
 // §09 navigation, sheets, modals
-export { Sheet, Toast, PaywallBanner, AppBar, TabBar, ListSection } from './overlay'
-export type { TabItem } from './overlay'
+export { Sheet, Toast, PaywallBanner, AppBar, TabBar, ListSection, PopoverMenu, measureAnchor } from './overlay'
+export type { TabItem, MenuAnchor, PopoverItem } from './overlay'
 
 // §10 the six screen states
 export { Skeleton, EmptyState, ErrorState, SuccessState, PendingState, DisabledAction } from './states'

@@ -174,7 +174,7 @@ export function EmployerInterestsScreen() {
               <Text style={text.uiBaseSemi} numberOfLines={1}>{item.name}</Text>
               {!!job && <Text style={[text.uiXs, styles.muted]} numberOfLines={1}>{job}</Text>}
             </View>
-            {urgent && <EmBadge label={leftLabel} tone="amber" icon="clock" />}
+            {urgent && <EmBadge label={`${leftLabel.charAt(0).toUpperCase()}${leftLabel.slice(1)}`} tone="amber" icon="clock" />}
           </View>
           {!!item.message && <Text style={[text.uiSm, styles.quote]} numberOfLines={1}>{`“${item.message}”`}</Text>}
           <ExpiryBar

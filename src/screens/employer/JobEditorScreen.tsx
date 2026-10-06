@@ -7,7 +7,7 @@ import { Button, Input, text } from '../../components/ui'
 import { Icon } from '../../components/ui/Icon'
 import { EmployerShell } from '../../components/employer'
 import { DropZone } from '../../components/employer/DocumentSlot'
-import { EmBadge, EmChip, EmDone, EmError, EmIconButton, EmSheet } from '../../components/employer/em'
+import { EmBadge, EmChip, EmDialog, EmDone, EmError, EmIconButton, EmSheet } from '../../components/employer/em'
 import { EmDateField, EmField, EmSeg, EmSelect, todayIst, type Ymd } from '../../components/employer/form'
 import { ApiClientError } from '../../lib/api'
 import { getConfig, type AppConfig } from '../../lib/api/config'
@@ -73,6 +73,7 @@ export function JobEditorScreen() {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [savedId, setSavedId] = useState<string | undefined>(jobId)
   const [step, setStep] = useState<1 | 2>(1)
+  const [salaryInfo, setSalaryInfo] = useState(false)
 
   const [title, setTitle] = useState('')
   const [category, setCategory] = useState('')
@@ -241,8 +242,11 @@ export function JobEditorScreen() {
     setBusy(submit ? 'submit' : 'draft')
     try {
       let id = savedId
-      if (id) await updateEmployerJob(id, payload())
-      else {
+      if (id) {
+        // A fixed minimum is never sent: the server refuses any change to it, and rounding to rupees could look like one.
+        const { salaryMinPaise, ...rest } = payload()
+        await updateEmployerJob(id, minLocked ? rest : { ...rest, salaryMinPaise })
+      } else {
         id = (await createEmployerJob(payload())).id
         setSavedId(id)
       }
@@ -264,6 +268,8 @@ export function JobEditorScreen() {
 
   const status = existing?.status
   const editingLive = status === 'PUBLISHED' || status === 'PAUSED'
+  // The server's rule (fixed once submitted, or ever live), read off the post rather than restated here.
+  const minLocked = existing?.salaryMinLocked === true
   const isDraft = !status || status === 'DRAFT'
   const back = () => (step === 2 ? setStep(1) : navigation.goBack())
   const barTitle = jobId ? 'Edit job post' : 'New job post'
@@ -288,7 +294,7 @@ export function JobEditorScreen() {
   const types = (config?.profile.employmentTypes ?? []).map((t) => ({ value: t, label: employmentLabel(t as Parameters<typeof employmentLabel>[0]) }))
   const quals = (config?.qualifications ?? []).map((q) => ({ value: q.value, label: QUAL_SHORT[q.value] ?? label(q.value) }))
   const joins = (config?.profile.availability ?? []).map((a) => ({ value: a, label: label(a) }))
-  const sub = editingLive ? 'SAVING SENDS IT BACK TO REVIEW' : status === 'PENDING_MODERATION' ? 'IN REVIEW' : 'DRAFT'
+  const sub = editingLive ? 'Saving sends it back to review' : status === 'PENDING_MODERATION' ? 'In review' : 'Draft'
 
   const listField = (key: 'responsibilities' | 'requirements', fieldLabel: string, list: string[], set: (v: string[]) => void, placeholder: string) => (
     <EmField label={fieldLabel} error={errors[key]}>
@@ -326,7 +332,7 @@ export function JobEditorScreen() {
       footer={
         step === 1 ? (
           <>
-            <Text style={[text.metaMd, styles.muted, styles.mono]}>1 OF 2</Text>
+            <Text style={[text.metaMd, styles.muted, styles.mono]}>1 of 2</Text>
             <View style={styles.grow} />
             <Button variant="secondary" size="cta" label="Next" onPress={next} style={styles.next} />
           </>
@@ -399,10 +405,24 @@ export function JobEditorScreen() {
               <View style={styles.grow}><Input value={expMax} onChangeText={(v) => setExpMax(digits(v))} keyboardType="number-pad" placeholder="Any" style={styles.short} /></View>
             </View>
           </EmField>
-          <EmField label="Salary range · per year" error={errors.salaryMinPaise ?? errors.salaryMaxPaise}>
+          <EmField
+            label="Salary range · per year"
+            onInfo={() => setSalaryInfo(true)}
+            hint={minLocked ? 'The minimum is fixed now that the post has been submitted.' : undefined}
+            error={errors.salaryMinPaise ?? errors.salaryMaxPaise}
+          >
             <View style={styles.range}>
               <View style={styles.grow}>
-                <Input value={grouped(salaryMin)} onChangeText={(v) => setSalaryMin(digits(v))} keyboardType="number-pad" placeholder="₹ from" invalid={!!errors.salaryMinPaise} style={styles.short} />
+                <Input
+                  value={grouped(salaryMin)}
+                  onChangeText={(v) => setSalaryMin(digits(v))}
+                  editable={!minLocked}
+                  accessibilityHint={minLocked ? 'Fixed once the post was submitted' : undefined}
+                  keyboardType="number-pad"
+                  placeholder="₹ from"
+                  invalid={!!errors.salaryMinPaise}
+                  style={styles.short}
+                />
               </View>
               <Text style={[text.uiMd, styles.subtle]}>to</Text>
               <View style={styles.grow}>
@@ -457,6 +477,16 @@ export function JobEditorScreen() {
         </>
       )}
 
+      <EmDialog
+        open={salaryInfo}
+        onClose={() => setSalaryInfo(false)}
+        title={minLocked ? 'The minimum salary is fixed' : 'You can’t change the minimum later'}
+        body={minLocked
+          ? 'This post has been submitted, so its minimum salary can’t be changed — students apply against it. The top of the range can still be changed.'
+          : 'Once you submit this post for review, you won’t be able to change the minimum salary — students apply against it. Until then, while it’s a draft, you can still edit it. The top of the range can be changed later.'}
+        actions={<Button variant="secondary" size="md" label="Got it" onPress={() => setSalaryInfo(false)} />}
+      />
+
       <EmSheet open={submitted} onClose={() => navigation.goBack()} scroll={false}>
         <EmDone
           icon="clock"
@@ -480,7 +510,7 @@ function VideoSlot({
         <View style={styles.line}>
           <Icon name="file" size={space.xl} tint={color.accent} />
           <Text style={[text.uiBaseMedium, styles.grow]} numberOfLines={1}>{video.name}</Text>
-          <Text style={[text.metaBase, styles.accentText]}>{`${video.pct}%`}</Text>
+          <Text style={[text.metaBase, styles.accentText, styles.tnum]}>{`${video.pct}%`}</Text>
           <EmIconButton name="x" label={`Cancel uploading ${video.name}`} size={height.radio + 8} iconSize={space.md + 3} onPress={onCancel} />
         </View>
         <View style={styles.track}><View style={[styles.fill, { width: `${video.pct}%` }]} /></View>
@@ -523,6 +553,7 @@ const styles = StyleSheet.create({
   warning: { color: color.warning },
   accent: { color: color.accent },
   accentText: { color: color.accentText },
+  tnum: { fontVariant: ['tabular-nums'] },
   mono: { letterSpacing: trackingNative.eyebrow },
   loading: { paddingVertical: space['3xl'] },
   banner: { flexDirection: 'row', gap: spaceHalf['1.5'], alignItems: 'flex-start', borderRadius: radius.tile, backgroundColor: color.dangerSoft, paddingVertical: space.md, paddingHorizontal: spaceHalf['3.5'] },

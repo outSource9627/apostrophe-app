@@ -68,11 +68,11 @@ export async function clearQueue(): Promise<void> {
   }
 }
 
-/** 'saved 4:12 pm' — the board's format, in IST wall-clock (fixed +5:30). */
+/** '4:12 PM' (as in 'Saved · 4:12 PM'), in IST wall-clock (fixed +5:30). */
 export function clockTime(at: Date | string): string {
   const d = new Date(new Date(at).getTime() + (5 * 60 + 30) * 60000)
   const h = d.getUTCHours()
   const m = d.getUTCMinutes()
   const h12 = h % 12 === 0 ? 12 : h % 12
-  return `${h12}:${String(m).padStart(2, '0')} ${h < 12 ? 'am' : 'pm'}`
+  return `${h12}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`
 }

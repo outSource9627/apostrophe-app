@@ -3,11 +3,11 @@ import { StyleSheet, Text, View } from 'react-native'
 import Video from 'react-native-video'
 import type { JobDetail } from '../../lib/api/jobs'
 import { deadlineLine, employmentLabel, experienceLine, locationLine } from '../../lib/jobs/format'
-import { color, fontFamilyNative as FF, height, radius, space, spaceHalf, trackingNative } from '../../theme'
+import { color, fontFamilyNative as FF, fontSize, height, radius, space, spaceHalf } from '../../theme'
 import { text } from '../../components/ui'
 
 /**
- * The full post's sections (Android M11 details): the 2-up fact tiles, mono
+ * The full post's sections (Android M11 details): the 2-up fact tiles, grey
  * section eyebrows, dash bullets in the accent. One set, drawn by the deck's
  * details sheet and the Job page alike, so the two can never drift.
  */
@@ -15,10 +15,10 @@ import { text } from '../../components/ui'
 export function JobFacts({ job }: { job: Pick<JobDetail, 'location' | 'remote' | 'employmentType' | 'experience' | 'applicationDeadline'> }) {
   const deadline = deadlineLine(job.applicationDeadline)
   const facts: [string, string][] = [
-    ['LOCATION', locationLine(job.location, job.remote)],
-    ['TYPE', employmentLabel(job.employmentType)],
-    ['EXPERIENCE', experienceLine(job.experience)],
-    ...(deadline ? [['DEADLINE', deadline] as [string, string]] : []),
+    ['Location', locationLine(job.location, job.remote)],
+    ['Type', employmentLabel(job.employmentType)],
+    ['Experience', experienceLine(job.experience)],
+    ...(deadline ? [['Deadline', deadline] as [string, string]] : []),
   ]
   return (
     <View style={styles.facts}>
@@ -36,7 +36,7 @@ export function JobProse({ title, body }: { title: string; body?: string | null 
   if (!body) return null
   return (
     <View style={styles.section}>
-      <Text style={styles.eyebrow}>{title.toUpperCase()}</Text>
+      <Text style={styles.eyebrow}>{title}</Text>
       <Text style={styles.prose}>{body}</Text>
     </View>
   )
@@ -46,7 +46,7 @@ export function JobBullets({ title, items }: { title: string; items?: string[] }
   if (!items || items.length === 0) return null
   return (
     <View style={styles.section}>
-      <Text style={styles.eyebrow}>{title.toUpperCase()}</Text>
+      <Text style={styles.eyebrow}>{title}</Text>
       {items.map((it) => (
         <View key={it} style={styles.bullet}>
           <Text style={styles.dash}>—</Text>
@@ -61,8 +61,8 @@ export function JobSkills({ skills }: { skills: string[] }) {
   if (skills.length === 0) return null
   return (
     <View style={styles.section}>
-      <Text style={styles.eyebrow}>SKILLS</Text>
-      <View style={styles.tags}>{skills.map((s) => <View key={s} style={styles.tag}><Text style={styles.tagText}>{s.toUpperCase()}</Text></View>)}</View>
+      <Text style={styles.eyebrow}>Skills</Text>
+      <View style={styles.tags}>{skills.map((s) => <View key={s} style={styles.tag}><Text style={styles.tagText}>{s}</Text></View>)}</View>
     </View>
   )
 }
@@ -86,9 +86,9 @@ export function JobVideo({ url }: { url: string }) {
 const styles = StyleSheet.create({
   facts: { flexDirection: 'row', flexWrap: 'wrap', gap: spaceHalf['2.5'] },
   fact: { width: '48%', flexGrow: 1, borderRadius: radius.tile, backgroundColor: color.surfaceMuted, paddingVertical: spaceHalf['2.5'], paddingHorizontal: space.md, gap: space['2xs'] },
-  factKey: { color: color.textMuted, letterSpacing: trackingNative.meta },
+  factKey: { color: color.textMuted },
   section: { gap: 7 },
-  eyebrow: { fontFamily: FF.monoMedium, fontSize: 11, letterSpacing: 1.54, color: color.textMuted },
+  eyebrow: { fontFamily: FF.bodyMedium, fontSize: fontSize['meta-md'], color: color.textMuted },
   prose: { fontFamily: FF.body, fontSize: 15.5, lineHeight: 24, color: color.textSecondary },
   bullet: { flexDirection: 'row', gap: 10 },
   dash: { fontFamily: FF.body, fontSize: 15.5, lineHeight: 23, color: color.accent },
@@ -96,6 +96,6 @@ const styles = StyleSheet.create({
   grow: { flex: 1 },
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   tag: { backgroundColor: color.surfaceMuted, borderRadius: radius.pill, paddingVertical: 6, paddingHorizontal: 11 },
-  tagText: { fontFamily: FF.monoMedium, fontSize: 11, letterSpacing: 0.66, color: color.textSecondary },
+  tagText: { fontFamily: FF.bodyMedium, fontSize: fontSize['meta-md'], color: color.textSecondary },
   video: { alignSelf: 'center', aspectRatio: 9 / 16, height: height['job-video'], borderRadius: radius.lg, overflow: 'hidden', backgroundColor: color.ink },
 })

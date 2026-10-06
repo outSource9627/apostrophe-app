@@ -3,7 +3,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import Video, { type VideoRef } from 'react-native-video'
-import { borderWidth, color, fontFamilyNative as FF, radius } from '../../theme'
+import { borderWidth, color, fontFamilyNative as FF, fontSize, radius } from '../../theme'
 import { FilmThumb, StatusPill } from '../../components/ui'
 import { Icon } from '../../components/ui/Icon'
 import { Btn, DetailHeader, Skel, StateBlock } from '../../components/tab/kit'
@@ -228,7 +228,7 @@ function Published({
         <FilmPlayer url={url} posterUrl={film.posterUrl} refresh={refresh} />
         <View style={styles.seal} pointerEvents="none">
           <Icon name="check" size={12} tint={color.success} weight={3} />
-          <Text style={styles.sealText}>{at ? `VERIFIED · ${fmtDayMonthYear(at).toUpperCase()}` : 'VERIFIED'}</Text>
+          <Text style={styles.sealText}>{at ? `Verified · ${fmtDayMonthYear(at)}` : 'Verified'}</Text>
         </View>
       </View>
 
@@ -244,7 +244,7 @@ function Published({
 function Fact({ label, value, last }: { label: string; value?: string; last?: boolean }) {
   return (
     <View style={[styles.fact, !last && styles.factRule]}>
-      <Text style={styles.factLabel}>{label.toUpperCase()}</Text>
+      <Text style={styles.factLabel}>{label}</Text>
       <Text style={[styles.factValue, !value && styles.factNone]} numberOfLines={2}>{value ?? '—'}</Text>
     </View>
   )
@@ -442,7 +442,7 @@ function NotPlayable({ film, onCheck, onBook }: { film: VideoResume; onCheck: ()
       </View>
       {film.status === 'UNPUBLISHED' && !!film.reason && (
         <View style={styles.reason}>
-          <Text style={styles.reasonLabel}>REASON GIVEN</Text>
+          <Text style={styles.reasonLabel}>Reason given</Text>
           <Text style={styles.reasonText}>{film.reason}</Text>
         </View>
       )}
@@ -508,7 +508,7 @@ const styles = StyleSheet.create({
     position: 'absolute', top: 10, left: 10, flexDirection: 'row', alignItems: 'center', gap: 5,
     backgroundColor: color.onInkDisc, borderRadius: radius.pill, paddingVertical: 5, paddingHorizontal: 10,
   },
-  sealText: { fontFamily: FF.monoMedium, fontSize: 10, letterSpacing: 0.6, color: color.success },
+  sealText: { fontFamily: FF.bodyMedium, fontSize: fontSize['meta-sm'], color: color.success },
   note: {
     position: 'absolute', left: 12, right: 12, bottom: 56, gap: 8, padding: 12, borderRadius: 14, backgroundColor: color.scrimStrong,
   },
@@ -521,7 +521,7 @@ const styles = StyleSheet.create({
   },
   fact: { flex: 1, paddingVertical: 12, paddingHorizontal: 14 },
   factRule: { borderRightWidth: borderWidth.thin, borderRightColor: color.border },
-  factLabel: { fontFamily: FF.monoMedium, fontSize: 10, letterSpacing: 1, color: color.textMuted },
+  factLabel: { fontFamily: FF.bodyMedium, fontSize: fontSize['meta-sm'], color: color.textMuted },
   factValue: { fontFamily: FF.bodySemiBold, fontSize: 15.5, letterSpacing: -0.15, color: color.text, marginTop: 4 },
   factNone: { color: color.textSubtle },
 
@@ -548,6 +548,6 @@ const styles = StyleSheet.create({
   stateTitle: { fontFamily: FF.bodyBold, fontSize: 21, lineHeight: 24, letterSpacing: -0.63, color: color.text, textAlign: 'center' },
   stateBody: { fontFamily: FF.body, fontSize: 14.5, lineHeight: 21, color: color.textMuted, textAlign: 'center' },
   reason: { alignSelf: 'stretch', borderRadius: 14, backgroundColor: color.surfaceMuted, padding: 12, gap: 3 },
-  reasonLabel: { fontFamily: FF.monoMedium, fontSize: 10.5, letterSpacing: 1.05, color: color.textMuted },
+  reasonLabel: { fontFamily: FF.bodyMedium, fontSize: fontSize['meta-sm'], color: color.textMuted },
   reasonText: { fontFamily: FF.body, fontSize: 14.5, lineHeight: 21, color: color.text },
 })

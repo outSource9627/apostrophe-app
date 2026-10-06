@@ -1,7 +1,7 @@
 import React from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg'
-import { borderWidth, color, height, opacity, radius, space, spaceHalf, trackingNative } from '../../theme'
+import { borderWidth, color, height, opacity, radius, space, spaceHalf } from '../../theme'
 import { Segmented } from './controls'
 import { TabTitle } from './student'
 import { text } from './typography'
@@ -21,7 +21,7 @@ function JobDeckCardView({
   company: string
   title: string
   pay?: string | null
-  /** The uppercase mono line — location · type · experience · deadline. */
+  /** The grey meta line — location · type · experience · deadline. */
   meta: string
   skills: string[]
   posted?: string | null
@@ -49,7 +49,7 @@ function JobDeckCardView({
         <View style={styles.videoTop}>
           <View style={styles.glass}>
             <View style={styles.liveDot} />
-            <Text style={[text.metaSm, styles.onInk]}>VIDEO JOB · {video.duration}</Text>
+            <Text style={[text.metaSm, styles.onInk]}>Video job · {video.duration}</Text>
           </View>
           <View style={styles.logoOnInk}><Text style={[text.metaMd, styles.logoInkText]}>{initialsOf(company)}</Text></View>
         </View>
@@ -60,7 +60,7 @@ function JobDeckCardView({
           <Text style={[text.metaSm, styles.onInkSoft]}>{meta}</Text>
           <View style={styles.chips}>
             {skills.slice(0, 4).map((s) => (
-              <View key={s} style={styles.chipOnInk}><Text style={[text.metaSm, styles.onInk]}>{s.toUpperCase()}</Text></View>
+              <View key={s} style={styles.chipOnInk}><Text style={[text.metaSm, styles.onInk]}>{s}</Text></View>
             ))}
           </View>
         </View>
@@ -77,7 +77,7 @@ function JobDeckCardView({
           {!!posted && <Text style={[text.uiXs, styles.subtle]}>{posted}</Text>}
         </View>
         {saved && (
-          <View style={styles.savedPill}><Text style={[text.metaSm, styles.savedText]}>SAVED</Text></View>
+          <View style={styles.savedPill}><Text style={[text.metaSm, styles.savedText]}>Saved</Text></View>
         )}
       </View>
       <Text style={text.displayHeading}>{title}</Text>
@@ -85,10 +85,10 @@ function JobDeckCardView({
       <Text style={[text.metaMd, styles.meta]}>{meta}</Text>
       <View style={styles.chips}>
         {skills.slice(0, 6).map((s) => (
-          <View key={s} style={styles.chip}><Text style={[text.metaMd, styles.chipText]}>{s.toUpperCase()}</Text></View>
+          <View key={s} style={styles.chip}><Text style={[text.metaMd, styles.chipText]}>{s}</Text></View>
         ))}
       </View>
-      <Text style={[text.metaSm, styles.tapHint]}>TAP FOR DETAILS</Text>
+      <Text style={[text.metaSm, styles.tapHint]}>Tap for details</Text>
     </View>
   )
 }
@@ -152,7 +152,7 @@ export function UndoToast({ title, note, onUndo, disabled }: { title: string; no
         <Text style={[text.uiXs, styles.onInkSoft]} numberOfLines={1}>{note}</Text>
       </View>
       <Pressable accessibilityRole="button" disabled={disabled} onPress={onUndo} style={styles.toastBtn}>
-        <Text style={[text.uiSmSemi, styles.undoText]}>UNDO</Text>
+        <Text style={[text.uiSmSemi, styles.undoText]}>Undo</Text>
       </Pressable>
     </View>
   )
@@ -167,11 +167,11 @@ const styles = StyleSheet.create({
   subtle: { color: color.textSubtle },
   savedPill: { paddingHorizontal: spaceHalf['1.5'], paddingVertical: space['2xs'], borderRadius: radius.pill, backgroundColor: color.successSoft },
   savedText: { color: color.success },
-  meta: { color: color.textMuted, letterSpacing: trackingNative.meta, lineHeight: height.glyph },
+  meta: { color: color.textMuted, lineHeight: height.glyph },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spaceHalf['1.5'] },
   chip: { height: height['chip-sm'], paddingHorizontal: space.md, borderRadius: radius.pill, borderWidth: borderWidth.thin, borderColor: color.borderStrong, alignItems: 'center', justifyContent: 'center' },
   chipText: { color: color.text },
-  tapHint: { marginTop: 'auto', textAlign: 'center', color: color.textSubtle, letterSpacing: trackingNative.eyebrow },
+  tapHint: { marginTop: 'auto', textAlign: 'center', color: color.textSubtle },
 
   videoCard: { flex: 1, borderRadius: radius.xl, overflow: 'hidden', backgroundColor: color.ink },
   playWrap: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },

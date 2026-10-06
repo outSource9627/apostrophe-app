@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { getNotifications, markNotificationsRead, type NotificationRow } from '../../lib/api/account'
 import { fmtClock, fmtDayDivider, fmtDayMonthYear } from '../../lib/chat/format'
-import { borderWidth, color, fontFamilyNative as FF } from '../../theme'
+import { borderWidth, color, fontFamilyNative as FF, fontSize } from '../../theme'
 import { DetailHeader, GroupLabel, Skel, StateBlock } from '../../components/tab/kit'
 
 /**
@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
   rowTop: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 },
   title: { flex: 1, fontFamily: FF.bodyMedium, fontSize: 16, lineHeight: 21, letterSpacing: -0.16, color: color.textMuted },
   titleUnread: { fontFamily: FF.bodySemiBold, color: color.text },
-  time: { fontFamily: FF.monoMedium, fontSize: 11, color: color.textSubtle },
+  time: { fontFamily: FF.bodyMedium, fontSize: fontSize['meta-md'], fontVariant: ['tabular-nums'], color: color.textSubtle },
   bodyText: { fontFamily: FF.body, fontSize: 14, lineHeight: 19.6, color: color.textMuted },
   foot: { fontFamily: FF.body, fontSize: 13, lineHeight: 19, color: color.textSubtle, paddingHorizontal: 24, paddingTop: 14 },
 })

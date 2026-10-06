@@ -3,16 +3,19 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, ApiClientError } from '../../lib/api'
-import { borderWidth, color, fontFamilyNative as FF } from '../../theme'
+import { borderWidth, color, fontFamilyNative as FF, fontSize } from '../../theme'
 import { Icon } from '../../components/ui/Icon'
 import { Btn, DetailHeader, Skel } from '../../components/tab/kit'
+import { FeedVisibilitySheet } from './FeedVisibilitySheet'
 
 interface Audience { hiddenFromFeed: boolean; published: boolean }
 
 /**
  * ST-22 — one switch that removes the student from the employer feed. Hiding
- * never deletes and never disconnects, and the screen says so — no confirm
- * dialog, no danger zone, no crimson. Until a video resume is published the
+ * never deletes and never disconnects, and the screen says so — no danger zone,
+ * no crimson. Either direction asks first, in a plain ink sheet
+ * (FeedVisibilitySheet), so a stray tap never moves the student in or out of
+ * the feed. Until a video resume is published the
  * student is not in the feed at all, so the switch shows its not-applicable
  * state. Mirrors the web VisibilityClient. Option A of
  * docs/student-receipts-privacy-mockup.html: the switch card as the hero.
@@ -22,16 +25,17 @@ export function VisibilityScreen({ onBack, onBook }: { onBack: () => void; onBoo
   const qc = useQueryClient()
   const [hidden, setHidden] = useState(false)
   const [changedAt, setChangedAt] = useState<string | null>(null)
+  const [ask, setAsk] = useState<boolean | null>(null)
 
   const q = useQuery({ queryKey: ['audience'], queryFn: () => api.get<Audience>('/students/me/audience') })
   useEffect(() => { if (q.data) setHidden(q.data.hiddenFromFeed) }, [q.data])
 
   const mut = useMutation({
     mutationFn: (next: boolean) => api.patch('/students/me/profile', { hiddenFromFeed: next }),
-    onSuccess: (_r, next) => { setChangedAt(new Date().toISOString()); qc.invalidateQueries({ queryKey: ['audience'] }); void next },
-    onError: () => { if (q.data) setHidden(q.data.hiddenFromFeed) },
+    onSuccess: (_r, next) => { setHidden(next); setAsk(null); setChangedAt(new Date().toISOString()); qc.invalidateQueries({ queryKey: ['audience'] }) },
   })
-  const toggle = (next: boolean) => { setHidden(next); mut.mutate(next) }
+  // The switch and the button only ask; the sheet's confirm saves. `next` is the hidden value.
+  const toggle = (next: boolean) => { mut.reset(); setAsk(next) }
 
   const frame = (child: React.ReactNode) => (
     <View style={[styles.page, { paddingTop: insets.top }]}><DetailHeader title="Visibility" onBack={onBack} />{child}</View>
@@ -42,6 +46,7 @@ export function VisibilityScreen({ onBack, onBook }: { onBack: () => void; onBoo
   }
   const aud = q.data ?? { hiddenFromFeed: false, published: false }
   const err = mut.isError ? 'Could not change your visibility. Try again.' : null
+  const sheet = <FeedVisibilitySheet hide={ask} busy={mut.isPending} error={err} onConfirm={(next) => mut.mutate(next)} onClose={() => setAsk(null)} />
 
   if (!aud.published) {
     return frame(
@@ -61,7 +66,7 @@ export function VisibilityScreen({ onBack, onBook }: { onBack: () => void; onBoo
     )
   }
 
-  return frame(
+  return frame(<>{
     hidden ? (
       <ScrollView contentContainerStyle={styles.body}>
         <Text accessibilityRole="header" style={styles.h}>You are hidden.</Text>
@@ -80,9 +85,8 @@ export function VisibilityScreen({ onBack, onBook }: { onBack: () => void; onBoo
           <Text style={styles.eyebrow}>What did not change</Text>
           <Facts items={['Your video resume is intact, exactly where it was.', 'Your connections stand.', 'Your chats are open, and those employers can still reach you.']} />
         </View>
-        {err ? <View style={styles.banner}><Text style={styles.bannerText}>{err}</Text></View> : null}
         <View style={styles.group}>
-          <Btn variant="primary" busy={mut.isPending} label="Show me in the feed again" onPress={() => toggle(false)} style={styles.big} />
+          <Btn variant="primary" disabled={mut.isPending} label="Show me in the feed again" onPress={() => toggle(false)} style={styles.big} />
           <Text style={styles.metaCentre}>You are back in the feed the moment you tap it.</Text>
         </View>
       </ScrollView>
@@ -102,10 +106,9 @@ export function VisibilityScreen({ onBack, onBook }: { onBack: () => void; onBoo
           <Facts items={['Your video resume is untouched. Turning this off never deletes it.', 'Your existing connections stand.', 'Chats you are already in carry on, and those employers can still reach you.', 'Turn it back on whenever you like. Nothing is lost in between.']} />
         </View>
         <Text style={styles.meta}>Takes effect immediately</Text>
-        {err ? <View style={styles.banner}><Text style={styles.bannerText}>{err}</Text></View> : null}
       </ScrollView>
-    ),
-  )
+    )
+  }{sheet}</>)
 }
 
 /** The mockup's 52x30 switch: green when on, sunken grey when off, dimmed when not applicable. */
@@ -142,7 +145,7 @@ function fmtWhen(iso: string): string {
   const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
   const h = d.getUTCHours(); const m = d.getUTCMinutes()
   const h12 = h % 12 === 0 ? 12 : h % 12
-  return `${d.getUTCDate()} ${MON[d.getUTCMonth()]} ${d.getUTCFullYear()}, ${h12}:${String(m).padStart(2, '0')} ${h < 12 ? 'am' : 'pm'}`
+  return `${d.getUTCDate()} ${MON[d.getUTCMonth()]} ${d.getUTCFullYear()}, ${h12}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`
 }
 
 const styles = StyleSheet.create({
@@ -158,16 +161,14 @@ const styles = StyleSheet.create({
   gapTop: { marginTop: 12 },
   p: { fontFamily: FF.body, fontSize: 14, lineHeight: 21, color: color.textMuted },
   pDark: { fontFamily: FF.body, fontSize: 14, lineHeight: 21, color: color.text },
-  meta: { fontFamily: FF.monoMedium, fontSize: 11.5, letterSpacing: 0.46, color: color.textSubtle },
-  metaCentre: { fontFamily: FF.monoMedium, fontSize: 11.5, letterSpacing: 0.46, color: color.textSubtle, textAlign: 'center' },
-  eyebrow: { fontFamily: FF.monoMedium, fontSize: 11, letterSpacing: 1.54, textTransform: 'uppercase', color: color.textMuted },
+  meta: { fontFamily: FF.bodyMedium, fontSize: fontSize['meta-base'], color: color.textSubtle },
+  metaCentre: { fontFamily: FF.bodyMedium, fontSize: fontSize['meta-base'], color: color.textSubtle, textAlign: 'center' },
+  eyebrow: { fontFamily: FF.bodyMedium, fontSize: fontSize['meta-md'], color: color.textMuted },
   group: { gap: 10 },
   facts: { gap: 10 },
   fact: { flexDirection: 'row', gap: 10 },
   tick: { marginTop: 3 },
   factText: { flex: 1, fontFamily: FF.body, fontSize: 14.5, lineHeight: 21, color: color.text },
-  banner: { backgroundColor: color.dangerSoft, borderWidth: borderWidth.thin, borderColor: color.dangerBorder, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 14 },
-  bannerText: { fontFamily: FF.body, fontSize: 14, lineHeight: 20, color: color.danger },
   big: { height: 52 },
   track: { width: 52, height: 30, borderRadius: 15, backgroundColor: color.surfaceSunken },
   trackOn: { backgroundColor: color.successFill },

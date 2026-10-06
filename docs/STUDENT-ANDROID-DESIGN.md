@@ -329,3 +329,37 @@ The user picked direction A of `docs/feed-details-mockups.html` for both persona
   - White status-bar icons after going from Home to Jobs.
   - The details sheet, loaded and complete.
 - **Not verified:** the employer side; see EMPLOYER-ANDROID-DESIGN.md.
+
+## Résumé upload (ST-35, 2026-10-05)
+
+The documents step's résumé field did `patch({ __pickResume })`, which nothing read, so a student could not upload a résumé in the app. Built with existing components and tokens only.
+
+- **`lib/profile/upload.ts`:** pick (`@react-native-documents/picker`, required lazily, `mode: 'import'`), check against `/config` `uploads.RESUME` / `DOCUMENT` (the web's sentences), presign and send with `uploadMedia`, with progress and Cancel (`useProfileUpload`). It also holds the documents-step body helpers: `withResume` swaps the résumé in place, because the server now refuses a second one.
+- **Documents step (wizard and Edit sheet):** shows the résumé with Replace résumé / Remove, each certificate with Remove, and Add a certificate. The rule line under each is the server's label. The old hard-coded "PDF, DOC or DOCX." is gone.
+- **Profile page → Documents:** the résumé has its own row with View (`GET /students/me/documents/:id`, the same file employers download), Replace and Remove. Remove asks first, in the Videos screen's sheet pattern. Certificates have View. With no résumé, the row shows "Add a résumé". Each action saves the whole step body, so the other files and the links are kept.
+- **Edit sheet errors** now show the refused field's own sentence, not "Some fields need attention."
+- **Still stubbed:** the qualification document (`__pickDoc`) and the photo. The same hook can serve them.
+- **Not verified:** not run on a device. The picker, the content:// read and the PUT were exercised only through mocks (`__tests__/profileDocuments.test.tsx`).
+
+## APK enhancements (2026-10-05)
+
+Requested by the user after testing. Existing components and tokens only; no new design.
+
+- **Chat thread:** the composer sat a full system inset above the floating tab bar (the thread padded `insets.bottom` and the bar padded it again). The thread no longer pads; the bar clears the home indicator.
+- **Pinned chats:** a long press on a Chats row opens a small popup (`PopoverMenu`, `components/ui/overlay.tsx`) with Pin chat / Unpin chat. Pinned rows sit first (newest pin on top) and carry a pushpin glyph (`Icon` `pushpin`). Saved on the server per person (`PUT/DELETE /students/me/messages/:id/pin`, `ThreadDto.pinnedAt`); the employer never sees it. Optimistic; a failure says so above the list.
+- **Connections:** Withdraw · Block moved off the live card into a ⋯ popup next to the company name (`PopoverMenu`). Withdraw now asks first (`ConfirmSheet`); Block keeps its consequences sheet. The archived card is unchanged.
+- **Confirmations** (`ConfirmSheet` in `components/tab/kit.tsx` — the Remove-video sheet's shape): Decline an Interest (states the cooldown from `/config`), the "Live in employer feeds" switch on Home, Visibility and Videos, both directions (`screens/profile/FeedVisibilitySheet.tsx`, ink, in the Visibility screen's own words), remove a saved job, remove a role / résumé / certificate in the wizard, and Leave during a live interview.
+- **Sign out:** red text, red hairline and the out glyph on the Account card (also red on employer and interviewer).
+- **Stats (ST-48):** rebuilt as analytics from real counts only: all-time views with a 30-day views-per-day column chart (`viewsByDay`, new on `/students/me/audience`, counted daily only from the day the backend ships), shortlists and open Interests tiles, Interests per week (8 rolling weeks) with outcome counts and a "you replied to X of Y" meter, applications by current status, and profile strength. One hue for every bar; tap a bar to read its day or week. Still no company names anywhere.
+- **Backend needed:** apostrophe-admin must be deployed with the app for pins and the daily views (new `profileViewDays` collection, in the deletion manifest).
+- **Not verified:** none of this has been run on a device. tsc and eslint (no errors) pass; Jest passes except the pre-existing `App.test.tsx` vision-camera failure.
+
+## UI pass 2026-10-06 — labels, chat A, registration C, late join
+
+Picked by the product owner from `docs/label-font-mockups.html` (A · Geist), `docs/chat-redesign-mockups.html` (A), `docs/registration-mockups.html` (C) and `docs/late-join-mockups.html` (red fill).
+
+- **Labels:** no more Geist Mono capitals. The meta face is Geist (tokens `fontFamilyNative.mono*` now name Geist files), meta/eyebrow tracking is 0, meta sizes went up (xs 11, sm 12, md 12.5, base 13), `text.meta*` are normal case with tabular digits. Hand-typed capitals were rewritten in sentence case across the app. Kept in capitals on purpose: initials, references (`IV-…`, `PAY-…`), file types, and the big tilted swipe stamps on the feeds.
+- **Chat (A):** one row, plate, bubble, composer and header for every persona (`src/components/chat/*`, `src/lib/chat/useChatThread.ts`). Search on every list; students can send files; image thumbnails; older messages page in; the Recording pill no longer hides the menu; chat hours from `/config`.
+- **Registration (C):** violet brand band + white form sheet (`src/components/auth/kit.tsx`). Student sign-up asks for a password (email therefore required), city from `/config`, tier prices/lengths only from `/config`, no Google button; the code screen reads length, expiry, resend and limits from `/config`.
+- **Late join:** `src/lib/interviews/late.ts` + `LateJoin.tsx`. On every Join card: "Late · N min", a negative timer, "join closes in", the other side's presence; red fill from the admin's `booking.lateRedMinutes`. The made-up "Your interviewer is in the room, waiting" banner is gone.
+- **Not verified on a device.** tsc clean, eslint 0 errors, jest 86/86 (App.test.tsx vision-camera failure as before).

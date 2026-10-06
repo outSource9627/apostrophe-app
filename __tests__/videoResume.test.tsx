@@ -145,7 +145,7 @@ describe('VideoResumeScreen', () => {
     const { texts, players } = await render(film({ status: 'UNPUBLISHED', reason: 'Contains another person’s details.' }))
     expect(players).toHaveLength(0)
     expect(texts).toContain('Your film has been taken down')
-    expect(texts).toContain('REASON GIVEN')
+    expect(texts).toContain('Reason given')
     expect(texts).toContain('Contains another person’s details.')
   })
 

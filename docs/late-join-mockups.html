@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Late Join Warning</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FAFAFC; --surface:#fff; --muted:#F1F3F7; --sunken:#E6E8EE;
+    --text:#0B0F1A; --text2:#3A4256; --text3:#6B7385; --text4:#8A91A2;
+    --border:#E3E6ED; --border-strong:#C9CED9;
+    --accent:#5B3DF5; --accent-text:#4A2FE0; --accent-soft:#EFEBFF; --accent-muted:#C4B8FF;
+    --ink:#0B0F1A; --ink-raised:#151B2B; --ink-deep:#07090F;
+    --on:#fff; --on-muted:#C9CED9; --on-body:#A6ACBA; --on-subtle:#8A91A2; --glass:rgba(255,255,255,.12); --hair:rgba(255,255,255,.12);
+    --ok:#0B7A55; --ok-fill:#0E9F6E; --ok-soft:#E6F7F0; --ok-on:#6EE7B7;
+    --warn:#935F00; --warn-soft:#FFF5E1; --warn-edge:#F5E2B8; --warn-strong:#E8C77A; --warn-on:#FCC96B; --warn-on-soft:rgba(252,201,107,.14);
+    --danger:#C22A30; --danger-fill:#E5484D; --danger-soft:#FDECEC; --danger-border:#F2B8BA; --danger-on:#FF8A8E; --danger-on-soft:rgba(229,72,77,.16);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Geist',system-ui,sans-serif;background:#E9EAF2;color:var(--text);padding:36px 24px 90px}
+  button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+  .num{font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1}
+  .wrap{max-width:1360px;margin:0 auto}
+  .intro{background:var(--surface);border:1px solid var(--border);border-radius:28px;padding:28px 32px;margin-bottom:16px}
+  .intro h1{font-size:30px;letter-spacing:-.035em;line-height:1.1}
+  .intro p{font-size:16px;color:var(--text3);margin-top:8px;line-height:1.5;max-width:1000px}
+  .rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px;margin-top:16px}
+  .rules div{background:var(--muted);border-radius:16px;padding:12px 14px;font-size:13.5px;line-height:1.5;color:var(--text2)}
+  .rules b{display:block;font-size:14px;color:var(--text);margin-bottom:2px}
+  .bar{position:sticky;top:10px;z-index:50;display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px}
+  .seg{display:flex;flex-wrap:wrap;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:22px;padding:4px;box-shadow:0 8px 24px rgba(11,15,26,.08)}
+  .seg button{padding:8px 13px;border-radius:99px;font-size:14px;font-weight:600;color:var(--text3);white-space:nowrap}
+  .seg button.on{background:var(--accent);color:#fff}
+  .seg .lab{font-size:12.5px;font-weight:500;color:var(--text4);padding:9px 6px 0 10px}
+  .section{background:var(--surface);border:1px solid var(--border);border-radius:28px;padding:24px 26px;margin-bottom:18px}
+  .section h2{font-size:22px;letter-spacing:-.03em;margin-bottom:4px}
+  .section .sub{font-size:14.5px;color:var(--text3);margin-bottom:16px}
+  .grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;align-items:start}
+  @media (max-width:1200px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  .cap{font-size:13px;color:var(--text3);margin:0 0 8px 4px}.cap b{color:var(--text);font-weight:600}
+  .lbl{font-size:12.5px;font-weight:500;color:var(--text3);line-height:1.35}
+
+  /* surfaces */
+  .phone{background:var(--bg);border:1px solid var(--border);border-radius:26px;padding:14px;display:grid;gap:12px}
+  .phone.dark{background:var(--ink-deep);border-color:#000;color:#fff}
+  .ink{background:var(--ink);color:#fff;border-radius:24px;padding:18px;display:grid;gap:12px;border:1.5px solid transparent;transition:.2s}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:14px;display:grid;gap:10px;border-left-width:1px;transition:.2s}
+  .row{display:flex;align-items:center;gap:10px}
+  .sp{justify-content:space-between}
+  .grow{flex:1;min-width:0}
+  .pill{display:inline-flex;align-items:center;gap:6px;border-radius:99px;padding:4px 10px;font-size:12.5px;font-weight:600;white-space:nowrap}
+  .pill i{width:7px;height:7px;border-radius:99px;background:currentColor}
+  .pill.glass{background:var(--glass);color:#fff}
+  .pill.acc{background:var(--accent-soft);color:var(--accent-text)}
+  .pill.ok{background:var(--ok-soft);color:var(--ok)}
+  .pill.warn{background:var(--warn-soft);color:var(--warn)}
+  .pill.red{background:var(--danger-soft);color:var(--danger)}
+  .pill.warn-on{background:var(--warn-on-soft);color:var(--warn-on)}
+  .pill.red-on{background:var(--danger-on-soft);color:var(--danger-on)}
+  .pill.ok-on{background:rgba(110,231,183,.14);color:var(--ok-on)}
+  .t1{font-size:22px;font-weight:700;letter-spacing:-.03em;line-height:1.15}
+  .t2{font-size:16px;font-weight:600;letter-spacing:-.01em}
+  .sub2{font-size:13.5px;color:var(--on-body);line-height:1.45}
+  .sub3{font-size:13.5px;color:var(--text3);line-height:1.45}
+  .clock{font-size:34px;font-weight:600;letter-spacing:-.02em;line-height:1}
+  .btn{height:44px;border-radius:14px;font-weight:700;font-size:15px;display:inline-flex;align-items:center;justify-content:center;padding:0 14px;gap:6px;white-space:nowrap}
+  .btn.white{background:#fff;color:var(--ink)}.btn.ghost-on{background:var(--glass);color:#fff}
+  .btn.pri{background:var(--accent);color:#fff}.btn.out{border:1.5px solid var(--border-strong);background:#fff}
+  .btn.red{background:var(--danger-fill);color:#fff}
+  .btn.sm{height:36px;font-size:14px;border-radius:12px;padding:0 14px}
+  .band{display:flex;align-items:center;gap:8px;border-radius:12px;padding:9px 12px;font-size:13.5px;font-weight:600;line-height:1.35}
+  .band small{font-weight:500;opacity:.9}
+  .band.warn{background:var(--warn-soft);color:var(--warn);border:1px solid var(--warn-edge)}
+  .band.red{background:var(--danger-soft);color:var(--danger);border:1px solid var(--danger-border)}
+  .band.warn-on{background:var(--warn-on-soft);color:var(--warn-on);border:1px solid rgba(252,201,107,.3)}
+  .band.red-on{background:var(--danger-on-soft);color:var(--danger-on);border:1px solid rgba(255,138,142,.35)}
+  .band.ok-on{background:rgba(110,231,183,.12);color:var(--ok-on);border:1px solid rgba(110,231,183,.25)}
+  .band.ok{background:var(--ok-soft);color:var(--ok)}
+  .band.mut{background:var(--muted);color:var(--text2)}
+  .band.mut-on{background:var(--glass);color:var(--on-muted)}
+  .presence{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500}
+  .presence i{width:8px;height:8px;border-radius:99px;flex:none}
+  .drain{height:4px;border-radius:99px;background:rgba(255,255,255,.14);overflow:hidden}.drain i{display:block;height:100%;border-radius:99px}
+  .drain.l{background:var(--sunken)}
+  /* red treatments */
+  .ink.red-tint{background:linear-gradient(180deg,#3a1418 0%,#1d0d10 100%);border-color:rgba(255,138,142,.45)}
+  .ink.red-line{border-color:var(--danger-fill);box-shadow:0 0 0 3px rgba(229,72,77,.25)}
+  .card.red-tint{background:var(--danger-soft);border-color:var(--danger-border)}
+  .card.red-line{border-color:var(--danger-fill);border-left-width:4px;box-shadow:0 0 0 3px rgba(229,72,77,.12)}
+  .card.warn-line{border-color:var(--warn-strong);border-left-width:4px}
+  .ink.warn-line{border-color:rgba(252,201,107,.55)}
+  /* room */
+  .room{background:var(--ink-deep);border-radius:26px;overflow:hidden;color:#fff;position:relative;height:430px}
+  .room .feed{position:absolute;inset:0;background:radial-gradient(ellipse 60% 55% at 50% 38%,#3b4157 0%,#1f2435 55%,#121622 100%)}
+  .room .top{position:absolute;top:14px;left:14px;right:14px;display:flex;justify-content:space-between}
+  .room .glass2{display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 12px;border-radius:99px;background:rgba(11,15,26,.6);border:1px solid var(--hair);font-size:13px;font-weight:600}
+  .room .wait{position:absolute;left:14px;right:14px;bottom:14px;background:rgba(11,15,26,.85);border:1px solid var(--hair);border-radius:16px;padding:14px;display:grid;gap:8px;text-align:center}
+  /* web */
+  .web{border:1px solid var(--border-strong);border-radius:14px;overflow:hidden;background:#fff}
+  .chrome{height:32px;background:#F1F3F7;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px;padding:0 12px}
+  .chrome i{width:10px;height:10px;border-radius:99px;background:#D7DAE2}
+  .wbody{padding:20px;display:grid;gap:14px;background:var(--bg)}
+  .table{background:#fff;border:1px solid var(--border);border-radius:16px;overflow:hidden}
+  .tr{display:grid;grid-template-columns:1.5fr 1.2fr 1.4fr 1fr;gap:12px;align-items:center;padding:12px 16px;border-top:1px solid var(--border);font-size:14px;transition:.2s;border-left:4px solid transparent}
+  .tr:first-child{border-top:0}
+  .tr.head{background:var(--muted)}
+  .tr.red-tint{background:var(--danger-soft)}
+  .tr.red-line{border-left-color:var(--danger-fill)}
+  .tr.warn-line{border-left-color:var(--warn-strong)}
+  .notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+  .note{background:var(--muted);border-radius:18px;padding:16px 18px}
+  .note h4{font-size:13px;font-weight:700;color:var(--accent-text);margin-bottom:8px}
+  .note ul{padding-left:18px;font-size:13.5px;line-height:1.55;color:var(--text2)}
+  .note li{margin-bottom:5px}
+  .st{display:inline-block;font-size:11.5px;font-weight:600;border-radius:99px;padding:1px 8px;white-space:nowrap;margin-right:4px}
+  .st.real{background:var(--ok-soft);color:var(--ok)}.st.app{background:var(--accent-soft);color:var(--accent-text)}.st.need{background:var(--warn-soft);color:var(--warn)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="intro">
+    <h1>Late join — warning, negative timer and red cards</h1>
+    <p>Wherever a Join option is shown, once the scheduled start has passed and you haven't joined, the card says how late you are and the clock runs below zero (−02:14). After 5 minutes it turns red. The card also says whether the other side is in the room. Drawn for the student and the interviewer, on the app and the web, in Geist with normal-case labels. Switch the state in the bar; the red treatment has two options.</p>
+    <div class="rules">
+      <div><b>Before the start</b>Join open: “Starts in 04:12”, as today.</div>
+      <div><b>0–5 min late (amber)</b>“You're 2 min late”, the clock at −02:14, and when Join closes.</div>
+      <div><b>Over 5 min late (red)</b>The whole card turns red; the clock and the close time stay.</div>
+      <div><b>The other side</b>“Interviewer is in the room” / “Interviewer not in yet · 3 min late”. Student sees no name — the interviewer stays unnamed until the session starts.</div>
+    </div>
+  </header>
+
+  <div class="bar">
+    <div class="seg" id="states"></div>
+    <div class="seg" id="red"></div>
+    <div class="seg" id="other"></div>
+  </div>
+
+  <div id="root"></div>
+</div>
+
+<script>
+// Sample interview: 4:00 PM slot, 30 minutes; join closes 15 min after the start (booking.noShowMinutesAfter, an admin setting).
+const CLOSE_MIN = 15, RED_MIN = 5
+const STATES = {
+  before:{ label:'Before start', late:-252 },   // 4:12 to go
+  late2:{ label:'2 min late', late:134 },
+  late6:{ label:'6 min late', late:365 },
+}
+const S = { st:'late2', red:'tint', other:'in' }
+const fmt = (s)=>`${String(Math.floor(Math.abs(s)/60)).padStart(2,'0')}:${String(Math.abs(s)%60).padStart(2,'0')}`
+
+function info(){
+  const late = STATES[S.st].late
+  const isLate = late > 0, isRed = late >= RED_MIN*60
+  const mins = Math.max(1, Math.floor(late/60))
+  return { late, isLate, isRed, mins, clock: isLate ? `−${fmt(late)}` : fmt(-late), closesIn: fmt(CLOSE_MIN*60 - Math.max(0,late)) }
+}
+const redCls = (base)=>{ const i = info(); return i.isRed ? `${base} red-${S.red}` : i.isLate ? `${base} warn-line` : base }
+const clockI = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex:none"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>'
+
+/* "the other side" line. who = 'Interviewer' | 'Riya'; onInk = dark card */
+function other(who, onInk){
+  const i = info()
+  if (S.other==='in') return `<div class="presence" style="color:${onInk?'var(--ok-on)':'var(--ok)'}"><i style="background:${onInk?'var(--ok-on)':'var(--ok-fill)'}"></i>${who} is in the room, waiting</div>`
+  if (!i.isLate) return `<div class="presence" style="color:${onInk?'var(--on-body)':'var(--text3)'}"><i style="background:${onInk?'var(--on-subtle)':'var(--text4)'}"></i>${who} not in yet</div>`
+  const red = i.isRed
+  return `<div class="presence" style="color:${red?(onInk?'var(--danger-on)':'var(--danger)'):(onInk?'var(--warn-on)':'var(--warn)')}"><i style="background:currentColor"></i>${who} not in yet · <span class="num">${i.mins} min late</span></div>`
+}
+/* the lateness band on a card */
+function lateBand(onInk){
+  const i = info()
+  if (!i.isLate) return ''
+  const tone = i.isRed ? (onInk?'red-on':'red') : (onInk?'warn-on':'warn')
+  return `<div class="band ${tone}">${clockI}<span class="grow">You're <span class="num">${i.mins} min</span> late <small>· join closes in <span class="num">${i.closesIn}</span></small></span></div>`
+}
+function bigClock(onInk){
+  const i = info()
+  const c = i.isRed ? (onInk?'var(--danger-on)':'var(--danger)') : i.isLate ? (onInk?'var(--warn-on)':'var(--warn)') : (onInk?'#fff':'var(--text)')
+  return `<div><div class="lbl" style="color:${onInk?'var(--on-body)':'var(--text3)'}">${i.isLate?'Since the start':'Starts in'}</div><div class="clock num" style="color:${c}">${i.clock}</div></div>`
+}
+function drain(onInk){
+  const i = info(); if (!i.isLate) return ''
+  const left = Math.max(0, 1 - i.late/(CLOSE_MIN*60))
+  return `<div class="drain${onInk?'':' l'}"><i style="width:${left*100}%;background:${i.isRed?(onInk?'var(--danger-on)':'var(--danger-fill)'):(onInk?'var(--warn-on)':'var(--warn-strong)')}"></i></div>`
+}
+const pillTone = (onInk)=>{ const i = info(); return i.isRed ? (onInk?'red-on':'red') : i.isLate ? (onInk?'warn-on':'warn') : (onInk?'glass':'acc') }
+const pillText = ()=>{ const i = info(); return i.isRed ? `<i></i>Late · ${i.mins} min` : i.isLate ? `<i></i>Late · ${i.mins} min` : 'Join open' }
+
+/* ── student app ── */
+const sHome = ()=>`<div class="phone"><div class="lbl" style="padding:0 4px">Home</div>
+  <div class="${redCls('ink')}">
+    <div class="row sp"><span class="pill ${pillTone(true)}">${pillText()}</span><span class="lbl" style="color:var(--on-body)">Today · 4:00 PM</span></div>
+    <div class="row sp" style="align-items:flex-end"><div><div class="t1">Your interview</div><div class="sub2">30-minute interview · IST</div></div>${bigClock(true)}</div>
+    ${drain(true)}
+    ${lateBand(true)}
+    ${other('Interviewer', true)}
+    <div class="row"><span class="btn ${info().isRed?'red':'white'} grow">Join interview</span><span class="btn ghost-on">Test setup</span></div>
+  </div></div>`
+const sList = ()=>`<div class="phone"><div class="lbl" style="padding:0 4px">Interviews</div>
+  <div class="${redCls('card')}">
+    <div class="row sp"><span class="t2">Today · 4:00 PM</span><span class="pill ${pillTone(false)}">${pillText()}</span></div>
+    <div class="sub3">30-minute interview · Tier 2 · Sales</div>
+    ${lateBand(false)}
+    ${other('Interviewer', false)}
+    <div class="row sp"><span class="num" style="font-size:15px;font-weight:600;color:${info().isRed?'var(--danger)':info().isLate?'var(--warn)':'var(--text)'}">${info().isLate?`−${fmt(info().late)}`:`Starts in ${fmt(-info().late)}`}</span><span class="btn ${info().isRed?'red':'pri'} sm">Join interview</span></div>
+  </div>
+  <div class="card" style="opacity:.8"><div class="row sp"><span class="t2">Thu 9 Oct · 11:00 AM</span><span class="pill" style="background:var(--muted);color:var(--text2)">Booked</span></div><div class="sub3">Join opens 10 min before</div></div>
+  </div>`
+const sDetail = ()=>`<div class="phone"><div class="lbl" style="padding:0 4px">Interview details</div>
+  <div class="${redCls('ink')}">
+    <div class="row sp"><span class="pill ${pillTone(true)}">${pillText()}</span><span class="lbl" style="color:var(--on-body)">Closes 4:15 PM</span></div>
+    ${bigClock(true)}
+    ${drain(true)}
+    ${lateBand(true)}
+    ${other('Interviewer', true)}
+    <span class="btn ${info().isRed?'red':'white'}">Join interview</span>
+    <span class="btn ghost-on">Run the device check</span>
+  </div></div>`
+const sRoom = ()=>{ const i = info()
+  const waitTone = S.other==='in' ? '' : i.isRed ? 'red-on' : i.isLate ? 'warn-on' : 'mut-on'
+  return `<div class="room"><div class="feed"></div>
+  <div class="top"><span class="glass2">Not recording yet</span><span class="glass2 num">30:00</span></div>
+  <div class="wait">
+    <div class="t2">${S.other==='in' ? 'Starting…' : 'Waiting for your interviewer'}</div>
+    ${S.other==='in' ? '<div class="sub2">Your interviewer is here — the session starts in a moment.</div>' : `<div class="band ${waitTone}" style="justify-content:center">${clockI}<span>${i.isLate?`Interviewer not in yet · <span class="num">${i.mins} min late</span>`:'Interviewer not in yet'}</span></div>`}
+    ${S.other!=='in' && i.isRed ? `<div class="sub2">If they haven't joined by 4:15 PM, it's settled as their no-show and you can rebook free, ahead of the queue.</div>` : '<div class="sub2">The clock and the recording start when you are both in.</div>'}
+  </div></div>` }
+
+/* ── interviewer app ── */
+const iHome = ()=>`<div class="phone"><div class="lbl" style="padding:0 4px">Home · next session</div>
+  <div class="${redCls('ink')}">
+    <div class="row sp"><span class="lbl" style="color:var(--on-body)">Next · 4:00 PM</span><span class="pill ${pillTone(true)}">${pillText()}</span></div>
+    <div class="row sp" style="align-items:flex-end"><div><div class="t1">Riya Sharma</div><div class="sub2">Tier 2 · Sales · 30 min</div></div>${bigClock(true)}</div>
+    ${drain(true)}
+    ${lateBand(true)}
+    ${other('Riya', true)}
+    <span class="btn ${info().isRed?'red':'white'}">Join room</span>
+  </div></div>`
+const iList = ()=>`<div class="phone"><div class="lbl" style="padding:0 4px">Interviews</div>
+  <div class="${redCls('card')}">
+    <div class="row sp"><div><div class="t2">Riya Sharma</div><div class="sub3">Today · 4:00 PM · Tier 2</div></div><span class="pill ${pillTone(false)}">${pillText()}</span></div>
+    ${lateBand(false)}
+    ${other('Riya', false)}
+    <div class="row sp"><span class="num" style="font-size:15px;font-weight:600;color:${info().isRed?'var(--danger)':info().isLate?'var(--warn)':'var(--text)'}">${info().isLate?`−${fmt(info().late)}`:`Starts in ${fmt(-info().late)}`}</span><span class="btn ${info().isRed?'red':'pri'} sm">Join</span></div>
+  </div></div>`
+const iRoom = ()=>{ const i = info()
+  const waitTone = S.other==='in' ? '' : i.isRed ? 'red-on' : i.isLate ? 'warn-on' : 'mut-on'
+  return `<div class="room"><div class="feed"></div>
+  <div class="top"><span class="glass2">Not recording yet</span><span class="glass2 num">30:00</span></div>
+  <div class="wait">
+    <div class="t2">${S.other==='in' ? 'Starting…' : 'Waiting for Riya to join'}</div>
+    ${S.other==='in' ? '<div class="sub2">Riya is here — the session starts in a moment.</div>' : `<div class="band ${waitTone}" style="justify-content:center">${clockI}<span>${i.isLate?`Riya not in yet · <span class="num">${i.mins} min late</span>`:'Riya not in yet'}</span></div>`}
+    <div class="sub2">${S.other!=='in' && i.isLate ? `Join closes at 4:15 PM. If she hasn't joined by then, it's settled as a student no-show.` : 'The clock and the recording start when you are both in.'}</div>
+  </div></div>` }
+
+/* ── web ── */
+const wStudent = ()=>`<div class="web"><div class="chrome"><i></i><i></i><i></i></div><div class="wbody">
+  <div class="lbl">Student · interview details</div>
+  <div class="${redCls('ink')}" style="padding:24px">
+    <div class="row sp"><span class="pill ${pillTone(true)}">${pillText()}</span><span class="lbl" style="color:var(--on-body)">Today · 4:00 PM · closes 4:15 PM</span></div>
+    <div class="row sp" style="align-items:flex-end"><div><div class="t1" style="font-size:26px">Your interview</div><div class="sub2">30-minute interview · Tier 2 · Sales</div></div>${bigClock(true)}</div>
+    ${drain(true)}
+    <div class="row" style="gap:16px;align-items:center"><div class="grow">${lateBand(true) || other('Interviewer', true)}</div></div>
+    ${info().isLate ? other('Interviewer', true) : ''}
+    <div class="row"><span class="btn ${info().isRed?'red':'white'}">Join interview</span><span class="btn ghost-on">Run the device check</span></div>
+  </div></div></div>`
+const wInterviewer = ()=>`<div class="web"><div class="chrome"><i></i><i></i><i></i></div><div class="wbody">
+  <div class="lbl">Interviewer · home and interviews</div>
+  <div class="${redCls('ink')}" style="padding:22px">
+    <div class="row sp"><span class="lbl" style="color:var(--on-body)">Next session · 4:00 PM</span><span class="pill ${pillTone(true)}">${pillText()}</span></div>
+    <div class="row sp" style="align-items:flex-end"><div><div class="t1">Riya Sharma</div><div class="sub2">Tier 2 · Sales · 30 min</div></div>${bigClock(true)}</div>
+    ${drain(true)}
+    <div class="row" style="gap:12px"><div class="grow">${lateBand(true) || other('Riya', true)}</div><span class="btn ${info().isRed?'red':'white'}">Join room</span></div>
+    ${info().isLate ? other('Riya', true) : ''}
+  </div>
+  <div class="table">
+    <div class="tr head"><span class="lbl">Candidate</span><span class="lbl">Slot</span><span class="lbl">Status</span><span class="lbl"></span></div>
+    <div class="${redCls('tr')}"><span style="font-weight:600">Riya Sharma</span><span class="num">Today · 4:00 PM</span><span class="row" style="gap:8px"><span class="pill ${pillTone(false)}">${pillText()}</span><span class="num" style="font-weight:600;color:${info().isRed?'var(--danger)':info().isLate?'var(--warn)':'var(--text3)'}">${info().isLate?`−${fmt(info().late)}`:`in ${fmt(-info().late)}`}</span></span><span style="text-align:right"><span class="btn ${info().isRed?'red':'pri'} sm">Join</span></span></div>
+    <div class="tr"><span style="font-weight:600">Aman Verma</span><span class="num">Thu 9 Oct · 11:00 AM</span><span><span class="pill" style="background:var(--muted);color:var(--text2)">Booked</span></span><span></span></div>
+  </div></div></div>`
+
+function render(){
+  document.getElementById('states').innerHTML = `<span class="lab">State</span>` + Object.entries(STATES).map(([k,v])=>`<button class="${S.st===k?'on':''}" data-st="${k}">${v.label}</button>`).join('')
+  document.getElementById('red').innerHTML = `<span class="lab">Red card</span><button class="${S.red==='tint'?'on':''}" data-red="tint">Red fill</button><button class="${S.red==='line'?'on':''}" data-red="line">Red outline</button>`
+  document.getElementById('other').innerHTML = `<span class="lab">Other side</span><button class="${S.other==='in'?'on':''}" data-o="in">In the room</button><button class="${S.other==='out'?'on':''}" data-o="out">Not in yet</button>`
+  document.getElementById('root').innerHTML = `
+  <section class="section"><h2>Student · app</h2><p class="sub">Home card, Interviews list, Interview details, and the room while waiting.</p>
+    <div class="grid"><div><div class="cap"><b>Home</b> · next interview</div>${sHome()}</div><div><div class="cap"><b>Interviews</b> · list row</div>${sList()}</div><div><div class="cap"><b>Details</b> · join card</div>${sDetail()}</div><div><div class="cap"><b>Room</b> · you're in, waiting</div>${sRoom()}</div></div></section>
+  <section class="section"><h2>Interviewer · app</h2><p class="sub">Home next-session card, Interviews list, and the room lobby.</p>
+    <div class="grid"><div><div class="cap"><b>Home</b> · next session</div>${iHome()}</div><div><div class="cap"><b>Interviews</b> · list row</div>${iList()}</div><div><div class="cap"><b>Room</b> · you're in, waiting</div>${iRoom()}</div><div></div></div></section>
+  <section class="section"><h2>Web</h2><p class="sub">The same cards on the student's interview page and the interviewer's home and list.</p>
+    <div class="grid" style="grid-template-columns:repeat(2,minmax(0,1fr))"><div>${wStudent()}</div><div>${wInterviewer()}</div></div></section>
+  <section class="section"><h2>Data behind it</h2>
+    <div class="notes">
+      <div class="note"><h4>Already there</h4><ul>
+        <li><span class="st real">Real</span>Minutes since the start and the negative clock — from the slot time.</li>
+        <li><span class="st real">Real</span>When Join closes — the admin's “mark a no-show after” setting (15 min today), already sent to both apps.</li>
+        <li><span class="st real">Real</span>Session started — the interview's status.</li></ul></div>
+      <div class="note"><h4>Needs a small backend addition</h4><ul>
+        <li><span class="st need">Needs API</span>Whether <b>you</b> or <b>the other side</b> has joined. The server records it (student joined/left, interviewer joined) but never sends it; add it to the student and interviewer interview data. The student gets a yes/no only — no interviewer name.</li>
+        <li><span class="st need">Needs API</span>The 5-minute red point as an admin setting (nothing hard-coded).</li>
+        <li><span class="st need">Optional</span>An interviewer who left before the start is not recorded today; add “interviewer left at” if that should show.</li></ul></div>
+      <div class="note"><h4>Fixed along the way</h4><ul>
+        <li>“Your interviewer is in the room, waiting” is shown today on the student's details screen without any data behind it — it becomes the real line above.</li>
+        <li>Some lists freeze the time when they open, so “late” would never appear; they tick every few seconds.</li>
+        <li>The web interviewer list uses its own 10/60-minute window instead of the admin's settings.</li></ul></div>
+    </div></section>`
+}
+document.addEventListener('click', (e)=>{
+  const el = e.target.closest('[data-st],[data-red],[data-o]'); if (!el) return
+  if (el.dataset.st) S.st = el.dataset.st
+  if (el.dataset.red) S.red = el.dataset.red
+  if (el.dataset.o) S.other = el.dataset.o
+  history.replaceState(null,'',`?state=${S.st}&red=${S.red}&other=${S.other}`)
+  render()
+})
+const q = new URLSearchParams(location.search)
+if (q.get('state') && STATES[q.get('state')]) S.st = q.get('state')
+if (q.get('red')) S.red = q.get('red')
+if (q.get('other')) S.other = q.get('other')
+render()
+</script>
+</body>
+</html>

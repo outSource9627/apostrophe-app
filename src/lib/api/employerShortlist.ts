@@ -1,4 +1,5 @@
 import { api } from './index'
+import type { CandidateDocumentView } from './employerFeed'
 
 export interface EmployerJobRef {
   id: string
@@ -35,6 +36,12 @@ export interface ShortlistRow {
   tags: string[]
   jobId: string | null
   savedAt: string
+  /**
+   * ST-35 — the card's CV action. Sent only while the candidate is reachable
+   * through the feed (published, in the feed, active), which is when the
+   * document link answers for a shortlist; null otherwise.
+   */
+  resume: CandidateDocumentView | null
 }
 
 export interface ShortlistListResponse {
@@ -93,6 +100,7 @@ interface WireShortlistRow {
   jobId?: string | null
   shortlistedAt?: string
   savedAt?: string
+  resume?: CandidateDocumentView | null
 }
 
 function normalizeRow(w: WireShortlistRow): ShortlistRow {
@@ -113,6 +121,7 @@ function normalizeRow(w: WireShortlistRow): ShortlistRow {
     tags: w.tags ?? [],
     jobId: w.jobId ?? null,
     savedAt: w.shortlistedAt ?? w.savedAt ?? '',
+    resume: w.resume ?? null,
   }
 }
 

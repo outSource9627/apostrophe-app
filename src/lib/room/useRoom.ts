@@ -265,7 +265,7 @@ export function useRoom(
     setCameraOff(next)
     // While in the audio-only fallback the video stays unpublished regardless.
     if (!audioOnly.current) engine.current?.publishVideo(!next)
-    log('CAMERA', { on: !next })
+    log(next ? 'CAMERA_OFF' : 'CAMERA_ON')
   }, [cameraOff, log])
   const toggleSpeaker = useCallback(() => {
     const next = !speakerOn

@@ -105,7 +105,7 @@ describe('FeedbackScreen', () => {
 
   it('READY: draws the scorecard', async () => {
     const { texts } = await render({ interview: { feedback: 'READY' }, feedback: 'ready' })
-    expect(texts).toContain('OVERALL SCORE')
+    expect(texts).toContain('Overall score')
     expect(texts).toContain('Clear.')
   })
 

@@ -14,6 +14,7 @@ import {
   type ApplicationRow, type ApplicationStatus, type EmployerJobDetail, type JobApplicationsResponse,
 } from '../../lib/api/employerJobs'
 import { JOB_VIEW_LABEL, deadlinePassed, istDay, jobView, useJobConfig } from '../../lib/employer/jobs'
+import { useCandidateDocument } from '../../lib/employer/useCandidateDocument'
 import { employmentLabel } from '../../lib/jobs/format'
 import type { RootStackParamList } from '../../../App'
 
@@ -65,7 +66,8 @@ function countsOf(res: Pick<JobApplicationsResponse, 'counts'> | null, rows: App
  * the post's where · type · state, its title, applications · views · deadline,
  * status chips with the server's counts (ink when on), and a card per applicant
  * — face, name, city · experience · when, the video résumé mark, their note,
- * the verified interview date, and Reject / Shortlist on the card.
+ * the verified interview date, and Reject / Shortlist on the card — plus CV
+ * when they have a résumé file (ST-35), which opens it without leaving the list.
  *
  * The server's rules, as on the applicant screen: opening an applicant marks
  * an Applied one Viewed (its GET does it); the employer moves an application to
@@ -101,6 +103,7 @@ export function JobApplicationsScreen() {
   const [rejecting, setRejecting] = useState<ApplicationRow | null>(null)
   const [reason, setReason] = useState('')
   const [menu, setMenu] = useState(false)
+  const docs = useCandidateDocument()
 
   const load = useCallback(async () => {
     setError(null)
@@ -164,6 +167,14 @@ export function JobApplicationsScreen() {
     }
   }
 
+  async function openResume(row: ApplicationRow) {
+    const c = row.candidate
+    if (!c?.resume) return
+    setNotice(null)
+    const failed = await docs.open(c.id, c.resume.id)
+    if (failed) setNotice({ id: row.id, text: failed })
+  }
+
   const counts = useMemo(() => countsOf(serverCounts ? { counts: serverCounts } : null, rows ?? []), [serverCounts, rows])
   const all = ORDER.reduce((n, s) => n + counts[s], 0)
   const shown = useMemo(() => (rows ?? []).filter((r) => r.status === tab), [rows, tab])
@@ -176,7 +187,7 @@ export function JobApplicationsScreen() {
         job.remote && !/remote/i.test(job.location ?? '') ? 'Remote' : null,
         job.employmentType ? employmentLabel(job.employmentType as Parameters<typeof employmentLabel>[0]) : null,
         v ? JOB_VIEW_LABEL[v] : null,
-      ].filter(Boolean).join(' · ').toUpperCase()
+      ].filter(Boolean).join(' · ')
     : ''
   const closes = job
     ? job.applicationDeadline
@@ -264,7 +275,9 @@ export function JobApplicationsScreen() {
             row={item}
             busy={busy}
             notice={notice?.id === item.id ? notice.text : null}
+            opening={!!item.candidate?.resume && docs.opening === item.candidate.resume.id}
             onOpen={() => navigation.navigate('ApplicantDetail', { id: item.id })}
+            onResume={() => { openResume(item) }}
             onShortlist={() => { move(item, 'SHORTLISTED') }}
             onReject={() => {
               setNotice(null)
@@ -346,12 +359,15 @@ export function JobApplicationsScreen() {
 
 /** One applicant: face, name, city · experience · when, the résumé mark, the note, then the interview and the two actions. */
 function ApplicantCard({
-  row, busy, notice, onOpen, onShortlist, onReject, onChat,
+  row, busy, notice, opening, onOpen, onResume, onShortlist, onReject, onChat,
 }: {
   row: ApplicationRow
   busy: { id: string; to: 'SHORTLISTED' | 'REJECTED' } | null
   notice: string | null
+  /** The résumé's link is being fetched. */
+  opening: boolean
   onOpen: () => void
+  onResume: () => void
   onShortlist: () => void
   onReject: () => void
   onChat: () => void
@@ -412,6 +428,19 @@ function ApplicantCard({
                 </>
               )}
             </View>
+            {!!c.resume && (
+              <Button
+                variant="outline"
+                size="sm"
+                icon="download"
+                label="CV"
+                accessibilityLabel={`Download ${name}’s résumé`}
+                busy={opening}
+                hitSlop={slop}
+                onPress={onResume}
+                style={styles.btn}
+              />
+            )}
             {canReject && (
               <Button
                 variant="dangerText"

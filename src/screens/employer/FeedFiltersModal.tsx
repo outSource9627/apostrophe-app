@@ -188,7 +188,7 @@ function Group({ title, hint, children }: { title: string; hint?: string; childr
   return (
     <View style={styles.group}>
       <View style={styles.groupHead}>
-        <Text style={[text.metaSm, styles.mono, styles.muted]}>{title.toUpperCase()}</Text>
+        <Text style={[text.metaSm, styles.mono, styles.muted]}>{title}</Text>
         {!!hint && <Text style={[text.uiXs, styles.subtle]}>{hint}</Text>}
       </View>
       <View style={styles.chips}>{children}</View>
@@ -213,7 +213,7 @@ function ListGroup({
   if (all.length === 0 && chosen.length === 0 && !children) return null
   return (
     <View style={styles.group}>
-      <Text style={[text.metaSm, styles.mono, styles.muted]}>{title.toUpperCase()}</Text>
+      <Text style={[text.metaSm, styles.mono, styles.muted]}>{title}</Text>
       {all.length > SHOWN && (
         <Input value={q} onChangeText={setQ} placeholder={`Find a ${noun}`} autoCorrect={false} autoCapitalize="none" returnKeyType="search" />
       )}

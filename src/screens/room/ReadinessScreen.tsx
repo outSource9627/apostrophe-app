@@ -5,12 +5,14 @@ import { useQuery } from '@tanstack/react-query'
 import NetInfo from '@react-native-community/netinfo'
 import Video from 'react-native-video'
 import { Camera, useCameraDevice } from 'react-native-vision-camera'
-import { getReadiness, measureBandwidthMbps, postReadiness } from '../../lib/api/interviews'
+import { getInterview, getReadiness, measureBandwidthMbps, postReadiness } from '../../lib/api/interviews'
 import { fmtTime } from '../../lib/interviews/slots'
+import { LIVE_POLL_MS, lateJoin, studentLateInput, useLateRules, useTicker } from '../../lib/interviews/late'
+import { LateBand, OtherLine } from '../../lib/interviews/LateJoin'
 import { requestMediaPermissions } from '../../lib/room/agoraEngine'
 import { toneDataUri } from '../../lib/room/tone'
 import Svg, { Circle, Path, Rect } from 'react-native-svg'
-import { borderWidth, color, fontFamilyNative as FF, radius } from '../../theme'
+import { borderWidth, color, fontFamilyNative as FF, radius, space } from '../../theme'
 import { StatusPill } from '../../components/ui'
 import { Icon } from '../../components/ui/Icon'
 import { Btn, Panel, Skel, StateBlock } from '../../components/tab/kit'
@@ -28,10 +30,23 @@ import { Eyebrow, FlowFooter, FlowHeader, Lead } from '../../components/tab/flow
  * room refuses entry (READINESS_REQUIRED) until a passing one exists. The mic
  * check is grant + presence: the level is not sampled here (no audio-capture
  * module outside the Agora engine, which needs the channel App ID).
+ *
+ * Past the start, above Join: the late-join warning (lib/interviews/late.ts) —
+ * how late, when Join closes, and whether the interviewer is in the room.
  */
 export function ReadinessScreen({ id, onJoin, onBack, onPrepare }: { id: string; onJoin: () => void; onBack: () => void; onPrepare?: () => void }) {
   const insets = useSafeAreaInsets()
   const q = useQuery({ queryKey: ['readiness', id], queryFn: () => getReadiness(id) })
+  const lateRules = useLateRules()
+  const now = useTicker(true) || Date.now()
+  // The interview itself carries the session state and the presence yes/no; re-read while the window is open.
+  const ivq = useQuery({
+    queryKey: ['interview', id],
+    queryFn: () => getInterview(id),
+    refetchInterval: (query) =>
+      query.state.data && lateJoin(studentLateInput(query.state.data), lateRules, Date.now()).phase !== 'off' ? LIVE_POLL_MS : false,
+  })
+  const late = ivq.data ? lateJoin(studentLateInput(ivq.data), lateRules, now) : null
   const [conn, setConn] = useState<{ label: string; ok: boolean } | null>(null)
   const [perm, setPerm] = useState<{ camera: boolean; microphone: boolean } | null>(null)
   const [previewOn, setPreviewOn] = useState(true)
@@ -164,7 +179,19 @@ export function ReadinessScreen({ id, onJoin, onBack, onPrepare }: { id: string;
         {join.reason === 'EXPIRED' && <Text style={styles.note}>The join window for this interview has closed.</Text>}
         {join.active && !allOk && <Text style={styles.note}>All five checks must pass before you can join.</Text>}
         {!!submitError && <Text style={styles.warn}>{submitError}</Text>}
-        <Btn disabled={!join.active || !allOk || submitting} busy={submitting} label="Join interview" onPress={submit} />
+        {!!late && late.phase !== 'off' && late.secondsLate > 0 && (
+          <View style={styles.late}>
+            <LateBand j={late} />
+            <OtherLine j={late} who="Interviewer" center />
+          </View>
+        )}
+        <Btn
+          disabled={!join.active || !allOk || submitting}
+          busy={submitting}
+          label="Join interview"
+          variant={late?.phase === 'red' ? 'destructive' : 'primary'}
+          onPress={submit}
+        />
       </FlowFooter>
     </View>
   )
@@ -201,7 +228,7 @@ const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.background },
   body: { paddingHorizontal: 20, paddingTop: 4, gap: 16, paddingBottom: 28 },
   frame: { width: 141, height: 250, alignSelf: 'center', borderRadius: 18, overflow: 'hidden', backgroundColor: color.inkRaised },
-  frameHint: { position: 'absolute', left: 0, right: 0, bottom: 8, textAlign: 'center', fontFamily: FF.monoMedium, fontSize: 9, letterSpacing: 0.72, textTransform: 'uppercase', color: color.textOnInkSubtle },
+  frameHint: { position: 'absolute', left: 0, right: 0, bottom: 8, textAlign: 'center', fontFamily: FF.bodyMedium, fontSize: 9, color: color.textOnInkSubtle },
   checks: { paddingVertical: 4, paddingHorizontal: 16, gap: 0 },
   check: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 11, borderBottomWidth: borderWidth.thin, borderBottomColor: color.border },
   checkLast: { borderBottomWidth: 0 },
@@ -213,6 +240,7 @@ const styles = StyleSheet.create({
   note: { fontFamily: FF.body, fontSize: 12.5, lineHeight: 17.5, color: color.textMuted, textAlign: 'center' },
   warn: { fontFamily: FF.body, fontSize: 12.5, lineHeight: 17.5, color: color.warning, textAlign: 'center' },
   confirm: { gap: 8 },
+  late: { gap: space.sm },
   confirmText: { fontFamily: FF.body, fontSize: 15, color: color.text },
   hidden: { position: 'absolute', opacity: 0 },
 })

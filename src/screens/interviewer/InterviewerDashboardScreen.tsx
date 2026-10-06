@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native'
 import Svg, { Defs, LinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { borderWidth, color, fontFamilyNative as FF, opacity } from '../../theme'
+import { borderWidth, color, fontFamilyNative as FF, opacity, space } from '../../theme'
 import { Icon, type IconName } from '../../components/ui/Icon'
 import { InterviewerShell } from '../../components/interviewer/InterviewerShell'
 import { Skel, StateBlock } from '../../components/tab/kit'
@@ -11,6 +11,8 @@ import { formatPaise } from '../../lib/format/money'
 import { useNow } from '../../lib/employer/useNow'
 import { useAppConfig, useInterviewerMe } from '../../lib/interviewer/useInterviewer'
 import { clock, hms, istDateKey, istTime, istWeekday, joinState, monthNameOf, owedClock, sessionLine } from '../../lib/interviewer/state'
+import { interviewerLateInput, isLate, lateClock, lateJoin, lateRulesOf } from '../../lib/interviews/late'
+import { LateBand, LateDrain, LatePill, OtherLine, RedInkFill, lateCard, lateTint } from '../../lib/interviews/LateJoin'
 import type { RootStackParamList } from '../../../App'
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
@@ -79,15 +81,18 @@ function StatusPill({ label, tone }: { label: string; tone: PillTone }) {
   return (
     <View style={[styles.pill, tone === 'ok' ? styles.pillOk : styles.pillOff]}>
       {tone === 'ok' && <View style={styles.pillDot} />}
-      <Text style={[styles.pillText, { color: tone === 'ok' ? color.successOnInk : color.textOnInkMuted }]}>{label.toUpperCase()}</Text>
+      <Text style={[styles.pillText, { color: tone === 'ok' ? color.successOnInk : color.textOnInkMuted }]}>{label}</Text>
     </View>
   )
 }
 
-/** The 56px pill: locked (muted, lock), open (white, green dot), rejoin (violet, white dot). */
-function JoinButton({ kind, label, lockedIcon, onPress }: { kind: 'locked' | 'open' | 'rejoin'; label: string; lockedIcon?: boolean; onPress?: () => void }) {
-  const fg = kind === 'locked' ? color.textOnInkBody : kind === 'open' ? color.accentDeep : color.textInverse
-  const bg = kind === 'locked' ? 'rgba(255, 255, 255, 0.09)' : kind === 'open' ? color.surface : color.accent
+/**
+ * The 56px pill: locked (muted, lock), open (white, green dot), rejoin (violet, white dot).
+ * `red` — the student is late past the admin's red point: the danger fill, white text.
+ */
+function JoinButton({ kind, label, lockedIcon, red, onPress }: { kind: 'locked' | 'open' | 'rejoin'; label: string; lockedIcon?: boolean; red?: boolean; onPress?: () => void }) {
+  const fg = red && kind === 'open' ? color.textInverse : kind === 'locked' ? color.textOnInkBody : kind === 'open' ? color.accentDeep : color.textInverse
+  const bg = red && kind === 'open' ? color.dangerFill : kind === 'locked' ? 'rgba(255, 255, 255, 0.09)' : kind === 'open' ? color.surface : color.accent
   const mono = kind === 'locked' && label.startsWith('Join opens in ')
   return (
     <Pressable
@@ -97,7 +102,7 @@ function JoinButton({ kind, label, lockedIcon, onPress }: { kind: 'locked' | 'op
       onPress={onPress}
       style={({ pressed }) => [styles.jb, { backgroundColor: bg }, pressed && styles.pressed]}
     >
-      {kind === 'locked' ? (lockedIcon !== false && <Icon name="lock" size={20} tint={fg} weight={1.9} />) : <View style={[styles.jbDot, { backgroundColor: kind === 'open' ? color.successFill : color.textInverse }]} />}
+      {kind === 'locked' ? (lockedIcon !== false && <Icon name="lock" size={20} tint={fg} weight={1.9} />) : <View style={[styles.jbDot, { backgroundColor: kind === 'open' && !red ? color.successFill : color.textInverse }]} />}
       {mono ? (
         <Text style={[styles.jbText, { color: fg }]} numberOfLines={1}>{'Join opens in '}<Text style={styles.jbMono}>{label.slice('Join opens in '.length)}</Text></Text>
       ) : (
@@ -141,8 +146,12 @@ function SkelBox({ h, r, w = '100%' }: { h: number; r: number; w?: `${number}%` 
  *   Next session      a live countdown to the start; the join button counts
  *                     down to the server's `joinOpensAt`, opens then (or when
  *                     the server says `roomReady`), and closes after the
- *                     no-show window. With nothing booked, the card says so and
- *                     points at Availability.
+ *                     no-show window. Past the start, until the session starts,
+ *                     the clock runs below zero and the card carries the
+ *                     late-join warning (lib/interviews/late.ts): amber, then the
+ *                     red fill from `booking.lateRedMinutes`, and whether the
+ *                     student is in the room. With nothing booked, the card says
+ *                     so and points at Availability.
  *   Scorecards owed   each row's own deadline (`dueAt`) as a live hh:mm:ss, red
  *                     under `scorecardReminderHoursBefore`; closed rows below.
  */
@@ -185,6 +194,10 @@ export function InterviewerDashboardScreen() {
   let nextCard: React.ReactNode
   if (next) {
     const j = joinState(next, config, now)
+    const late = lateJoin(interviewerLateInput(next), lateRulesOf(config), now)
+    const below = late.phase !== 'off' && late.secondsLate > 0
+    const red = late.phase === 'red'
+    const studentFirst = next.student.name.split(' ')[0] || next.student.name
     const toStart = Math.max(0, Math.floor((Date.parse(next.slotStart) - now) / 1000))
     const today = istDateKey(next.slotStart) === istDateKey(now)
     const when = today ? istTime(next.slotStart) : `${istWeekday(next.slotStart)} · ${istTime(next.slotStart)}`
@@ -201,23 +214,34 @@ export function InterviewerDashboardScreen() {
           : j.kind === 'closed' ? { l: 'Closed', t: 'off' as const }
             : { l: 'Join locked', t: 'off' as const }
     nextCard = (
-      <Pressable accessibilityRole="button" onPress={() => navigation.navigate('InterviewerDetail', { id: next.interviewId })} style={({ pressed }) => [styles.nx, pressed && styles.pressed]}>
-        <HeroGlow />
+      <Pressable accessibilityRole="button" onPress={() => navigation.navigate('InterviewerDetail', { id: next.interviewId })} style={({ pressed }) => [styles.nx, lateCard(late, true), pressed && styles.pressed]}>
+        {red ? <RedInkFill /> : <HeroGlow />}
         <View style={styles.nxTop}>
-          <Text style={styles.nxLabel} numberOfLines={1}>{`NEXT · ${when.toUpperCase()}`}</Text>
-          <StatusPill label={pill.l} tone={pill.t} />
+          <Text style={styles.nxLabel} numberOfLines={1}>{`Next · ${when}`}</Text>
+          {isLate(late) && !suspended ? <LatePill j={late} onInk /> : <StatusPill label={pill.l} tone={pill.t} />}
         </View>
         <View style={styles.cd}>
-          <Text style={styles.cdFig} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>{started ? '00:00' : clock(toStart)}</Text>
-          <Text style={styles.cdUnit}>{started ? 'Started' : 'to start'}</Text>
+          {/* Past the start the clock runs below zero until the session starts (it no longer pins at 00:00). */}
+          <Text style={[styles.cdFig, below && { color: lateTint(late, true) ?? color.textOnInk }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
+            {below ? lateClock(late) : started ? '00:00' : clock(toStart)}
+          </Text>
+          <Text style={styles.cdUnit}>{below ? 'since the start' : started ? 'Started' : 'to start'}</Text>
         </View>
+        {late.phase !== 'off' && (
+          <View style={styles.lateStack}>
+            <LateDrain j={late} onInk />
+            <LateBand j={late} onInk />
+          </View>
+        )}
         <View style={styles.who}>
           <Text style={styles.nm} numberOfLines={1}>{next.student.name}</Text>
           <Text style={styles.nmLine} numberOfLines={1}>{sessionLine({ tier: next.tier, domain: next.domain, languages: next.student.languages, language: next.language })}</Text>
+          {late.phase !== 'off' && <View style={styles.otherRow}><OtherLine j={late} who={studentFirst} onInk /></View>}
         </View>
         <JoinButton
           kind={canJoin ? (rejoin ? 'rejoin' : 'open') : 'locked'}
           label={label}
+          red={red && canJoin}
           onPress={canJoin ? () => navigation.navigate('InterviewerRoom', { id: next.interviewId }) : undefined}
         />
       </Pressable>
@@ -226,7 +250,7 @@ export function InterviewerDashboardScreen() {
     nextCard = (
       <View style={styles.nx}>
         <HeroGlow />
-        <View style={styles.nxTop}><Text style={styles.nxLabel}>NEXT</Text></View>
+        <View style={styles.nxTop}><Text style={styles.nxLabel}>Next</Text></View>
         <View style={styles.who0}>
           <Text style={styles.nm}>No interviews booked.</Text>
           <Text style={styles.nmLine}>
@@ -306,14 +330,16 @@ const styles = StyleSheet.create({
 
   nx: { backgroundColor: color.ink, borderRadius: 24, paddingVertical: 16, paddingHorizontal: 20, gap: 12, overflow: 'hidden' },
   nxTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-  nxLabel: { flexShrink: 1, fontFamily: FF.monoMedium, fontSize: 12, letterSpacing: 1.2, color: color.accentMuted },
+  nxLabel: { flexShrink: 1, fontFamily: FF.bodyMedium, fontSize: 12, color: color.accentMuted },
   pill: { flexDirection: 'row', alignItems: 'center', borderRadius: 99, paddingVertical: 6, paddingHorizontal: 11 },
   pillOk: { backgroundColor: color.successOnInkSoft },
   pillOff: { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
   pillDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#2CC891', marginRight: 6 },
-  pillText: { fontFamily: FF.monoMedium, fontSize: 12, letterSpacing: 0.72 },
+  pillText: { fontFamily: FF.bodyMedium, fontSize: 12 },
   cd: { flexDirection: 'row', alignItems: 'baseline', gap: 12 },
-  cdFig: { flexShrink: 1, fontFamily: FF.monoMedium, fontSize: 54, lineHeight: 60, letterSpacing: -2.16, color: color.textOnInk },
+  cdFig: { flexShrink: 1, fontFamily: FF.bodyMedium, fontSize: 54, lineHeight: 60, letterSpacing: -2.16, color: color.textOnInk, fontVariant: ['tabular-nums'] },
+  lateStack: { gap: space.md },
+  otherRow: { marginTop: space.sm },
   cdUnit: { fontFamily: FF.bodyMedium, fontSize: 14, color: color.textOnInkBody },
   who: { borderTopWidth: borderWidth.thin, borderTopColor: 'rgba(255, 255, 255, 0.12)', paddingTop: 12 },
   who0: { gap: 5 },
@@ -322,7 +348,7 @@ const styles = StyleSheet.create({
   jb: { height: 56, borderRadius: 99, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, paddingHorizontal: 20 },
   jbDot: { width: 9, height: 9, borderRadius: 5 },
   jbText: { fontFamily: FF.bodyBold, fontSize: 17, letterSpacing: -0.17 },
-  jbMono: { fontFamily: FF.monoMedium },
+  jbMono: { fontFamily: FF.bodyMedium, fontVariant: ['tabular-nums'] },
 
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   cell: { flexGrow: 1, flexBasis: '45%', minWidth: 0 },
@@ -342,7 +368,7 @@ const styles = StyleSheet.create({
   orName: { fontFamily: FF.bodySemiBold, fontSize: 16.5, lineHeight: 21, letterSpacing: -0.33, color: color.text },
   orSub: { fontFamily: FF.body, fontSize: 14, lineHeight: 19, color: color.textMuted, marginTop: 3 },
   ckPill: { borderRadius: 99, paddingVertical: 6, paddingHorizontal: 11, backgroundColor: color.surfaceMuted },
-  ck: { fontFamily: FF.monoMedium, fontSize: 13, color: color.text },
+  ck: { fontFamily: FF.bodyMedium, fontSize: 13, color: color.text, fontVariant: ['tabular-nums'] },
   ckDim: { color: color.textSubtle },
   none: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 20, backgroundColor: color.successSoft, borderWidth: borderWidth.thin, borderColor: color.successEdge, padding: 18 },
   noneChip: { width: 34, height: 34, borderRadius: 11, backgroundColor: color.surface, alignItems: 'center', justifyContent: 'center' },

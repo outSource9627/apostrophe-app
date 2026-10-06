@@ -22,18 +22,18 @@ export const EM_TONE: Record<EmTone, { bg: string; fg: string }> = {
   dark: { bg: color.ink, fg: color.textInverse },
 }
 
-/** A mono status pill with an optional leading icon: `VERIFIED EMPLOYER`, `IN REVIEW`. */
+/** A status pill with an optional leading icon: `Verified employer`, `In review`. */
 export function EmBadge({ label, tone = 'gray', icon, small }: { label: string; tone?: EmTone; icon?: IconName; small?: boolean }) {
   const t = EM_TONE[tone]
   return (
     <View style={[styles.badge, small && styles.badgeSm, { backgroundColor: t.bg }]}>
       {!!icon && <Icon name={icon} size={small ? space.md - 1 : space.md} tint={t.fg} weight={2.2} />}
-      <Text style={[small ? text.metaXs : text.metaSm, styles.badgeText, { color: t.fg }]} numberOfLines={1}>{label.toUpperCase()}</Text>
+      <Text style={[small ? text.metaXs : text.metaSm, styles.badgeText, { color: t.fg }]} numberOfLines={1}>{label}</Text>
     </View>
   )
 }
 
-/** Mono caps label (H.mono). */
+/** The small grey label (H.mono): Geist medium, sentence case. */
 export function EmMono({ children, tone = 'muted', style }: { children: React.ReactNode; tone?: 'muted' | 'subtle' | 'accent' | 'green' | 'red'; style?: object }) {
   const c = { muted: color.textMuted, subtle: color.textSubtle, accent: color.accentText, green: color.success, red: color.danger }[tone]
   return <Text style={[text.metaSm, styles.mono, { color: c }, style]}>{children}</Text>
@@ -88,7 +88,7 @@ export function EmBell({ unread, onPress }: { unread?: boolean; onPress?: () => 
 
 /**
  * The screen bar: a 44 back arrow (drill-ins), the title (26 on a top-level
- * screen, 18 on a drill-in), a mono line under it, and a right slot.
+ * screen, 18 on a drill-in), a grey label line under it, and a right slot.
  */
 export function EmBar({
   title, sub, big, onBack, right, border,
@@ -105,11 +105,11 @@ export function EmBar({
   )
 }
 
-/** The auth / section title (a2.js h1): mono eyebrow, 32 title, a muted sentence. */
+/** The auth / section title (a2.js h1): eyebrow, 32 title, a muted sentence. */
 export function EmTitle({ eyebrow, title, sub }: { eyebrow?: string; title: React.ReactNode; sub?: string }) {
   return (
     <View style={styles.h1} accessibilityRole="header">
-      {!!eyebrow && <Text style={[text.metaMd, styles.mono, styles.muted]}>{eyebrow.toUpperCase()}</Text>}
+      {!!eyebrow && <Text style={[text.metaMd, styles.mono, styles.muted]}>{eyebrow}</Text>}
       <Text style={text.displayPage}>{title}</Text>
       {!!sub && <Text style={[text.uiBase, styles.muted]}>{sub}</Text>}
     </View>
@@ -126,11 +126,11 @@ export function EmCard({ style, children, tone, ...rest }: ViewProps & { tone?: 
   )
 }
 
-/** The reviewer's words (EM-06b/06c): a tinted well with a mono label over the sentence. */
+/** The reviewer's words (EM-06b/06c): a tinted well with a grey label over the sentence. */
 export function EmWell({ label, tone, children }: { label: string; tone: 'violet' | 'red'; children: React.ReactNode }) {
   return (
     <View style={[styles.well, tone === 'red' ? styles.wellRed : styles.wellViolet]}>
-      <EmMono tone={tone === 'red' ? 'red' : 'accent'}>{label.toUpperCase()}</EmMono>
+      <EmMono tone={tone === 'red' ? 'red' : 'accent'}>{label}</EmMono>
       <Text style={text.uiMd}>{children}</Text>
     </View>
   )

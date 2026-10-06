@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { borderWidth, color, fontFamilyNative as FF } from '../../theme'
+import { borderWidth, color, fontFamilyNative as FF, fontSize } from '../../theme'
 import {
   CATEGORY_LABELS, CHANNEL_ORDER, getNotificationPrefs, putNotificationPrefs,
   type NotificationCategory, type NotificationChannel, type PrefRow,
@@ -22,7 +22,7 @@ const CHOOSE: { category: NotificationCategory; line: string }[] = [
   { category: 'MESSAGE', line: 'New messages in an open chat' },
   { category: 'MARKETING', line: 'Occasional, never more than monthly' },
 ]
-const channelHead = (c: NotificationChannel) => (c === 'IN_APP' ? 'In-app' : c)
+const channelHead = (c: NotificationChannel) => ({ IN_APP: 'In-app', PUSH: 'Push', EMAIL: 'Email' })[c]
 const KEY = ['notification-prefs']
 
 /**
@@ -111,9 +111,9 @@ const st = StyleSheet.create({
   ar: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, paddingHorizontal: 16, minHeight: 58 },
   top: { borderTopWidth: borderWidth.thin, borderTopColor: color.border },
   nh: { flexDirection: 'row', alignItems: 'center', paddingTop: 12, paddingBottom: 4, paddingLeft: 16, paddingRight: 12 },
-  col: { width: 56, textAlign: 'center', fontFamily: FF.monoMedium, fontSize: 10.5, letterSpacing: 0.84, textTransform: 'uppercase', color: color.textSubtle },
+  col: { width: 56, textAlign: 'center', fontFamily: FF.bodyMedium, fontSize: fontSize['meta-sm'], color: color.textSubtle },
   nr: { flexDirection: 'row', alignItems: 'center', paddingLeft: 16, paddingRight: 12, borderTopWidth: borderWidth.thin, borderTopColor: color.border },
   lab: { flex: 1, minWidth: 0, paddingVertical: 11, paddingRight: 6 },
   cell: { width: 56, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
-  dash: { fontFamily: FF.monoMedium, fontSize: 14, color: color.textSubtle },
+  dash: { fontFamily: FF.bodyMedium, fontSize: 14, color: color.textSubtle },
 })

@@ -1,13 +1,13 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { getSaved, removeSaved, type SavedRow } from '../../lib/api/jobs'
 import { deadlineLine, employmentLabel, locationLine, salaryRange } from '../../lib/jobs/format'
-import { borderWidth, color, fontFamilyNative as FF, opacity, radius } from '../../theme'
+import { borderWidth, color, fontFamilyNative as FF, fontSize, opacity, radius } from '../../theme'
 import { Icon } from '../../components/ui/Icon'
-import { Btn, JobsTabs, Skel, StateBlock } from '../../components/tab/kit'
+import { Btn, ConfirmSheet, JobsTabs, Skel, StateBlock } from '../../components/tab/kit'
 
 /**
  * ST-38 — everything swiped right; where applying usually begins, as the
@@ -27,7 +27,12 @@ export function SavedJobsScreen({ onOpen, onApply, onFeed, onApplied }: {
   const insets = useSafeAreaInsets()
   const qc = useQueryClient()
   const q = useQuery({ queryKey: ['saved'], queryFn: () => getSaved() })
-  const remove = useMutation({ mutationFn: (rowId: string) => removeSaved(rowId), onSuccess: () => qc.invalidateQueries({ queryKey: ['saved'] }) })
+  // The ✕ asks first; the sheet's Remove does it.
+  const [removing, setRemoving] = useState<SavedRow | null>(null)
+  const remove = useMutation({
+    mutationFn: (rowId: string) => removeSaved(rowId),
+    onSuccess: () => { setRemoving(null); return qc.invalidateQueries({ queryKey: ['saved'] }) },
+  })
   const now = Date.now()
 
   const tabs = (count?: number) => <JobsTabs active="Saved" counts={{ Saved: count }} onFeed={onFeed} onApplied={onApplied} />
@@ -72,7 +77,7 @@ export function SavedJobsScreen({ onOpen, onApply, onFeed, onApplied }: {
           </View>
           <View style={styles.grow}>
             <Text style={[styles.title, closed && styles.muted]}>{r.title}</Text>
-            {r.hasVideo && <View style={styles.videoTag}><Icon name="play" size={11} tint={color.accent} fill={color.accent} /><Text style={styles.videoTagText}>VIDEO</Text></View>}
+            {r.hasVideo && <View style={styles.videoTag}><Icon name="play" size={11} tint={color.accent} fill={color.accent} /><Text style={styles.videoTagText}>Video</Text></View>}
             <Text style={styles.where} numberOfLines={2}>{where}</Text>
           </View>
         </Pressable>
@@ -91,13 +96,13 @@ export function SavedJobsScreen({ onOpen, onApply, onFeed, onApplied }: {
             accessibilityRole="button"
             accessibilityLabel="Remove from saved"
             disabled={remove.isPending}
-            onPress={() => remove.mutate(r.id)}
+            onPress={() => { remove.reset(); setRemoving(r) }}
             style={({ pressed }) => [styles.removeBtn, pressed && styles.pressed]}
           >
             <Icon name="x" size={20} tint={color.textMuted} />
           </Pressable>
           {applied ? (
-            <View style={styles.appliedPill}><Text style={styles.appliedText}>APPLIED</Text></View>
+            <View style={styles.appliedPill}><Text style={styles.appliedText}>Applied</Text></View>
           ) : (
             <Btn variant="ink" disabled={!r.open} label={r.open ? 'Apply' : 'Closed'} onPress={() => onApply(r.jobId)} style={styles.grow} />
           )}
@@ -120,6 +125,18 @@ export function SavedJobsScreen({ onOpen, onApply, onFeed, onApplied }: {
         windowSize={7}
         removeClippedSubviews
         refreshControl={<RefreshControl refreshing={q.isRefetching} onRefresh={() => q.refetch().then(() => undefined)} tintColor={color.textSubtle} />}
+      />
+      <ConfirmSheet
+        open={!!removing}
+        title="Remove from saved?"
+        body={removing ? `${removing.title}${removing.company?.name ? ` · ${removing.company.name}` : ''} comes off this list.` : undefined}
+        confirmLabel="Remove"
+        cancelLabel="Keep it"
+        destructive
+        busy={remove.isPending}
+        error={remove.isError ? 'It was not removed. Try again.' : null}
+        onConfirm={() => removing && remove.mutate(removing.id)}
+        onClose={() => setRemoving(null)}
       />
     </View>
   )
@@ -148,7 +165,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', marginTop: 4,
     backgroundColor: color.accentSoft, borderRadius: radius.pill, paddingVertical: 3, paddingHorizontal: 8,
   },
-  videoTagText: { fontFamily: FF.monoMedium, fontSize: 10, letterSpacing: 0.8, color: color.accent },
+  videoTagText: { fontFamily: FF.bodyMedium, fontSize: fontSize['meta-sm'], color: color.accent },
   where: { fontFamily: FF.body, fontSize: 14, lineHeight: 19, color: color.textMuted, marginTop: 3 },
   payRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   pay: { flex: 1, fontFamily: FF.bodyBold, fontSize: 16, letterSpacing: -0.16, color: color.text },
@@ -162,5 +179,5 @@ const styles = StyleSheet.create({
     backgroundColor: color.surface, borderWidth: borderWidth.medium, borderColor: color.border,
   },
   appliedPill: { flex: 1, height: 46, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: color.surfaceMuted },
-  appliedText: { fontFamily: FF.monoMedium, fontSize: 11, letterSpacing: 1.1, color: color.textMuted },
+  appliedText: { fontFamily: FF.bodyMedium, fontSize: fontSize['meta-md'], color: color.textMuted },
 })

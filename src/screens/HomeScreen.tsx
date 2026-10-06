@@ -112,7 +112,7 @@ export function HomeScreen({
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <Eyebrow>
-          {firstName ? `${firstName.toUpperCase()} · ACCOUNT CREATED` : 'ACCOUNT CREATED'}
+          {firstName ? `${firstName} · Account created` : 'Account created'}
         </Eyebrow>
         <Display level="md" style={styles.headline}>One conversation</Display>
         <Display level="md" style={styles.headlineMuted}>away from being seen.</Display>

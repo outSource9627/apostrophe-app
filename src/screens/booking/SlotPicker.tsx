@@ -1,6 +1,6 @@
 import React from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { color, borderWidth, fontFamilyNative as FF, opacity } from '../../theme'
+import { color, borderWidth, fontFamilyNative as FF, fontSize, opacity } from '../../theme'
 import { Btn, StateBlock } from '../../components/tab/kit'
 import { Eyebrow } from '../../components/tab/flow'
 import {
@@ -74,7 +74,7 @@ export function SlotPicker({
     <View style={styles.wrap}>
       {/* Day strip */}
       <View style={[styles.dayBlock, { marginHorizontal: -bleed }]}>
-        <Eyebrow style={{ paddingHorizontal: bleed }}>{windowLabel.toUpperCase()}</Eyebrow>
+        <Eyebrow style={{ paddingHorizontal: bleed }}>{windowLabel}</Eyebrow>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.dayStrip, { paddingHorizontal: bleed }]} style={styles.dayScroll}>
           {days.map((d) => {
             const { dow, num } = dayChip(d.anchorIso)
@@ -89,7 +89,7 @@ export function SlotPicker({
               >
                 <Text style={[styles.dayDow, on && styles.onInk]}>{dow}</Text>
                 <Text style={[styles.dayNum, on && styles.onInk]}>{num}</Text>
-                <Text style={[styles.dayCount, on && styles.onInk]}>{loading ? '…' : `${d.slots.length} FREE`}</Text>
+                <Text style={[styles.dayCount, on && styles.onInk]}>{loading ? '…' : `${d.slots.length} free`}</Text>
               </Pressable>
             )
           })}
@@ -138,7 +138,7 @@ export function SlotPicker({
             </Text>
             {nextAvailableIso ? (
               <View style={styles.next}>
-                <Eyebrow>NEXT AVAILABLE</Eyebrow>
+                <Eyebrow>Next available</Eyebrow>
                 <Text style={styles.nextText}>{fmtShortDate(nextAvailableIso)} · {fmtTime(nextAvailableIso)} IST</Text>
               </View>
             ) : null}
@@ -154,9 +154,9 @@ export function SlotPicker({
 
 /** Morning, afternoon, evening — the design's three groups, decided by the slot's IST hour. */
 const PARTS = [
-  { name: 'Morning', range: 'BEFORE 12 PM', test: (h: number) => h < 12 },
+  { name: 'Morning', range: 'Before 12 PM', test: (h: number) => h < 12 },
   { name: 'Afternoon', range: '12 – 5 PM', test: (h: number) => h >= 12 && h < 17 },
-  { name: 'Evening', range: 'FROM 5 PM', test: (h: number) => h >= 17 },
+  { name: 'Evening', range: 'From 5 PM', test: (h: number) => h >= 17 },
 ]
 
 function SlotBlock({
@@ -195,13 +195,13 @@ const styles = StyleSheet.create({
   dayZero: { opacity: 0.55 },
   dayDow: { fontFamily: FF.body, fontSize: 11, color: color.textMuted },
   dayNum: { fontFamily: FF.bodySemiBold, fontSize: 20, lineHeight: 25, color: color.text },
-  dayCount: { fontFamily: FF.monoMedium, fontSize: 9.5, letterSpacing: 0.76, color: color.textSubtle },
+  dayCount: { fontFamily: FF.bodyMedium, fontSize: fontSize['meta-xs'], fontVariant: ['tabular-nums'], color: color.textSubtle },
   onInk: { color: color.textInverse },
   slots: { gap: 14 },
   gridHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 },
   gridTitle: { fontFamily: FF.bodySemiBold, fontSize: 16, letterSpacing: -0.16, color: color.text },
-  mono: { fontFamily: FF.monoMedium, fontSize: 11, letterSpacing: 0.88, textTransform: 'uppercase', color: color.textMuted },
-  monoSm: { fontFamily: FF.monoMedium, fontSize: 10.5, letterSpacing: 0.84, textTransform: 'uppercase', color: color.textMuted },
+  mono: { fontFamily: FF.bodyMedium, fontSize: fontSize['meta-md'], color: color.textMuted },
+  monoSm: { fontFamily: FF.bodyMedium, fontSize: fontSize['meta-sm'], color: color.textMuted },
   xs: { fontFamily: FF.body, fontSize: 12.5, lineHeight: 17.5, color: color.textMuted },
   group: { gap: 8 },
   groupHead: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },

@@ -730,6 +730,9 @@ export default function App() {
                   onBack={() => navigation.goBack()}
                   onVideoResume={() => navigation.navigate('VideoResume')}
                   onVisibility={() => navigation.navigate('Visibility')}
+                  onProfile={() => navigation.navigate('Profile')}
+                  onInterests={() => navigation.navigate('Interests')}
+                  onApplications={() => navigation.navigate('Applications')}
                 />
               )}
             </Stack.Screen>

@@ -2,7 +2,10 @@ import React, { useEffect, useRef, useState } from 'react'
 import { Animated, Pressable, StyleSheet, Text, View, type NativeScrollEvent, type NativeSyntheticEvent, type ViewStyle } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Icon, type IconName } from '../ui/Icon'
-import { borderWidth, color, fontFamilyNative as FF, opacity, radius } from '../../theme'
+import { Sheet } from '../ui/overlay'
+import { Body } from '../ui/Type'
+import { Banner } from '../ui/Banner'
+import { borderWidth, color, fontFamilyNative as FF, fontSize, opacity, radius } from '../../theme'
 
 /**
  * The shared pieces of the three tab screens — My interviews, Account and
@@ -89,7 +92,7 @@ export function TextLink({ label, onPress }: { label: string; onPress: () => voi
   )
 }
 
-/** A mono, uppercase group label. */
+/** A group label: Geist medium, sentence case. */
 export function GroupLabel({ children, style }: { children: React.ReactNode; style?: ViewStyle }) {
   return <View style={style}><Text style={s.group}>{children}</Text></View>
 }
@@ -213,6 +216,33 @@ export function Btn({
   )
 }
 
+/**
+ * "Are you sure?" for the student app — the same sheet and button pair as the
+ * Remove-video and Block sheets: the action on top (solid red when it takes
+ * something away, ink when it only changes something), the way out under it in
+ * quiet text. While the call runs the sheet cannot be dismissed; an error stays
+ * in the sheet so the person can try again or back out.
+ */
+export function ConfirmSheet({
+  open, title, body, confirmLabel, cancelLabel = 'Cancel', destructive, busy, error, onConfirm, onClose, children,
+}: {
+  open: boolean; title: string; body?: string; confirmLabel: string; cancelLabel?: string
+  destructive?: boolean; busy?: boolean; error?: string | null
+  onConfirm: () => void; onClose: () => void; children?: React.ReactNode
+}) {
+  return (
+    <Sheet open={open} onClose={() => { if (!busy) onClose() }} title={title}>
+      {!!body && <Body size="sm" tone="muted">{body}</Body>}
+      {children}
+      {!!error && <Banner tone="danger">{error}</Banner>}
+      <View style={s.confirmButtons}>
+        <Btn variant={destructive ? 'destructive' : 'ink'} busy={busy} label={confirmLabel} onPress={onConfirm} />
+        <Btn variant="quiet" label={cancelLabel} disabled={busy} onPress={onClose} />
+      </View>
+    </Sheet>
+  )
+}
+
 /** The bottom bar of a pushed screen: a stack of buttons on a white band. */
 export function FooterBar({ children }: { children: React.ReactNode }) {
   return <View style={s.footer}>{children}</View>
@@ -220,6 +250,7 @@ export function FooterBar({ children }: { children: React.ReactNode }) {
 
 const s = StyleSheet.create({
   pressed: { opacity: opacity.pressed },
+  confirmButtons: { marginTop: 8, gap: 8 },
   dHead: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingTop: 8, paddingBottom: 8 },
   dBack: {
     width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center',
@@ -234,7 +265,7 @@ const s = StyleSheet.create({
   jobsSegOn: { backgroundColor: color.surface, borderWidth: borderWidth.thin, borderColor: color.border },
   jobsSegText: { fontFamily: FF.bodySemiBold, fontSize: 14.5, color: color.textMuted },
   jobsSegTextOn: { color: color.accent },
-  jobsSegCount: { fontFamily: FF.monoMedium, fontSize: 11, color: color.textMuted, opacity: 0.75 },
+  jobsSegCount: { fontFamily: FF.bodyMedium, fontSize: 11, fontVariant: ['tabular-nums'], color: color.textMuted, opacity: 0.75 },
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   titleGrow: { flex: 1 },
   linkWrap: { minHeight: 44, justifyContent: 'center' },
@@ -260,7 +291,7 @@ const s = StyleSheet.create({
   compactText: { fontFamily: FF.bodyBold, fontSize: 18, letterSpacing: -0.36, color: color.text, marginTop: 8 },
   head: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 12 },
   title: { fontFamily: FF.bodyBold, fontSize: 30, lineHeight: 32, letterSpacing: -1.2, color: color.text },
-  group: { fontFamily: FF.monoMedium, fontSize: 11, letterSpacing: 1.54, textTransform: 'uppercase', color: color.textMuted },
+  group: { fontFamily: FF.bodyMedium, fontSize: fontSize['meta-md'], color: color.textMuted },
 
   skelRow: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 14, minHeight: 88 },
   skelText: { flex: 1, gap: 9 },

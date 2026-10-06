@@ -21,6 +21,7 @@ import {
 } from '../../lib/interviewer/state'
 import { INTERVIEWER_KEY, useInterviewerMe } from '../../lib/interviewer/useInterviewer'
 import { useNow } from '../../lib/employer/useNow'
+import { RemoveOverrideDialog } from './OverridesScreen'
 
 /**
  * M2 · Availability (Interviewer App Android), docs/interviewer-availability-mockup.html.
@@ -39,7 +40,8 @@ import { useNow } from '../../lib/employer/useNow'
  *   Overrides      the dated exceptions, each saved on its own (the weekly rules
  *                  last published go with it, so nothing unpublished is sent). The
  *                  server never refuses a booked slot: it moves the interview to
- *                  another interviewer, so the sheet warns first.
+ *                  another interviewer, so the sheet warns first. Removing one
+ *                  (the list's trash, the sheet's Back to weekly) asks first.
  */
 
 type Seg = 'w' | 'n' | 'e'
@@ -287,6 +289,8 @@ export function AvailabilityScreen() {
   const [wkSheet, setWkSheet] = useState<number | null>(null)
   const [form, setForm] = useState<OvForm | null>(null)
   const [formErr, setFormErr] = useState<string | null>(null)
+  /** The override date waiting on the remove confirmation. */
+  const [removing, setRemoving] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -462,7 +466,8 @@ export function AvailabilityScreen() {
     const off = isOff(o)
     setForm({ date, kind: off ? 'off' : 'hours', from: off ? '' : String(o.blocks[0].startMin), to: off ? '' : String(o.blocks[o.blocks.length - 1].endMin), locked: true })
   }
-  const closeForm = () => { setForm(null); setFormErr(null) }
+  const closeForm = () => { setForm(null); setFormErr(null); setRemoving(null) }
+  const askRemove = (date: string) => { setFormErr(null); setRemoving(date) }
 
   const times = Array.from({ length: Math.floor((24 * 60) / slotMinutes) + 1 }, (_, i) => i * slotMinutes).map((m) => ({ value: String(m), label: m === 24 * 60 ? '12 AM (midnight)' : timeOfDay(m) }))
   const fromN = Number(form?.from)
@@ -495,7 +500,7 @@ export function AvailabilityScreen() {
   // ── header, strip ──────────────────────────────────────────────────────────
   const first = dates[0] ?? todayKey
   const last = dates[dates.length - 1] ?? todayKey
-  const headSub = `${rangeLabel(first, last)} · NEXT ${horizonDays} DAYS`.toUpperCase()
+  const headSub = `${rangeLabel(first, last)} · Next ${horizonDays} days`
   const synced = me?.availability?.lastMaterialisedAt
   const horizonNote = `Students can book you up to ${dayOfKey(last)} ${monthShort(monthOfKey(last))} (the next ${horizonDays} days).${synced ? ` Hours last synced ${istStamp(synced)}.` : ''}`
   const weeklySlots = slots.size
@@ -581,7 +586,7 @@ export function AvailabilityScreen() {
         style={({ pressed }) => [st.rrow, !isLast && st.rrowRule, pressed && st.pressed]}
       >
         <View style={st.dn}>
-          <Text style={st.dnMono}>{weekdayShort(wd).toUpperCase()}</Text>
+          <Text style={st.dnMono}>{weekdayShort(wd)}</Text>
           <Text style={[st.dnB, isToday && { color: color.accent }]}>{dayOfKey(date)}</Text>
         </View>
         <View style={st.grow}>
@@ -615,7 +620,7 @@ export function AvailabilityScreen() {
           <View key={o.date} style={[st.orow, i < upcoming.length - 1 && st.rrowRule]}>
             <Pressable accessibilityRole="button" accessibilityLabel={`Edit the override on ${dateLabel(o.date)}`} onPress={() => openDate(o.date)} style={({ pressed }) => [st.orowMain, pressed && st.pressed]}>
               <View style={[st.dtile, { backgroundColor: c[0], borderColor: c[1] }]}>
-                <Text style={[st.dtileM, { color: c[2] }]}>{monthShort(monthOfKey(o.date)).toUpperCase()}</Text>
+                <Text style={[st.dtileM, { color: c[2] }]}>{monthShort(monthOfKey(o.date))}</Text>
                 <Text style={[st.dtileB, { color: c[2] }]}>{dayOfKey(o.date)}</Text>
               </View>
               <View style={st.grow}>
@@ -627,7 +632,7 @@ export function AvailabilityScreen() {
               accessibilityRole="button"
               accessibilityLabel={`Remove the override on ${dateLabel(o.date)}`}
               disabled={busy || suspended}
-              onPress={() => { removeOverride(o.date) }}
+              onPress={() => askRemove(o.date)}
               style={({ pressed }) => [st.ib, (busy || suspended) && { opacity: 0.45 }, pressed && st.pressed]}
             >
               <Icon name="trash" size={22} tint={color.danger} weight={1.9} />
@@ -783,7 +788,7 @@ export function AvailabilityScreen() {
       sub={!f ? undefined : locked && fDate ? `${plainLine(fDate)}${fO ? ' · override' : ' · weekly hours'}` : 'For one date only.'}
       foot={
         !f ? undefined : locked && f.kind === 'weekly' ? (
-          <Pbtn label={fO ? 'Back to weekly' : 'Already on weekly hours'} tone={fO && !suspended && !busy ? 'on' : 'off'} onPress={fO && !suspended && !busy ? () => { removeOverride(f.date) } : undefined} />
+          <Pbtn label={fO ? 'Back to weekly' : 'Already on weekly hours'} tone={fO && !suspended && !busy ? 'on' : 'off'} onPress={fO && !suspended && !busy ? () => askRemove(f.date) : undefined} />
         ) : (
           <Pbtn label="Save override" tone={formOk && !suspended && !busy ? 'on' : 'off'} busy={busy} onPress={formOk && !suspended && !busy ? () => { saveForm() } : undefined} />
         )
@@ -859,6 +864,8 @@ export function AvailabilityScreen() {
           <Text style={st.note}>{`${f.kind === 'weekly' ? 'Removes the override: this date follows your weekly hours again. ' : ''}Overrides save on their own; your weekly hours stay as they are.`}</Text>
         </>
       )}
+      {/* Back to weekly's confirmation: among the sheet's children, so it draws over the sheet. */}
+      <RemoveOverrideDialog date={f ? removing : null} busy={busy} error={formErr} onClose={() => setRemoving(null)} onConfirm={() => { if (removing) removeOverride(removing) }} />
     </AvSheet>
   )
 
@@ -871,6 +878,7 @@ export function AvailabilityScreen() {
       <View style={st.stack}>{body}</View>
       {weekSheet}
       {dateSheet}
+      <RemoveOverrideDialog date={f ? null : removing} busy={busy} error={formErr} onClose={() => setRemoving(null)} onConfirm={() => { if (removing) removeOverride(removing) }} />
     </InterviewerShell>
   )
 }
@@ -887,7 +895,7 @@ const st = StyleSheet.create({
   stack: { gap: 10 },
   head: { paddingTop: 6, paddingBottom: 14 },
   title: { fontFamily: FF.bodyBold, fontSize: 30, lineHeight: 33, letterSpacing: -1.2, color: color.text },
-  headSub: { fontFamily: FF.monoMedium, fontSize: 11.5, letterSpacing: 1.61, color: color.textMuted, marginTop: 7 },
+  headSub: { fontFamily: FF.bodyMedium, fontSize: 13, fontVariant: ['tabular-nums'], color: color.textMuted, marginTop: 7 },
 
   strip: { flexDirection: 'row', gap: 8 },
   stat: { flex: 1, minWidth: 0, backgroundColor: color.surface, borderWidth: borderWidth.thin, borderColor: color.border, borderRadius: 16, paddingVertical: 10, paddingLeft: 12, paddingRight: 8, gap: 4, justifyContent: 'center' },
@@ -929,7 +937,7 @@ const st = StyleSheet.create({
   rrow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 9, paddingHorizontal: 12 },
   rrowRule: { borderBottomWidth: borderWidth.thin, borderBottomColor: color.border },
   dn: { width: 38, gap: 1 },
-  dnMono: { fontFamily: FF.monoMedium, fontSize: 11, letterSpacing: 0.44, color: color.textMuted },
+  dnMono: { fontFamily: FF.bodyMedium, fontSize: 12.5, color: color.textMuted },
   dnB: { fontFamily: FF.bodyBold, fontSize: 17, lineHeight: 17, letterSpacing: -0.51, color: color.text },
   dnWk: { fontFamily: FF.bodySemiBold, fontSize: 15, lineHeight: 15, letterSpacing: -0.45 },
   rbar: { flexDirection: 'row', gap: 2, height: 12, marginBottom: 5 },
@@ -940,7 +948,7 @@ const st = StyleSheet.create({
   slText: { fontFamily: FF.body, fontSize: 12.5, lineHeight: 17, color: color.textMuted },
   trow: { flexDirection: 'row', gap: 10, paddingTop: 7, paddingBottom: 5, paddingHorizontal: 12, borderBottomWidth: borderWidth.thin, borderBottomColor: color.border, backgroundColor: color.background },
   tk: { flex: 1, flexDirection: 'row', justifyContent: 'space-between' },
-  tkText: { fontFamily: FF.monoMedium, fontSize: 11, color: color.textMuted },
+  tkText: { fontFamily: FF.bodyMedium, fontSize: 11, fontVariant: ['tabular-nums'], color: color.textMuted },
   key: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 12, rowGap: 6, paddingHorizontal: 4 },
   keyItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   keyBox: { width: 12, height: 12, borderRadius: 5, borderWidth: borderWidth.thin, borderColor: color.border, backgroundColor: color.surfaceSunken, overflow: 'hidden' },
@@ -951,7 +959,7 @@ const st = StyleSheet.create({
   orow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, paddingLeft: 12, paddingRight: 8 },
   orowMain: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 48 },
   dtile: { width: 42, height: 46, borderRadius: 12, borderWidth: borderWidth.thin, alignItems: 'center', justifyContent: 'center' },
-  dtileM: { fontFamily: FF.monoMedium, fontSize: 10.5, letterSpacing: 0.63 },
+  dtileM: { fontFamily: FF.bodyMedium, fontSize: 12 },
   dtileB: { fontFamily: FF.bodyBold, fontSize: 17, lineHeight: 17, letterSpacing: -0.34 },
   ib: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
 
@@ -966,7 +974,7 @@ const st = StyleSheet.create({
   hgrid: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -3 },
   hcol: { width: '50%', paddingHorizontal: 3, paddingBottom: 6 },
   hcell: { height: 44, borderRadius: 12, borderWidth: borderWidth.thin, borderColor: color.border, backgroundColor: color.surface, paddingHorizontal: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6, overflow: 'hidden' },
-  hTime: { fontFamily: FF.monoMedium, fontSize: 13, color: color.textMuted },
+  hTime: { fontFamily: FF.bodyMedium, fontSize: 13, fontVariant: ['tabular-nums'], color: color.textMuted },
   hSmall: { fontFamily: FF.bodySemiBold, fontSize: 11.5, minWidth: 0 },
   hOn: { backgroundColor: color.successSoft, borderColor: color.successEdge },
   hPart: { borderColor: color.successEdge },
