@@ -1,0 +1,18 @@
+{
+  "default_branch": "main",
+  "branches": [
+    "main",
+    "origin",
+    "ui-redesign-student-interviewer"
+  ],
+  "parent": {
+    "main": null,
+    "origin": "main",
+    "ui-redesign-student-interviewer": "main"
+  },
+  "order": [
+    "main",
+    "origin",
+    "ui-redesign-student-interviewer"
+  ]
+}
