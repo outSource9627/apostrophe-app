@@ -14,9 +14,9 @@ import {
 import type { RootStackParamList } from '../../../App'
 
 const COLUMNS: { channel: NotificationChannel; label: string }[] = [
-  { channel: 'PUSH', label: 'PUSH' },
-  { channel: 'EMAIL', label: 'EMAIL' },
-  { channel: 'IN_APP', label: 'IN-APP' },
+  { channel: 'PUSH', label: 'Push' },
+  { channel: 'EMAIL', label: 'Email' },
+  { channel: 'IN_APP', label: 'In-app' },
 ]
 
 /** Categories that reach a student or an interviewer only; an older server may still list them. */
@@ -95,7 +95,7 @@ export function EmployerNotificationSettingsScreen() {
                 {r.locked && (
                   <View style={styles.locked}>
                     <Icon name="lock" size={space.md - 2} tint={color.textMuted} weight={2} />
-                    <Text style={[text.metaXs, styles.muted, styles.mono]}>ALWAYS ON</Text>
+                    <Text style={[text.metaXs, styles.muted, styles.mono]}>Always on</Text>
                   </View>
                 )}
               </View>

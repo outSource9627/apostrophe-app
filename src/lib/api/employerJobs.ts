@@ -1,4 +1,5 @@
 import { api } from './index'
+import type { CandidateDocumentView } from './employerFeed'
 
 export type JobStatus = 'DRAFT' | 'PENDING_MODERATION' | 'PUBLISHED' | 'PAUSED' | 'CLOSED'
 
@@ -29,6 +30,8 @@ export interface EmployerJobRow {
   minQualification: string | null
   experience: { minYears: number; maxYears: number | null }
   salary: { minPaise: number; maxPaise: number }
+  /** The minimum is fixed: the post has been submitted for review, or was live once. Absent from an older server. */
+  salaryMinLocked?: boolean
   joiningPreference: string | null
   applicationDeadline: string | null
   hasVideo: boolean
@@ -104,6 +107,8 @@ export interface ApplicationCandidateSummary {
     at: string | null
   }
   available: boolean
+  /** ST-35 — the row's CV action; null when there is none or the account is no longer active. */
+  resume?: CandidateDocumentView | null
 }
 
 export interface ApplicationRow {
@@ -169,6 +174,9 @@ export interface ApplicationDetail {
       at: string | null
     }
     available: boolean
+    /** ST-35 — what they sent this company; the link comes from GET /employers/candidates/:id/documents/:docId. */
+    documents?: CandidateDocumentView[]
+    resume?: CandidateDocumentView | null
   }
   message: string | null
   videoResumeId: string | null

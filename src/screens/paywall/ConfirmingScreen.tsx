@@ -3,7 +3,7 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useQueryClient } from '@tanstack/react-query'
 import { getPaymentStatus } from '../../lib/api/payments'
-import { borderWidth, color, fontFamilyNative as FF } from '../../theme'
+import { borderWidth, color, fontFamilyNative as FF, fontSize } from '../../theme'
 import { openSupport } from '../../lib/support'
 import { Btn } from '../../components/tab/kit'
 import { Disc, Eyebrow, FlowFooter, FlowHeader, Lead, Sub } from '../../components/tab/flow'
@@ -94,5 +94,5 @@ const styles = StyleSheet.create({
   body: { flex: 1, paddingHorizontal: 20, paddingTop: 60, gap: 14 },
   bang: { fontFamily: FF.bodyBold, fontSize: 26, color: color.warning },
   refRow: { marginTop: 10, borderTopWidth: borderWidth.thin, borderTopColor: color.border, paddingTop: 12, flexDirection: 'row', justifyContent: 'space-between' },
-  ref: { fontFamily: FF.monoMedium, fontSize: 11, letterSpacing: 0.66, color: color.textSubtle },
+  ref: { fontFamily: FF.bodyMedium, fontSize: fontSize['meta-md'], fontVariant: ['tabular-nums'], color: color.textSubtle },
 })

@@ -214,14 +214,14 @@ export const text = StyleSheet.create({
     color: color.text,
   },
 
-  // ── meta · IBM Plex Mono · always uppercase ─────────────────────────────
+  // ── meta · Geist (was Geist Mono in capitals until 2026-10-06) · normal case, tabular digits ──
   /** Dense badges sitting on footage. */
   metaXs: {
     fontFamily: fontFamilyNative.monoMedium,
     fontSize: fontSize['meta-xs'],
     lineHeight: leadingNative['meta-xs'],
     letterSpacing: trackingNative.meta,
-    textTransform: 'uppercase',
+    fontVariant: ['tabular-nums'],
     color: color.textSubtle,
   },
   /** Eyebrows and status pills — the canonical meta step. */
@@ -230,7 +230,7 @@ export const text = StyleSheet.create({
     fontSize: fontSize['meta-sm'],
     lineHeight: leadingNative['meta-sm'],
     letterSpacing: trackingNative.eyebrow,
-    textTransform: 'uppercase',
+    fontVariant: ['tabular-nums'],
     color: color.textSubtle,
   },
   /** A balance read as a mono figure (the interviewer wallet's headline): 30. */
@@ -239,6 +239,7 @@ export const text = StyleSheet.create({
     fontSize: fontSize['meta-figure'],
     lineHeight: Math.round(fontSize['meta-figure'] * fontSizeLeading['meta-figure']),
     color: color.text,
+    fontVariant: ['tabular-nums'],
   },
   /** A figure or countdown on an interviewer card (Interviewer Android M1): 22 mono. */
   metaTile: {
@@ -246,6 +247,7 @@ export const text = StyleSheet.create({
     fontSize: fontSize['meta-tile'],
     lineHeight: leadingNative['meta-tile'],
     color: color.text,
+    fontVariant: ['tabular-nums'],
   },
   /** The scorecard deadline band's clock (Interviewer Android M4): 16 mono. */
   metaBand: {
@@ -253,6 +255,7 @@ export const text = StyleSheet.create({
     fontSize: fontSize['meta-band'],
     lineHeight: leadingNative['meta-band'],
     color: color.text,
+    fontVariant: ['tabular-nums'],
   },
   /** A figure in mono beside a file (Employer Android H.drop's percentage): 12. */
   metaBase: {
@@ -261,6 +264,7 @@ export const text = StyleSheet.create({
     lineHeight: leadingNative['meta-md'],
     letterSpacing: trackingNative.eyebrow,
     color: color.textSubtle,
+    fontVariant: ['tabular-nums'],
   },
   /** The same step inside a pill, where the tracking tightens slightly. */
   metaPill: {
@@ -268,7 +272,7 @@ export const text = StyleSheet.create({
     fontSize: fontSize['meta-sm'],
     lineHeight: leadingNative['meta-sm'],
     letterSpacing: trackingNative.meta,
-    textTransform: 'uppercase',
+    fontVariant: ['tabular-nums'],
   },
   /** A monogram inside a 44 avatar: 13 mono. */
   metaLg: {
@@ -276,6 +280,7 @@ export const text = StyleSheet.create({
     fontSize: fontSize['meta-lg'],
     lineHeight: leadingNative['meta-lg'],
     color: color.textSubtle,
+    fontVariant: ['tabular-nums'],
   },
   /** A countdown or elapsed clock: 15 mono. */
   metaXl: {
@@ -284,6 +289,7 @@ export const text = StyleSheet.create({
     lineHeight: leadingNative['meta-xl'],
     letterSpacing: trackingNative.meta,
     color: color.text,
+    fontVariant: ['tabular-nums'],
   },
   /** One digit of a one-time code. */
   metaOtp: {
@@ -291,13 +297,14 @@ export const text = StyleSheet.create({
     fontSize: fontSize['meta-otp'],
     lineHeight: leadingNative['meta-otp'],
     color: color.text,
+    fontVariant: ['tabular-nums'],
   },
   /** Transaction references, durations, fine print. */
   metaMd: {
     fontFamily: fontFamilyNative.mono,
     fontSize: fontSize['meta-md'],
     lineHeight: leadingNative['meta-md'],
-    textTransform: 'uppercase',
+    fontVariant: ['tabular-nums'],
     color: color.textSubtle,
   },
   /**
@@ -310,6 +317,6 @@ export const text = StyleSheet.create({
     fontSize: fontSize['meta-2xl'],
     lineHeight: leadingNative['meta-2xl'],
     letterSpacing: trackingNative.meta,
-    textTransform: 'uppercase',
+    fontVariant: ['tabular-nums'],
   },
 })

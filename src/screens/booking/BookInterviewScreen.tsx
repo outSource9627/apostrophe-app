@@ -137,7 +137,7 @@ export function BookInterviewScreen({
             <View style={styles.tierText}>
               <View style={styles.tierTitle}>
                 <Text style={styles.t15s}>{[tier, m.qualification ? QUAL[m.qualification] ?? m.qualification : null].filter(Boolean).join(' · ')}</Text>
-                <View style={styles.yours}><Text style={styles.yoursText}>YOURS</Text></View>
+                <View style={styles.yours}><Text style={styles.yoursText}>Yours</Text></View>
               </View>
               {!!minutes && <Text style={styles.xs}>{minutes}-minute interview · one-time</Text>}
             </View>
@@ -145,7 +145,7 @@ export function BookInterviewScreen({
           </View>
 
           <View style={styles.included}>
-            <Eyebrow>WHAT YOU GET</Eyebrow>
+            <Eyebrow>What you get</Eyebrow>
             {included.map((line) => (
               <View key={line} style={styles.bullet}>
                 <Text style={[styles.bulletText, styles.dash]}>—</Text>
@@ -330,7 +330,7 @@ const styles = StyleSheet.create({
   pickBody: { paddingHorizontal: 20, paddingTop: 2, gap: 14, paddingBottom: 20 },
   grow: { flex: 1, gap: 2 },
   gateCard: { padding: 16, gap: 10 },
-  pct: { fontFamily: FF.monoMedium, fontSize: 40, letterSpacing: -1.6, color: color.accent },
+  pct: { fontFamily: FF.bodyMedium, fontSize: 40, letterSpacing: -1.6, fontVariant: ['tabular-nums'], color: color.accent },
   small: { fontFamily: FF.body, fontSize: 13, lineHeight: 19, color: color.textMuted },
   xs: { fontFamily: FF.body, fontSize: 12.5, lineHeight: 17.5, color: color.textMuted },
   t15s: { fontFamily: FF.bodySemiBold, fontSize: 15, color: color.text },
@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
   gateMark: { position: 'absolute', top: -4, bottom: -4, width: 2, backgroundColor: color.text },
   stepCard: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 16, paddingVertical: 12 },
   gain: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: radius.pill, backgroundColor: color.accentSoft },
-  gainText: { fontFamily: FF.monoMedium, fontSize: 11, letterSpacing: 0.88, color: color.accentText },
+  gainText: { fontFamily: FF.bodyMedium, fontSize: 11, fontVariant: ['tabular-nums'], color: color.accentText },
   head: { gap: 8 },
   tierRow: {
     minHeight: 72, flexDirection: 'row', alignItems: 'center', gap: 14,
@@ -349,7 +349,7 @@ const styles = StyleSheet.create({
   tierText: { flex: 1, gap: 2 },
   tierTitle: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
   yours: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.pill, backgroundColor: color.accentSoft },
-  yoursText: { fontFamily: FF.monoMedium, fontSize: 10, letterSpacing: 1, color: color.accentText },
+  yoursText: { fontFamily: FF.bodyMedium, fontSize: 12, color: color.accentText },
   big: { fontFamily: FF.bodySemiBold, fontSize: 22, letterSpacing: -0.33, color: color.text },
   included: { gap: 10, paddingHorizontal: 4 },
   bullet: { flexDirection: 'row', gap: 10 },

@@ -11,14 +11,15 @@ import { EmIconButton, EmRadioRow, EmSheet } from './em'
  * H.seg), for the job editor and anywhere else a form needs them. Tokens only.
  */
 
-/** H.fld: the 13/600 label, an optional note beside it, the control, and one line under it — the error in red with a mark, or a hint. */
+/** H.fld: the 13/600 label, an optional note beside it, the control, and one line under it — the error in red with a mark, or a hint. `onInfo` adds an ⓘ after the label that opens the field's explanation. */
 export function EmField({
-  label, note, hint, error, children,
-}: { label: string; note?: string; hint?: string; error?: string; children: React.ReactNode }) {
+  label, note, hint, error, onInfo, children,
+}: { label: string; note?: string; hint?: string; error?: string; onInfo?: () => void; children: React.ReactNode }) {
   return (
     <View style={styles.field}>
       <View style={styles.labelRow}>
         <Text style={[text.uiSmSemi, styles.secondary]}>{label}</Text>
+        {!!onInfo && <EmIconButton name="info" label={`About ${label.toLowerCase()}`} size={height.chip - space.sm} iconSize={space.lg} tint={color.textMuted} onPress={onInfo} />}
         {!!note && <Text style={[text.uiXs, styles.subtle]}>{note}</Text>}
       </View>
       {children}

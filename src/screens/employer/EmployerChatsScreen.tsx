@@ -1,37 +1,44 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import { ActivityIndicator, FlatList, Image, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native'
+import { StyleSheet, View } from 'react-native'
 import { useIsFocused, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { borderWidth, color, height, opacity, radius, space, spaceHalf, trackingNative } from '../../theme'
-import { Button, text } from '../../components/ui'
-import { Icon } from '../../components/ui/Icon'
+import { height, space } from '../../theme'
+import { Button, PopoverMenu, type MenuAnchor } from '../../components/ui'
 import { EmployerShell } from '../../components/employer'
-import { EmEmpty, EmError, initialsOf } from '../../components/employer/em'
-import { getEmployerThreads, searchEmployerMessages, type MessageSearchHit, type ThreadDto } from '../../lib/api/employerChat'
+import { EmEmpty, EmError } from '../../components/employer/em'
+import { TextLink } from '../../components/tab/kit'
+import { ChatListFrame, ChatPlate, ChatRow, type ChatListStatus } from '../../components/chat'
+import {
+  getEmployerConnections, getEmployerThreads, pinEmployerThread, searchEmployerMessages,
+  type EmployerConnectionRow, type ThreadDto,
+} from '../../lib/api/employerChat'
 import { useChatSocketEvents } from '../../lib/chat/socket'
-import { fmtClock, fmtDayMon, fmtRowStamp } from '../../lib/chat/format'
+import { useChatSearch } from '../../lib/chat/search'
+import { employerConnectionLine, fmtRowStamp } from '../../lib/chat/format'
 import type { RootStackParamList } from '../../../App'
 
-const SEARCH_MIN = 2
-const SEARCH_DEBOUNCE_MS = 300
-
 /**
- * EM-25 · Chats (Employer Android). The bar counts what is unread and links to
- * Connections; the search finds a person by name and a message by its words
- * (whole words, two characters or more — the server's search). Rows: the face,
- * the name, the time, the last line (heavier while unread) and the violet
- * count. A read-only chat stays in the list, dimmed. EM-25b is the empty list.
- * New messages move a row to the top live, over the socket.
+ * EM-25 · Chats (Employer Android), drawn as the shared chat list
+ * (docs/chat-redesign-mockups.html, A). The large title links to Connections;
+ * the search finds a person by name and a message by its words (whole words,
+ * two characters or more — the server's search). Rows: the face, the name, the
+ * time, the last line (heavier while unread), the violet count, and how you are
+ * connected. A read-only chat stays in the list, greyed. EM-25b is the empty
+ * list. New messages move a row to the top live, over the socket. A long press
+ * pins a chat (or unpins it): pinned chats sit above the rest, newest pin
+ * first, marked with a pin; saved on the server, never shown to the candidate.
  */
 export function EmployerChatsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
   const focused = useIsFocused()
   const [now, setNow] = useState(() => Date.now())
   const [threads, setThreads] = useState<ThreadDto[] | null>(null)
+  const [conns, setConns] = useState<Map<string, EmployerConnectionRow>>(() => new Map())
   const [error, setError] = useState<string | null>(null)
   const [refreshing, setRefreshing] = useState(false)
-  const [q, setQ] = useState('')
-  const [hits, setHits] = useState<MessageSearchHit[] | null>(null)
+  const [menu, setMenu] = useState<{ t: ThreadDto; anchor: MenuAnchor } | null>(null)
+  const [pinFailed, setPinFailed] = useState(false)
+  const search = useChatSearch(searchEmployerMessages)
 
   const load = useCallback(async () => {
     setError(null)
@@ -45,6 +52,10 @@ export function EmployerChatsScreen() {
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not load your conversations.')
     }
+    // How each chat came to be — the row's context line. A failure only drops those lines.
+    getEmployerConnections({ statuses: ['ACTIVE', 'CLOSED', 'BLOCKED'], perPage: 100 })
+      .then((r) => setConns(new Map(r.rows.map((c) => [c.id, c]))))
+      .catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -52,7 +63,7 @@ export function EmployerChatsScreen() {
   }, [focused, load])
 
   // A message anywhere bumps its row, and its count while the thread is not open.
-  useChatSocketEvents({
+  const connected = useChatSocketEvents({
     onMessage: (p) =>
       setThreads((prev) => {
         if (!prev) return prev
@@ -72,179 +83,109 @@ export function EmployerChatsScreen() {
       }),
   })
 
-  // Message search, debounced; the list itself filters by name as you type.
-  useEffect(() => {
-    const term = q.trim()
-    if (term.length < SEARCH_MIN) {
-      setHits(null)
-      return
-    }
-    let alive = true
-    const t = setTimeout(() => {
-      searchEmployerMessages(term, { limit: 20 })
-        .then((r) => alive && setHits(r.rows))
-        .catch(() => alive && setHits([]))
-    }, SEARCH_DEBOUNCE_MS)
-    return () => {
-      alive = false
-      clearTimeout(t)
-    }
-  }, [q])
-
   const sorted = useMemo(() => {
     const list = [...(threads ?? [])]
-    const readOnly = (t: ThreadDto) => t.state.archived || !!t.archivedReason
-    list.sort((a, b) => Number(readOnly(a)) - Number(readOnly(b)) || (b.lastMessageAt ?? '').localeCompare(a.lastMessageAt ?? ''))
-    const term = q.trim().toLowerCase()
-    return term ? list.filter((t) => nameOf(t).toLowerCase().includes(term)) : list
-  }, [threads, q])
-  const byId = useMemo(() => new Map((threads ?? []).map((t) => [t.id, t])), [threads])
-  const unread = (threads ?? []).reduce((n, t) => n + (t.unread || 0), 0)
+    list.sort((a, b) =>
+      (b.pinnedAt ?? '').localeCompare(a.pinnedAt ?? '') ||
+      Number(readOnlyOf(a)) - Number(readOnlyOf(b)) ||
+      (b.lastMessageAt ?? '').localeCompare(a.lastMessageAt ?? ''))
+    return list
+  }, [threads])
+  const shown = search.term ? sorted.filter((t) => nameOf(t).toLowerCase().includes(search.term)) : sorted
   const open = (id: string) => navigation.navigate('EmployerThread', { id })
 
-  let body: React.ReactNode
-  if (threads === null && !error) {
-    body = <ActivityIndicator color={color.textSubtle} style={styles.loading} />
-  } else if (error && !threads) {
-    body = (
-      <View style={styles.pad}>
-        <EmError title="Couldn’t load your chats." body={error} action={<Button variant="secondary" size="pair" icon="refresh" label="Try again" onPress={() => { load() }} />} />
-      </View>
-    )
-  } else if ((threads?.length ?? 0) === 0) {
-    body = (
-      <View style={[styles.pad, styles.center]}>
-        <EmEmpty
-          icon="chat"
-          title="No conversations yet."
-          body="A chat opens when a candidate accepts your Interest, or applies after you shortlisted them."
-          action={<Button variant="primary" size="pair" label="Browse candidates" onPress={() => navigation.navigate('EmployerFeed')} />}
-        />
-      </View>
-    )
-  } else {
-    body = (
-      <FlatList
-        data={sorted}
-        keyExtractor={(t) => t.id}
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={styles.list}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            tintColor={color.textSubtle}
-            onRefresh={async () => {
-              setRefreshing(true)
-              await load()
-              setRefreshing(false)
-            }}
-          />
-        }
-        ListHeaderComponent={
-          <>
-            <View style={styles.search}>
-              <Icon name="search" size={spaceHalf['4.5']} tint={color.textSubtle} />
-              <TextInput
-                value={q}
-                onChangeText={setQ}
-                placeholder="Search people and messages"
-                placeholderTextColor={color.textSubtle}
-                autoCorrect={false}
-                returnKeyType="search"
-                style={[text.uiBase, styles.searchInput]}
-              />
-              {!!q && (
-                <Pressable accessibilityRole="button" accessibilityLabel="Clear search" onPress={() => setQ('')} hitSlop={space.sm}>
-                  <Icon name="x" size={space.lg} tint={color.textMuted} />
-                </Pressable>
-              )}
-            </View>
-            {hits && hits.length > 0 && (
-              <View style={styles.hits}>
-                <Text style={[text.metaSm, styles.subtle, styles.mono]}>MESSAGES</Text>
-                {hits.map((h) => (
-                  <Pressable key={h.id} accessibilityRole="button" onPress={() => open(h.threadId)} style={({ pressed }) => [styles.hit, pressed && styles.pressed]}>
-                    <Text style={text.uiSmSemi} numberOfLines={1}>{byId.get(h.threadId) ? nameOf(byId.get(h.threadId)!) : 'Conversation'}</Text>
-                    <Text style={[text.uiSm, styles.muted]} numberOfLines={2}>{`${h.mine ? 'You: ' : ''}${h.body ?? ''}`}</Text>
-                    <Text style={[text.metaXs, styles.subtle]}>{`${fmtDayMon(h.createdAt)} · ${fmtClock(h.createdAt)}`.toUpperCase()}</Text>
-                  </Pressable>
-                ))}
-                {sorted.length > 0 && <Text style={[text.metaSm, styles.subtle, styles.mono]}>CONVERSATIONS</Text>}
-              </View>
-            )}
-          </>
-        }
-        ListEmptyComponent={<Text style={[text.uiMd, styles.muted, styles.none]}>{hits?.length ? '' : 'No one by that name.'}</Text>}
-        renderItem={({ item }) => <ThreadRow t={item} now={now} onPress={() => open(item.id)} />}
-      />
-    )
+  // Optimistic: the row moves at once; a failure puts it back and says so.
+  async function togglePin(t: ThreadDto) {
+    const pinnedAt = t.pinnedAt ? null : new Date().toISOString()
+    const set = (value: string | null) => setThreads((prev) => prev?.map((r) => (r.id === t.id ? { ...r, pinnedAt: value } : r)) ?? prev)
+    setPinFailed(false)
+    set(pinnedAt)
+    try {
+      await pinEmployerThread(t.id, !!pinnedAt)
+    } catch {
+      set(t.pinnedAt)
+      setPinFailed(true)
+    }
   }
 
+  async function refresh() {
+    setRefreshing(true)
+    await load()
+    setRefreshing(false)
+  }
+
+  const status: ChatListStatus = threads ? (threads.length ? 'ready' : 'empty') : error ? 'error' : 'loading'
+  const rows = shown.map((t) => {
+    const readOnly = readOnlyOf(t)
+    const conn = t.connectionId ? conns.get(t.connectionId) : undefined
+    return (
+      <ChatRow
+        key={t.id}
+        plate={<ChatPlate thread={t} size={height['control-sm']} muted={readOnly} />}
+        name={nameOf(t)}
+        pinned={!!t.pinnedAt}
+        time={t.lastMessageAt ? fmtRowStamp(t.lastMessageAt, now) : null}
+        unread={t.unread}
+        preview={readOnly
+          ? `Read-only · ${t.archivedReason === 'BLOCKED' ? 'blocked' : t.archivedReason === 'WITHDRAWN' ? 'connection withdrawn' : 'archived'}`
+          : t.lastMessagePreview || 'No messages yet'}
+        context={t.kind === 'USER_ADMIN' ? 'Support' : conn ? employerConnectionLine(conn) : null}
+        muted={readOnly}
+        onPress={() => open(t.id)}
+        onMenu={(anchor) => setMenu({ t, anchor })}
+        menuLabel={t.pinnedAt ? 'Unpin chat' : 'Pin chat'}
+      />
+    )
+  })
+
   return (
-    <EmployerShell
-      title="Chats"
-      sub={threads ? (unread ? `${unread} UNREAD` : `${threads.length} ${threads.length === 1 ? 'CONVERSATION' : 'CONVERSATIONS'}`) : undefined}
-      scroll={false}
-      right={<Button variant="text" size="sm" label="Connections" onPress={() => navigation.navigate('EmployerConnections')} />}
-    >
-      {body}
+    <EmployerShell bar={false} scroll={false}>
+      <ChatListFrame
+        title="Chats"
+        titleRight={<TextLink label="Connections" onPress={() => navigation.navigate('EmployerConnections')} />}
+        connected={connected}
+        status={status}
+        errorView={(
+          <View style={styles.pad}>
+            <EmError title="Couldn’t load your chats." body={error ?? undefined} action={<Button variant="secondary" size="pair" icon="refresh" label="Try again" onPress={() => { load() }} />} />
+          </View>
+        )}
+        emptyView={(
+          <View style={styles.pad}>
+            <EmEmpty
+              icon="chat"
+              title="No conversations yet."
+              body="A chat opens when a candidate accepts your Interest, or applies after you shortlisted them."
+              action={<Button variant="primary" size="pair" label="Browse candidates" onPress={() => navigation.navigate('EmployerFeed')} />}
+            />
+          </View>
+        )}
+        query={search.query}
+        onQuery={search.setQuery}
+        hits={search.hits}
+        nameOf={(id) => {
+          const t = threads?.find((x) => x.id === id)
+          return t ? nameOf(t) : 'Conversation'
+        }}
+        onOpenHit={open}
+        notice={pinFailed ? 'That pin didn’t save. Try again.' : null}
+        rows={rows}
+        hint="Long-press a chat to pin it"
+        refreshing={refreshing}
+        onRefresh={refresh}
+      />
+      <PopoverMenu
+        anchor={menu?.anchor ?? null}
+        onClose={() => setMenu(null)}
+        items={menu ? [{ key: 'pin', label: menu.t.pinnedAt ? 'Unpin chat' : 'Pin chat', icon: 'pushpin', onPress: () => { togglePin(menu.t) } }] : []}
+      />
     </EmployerShell>
   )
 }
 
 const nameOf = (t: ThreadDto) => (t.kind === 'USER_ADMIN' ? 'Apostrophe Support' : t.counterparty.name || 'Candidate')
-
-function ThreadRow({ t, now, onPress }: { t: ThreadDto; now: number; onPress: () => void }) {
-  const support = t.kind === 'USER_ADMIN'
-  const readOnly = t.state.archived || !!t.archivedReason
-  const name = nameOf(t)
-  const unread = t.unread > 0
-  const preview = readOnly
-    ? `Read-only · ${t.archivedReason === 'BLOCKED' ? 'blocked' : t.archivedReason === 'WITHDRAWN' ? 'connection withdrawn' : 'archived'}`
-    : t.lastMessagePreview || 'No messages yet'
-  return (
-    <Pressable accessibilityRole="button" accessibilityLabel={`${name}${unread ? `, ${t.unread} unread` : ''}`} onPress={onPress} style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
-      <View style={[styles.face, support ? styles.faceSupport : readOnly ? styles.faceMuted : styles.facePerson]}>
-        {t.counterparty.photoUrl && !support ? <Image source={{ uri: t.counterparty.photoUrl }} style={styles.faceImg} /> : (
-          <Text style={[text.uiBaseSemi, { color: readOnly && !support ? color.textMuted : color.textInverse }]}>{support ? '’' : initialsOf(name)}</Text>
-        )}
-      </View>
-      <View style={styles.grow}>
-        <View style={styles.line}>
-          <Text style={[text.uiBaseSemi, styles.grow, readOnly && styles.subtle]} numberOfLines={1}>{name}</Text>
-          {!!t.lastMessageAt && <Text style={[text.metaSm, styles.subtle]}>{fmtRowStamp(t.lastMessageAt, now).toUpperCase()}</Text>}
-        </View>
-        <View style={styles.line}>
-          <Text style={[unread ? text.uiSmMedium : text.uiSm, styles.grow, { color: unread ? color.text : color.textMuted }]} numberOfLines={1}>{preview}</Text>
-          {unread && <View style={styles.count}><Text style={[text.uiXsSemi, styles.countText]}>{t.unread}</Text></View>}
-        </View>
-      </View>
-    </Pressable>
-  )
-}
+const readOnlyOf = (t: ThreadDto) => t.state.archived || !!t.archivedReason
 
 const styles = StyleSheet.create({
-  grow: { flex: 1, minWidth: 0, gap: space['2xs'] + 1 },
-  pressed: { opacity: opacity.pressed },
-  muted: { color: color.textMuted },
-  subtle: { color: color.textSubtle },
-  mono: { letterSpacing: trackingNative.eyebrow },
-  pad: { flex: 1, paddingHorizontal: space.lg },
-  center: { justifyContent: 'center' },
-  loading: { paddingVertical: space['3xl'] },
-  none: { paddingVertical: space.xl, textAlign: 'center' },
-  list: { paddingHorizontal: space.sm, paddingBottom: space.lg },
-  search: { marginHorizontal: space.sm, marginBottom: space.sm, height: height.tap, borderRadius: radius.md, borderWidth: borderWidth.thin, borderColor: color.borderStrong, backgroundColor: color.surface, flexDirection: 'row', alignItems: 'center', gap: spaceHalf['2.5'], paddingHorizontal: spaceHalf['3.5'] },
-  searchInput: { flex: 1, paddingVertical: 0, color: color.text },
-  hits: { paddingHorizontal: space.sm, gap: space.sm, paddingBottom: space.sm },
-  hit: { gap: space['2xs'] + 1, paddingVertical: spaceHalf['2.5'], borderBottomWidth: borderWidth.thin, borderBottomColor: color.borderSoft },
-  row: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space.md, paddingHorizontal: space.sm, borderBottomWidth: borderWidth.thin, borderBottomColor: color.borderSoft },
-  line: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  face: { width: height.control, height: height.control, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
-  facePerson: { backgroundColor: color.accentBright },
-  faceSupport: { backgroundColor: color.accent },
-  faceMuted: { backgroundColor: color.border },
-  faceImg: { width: '100%', height: '100%' },
-  count: { minWidth: spaceHalf['4.5'], height: spaceHalf['4.5'], paddingHorizontal: space.xs + 1, borderRadius: radius.pill, backgroundColor: color.accent, alignItems: 'center', justifyContent: 'center' },
-  countText: { color: color.textInverse },
+  pad: { paddingHorizontal: space.lg, paddingTop: space.xl },
 })

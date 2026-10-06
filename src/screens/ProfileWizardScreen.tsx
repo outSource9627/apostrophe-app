@@ -3,11 +3,12 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useQuery } from '@tanstack/react-query'
 import { api, ApiClientError } from '../lib/api'
-import { color, space, spaceHalf, borderWidth, fontFamilyNative as FF } from '../theme'
+import { color, space, spaceHalf, borderWidth, fontFamilyNative as FF, fontSize } from '../theme'
 import { Banner, Body, Button, Eyebrow, Figure, Meta, ProgressBar, ScreenHeader, StatusPill, text } from '../components/ui'
 import { Btn, DetailHeader, Skel, StateBlock } from '../components/tab/kit'
 import { useOnline } from '../lib/useOnline'
 import { clockTime, dequeue, enqueue, peek, readQueue, type StepKey } from '../lib/profile/queue'
+import type { ProfileDocument } from '../lib/profile/upload'
 import {
   PersonalStep, EducationStep, ExperienceStep, SkillsStep, PreferencesStep, DocumentsStep,
   type Config, type StepProps,
@@ -25,7 +26,7 @@ interface Profile {
   experience: { id?: string; company?: string; role?: string; from?: string; to?: string }[]
   skills: { name: string; status: string }[]
   preferences: Record<string, unknown> | null
-  documents: { kind: string; key: string; name?: string }[]
+  documents: ProfileDocument[]
   portfolioLinks: string[]
   stepsCompleted: number[]
   resumeStep: number
@@ -221,13 +222,13 @@ export function ProfileWizardScreen({ onExit, onBook }: { onExit: () => void; on
       </View>
 
       <View style={styles.gate}>
-        <Text style={styles.gateText}>{online ? `NOW ${comp.pct}%` : `${comp.pct}% AS OF ${savedAt ? clockTime(savedAt).toUpperCase() : 'LAST SAVE'}`}</Text>
-        <Text style={[styles.gateText, { color: color.text }]}>{comp.canBook ? `PAST ${gate}%` : `BOOK AT ${gate}% · ${toGo}% TO GO`}</Text>
+        <Text style={styles.gateText}>{online ? `Now ${comp.pct}%` : `${comp.pct}% as of ${savedAt ? clockTime(savedAt) : 'last save'}`}</Text>
+        <Text style={[styles.gateText, { color: color.text }]}>{comp.canBook ? `Past ${gate}%` : `Book at ${gate}% · ${toGo}% to go`}</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <Text style={styles.stepEyebrow}>
-          {`STEP ${current.step} OF ${steps.length}${OPTIONAL.has(stepKey) ? ' · OPTIONAL' : ''}`}
+          {`Step ${current.step} of ${steps.length}${OPTIONAL.has(stepKey) ? ' · Optional' : ''}`}
         </Text>
         <Text style={styles.stepTitle}>{current.label}</Text>
         {!online && (
@@ -250,7 +251,7 @@ export function ProfileWizardScreen({ onExit, onBook }: { onExit: () => void; on
         <View style={styles.savedRow}>
           {saving === 'saved' && <View style={styles.savedDot} />}
           <Text style={[styles.saveText, saving === 'queued' && { color: color.info }]}>
-            {saving === 'saving' ? 'SAVING…' : saving === 'saved' ? `SAVED${savedAt ? ` · ${clockTime(savedAt).toUpperCase()}` : ''}` : saving === 'queued' ? `QUEUED${queued > 1 ? ` · ${queued}` : ''} · WILL SYNC` : 'SAVES AS YOU TYPE'}
+            {saving === 'saving' ? 'Saving…' : saving === 'saved' ? `Saved${savedAt ? ` · ${clockTime(savedAt)}` : ''}` : saving === 'queued' ? `Queued${queued > 1 ? ` · ${queued}` : ''} · will sync` : 'Saves as you type'}
           </Text>
         </View>
         <View style={styles.footRow}>
@@ -266,11 +267,11 @@ function StillNeeded({ comp }: { comp: Completion }) {
   if (comp.blockers.length === 0 && comp.missing.length === 0) return null
   return (
     <View style={styles.needed}>
-      <Text style={styles.stepEyebrow}>{comp.canBook ? 'READY TO BOOK' : 'STILL NEEDED'}</Text>
+      <Text style={styles.stepEyebrow}>{comp.canBook ? 'Ready to book' : 'Still needed'}</Text>
       {comp.blockers.map((b) => (
         <View key={b} style={styles.neededRow}>
           <Text style={styles.neededText}>{b}</Text>
-          <StatusPill tone="warning" label="required" />
+          <StatusPill tone="warning" label="Required" />
         </View>
       ))}
       {comp.missing.length > 0 && <Text style={styles.neededSub}>Still to fill in: {comp.missing.join(' · ')}</Text>}
@@ -291,7 +292,7 @@ function DoneView({ insets, comp, gate, onBook, onBack }: { insets: { top: numbe
             <Text style={[text.displayHeading, styles.doneTitle]}>Now for the interview.</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md, marginTop: space.lg }}>
               <Figure value={`${comp.pct}%`} />
-              <StatusPill tone="success" label="ready to book" />
+              <StatusPill tone="success" label="Ready to book" />
             </View>
             <Body tone="muted" style={{ marginTop: space.lg }}>Book a slot and a real interviewer will take you through it — that recording becomes the profile employers watch.</Body>
             <View style={{ marginTop: space['2xl'] }}><Button variant="primary" size="lg" full label="Book an interview" onPress={onBook} /></View>
@@ -303,8 +304,8 @@ function DoneView({ insets, comp, gate, onBook, onBack }: { insets: { top: numbe
             <View style={{ marginTop: space.lg }}>
               <ProgressBar pct={comp.pct} gate={gate} />
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: space.sm }}>
-                <Meta style={{ color: color.textSubtle }}>NOW {comp.pct}%</Meta>
-                <Meta style={{ color: color.text }}>BOOK AT {gate}% · {toGo}% TO GO</Meta>
+                <Meta style={{ color: color.textSubtle }}>Now {comp.pct}%</Meta>
+                <Meta style={{ color: color.text }}>Book at {gate}% · {toGo}% to go</Meta>
               </View>
             </View>
             {comp.blockers.length > 0 && <Body tone="muted" style={{ marginTop: space.lg }}>Some items below are required outright — no percentage buys them.</Body>}
@@ -313,7 +314,7 @@ function DoneView({ insets, comp, gate, onBook, onBack }: { insets: { top: numbe
                 <View key={s.key} style={styles.doneSection}>
                   <View style={styles.neededRow}>
                     <Eyebrow>{s.label} · step {s.step}</Eyebrow>
-                    <Meta style={{ color: color.textSubtle }}>{s.earned} / {s.weight} PTS</Meta>
+                    <Meta style={{ color: color.textSubtle }}>{s.earned} / {s.weight} pts</Meta>
                   </View>
                   {s.missing.map((mi) => {
                     // A blocker is not a missing field: the qualification doc and
@@ -326,7 +327,7 @@ function DoneView({ insets, comp, gate, onBook, onBack }: { insets: { top: numbe
                     return (
                       <View key={mi} style={styles.neededRow}>
                         <Body size="sm" style={{ flex: 1, marginTop: space.xs }}>{mi}</Body>
-                        {required && <StatusPill tone="warning" label="required" />}
+                        {required && <StatusPill tone="warning" label="Required" />}
                       </View>
                     )
                   })}
@@ -344,7 +345,7 @@ function DoneView({ insets, comp, gate, onBook, onBack }: { insets: { top: numbe
   )
 }
 
-const MONO = { fontFamily: FF.monoMedium, fontSize: 11 } as const
+const LABEL = { fontFamily: FF.bodyMedium, fontSize: fontSize['meta-md'] } as const
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.background },
   loading: { padding: 20, gap: 14 },
@@ -356,8 +357,8 @@ const styles = StyleSheet.create({
   barDone: { backgroundColor: color.accentMuted },
   barOn: { backgroundColor: color.accent },
   gate: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 24, paddingTop: 6 },
-  gateText: { ...MONO, letterSpacing: 1.54, color: color.textSubtle },
-  stepEyebrow: { ...MONO, letterSpacing: 0.88, color: color.accent },
+  gateText: { ...LABEL, fontVariant: ['tabular-nums'], color: color.textSubtle },
+  stepEyebrow: { ...LABEL, color: color.accent },
   stepTitle: { fontFamily: FF.bodySemiBold, fontSize: 24, lineHeight: 29, letterSpacing: -0.55, color: color.text, marginTop: 6, marginBottom: 16 },
   bannerGap: { marginBottom: 16 },
   scroll: { paddingHorizontal: 24, paddingTop: 18, paddingBottom: 28 },
@@ -369,7 +370,7 @@ const styles = StyleSheet.create({
   footer: { backgroundColor: color.surface, borderTopWidth: borderWidth.thin, borderTopColor: color.border, paddingHorizontal: 24, paddingTop: 12, gap: 8 },
   savedRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   savedDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: color.successFill },
-  saveText: { ...MONO, letterSpacing: 1.54, color: color.textSubtle },
+  saveText: { ...LABEL, fontVariant: ['tabular-nums'], color: color.textSubtle },
   footRow: { flexDirection: 'row', gap: 12, alignItems: 'center' },
   footBtn: { height: 52 },
   footBtnGrow: { height: 52, flex: 1 },

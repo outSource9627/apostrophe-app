@@ -66,7 +66,7 @@ export function ConfirmedScreen({
           <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
             <Disc tone="ok"><Icon name="check" size={26} tint={color.successFill} weight={2.2} /></Disc>
             <View style={styles.head}>
-              <Eyebrow tone="ok">BOOKED · {bookingRef(q.data.id)}</Eyebrow>
+              <Eyebrow tone="ok">Booked · {bookingRef(q.data.id)}</Eyebrow>
               <Lead>{`${fmtShortDate(q.data.slotStart)} · ${fmtTime(q.data.slotStart)}`}</Lead>
               <Sub>{fmtTime(q.data.slotEnd)} IST · {q.data.durationMin} min · in the app</Sub>
             </View>
@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
   head: { gap: 6 },
   prepHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
   prepHeadText: { fontFamily: FF.bodySemiBold, fontSize: 16, color: color.text },
-  count: { fontFamily: FF.monoMedium, fontSize: 11, letterSpacing: 1.54, textTransform: 'uppercase', color: color.textMuted },
+  count: { fontFamily: FF.bodyMedium, fontSize: 12.5, fontVariant: ['tabular-nums'], color: color.textMuted },
   prepRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingVertical: 12, borderTopWidth: borderWidth.thin, borderTopColor: color.border },
   prepText: { flex: 1, gap: 2 },
   prepTitle: { fontFamily: FF.bodyMedium, fontSize: 15 },

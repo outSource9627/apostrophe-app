@@ -33,7 +33,7 @@ export function TopUpScreen({ id, onBack, onPay }: { id: string; onBack: () => v
       <>
         <View style={[styles.body, styles.grow]}>
           <Disc tone="ok"><Icon name="check" size={26} tint={color.successFill} weight={2.2} /></Disc>
-          <Eyebrow tone="ok">NOTHING OWED</Eyebrow>
+          <Eyebrow tone="ok">Nothing owed</Eyebrow>
           <Lead>You&rsquo;re all set.</Lead>
           <Sub>Nothing is owed on this interview. If an interviewer ever confirms a higher qualification than you paid for, the small difference would show here and hold your video resume until it&rsquo;s settled.</Sub>
         </View>

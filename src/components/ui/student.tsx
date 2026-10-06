@@ -1,7 +1,7 @@
 import React from 'react'
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, TextInput, View, type PressableProps, type ViewProps } from 'react-native'
 import Svg, { Defs, LinearGradient, Path, RadialGradient, Rect, Stop } from 'react-native-svg'
-import { borderWidth, color, height, opacity, radius, space, spaceHalf, trackingNative } from '../../theme'
+import { borderWidth, color, height, opacity, radius, space, spaceHalf } from '../../theme'
 import { LogoMark } from '../Logo'
 import { Body } from './Type'
 import { Input } from './fields'
@@ -40,7 +40,7 @@ export function Avatar({ initials, onPress }: { initials: string; onPress?: () =
   )
 }
 
-/** "1 CREDIT" — mono on the accent wash. Not a status, so it does not take the status pill's tracking. */
+/** "1 credit" — a meta label on the accent wash. Not a status, so it does not take the status pill's tracking. */
 export function CreditChip({ label }: { label: string }) {
   return (
     <View style={styles.credit}>
@@ -341,7 +341,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     backgroundColor: color.accentSoft,
   },
-  creditText: { color: color.accentText, textTransform: 'uppercase' },
+  creditText: { color: color.accentText },
 
   header: {
     height: height['top-bar'],
@@ -411,7 +411,7 @@ const styles = StyleSheet.create({
     gap: spaceHalf['2.5'],
   },
   menuGroup: { gap: space.sm },
-  menuLabel: { color: color.textMuted, letterSpacing: trackingNative.eyebrow, paddingHorizontal: space.xs },
+  menuLabel: { color: color.textMuted, paddingHorizontal: space.xs },
   menuCard: { backgroundColor: color.surface, borderRadius: radius.lg, borderWidth: borderWidth.thin, borderColor: color.border, overflow: 'hidden' },
   menuRule: { borderBottomWidth: borderWidth.thin, borderBottomColor: color.borderSoft },
   menuRow: { minHeight: height['screen-header'], flexDirection: 'row', alignItems: 'center', gap: space.md, paddingHorizontal: space.lg, paddingVertical: space.md },
@@ -507,12 +507,12 @@ export function StickyFooter({ children, inset = true }: { children: React.React
   )
 }
 
-/** A labelled group of rows on one card (Android M16's list pattern): mono eyebrow above, hairlines between. */
+/** A labelled group of rows on one card (Android M16's list pattern): grey eyebrow above, hairlines between. */
 export function MenuGroup({ label, children }: { label?: string; children: React.ReactNode }) {
   const rows = React.Children.toArray(children).filter(Boolean)
   return (
     <View style={styles.menuGroup}>
-      {!!label && <Text style={[text.metaMd, styles.menuLabel]}>{label.toUpperCase()}</Text>}
+      {!!label && <Text style={[text.metaMd, styles.menuLabel]}>{label}</Text>}
       <View style={styles.menuCard}>
         {rows.map((row, i) => (
           <View key={i} style={i < rows.length - 1 ? styles.menuRule : undefined}>{row}</View>

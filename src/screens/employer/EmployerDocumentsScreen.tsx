@@ -339,7 +339,7 @@ function Documents({ focus, onBack, onSubmitted, arrived }: EmployerDocumentsScr
   const asked = mode === 'answer' ? state.verification.reason : null
 
   return (
-    <EmployerShell back={back} title="Verify your company" sub={mode === 'submit' ? 'STEP 3 OF 3' : undefined} footer={footer}>
+    <EmployerShell back={back} title="Verify your company" sub={mode === 'submit' ? 'Step 3 of 3' : undefined} footer={footer}>
       <Text style={[text.uiMd, styles.muted]}>{`PDF, JPG or PNG, up to ${maxMb} MB each. Seen only by the Apostrophe review team.`}</Text>
       {!!sub && <Text style={[text.uiMd, styles.muted]}>{sub}</Text>}
 
@@ -463,7 +463,7 @@ function SentDocument({ req, state, action }: { req: Requirement; state: Employe
       <View style={styles.tile}><Icon name="file" size={space.lg + 2} tint={color.textMuted} /></View>
       <View style={styles.grow}>
         <Text style={text.uiBaseMedium} numberOfLines={1}>{requirementKindLine(req) ?? requirementTitle(req)}</Text>
-        {!!stamp && <Text style={[text.metaMd, styles.stamp, req.status === 'APPROVED' ? styles.ok : styles.muted]}>{stamp.toUpperCase()}</Text>}
+        {!!stamp && <Text style={[text.metaMd, styles.stamp, req.status === 'APPROVED' ? styles.ok : styles.muted]}>{stamp}</Text>}
       </View>
       {action}
     </View>

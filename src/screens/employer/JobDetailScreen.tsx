@@ -38,7 +38,7 @@ function timeline(job: EmployerJobDetail, hours?: number): { title: string; sub?
  * with View applicants, the status controls (Edit, Pause or Resume, Close), the
  * moderation timeline, and the details. EM-19b is the delete confirmation,
  * from the ⋯ menu — with "Close the post instead" where closing still works.
- * Close itself has no confirmation, as on the web, though it is final.
+ * Pause and Close each ask first: Pause can be undone with Resume, Close is final.
  */
 export function JobDetailScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
@@ -53,6 +53,7 @@ export function JobDetailScreen() {
   const [notice, setNotice] = useState<string | null>(null)
   const [menu, setMenu] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [confirmStatus, setConfirmStatus] = useState<'PAUSE' | 'CLOSE' | null>(null)
 
   const load = useCallback(async () => {
     setError(null)
@@ -68,17 +69,28 @@ export function JobDetailScreen() {
   }, [focused, load])
 
   async function act(action: 'PAUSE' | 'RESUME' | 'CLOSE' | 'SUBMIT') {
-    if (!job) return
+    if (!job) return false
     setBusy(action)
     setNotice(null)
     try {
       const updated = action === 'SUBMIT' ? await submitEmployerJob(job.id) : await setEmployerJobStatus(job.id, action)
       setJob((prev) => (prev ? { ...prev, ...updated } : prev))
+      return true
     } catch (e) {
       setNotice(e instanceof Error ? e.message : 'Could not update this post.')
+      return false
     } finally {
       setBusy(null)
     }
+  }
+
+  /** Pause or Close, once confirmed; the dialog stays open on a refusal, with the reason. */
+  async function confirmAct() {
+    if (confirmStatus && (await act(confirmStatus))) setConfirmStatus(null)
+  }
+  function askStatus(action: 'PAUSE' | 'CLOSE') {
+    setNotice(null)
+    setConfirmStatus(action)
   }
 
   async function remove() {
@@ -112,15 +124,15 @@ export function JobDetailScreen() {
   const v = jobView(job)
   const edit = () => navigation.navigate('JobEditor', { id: job.id })
   const hasBeenLive = v === 'LIVE' || v === 'PAUSED' || v === 'CLOSED'
-  const meta = [jobMeta(job), job.vacancies ? `${job.vacancies} ${job.vacancies === 1 ? 'VACANCY' : 'VACANCIES'}` : null].filter(Boolean).join(' · ')
+  const meta = [jobMeta(job), job.vacancies ? `${job.vacancies} ${job.vacancies === 1 ? 'vacancy' : 'vacancies'}` : null].filter(Boolean).join(' · ')
   const experience = job.experience.maxYears == null
     ? `${job.experience.minYears}+ years`
     : `${job.experience.minYears}–${job.experience.maxYears} years`
   const details: [string, string | null][] = [
-    ['SALARY', salaryLine(job.salary)],
-    ['EXPERIENCE', experience],
-    ['QUALIFICATION', job.minQualification ? label(job.minQualification) : null],
-    ['DEADLINE', job.applicationDeadline ? istDayYear(job.applicationDeadline) : 'None'],
+    ['Salary', salaryLine(job.salary)],
+    ['Experience', experience],
+    ['Qualification', job.minQualification ? label(job.minQualification) : null],
+    ['Deadline', job.applicationDeadline ? istDayYear(job.applicationDeadline) : 'None'],
   ]
 
   return (
@@ -142,7 +154,7 @@ export function JobDetailScreen() {
         <EmCard>
           <View style={styles.liveHead}>
             {v === 'LIVE' && <View style={styles.dot} />}
-            <EmMono>{v === 'LIVE' ? 'LIVE COUNTERS' : 'COUNTERS'}</EmMono>
+            <EmMono>{v === 'LIVE' ? 'Live counters' : 'Counters'}</EmMono>
           </View>
           <JobCounters job={job} />
           <Button
@@ -157,23 +169,23 @@ export function JobDetailScreen() {
       {v !== 'CLOSED' && (
         <View style={styles.controls}>
           <Button variant="outline" size="md" icon="edit" label={v === 'NOT_APPROVED' ? 'Edit and resubmit' : 'Edit'} style={styles.ctl} onPress={edit} />
-          {v === 'LIVE' && <Button variant="outline" size="md" icon="pause" label="Pause" busy={busy === 'PAUSE'} disabled={!!busy} style={styles.ctl} onPress={() => { act('PAUSE') }} />}
+          {v === 'LIVE' && <Button variant="outline" size="md" icon="pause" label="Pause" busy={busy === 'PAUSE'} disabled={!!busy} style={styles.ctl} onPress={() => askStatus('PAUSE')} />}
           {v === 'PAUSED' && <Button variant="outline" size="md" icon="tri" label="Resume" busy={busy === 'RESUME'} disabled={!!busy} style={styles.ctl} onPress={() => { act('RESUME') }} />}
           {v === 'DRAFT' && <Button variant="primary" size="md" label="Submit" busy={busy === 'SUBMIT'} disabled={!!busy} style={styles.ctl} onPress={() => { act('SUBMIT') }} />}
-          {(v === 'LIVE' || v === 'PAUSED') && <Button variant="destructive" size="md" label="Close" busy={busy === 'CLOSE'} disabled={!!busy} style={styles.ctl} onPress={() => { act('CLOSE') }} />}
+          {(v === 'LIVE' || v === 'PAUSED') && <Button variant="destructive" size="md" label="Close" busy={busy === 'CLOSE'} disabled={!!busy} style={styles.ctl} onPress={() => askStatus('CLOSE')} />}
         </View>
       )}
       {!!notice && <Text style={[text.uiSm, styles.danger]}>{notice}</Text>}
 
       {timeline(job, moderationHours).length > 0 && (
         <EmCard>
-          <EmMono>MODERATION</EmMono>
+          <EmMono>Moderation</EmMono>
           <EmSteps steps={timeline(job, moderationHours)} />
         </EmCard>
       )}
 
       <EmCard>
-        <EmMono>DETAILS</EmMono>
+        <EmMono>Details</EmMono>
         <View style={styles.grid}>
           {details.map(([k, val]) => (
             <View key={k} style={styles.fact}>
@@ -225,6 +237,36 @@ export function JobDetailScreen() {
           </>
         }
       />
+
+      <EmDialog
+        open={confirmStatus === 'PAUSE'}
+        onClose={() => !busy && setConfirmStatus(null)}
+        title={`Pause “${job.title}”?`}
+        body="It comes off the student feed and takes no new applications until you resume it. You can resume it any time; it goes back live without another review."
+        actions={
+          <>
+            <Button variant="ghost" size="md" label="Cancel" disabled={!!busy} onPress={() => setConfirmStatus(null)} />
+            <Button variant="secondary" size="md" label="Pause" busy={busy === 'PAUSE'} disabled={!!busy} onPress={() => { confirmAct() }} />
+          </>
+        }
+      >
+        {!!notice && <Text style={[text.uiSm, styles.danger]}>{notice}</Text>}
+      </EmDialog>
+
+      <EmDialog
+        open={confirmStatus === 'CLOSE'}
+        onClose={() => !busy && setConfirmStatus(null)}
+        title={`Close “${job.title}”?`}
+        body="It comes off the student feed and takes no more applications. A closed post can’t be reopened or edited — to hire for it again, post a new role."
+        actions={
+          <>
+            <Button variant="ghost" size="md" label="Cancel" disabled={!!busy} onPress={() => setConfirmStatus(null)} />
+            <Button variant="dangerFill" size="md" label="Close post" busy={busy === 'CLOSE'} disabled={!!busy} onPress={() => { confirmAct() }} />
+          </>
+        }
+      >
+        {!!notice && <Text style={[text.uiSm, styles.danger]}>{notice}</Text>}
+      </EmDialog>
     </EmployerShell>
   )
 }

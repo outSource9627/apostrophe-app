@@ -16,6 +16,9 @@ const fmtDate = (iso: string) => {
   const d = new Date(new Date(iso).getTime() + (5 * 60 + 30) * 60000)
   return `${d.getUTCDate()} ${MON[d.getUTCMonth()]} ${d.getUTCFullYear()}`
 }
+/** How a payment method reads in the row: acronyms stay upper ('UPI', 'EMI'), the rest in sentence case. */
+const METHOD: Record<string, string> = { upi: 'UPI', card: 'Card', netbanking: 'Net banking', wallet: 'Wallet', emi: 'EMI', paylater: 'Pay later' }
+const methodLabel = (m: string) => METHOD[m.toLowerCase()] ?? `${m.charAt(0).toUpperCase()}${m.slice(1).toLowerCase()}`
 
 /**
  * ST-25 / ST-26 — every settled payment and its GST receipt. Only money that
@@ -72,7 +75,7 @@ function Row({ p }: { p: PaymentRow }) {
       <View style={styles.top}>
         <View style={styles.grow}>
           <Text style={styles.title}>{`${p.tier} · ${TIER_NAME[p.tier] ?? p.tier} interview`}</Text>
-          <Text style={styles.sub}>{fmtDate(p.paidAt ?? p.createdAt)}{p.method ? ` · ${p.method.toUpperCase()}` : ''}</Text>
+          <Text style={styles.sub}>{fmtDate(p.paidAt ?? p.createdAt)}{p.method ? ` · ${methodLabel(p.method)}` : ''}</Text>
         </View>
         <Text style={styles.amt}>{rupees(p.amountPaise)}</Text>
       </View>
@@ -131,12 +134,12 @@ const styles = StyleSheet.create({
   sub: { fontFamily: FF.body, fontSize: 13.5, color: color.textMuted, marginTop: 2 },
   amt: { fontFamily: FF.bodyBold, fontSize: 20, letterSpacing: -0.6, color: color.text },
   pills: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  number: { fontFamily: FF.monoMedium, fontSize: 11.5, letterSpacing: 0.46, color: color.textSubtle },
+  number: { fontFamily: FF.bodyMedium, fontSize: 13, fontVariant: ['tabular-nums'], color: color.textSubtle },
   breakdown: { backgroundColor: color.surfaceMuted, borderRadius: 12, padding: 12, gap: 7 },
   line: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
   lineK: { fontFamily: FF.body, fontSize: 14, color: color.textMuted },
   lineKStrong: { fontFamily: FF.bodySemiBold, color: color.text },
-  lineV: { fontFamily: FF.monoMedium, fontSize: 14, color: color.text },
+  lineV: { fontFamily: FF.bodyMedium, fontSize: 14, fontVariant: ['tabular-nums'], color: color.text },
   rule: { height: borderWidth.thin, backgroundColor: color.border },
   pending: { fontFamily: FF.body, fontSize: 13.5, lineHeight: 20, color: color.textMuted },
   dl: {

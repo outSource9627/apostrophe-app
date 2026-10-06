@@ -112,13 +112,13 @@ export function FeedbackScreen({ id, onBack }: { id: string; onBack: () => void 
           </View>
         </View>
         <View style={styles.heroText}>
-          <Text style={styles.heroEyebrow}>OVERALL SCORE</Text>
+          <Text style={styles.heroEyebrow}>Overall score</Text>
           <Text style={styles.heroBody}>From your interviewer, out of ten.</Text>
         </View>
       </View>
 
       <View style={styles.private}>
-        <Text style={styles.privateTag}>PRIVATE</Text>
+        <Text style={styles.privateTag}>Private</Text>
         <Text style={styles.privateText}>Employers never see your scores or this note — only your video resume.</Text>
       </View>
 
@@ -180,10 +180,10 @@ const styles = StyleSheet.create({
   ringNum: { fontFamily: FF.bodySemiBold, fontSize: 38, letterSpacing: -1.9, color: color.textOnInk, lineHeight: 42 },
   ringOf: { fontFamily: FF.body, fontSize: 12, color: color.textOnInkSubtle },
   heroText: { flex: 1 },
-  heroEyebrow: { fontFamily: FF.monoMedium, fontSize: 11, letterSpacing: 0.88, color: color.accentMuted },
+  heroEyebrow: { fontFamily: FF.bodyMedium, fontSize: 12.5, color: color.accentMuted },
   heroBody: { fontFamily: FF.body, fontSize: 14, lineHeight: 20, color: color.textOnInkMuted, marginTop: 6 },
   private: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, paddingHorizontal: 14, borderRadius: 12, backgroundColor: color.successSoft },
-  privateTag: { fontFamily: FF.monoMedium, fontSize: 10, letterSpacing: 1, color: color.textInverse, backgroundColor: color.successFill, paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6, overflow: 'hidden' },
+  privateTag: { fontFamily: FF.bodyMedium, fontSize: 12, color: color.textInverse, backgroundColor: color.successFill, paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6, overflow: 'hidden' },
   privateText: { flex: 1, fontFamily: FF.body, fontSize: 12.5, lineHeight: 17.5, color: color.success },
   scores: { paddingVertical: 6, paddingHorizontal: 14, gap: 0 },
   scoreRow: { paddingVertical: 12, gap: 8 },

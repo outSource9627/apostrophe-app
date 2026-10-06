@@ -36,6 +36,19 @@ export interface CandidateCard {
   publishedAt: string | null
 }
 
+/**
+ * ST-35 — one profile document as an employer is shown it. `id` is opaque (a
+ * hash of the storage key, stable across reorders); the key never leaves the
+ * server. GET /employers/candidates/:id/documents/:docId signs a link for it.
+ */
+export interface CandidateDocumentView {
+  id: string
+  kind: 'RESUME' | 'CERTIFICATE' | 'OTHER' | string
+  name: string | null
+  contentType: string | null
+  sizeBytes: number | null
+}
+
 export interface CandidateDetail extends Partial<CandidateCard> {
   id: string
   name: string
@@ -71,7 +84,8 @@ export interface CandidateDetail extends Partial<CandidateCard> {
     availabilityToJoin?: string | null
     remote?: boolean
   } | null
-  portfolioLinks: Array<{ label?: string; url: string }>
+  /** The URLs as the student typed them — the server sends plain strings, with no label. */
+  portfolioLinks: string[]
   photoUrl: string | null
   posterUrl?: string | null
   streamUrl?: string | null
@@ -90,13 +104,9 @@ export interface CandidateDetail extends Partial<CandidateCard> {
     durationSec: number | null
     unverified: boolean
   }>
-  documents?: Array<{
-    id: string
-    kind: 'RESUME' | 'CERTIFICATE' | 'OTHER' | string
-    name: string | null
-    contentType: string | null
-    sizeBytes: number | null
-  }>
+  documents?: CandidateDocumentView[]
+  /** The RESUME among `documents`, for the header's Résumé action; null when there is none. */
+  resume?: CandidateDocumentView | null
   limits?: EmployerLimitsView
   connection?: { active: boolean; threadId: string | null } | null
 }
@@ -254,7 +264,11 @@ export const playSelfVideo = (candidateId: string, videoId: string) =>
 /** The swipe DELETE /swipes would take back, or null (the undo bar after a reload). */
 export const fetchLastSwipe = () => api.get<LastSwipeView | null>('/employers/swipes/last')
 
-/** A 15-minute signed link to one document on a candidate's full profile. Spends no quota. */
+/**
+ * A 15-minute signed link to one document on a candidate's full profile. Spends no quota.
+ * The one route for every employer download (profile, applicant, shortlist, connection):
+ * it also answers for a student who applied to this employer's jobs or is connected.
+ */
 export const fetchCandidateDocument = (candidateId: string, docId: string) =>
   api.get<{ url: string; expiresAt: string; name: string | null; contentType: string | null }>(
     `/employers/candidates/${candidateId}/documents/${docId}`,

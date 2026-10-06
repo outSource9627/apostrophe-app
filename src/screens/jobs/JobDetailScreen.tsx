@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, ApiClientError } from '../../lib/api'
 import { swipeJob, type JobDetail } from '../../lib/api/jobs'
 import { applicationMark, dateLine, deadlineLine, employmentLabel, experienceLine, locationLine, salaryRange } from '../../lib/jobs/format'
-import { borderWidth, color, fontFamilyNative as FF, opacity, radius } from '../../theme'
+import { borderWidth, color, fontFamilyNative as FF, fontSize, opacity, radius } from '../../theme'
 import { StatusPill } from '../../components/ui'
 import { Icon } from '../../components/ui/Icon'
 import { Btn, DetailHeader, FooterBar, Panel, Skel } from '../../components/tab/kit'
@@ -92,9 +92,9 @@ export function JobDetailScreen({ id, onBack, onApply, onApplications }: {
               </View>
             )}
             <View style={styles.tags}>
-              {chips.map((c) => <View key={c} style={styles.tag}><Text style={styles.tagText}>{c.toUpperCase()}</Text></View>)}
+              {chips.map((c) => <View key={c} style={styles.tag}><Text style={styles.tagText}>{c}</Text></View>)}
               {job.video?.url ? (
-                <View style={styles.vtag}><Icon name="play" size={11} tint={color.accent} fill={color.accent} /><Text style={styles.vtagText}>VIDEO</Text></View>
+                <View style={styles.vtag}><Icon name="play" size={11} tint={color.accent} fill={color.accent} /><Text style={styles.vtagText}>Video</Text></View>
               ) : null}
             </View>
           </View>
@@ -169,9 +169,9 @@ const styles = StyleSheet.create({
   chipTextSoon: { color: color.warning },
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   tag: { backgroundColor: color.surface, borderWidth: borderWidth.thin, borderColor: color.border, borderRadius: radius.pill, paddingVertical: 6, paddingHorizontal: 11 },
-  tagText: { fontFamily: FF.monoMedium, fontSize: 11, letterSpacing: 0.66, color: color.textSecondary },
+  tagText: { fontFamily: FF.bodyMedium, fontSize: fontSize['meta-md'], color: color.textSecondary },
   vtag: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: color.accentSoft, borderRadius: radius.pill, paddingVertical: 6, paddingHorizontal: 11 },
-  vtagText: { fontFamily: FF.monoMedium, fontSize: 10, letterSpacing: 0.8, color: color.accent },
+  vtagText: { fontFamily: FF.bodyMedium, fontSize: fontSize['meta-sm'], color: color.accent },
   sections: { padding: 20, gap: 22 },
   appliedCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderColor: 'transparent', borderRadius: 20, gap: 12 },
   appliedRow: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },

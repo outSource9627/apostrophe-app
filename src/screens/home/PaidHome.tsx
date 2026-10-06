@@ -11,11 +11,14 @@ import {
 } from '../../lib/home/dashboard'
 import { fmtShortDate, fmtTime } from '../../lib/interviews/slots'
 import { hoursPhrase, minutesPhrase, useBookingRules } from '../../lib/interviews/rules'
+import { isLate, lateClock, lateClockLabel, useStudentLate, type LateJoin } from '../../lib/interviews/late'
+import { LateBand, LateDrain, LatePill, OtherLine, RedInkFill, lateCard, lateJoinRed, lateTint } from '../../lib/interviews/LateJoin'
 import { fmtStampZone } from '../../lib/chat/format'
-import { Banner, ErrorState, FilmThumb, Sheet, Skeleton, StatusPill, Toggle, type Tone } from '../../components/ui'
+import { ErrorState, FilmThumb, Sheet, Skeleton, StatusPill, Toggle, text, type Tone } from '../../components/ui'
 import { Icon, type IconName } from '../../components/ui/Icon'
-import { borderWidth, color, fontFamilyNative as FF, opacity, radius } from '../../theme'
+import { borderWidth, color, fontFamilyNative as FF, opacity, radius, space } from '../../theme'
 import { useLightStatusBar } from '../../lib/useLightStatusBar'
+import { FeedVisibilitySheet } from '../profile/FeedVisibilitySheet'
 
 /**
  * The paid student's Home, as the signed-off mockup draws it
@@ -177,7 +180,7 @@ function Body({
           <View style={s.metrics}>
             <Metric n={a.profileViews} label="Profile views" onPress={() => open('views')} />
             <Metric n={a.shortlistCount} label="Shortlisted by employers" onPress={() => open('shortlist')} />
-            <Metric n={a.openInterests} label="Open interests" flag={a.openInterests > 0 ? 'NEEDS REPLY' : undefined} last onPress={() => open('interests')} />
+            <Metric n={a.openInterests} label="Open interests" flag={a.openInterests > 0 ? 'Needs reply' : undefined} last onPress={() => open('interests')} />
           </View>
         </View>
       </View>
@@ -229,14 +232,14 @@ function Metric({ n, label, flag, last, onPress }: { n: number; label: string; f
 /**
  * The one switch that removes the student from the employer feed. Until a film
  * is published there is nothing to switch, so it shows its not-applicable state.
+ * Either way it asks first (FeedVisibilitySheet); a failure stays in the sheet.
  */
 function VisibilityCard({ audience }: { audience: DashboardData['audience'] }) {
   const qc = useQueryClient()
-  const [failed, setFailed] = useState(false)
+  const [ask, setAsk] = useState<boolean | null>(null)
   const mut = useMutation({
     mutationFn: (hidden: boolean) => setFeedVisibility(hidden),
-    onMutate: () => setFailed(false),
-    onError: () => setFailed(true),
+    onSuccess: () => setAsk(null),
     onSettled: () => qc.invalidateQueries({ queryKey: ['dashboard'] }),
   })
   const state: 'live' | 'hidden' | 'none' = !audience.published ? 'none' : audience.hiddenFromFeed ? 'hidden' : 'live'
@@ -262,11 +265,17 @@ function VisibilityCard({ audience }: { audience: DashboardData['audience'] }) {
           tone="success"
           disabled={state === 'none'}
           // While a change is in flight the switch ignores presses instead of going `disabled`.
-          onChange={mut.isPending ? undefined : (next) => mut.mutate(!next)}
+          onChange={mut.isPending ? undefined : (next) => { mut.reset(); setAsk(!next) }}
           label="Show me in the employer feed"
         />
       </View>
-      {failed && <Banner tone="danger">Could not change your visibility. Nothing was changed. Try again.</Banner>}
+      <FeedVisibilitySheet
+        hide={ask}
+        busy={mut.isPending}
+        error={mut.isError ? 'Could not change your visibility. Nothing was changed. Try again.' : null}
+        onConfirm={(hide) => mut.mutate(hide)}
+        onClose={() => setAsk(null)}
+      />
     </View>
   )
 }
@@ -277,7 +286,7 @@ function UpcomingCard({
   if (!iv) {
     return (
       <View style={s.ink}>
-        <View style={s.inkPill}><Text style={s.inkPillText}>NEXT STEP</Text></View>
+        <View style={s.inkPill}><Text style={s.inkPillText}>Next step</Text></View>
         <Text style={s.inkTitle}>No interview booked yet</Text>
         <Text style={s.inkSub}>Your interview is filmed, and that film becomes your video resume.</Text>
         <View style={s.inkActions}>
@@ -288,18 +297,51 @@ function UpcomingCard({
       </View>
     )
   }
+  return <NextCard iv={iv} now={now} props={props} onOpen={onOpen} />
+}
+
+/**
+ * The next interview on its ink card. While its join window is open the card carries the
+ * late-join warning (docs/late-join-mockups.html, red fill): the clock to the start, then
+ * below zero; amber once the student is late, the red fill from `booking.lateRedMinutes`;
+ * and whether the interviewer is in the room — a yes/no, never a name (SC-16).
+ */
+function NextCard({ iv: snapshot, now: coarseNow, props, onOpen }: { iv: DashboardData['interviews'][number]; now: number; props: PaidHomeProps; onOpen: () => void }) {
+  const { iv, late, now } = useStudentLate(snapshot, coarseNow)
   const joinable = iv.roomReady || iv.status === 'IN_PROGRESS'
+  const on = late.phase !== 'off'
+  const red = late.phase === 'red'
   return (
-    <Pressable accessibilityRole="button" accessibilityHint="Opens the interview details" onPress={onOpen} style={({ pressed }) => [s.ink, pressed && s.pressed]}>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityHint="Opens the interview details"
+      onPress={onOpen}
+      style={({ pressed }) => [s.ink, lateCard(late, true), pressed && s.pressed]}
+    >
+      {red && <RedInkFill />}
       <View style={s.inkTop}>
-        <View style={s.inkPill}><Text style={s.inkPillText}>{iv.status === 'IN_PROGRESS' ? 'IN PROGRESS' : 'UPCOMING'}</Text></View>
-        <Text style={s.inkUntil}>{untilLabel(iv, now).toUpperCase()}</Text>
+        {isLate(late) ? <LatePill j={late} onInk /> : (
+          <View style={s.inkPill}><Text style={s.inkPillText}>{iv.status === 'IN_PROGRESS' ? 'In progress' : 'Upcoming'}</Text></View>
+        )}
+        <Text style={s.inkUntil}>{untilLabel(iv, now)}</Text>
       </View>
-      <Text style={s.inkTitle}>{`${fmtShortDate(iv.slotStart)} · ${fmtTime(iv.slotStart)}`}</Text>
-      <Text style={s.inkSub}>{`${iv.durationMin}-minute interview · IST${iv.interviewer ? ` · with ${iv.interviewer.name}` : ''}`}</Text>
+      <View style={s.inkHead}>
+        <View style={s.grow}>
+          <Text style={s.inkTitle}>{`${fmtShortDate(iv.slotStart)} · ${fmtTime(iv.slotStart)}`}</Text>
+          <Text style={s.inkSub}>{`${iv.durationMin}-minute interview · IST${iv.interviewer ? ` · with ${iv.interviewer.name}` : ''}`}</Text>
+        </View>
+        {on && <InkClock late={late} />}
+      </View>
+      {on && (
+        <View style={[s.lateStack, s.lateTop]}>
+          <LateDrain j={late} onInk />
+          <LateBand j={late} onInk />
+          <OtherLine j={late} who="Interviewer" onInk />
+        </View>
+      )}
       <View style={s.inkActions}>
-        <Pressable accessibilityRole="button" onPress={() => props.onJoin(iv.id)} style={({ pressed }) => [s.inkBtn, s.inkBtnGrow, pressed && s.pressed]}>
-          <Text style={s.inkBtnText}>{joinable ? 'Join interview' : 'Test my setup'}</Text>
+        <Pressable accessibilityRole="button" onPress={() => props.onJoin(iv.id)} style={({ pressed }) => [s.inkBtn, s.inkBtnGrow, red && lateJoinRed.button, pressed && s.pressed]}>
+          <Text style={[s.inkBtnText, red && lateJoinRed.label]}>{joinable ? 'Join interview' : 'Test my setup'}</Text>
         </Pressable>
         {iv.canReschedule && (
           <Pressable accessibilityRole="button" onPress={() => props.onReschedule(iv.id)} style={({ pressed }) => [s.inkBtn, s.inkBtnGhost, pressed && s.pressed]}>
@@ -309,6 +351,16 @@ function UpcomingCard({
       </View>
       {!iv.interviewer && <Text style={s.inkNote}>Your interviewer is revealed when the session starts.</Text>}
     </Pressable>
+  )
+}
+
+/** "Starts in 04:12", then "Since the start −02:14" in the late colour. */
+function InkClock({ late }: { late: LateJoin }) {
+  return (
+    <View style={s.clockCol}>
+      <Text style={[text.uiXsMedium, s.clockLabel]}>{lateClockLabel(late)}</Text>
+      <Text style={[text.displayGreet, s.clockFig, { color: lateTint(late, true) ?? color.textInverse }]} numberOfLines={1}>{lateClock(late)}</Text>
+    </View>
   )
 }
 
@@ -382,7 +434,6 @@ function Sheets({
   const next = nextUpcoming(data.interviews, now)
   const done = latestCompleted(data.interviews)
   const film = filmStateOf(data.film, data.audience, done)
-  const { rules } = useBookingRules()
   const cfg = useQuery({ queryKey: ['config'], queryFn: () => api.get<{ scorecard?: { windowHours?: number } }>('/config') })
   const windowHours = cfg.data?.scorecard?.windowHours
 
@@ -423,39 +474,7 @@ function Sheets({
     )
   }
   if (sheet === 'interview' && next) {
-    const joinable = next.roomReady || next.status === 'IN_PROGRESS'
-    return (
-      <S
-        open
-        onClose={close}
-        title="Your interview"
-        primary={primary(joinable ? 'Join interview' : 'Test my setup', () => props.onJoin(next.id))}
-        secondary={next.canReschedule ? secondary('Reschedule', () => props.onReschedule(next.id)) : undefined}
-      >
-        <View style={s.facts}>
-          <Fact k="DATE" v={fmtShortDate(next.slotStart)} />
-          <Fact k="TIME" v={`${fmtTime(next.slotStart)} IST`} />
-          <Fact k="LENGTH" v={`${next.durationMin} minutes`} />
-          <Fact k="STARTS" v={untilLabel(next, now)} />
-        </View>
-        {!!rules && (
-          <Rule>
-            {`The join button opens ${minutesPhrase(rules.joinOpensMinutesBefore)} before the start${
-              rules.noShowMinutesAfter != null ? ` and stays open for ${minutesPhrase(rules.noShowMinutesAfter)} after` : ''
-            }.`}
-          </Rule>
-        )}
-        <Rule>The device check is required before you join: camera, microphone, speaker and network.</Rule>
-        {!!rules && next.canReschedule && (
-          <Rule>
-            {`You can reschedule for free up to ${hoursPhrase(rules.rescheduleCutoffHours)} before.${
-              rules.freeCancellationHours != null ? ` Cancel more than ${hoursPhrase(rules.freeCancellationHours)} ahead for a full refund.` : ''
-            }`}
-          </Rule>
-        )}
-        <Rule>Your interviewer’s name and photo appear when the session starts.</Rule>
-      </S>
-    )
+    return <InterviewSheet next={next} now={now} close={close} props={props} act={act} secondary={secondary} />
   }
   if (sheet === 'film') {
     const pill = FILM_PILL[film]
@@ -510,12 +529,12 @@ function Sheets({
             <Text style={s.scoreOf}>/10</Text>
           </View>
           <View style={s.grow}>
-            <Text style={s.scoreEyebrow}>OVERALL SCORE</Text>
+            <Text style={s.scoreEyebrow}>Overall score</Text>
             <Text style={s.scoreBody}>From your interviewer, out of ten.</Text>
           </View>
         </View>
         <View style={s.privateRow}>
-          <Text style={s.privateTag}>PRIVATE</Text>
+          <Text style={s.privateTag}>Private</Text>
           <Text style={s.privateText}>Employers never see your scores or this note — only your video resume.</Text>
         </View>
         <View style={s.card}>
@@ -545,15 +564,77 @@ function Sheets({
   return null
 }
 
+/**
+ * The next interview's sheet. While the join window is open it carries the same warning as
+ * the card — the band and whether the interviewer is in — and Join turns red past the red point.
+ */
+function InterviewSheet({
+  next: snapshot, now: coarseNow, close, props, act, secondary,
+}: {
+  next: DashboardData['interviews'][number]
+  now: number
+  close: () => void
+  props: PaidHomeProps
+  act: (fn: () => void) => () => void
+  secondary: (label: string, fn: () => void) => React.ReactNode
+}) {
+  const { rules } = useBookingRules()
+  const { iv: next, late, now } = useStudentLate(snapshot, coarseNow)
+  const joinable = next.roomReady || next.status === 'IN_PROGRESS'
+  const red = late.phase === 'red'
+  return (
+    <S
+      open
+      onClose={close}
+      title="Your interview"
+      primary={
+        <Pressable accessibilityRole="button" onPress={act(() => props.onJoin(next.id))} style={({ pressed }) => [s.shBtn, s.shBtnPri, red && lateJoinRed.button, pressed && s.pressed]}>
+          <Text style={s.shBtnPriText}>{joinable ? 'Join interview' : 'Test my setup'}</Text>
+        </Pressable>
+      }
+      secondary={next.canReschedule ? secondary('Reschedule', () => props.onReschedule(next.id)) : undefined}
+    >
+      {late.phase !== 'off' && (
+        <View style={s.lateStack}>
+          <LateBand j={late} />
+          <OtherLine j={late} who="Interviewer" />
+        </View>
+      )}
+      <View style={s.facts}>
+        <Fact k="Date" v={fmtShortDate(next.slotStart)} />
+        <Fact k="Time" v={`${fmtTime(next.slotStart)} IST`} />
+        <Fact k="Length" v={`${next.durationMin} minutes`} />
+        <Fact k={late.secondsLate > 0 ? 'Since the start' : 'Starts'} v={late.phase !== 'off' ? lateClock(late) : untilLabel(next, now)} tint={lateTint(late, false)} />
+      </View>
+      {!!rules && (
+        <Rule>
+          {`The join button opens ${minutesPhrase(rules.joinOpensMinutesBefore)} before the start${
+            rules.noShowMinutesAfter != null ? ` and stays open for ${minutesPhrase(rules.noShowMinutesAfter)} after` : ''
+          }.`}
+        </Rule>
+      )}
+      <Rule>The device check is required before you join: camera, microphone, speaker and network.</Rule>
+      {!!rules && next.canReschedule && (
+        <Rule>
+          {`You can reschedule for free up to ${hoursPhrase(rules.rescheduleCutoffHours)} before.${
+            rules.freeCancellationHours != null ? ` Cancel more than ${hoursPhrase(rules.freeCancellationHours)} ahead for a full refund.` : ''
+          }`}
+        </Rule>
+      )}
+      <Rule>Your interviewer’s name and photo appear when the session starts.</Rule>
+    </S>
+  )
+}
+
 /** The shared Sheet with the mockup's 14-point rhythm between its blocks. */
 function S({ children, ...rest }: React.ComponentProps<typeof Sheet>) {
   return <Sheet {...rest}><View style={s.sbody}>{children}</View></Sheet>
 }
 
-const Fact = ({ k, v }: { k: string; v: string }) => (
+const Fact = ({ k, v, tint }: { k: string; v: string; tint?: string | null }) => (
   <View style={s.fact}>
     <Text style={s.factKey}>{k}</Text>
-    <Text style={s.factVal}>{v}</Text>
+    <Text style={[s.factVal, !!tint && { color: tint }]}>{v}</Text>
   </View>
 )
 const Rule = ({ children }: { children: React.ReactNode }) => (
@@ -581,7 +662,7 @@ const s = StyleSheet.create({
     paddingVertical: 6, paddingHorizontal: 9, borderRadius: radius.pill,
     backgroundColor: color.onInkGround, borderWidth: borderWidth.thin, borderColor: color.onInkEdge,
   },
-  creditText: { fontFamily: FF.monoMedium, fontSize: 10.5, letterSpacing: 0.6, color: color.textInverse, textTransform: 'uppercase' },
+  creditText: { fontFamily: FF.bodyMedium, fontSize: 10.5, color: color.textInverse, fontVariant: ['tabular-nums'] },
   chatBtn: { width: 42, height: 42, borderRadius: 21, backgroundColor: color.onInkPlay, alignItems: 'center', justifyContent: 'center' },
 
   overlap: { marginTop: -44, paddingHorizontal: 20 },
@@ -602,7 +683,7 @@ const s = StyleSheet.create({
   metricLast: { borderRightWidth: 0, paddingRight: 0 },
   metricNum: { fontFamily: FF.bodyBold, fontSize: 30, lineHeight: 32, letterSpacing: -1.35, color: color.text },
   metricLabel: { fontFamily: FF.body, fontSize: 13, lineHeight: 17, color: color.textMuted, marginTop: 6 },
-  metricFlag: { fontFamily: FF.monoMedium, fontSize: 10, letterSpacing: 0.8, color: color.accent, marginTop: 6 },
+  metricFlag: { fontFamily: FF.bodyMedium, fontSize: 10, color: color.accent, marginTop: 6 },
 
   section: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', paddingHorizontal: 20, paddingTop: 24, paddingBottom: 10 },
   sectionTitle: { fontFamily: FF.bodyBold, fontSize: 19, letterSpacing: -0.48, color: color.text },
@@ -610,9 +691,16 @@ const s = StyleSheet.create({
   ink: { backgroundColor: color.ink, borderRadius: 18, padding: 18 },
   inkTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   inkPill: { alignSelf: 'flex-start', backgroundColor: color.onInkGround, borderRadius: radius.pill, paddingVertical: 5, paddingHorizontal: 10 },
-  inkPillText: { fontFamily: FF.monoMedium, fontSize: 10.5, letterSpacing: 1, color: color.textInverse },
-  inkUntil: { fontFamily: FF.monoMedium, fontSize: 11, letterSpacing: 1.1, color: color.textOnInkMuted },
+  inkPillText: { fontFamily: FF.bodyMedium, fontSize: 10.5, color: color.textInverse },
+  inkUntil: { fontFamily: FF.bodyMedium, fontSize: 11, color: color.textOnInkMuted },
   inkTitle: { fontFamily: FF.bodyBold, fontSize: 22, letterSpacing: -0.66, color: color.textInverse, marginTop: 12 },
+  // The late-join clock sits beside the title, its foot on the subtitle's line (the mockup's row).
+  inkHead: { flexDirection: 'row', alignItems: 'flex-end', gap: space.md },
+  clockCol: { alignItems: 'flex-end' },
+  clockLabel: { color: color.textOnInkBody },
+  clockFig: { fontVariant: ['tabular-nums'] },
+  lateStack: { gap: space.md },
+  lateTop: { marginTop: space.lg },
   inkSub: { fontFamily: FF.body, fontSize: 14, lineHeight: 19, color: color.textOnInkBody, marginTop: 4 },
   inkActions: { flexDirection: 'row', gap: 8, marginTop: 16 },
   inkBtn: { height: 46, borderRadius: 14, paddingHorizontal: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: color.surface },
@@ -642,7 +730,7 @@ const s = StyleSheet.create({
   headline: { fontFamily: FF.bodyBold, fontSize: 28, lineHeight: 31, letterSpacing: -1.1, color: color.text },
   facts: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   fact: { width: '48%', flexGrow: 1, backgroundColor: color.surfaceMuted, borderRadius: 14, paddingVertical: 11, paddingHorizontal: 13 },
-  factKey: { fontFamily: FF.monoMedium, fontSize: 10.5, letterSpacing: 1, color: color.textMuted },
+  factKey: { fontFamily: FF.bodyMedium, fontSize: 10.5, color: color.textMuted },
   factVal: { fontFamily: FF.bodySemiBold, fontSize: 15, color: color.text, marginTop: 3 },
   rule: { backgroundColor: color.surface, borderWidth: borderWidth.thin, borderColor: color.border, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 14 },
   ruleText: { fontFamily: FF.body, fontSize: 14, lineHeight: 21, color: color.textSecondary },
@@ -656,10 +744,10 @@ const s = StyleSheet.create({
   scoreNum: { flexDirection: 'row', alignItems: 'baseline', gap: 4 },
   scoreBig: { fontFamily: FF.bodyBold, fontSize: 64, lineHeight: 66, letterSpacing: -3, color: color.textInverse },
   scoreOf: { fontFamily: FF.body, fontSize: 16, color: color.textOnInkSubtle },
-  scoreEyebrow: { fontFamily: FF.monoMedium, fontSize: 11, letterSpacing: 1.5, color: color.accentMuted },
+  scoreEyebrow: { fontFamily: FF.bodyMedium, fontSize: 11, color: color.accentMuted },
   scoreBody: { fontFamily: FF.body, fontSize: 14, color: color.textOnInkSoft, marginTop: 4 },
   privateRow: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: color.successSoft, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 12 },
-  privateTag: { fontFamily: FF.monoMedium, fontSize: 10.5, color: color.textInverse, backgroundColor: color.successFill, borderRadius: 6, paddingVertical: 3, paddingHorizontal: 7, overflow: 'hidden' },
+  privateTag: { fontFamily: FF.bodyMedium, fontSize: 10.5, color: color.textInverse, backgroundColor: color.successFill, borderRadius: 6, paddingVertical: 3, paddingHorizontal: 7, overflow: 'hidden' },
   privateText: { flex: 1, fontFamily: FF.body, fontSize: 13, color: color.success },
   scoreRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12 },
   scoreRowRule: { borderBottomWidth: borderWidth.thin, borderBottomColor: color.border },

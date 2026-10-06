@@ -1,7 +1,7 @@
 import React from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import Svg, { Path, Rect } from 'react-native-svg'
-import { color, space, radius, borderWidth, height, trackingNative } from '../theme'
+import { color, space, radius, borderWidth, height } from '../theme'
 import { text } from './ui'
 
 /**
@@ -38,13 +38,13 @@ export function UnfinishedCard({
           <Rect x={4} y={10.5} width={16} height={10} rx={2} stroke={color.textSubtle} strokeWidth={1.25} />
           <Path d="M8 10.5V7a4 4 0 0 1 8 0v3.5" stroke={color.textSubtle} strokeWidth={1.25} strokeLinecap="round" />
         </Svg>
-        <Text style={[text.metaMd, styles.wellLabel]}>YOUR INTERVIEW GOES HERE</Text>
+        <Text style={[text.metaMd, styles.wellLabel]}>Your interview goes here</Text>
       </View>
 
       <View style={styles.body}>
         <View style={styles.nameRow}>
           <Text style={[text.displaySm, styles.name]} numberOfLines={1}>{name}</Text>
-          {!!city && <Text style={[text.metaSm, styles.city]}>{city.toUpperCase()}</Text>}
+          {!!city && <Text style={[text.metaSm, styles.city]}>{city}</Text>}
         </View>
         {!!qualificationLabel && <Text style={[text.uiXs, styles.qualification]}>{qualificationLabel}</Text>}
         <Text style={[text.uiSm, styles.later]}>Skills, experience and links are added after you pay.</Text>
@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
   tr: { borderRightWidth: borderWidth.thin, borderTopWidth: borderWidth.thin },
   bl: { borderLeftWidth: borderWidth.thin, borderBottomWidth: borderWidth.thin },
   br: { borderRightWidth: borderWidth.thin, borderBottomWidth: borderWidth.thin },
-  wellLabel: { letterSpacing: trackingNative.widest, color: color.textSubtle },
+  wellLabel: { color: color.textSubtle },
   body: { paddingHorizontal: space.lg, paddingTop: space.lg, paddingBottom: space.lg },
   nameRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: space.md },
   name: { flexShrink: 1 },

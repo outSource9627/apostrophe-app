@@ -3,7 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { borderWidth, color, height, opacity, radius, space, spaceHalf, trackingNative } from '../../theme'
+import { borderWidth, color, height, opacity, radius, space, spaceHalf } from '../../theme'
 import { BrandMark, Button, text } from '../../components/ui'
 import { IvCard, IvGlow, IvLabel } from '../../components/interviewer/iv'
 import { EmFoot } from '../../components/employer/em'
@@ -68,7 +68,7 @@ export function JoinUsScreen() {
       <ScrollView style={styles.grow} contentContainerStyle={styles.body}>
         <View style={styles.hero}>
           <IvGlow />
-          <Text style={[text.metaMd, styles.eyebrow]}>FOR INTERVIEWERS</Text>
+          <Text style={[text.metaMd, styles.eyebrow]}>For interviewers</Text>
           <Text style={text.displayPage}>Interview students live,</Text>
           <Text style={[text.displayPage, styles.muted]}>on the hours you set.</Text>
           <Text style={[text.uiBase, styles.muted]}>
@@ -78,13 +78,13 @@ export function JoinUsScreen() {
 
         {tiers.length > 0 && (
           <IvCard>
-            <IvLabel>THE INTERVIEWS</IvLabel>
+            <IvLabel>The interviews</IvLabel>
             <Text style={[text.uiSm, styles.muted]}>The tier comes from the qualification the student declares.</Text>
             {tiers.map((t, i) => (
               <View key={t.tier} style={[styles.tier, i === tiers.length - 1 && styles.last]}>
                 <View style={styles.grow}>
                   <Text style={text.uiMdSemi}>{t.quals.join(' · ') || label(t.tier)}</Text>
-                  <Text style={[text.metaSm, styles.subtle, styles.mono]}>{t.tier.replace('_', ' ')}</Text>
+                  <Text style={[text.metaSm, styles.subtle]}>{t.tier.replace('_', ' ')}</Text>
                 </View>
                 <Text style={[text.metaXl, styles.fig]}>{`${t.minutes} min`}</Text>
               </View>
@@ -93,13 +93,13 @@ export function JoinUsScreen() {
         )}
 
         <IvCard>
-          <IvLabel>THE FEE</IvLabel>
+          <IvLabel>The fee</IvLabel>
           <Text style={text.uiMd}>A fee per interview, set for your account by tier and shown on each interview before you run it. It is credited to your wallet when the scorecard is in, and you withdraw to your bank.</Text>
         </IvCard>
 
         {rules.length > 0 && (
           <IvCard>
-            <IvLabel>WHAT WE ASK</IvLabel>
+            <IvLabel>What we ask</IvLabel>
             {rules.map((r) => (
               <View key={r} style={styles.rule}>
                 <View style={styles.dot} />
@@ -109,7 +109,7 @@ export function JoinUsScreen() {
           </IvCard>
         )}
 
-        <IvLabel style={styles.section}>HOW IT WORKS</IvLabel>
+        <IvLabel style={styles.section}>How it works</IvLabel>
         <View>
           {STEPS.map((s, i) => (
             <View key={s.title} style={styles.step}>
@@ -142,13 +142,12 @@ const styles = StyleSheet.create({
   muted: { color: color.textMuted },
   subtle: { color: color.textSubtle },
   onInk: { color: color.textInverse },
-  mono: { letterSpacing: trackingNative.eyebrow },
-  fig: { letterSpacing: 0 },
+  fig: { fontVariant: ['tabular-nums'] },
   bar: { height: height.header, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: space.lg, backgroundColor: color.surface, borderBottomWidth: borderWidth.thin, borderBottomColor: color.border },
   brand: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   body: { padding: space.lg, gap: space.md, paddingBottom: space.xl },
   hero: { gap: space.xs, paddingVertical: space.md, overflow: 'hidden' },
-  eyebrow: { color: color.accent, letterSpacing: trackingNative.eyebrow, marginBottom: space.xs },
+  eyebrow: { color: color.accent, marginBottom: space.xs },
   section: { marginTop: space.sm },
   tier: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: spaceHalf['2.5'], borderBottomWidth: borderWidth.thin, borderBottomColor: color.borderSoft },
   last: { borderBottomWidth: 0, paddingBottom: 0 },

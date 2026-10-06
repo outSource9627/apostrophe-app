@@ -7,7 +7,7 @@ import { text } from './typography'
 /**
  * Foundations §02 — status pairs, and the application status ladder.
  *
- * Status is mono, uppercase and pill-shaped everywhere, so the same state reads
+ * Status is a medium-weight label, pill-shaped everywhere, so the same state reads
  * identically in a list, on a card and in an app bar. The tones are held
  * deliberately low in chroma: if they got loud, the accent would stop meaning
  * "act now" and start meaning "something is coloured".

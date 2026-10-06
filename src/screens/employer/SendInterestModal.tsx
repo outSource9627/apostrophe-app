@@ -212,7 +212,7 @@ export function SendInterestSheet({
 
       {openings.length > 0 && (
         <View style={styles.field}>
-          <Text style={[text.metaSm, styles.mono, styles.muted]}>JOB</Text>
+          <Text style={[text.metaSm, styles.mono, styles.muted]}>Job</Text>
           <View style={styles.radios} accessibilityRole="radiogroup" accessibilityLabel="Link to a job post">
             {[...openings.map((j) => ({ id: j.id, title: j.title })), { id: '', title: 'No specific job' }].map((j, i) => {
               const on = jobId === j.id
@@ -235,7 +235,7 @@ export function SendInterestSheet({
       )}
 
       <View style={styles.field}>
-        <Text style={[text.metaSm, styles.mono, styles.muted]}>MESSAGE</Text>
+        <Text style={[text.metaSm, styles.mono, styles.muted]}>Message</Text>
         <View style={styles.box}>
           <TextInput
             value={message}

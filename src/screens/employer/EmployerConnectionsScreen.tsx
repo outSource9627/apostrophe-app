@@ -13,6 +13,7 @@ import {
   type EmployerConnectionRow, type ReportReason,
 } from '../../lib/api/employerChat'
 import { fmtDayMon } from '../../lib/chat/format'
+import { useCandidateDocument } from '../../lib/employer/useCandidateDocument'
 import type { RootStackParamList } from '../../../App'
 
 export const REPORT_REASONS: { value: ReportReason; label: string }[] = [
@@ -153,8 +154,9 @@ function WithdrawDialog({
 /**
  * EM-24 · Connections (Employer Android). Everyone you are connected to: live
  * ones first, with their contact details (the server shares them once
- * connected) and Open chat; then the withdrawn and blocked ones, dimmed and
- * read-only. Each row's ⋯ holds View profile, Withdraw and Block and report.
+ * connected), CV when they have a résumé (ST-35, sent with the contact) and
+ * Open chat; then the withdrawn and blocked ones, dimmed and read-only. Each
+ * row's ⋯ holds View profile, Withdraw and Block and report.
  */
 export function EmployerConnectionsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
@@ -166,6 +168,8 @@ export function EmployerConnectionsScreen() {
   const [blocking, setBlocking] = useState<EmployerConnectionRow | null>(null)
   const [withdrawing, setWithdrawing] = useState<EmployerConnectionRow | null>(null)
   const [opening, setOpening] = useState<string | null>(null)
+  const [cvFailed, setCvFailed] = useState<{ id: string; text: string } | null>(null)
+  const docs = useCandidateDocument()
 
   const load = useCallback(async () => {
     setError(null)
@@ -190,6 +194,13 @@ export function EmployerConnectionsScreen() {
     } finally {
       setOpening(null)
     }
+  }
+
+  async function openResume(c: EmployerConnectionRow) {
+    if (!c.resume) return
+    setCvFailed(null)
+    const failed = await docs.open(c.counterparty.id, c.resume.id)
+    if (failed) setCvFailed({ id: c.id, text: failed })
   }
 
   const active = rows?.filter((r) => r.status === 'ACTIVE').length ?? 0
@@ -259,7 +270,21 @@ export function EmployerConnectionsScreen() {
                       )}
                     </View>
                   )}
-                  <Button variant="primary" size="md" icon="chat" label="Open chat" busy={opening === item.id} onPress={() => { openChat(item) }} />
+                  <View style={styles.actions}>
+                    {!!item.resume && (
+                      <Button
+                        variant="outline"
+                        size="md"
+                        icon="download"
+                        label="CV"
+                        accessibilityLabel={`Download ${item.counterparty.name || 'the candidate'}’s résumé`}
+                        busy={docs.opening === item.resume.id}
+                        onPress={() => { openResume(item) }}
+                      />
+                    )}
+                    <Button variant="primary" size="md" icon="chat" label="Open chat" busy={opening === item.id} onPress={() => { openChat(item) }} style={styles.chat} />
+                  </View>
+                  {cvFailed?.id === item.id && <Text style={[text.uiSm, styles.danger]}>{cvFailed.text}</Text>}
                 </>
               ) : (
                 <EmBadge label={item.status === 'BLOCKED' ? 'Blocked · read-only' : 'Withdrawn · read-only'} tone="gray" small />
@@ -273,7 +298,7 @@ export function EmployerConnectionsScreen() {
 
   const m = menuFor
   return (
-    <EmployerShell back={() => navigation.goBack()} title="Connections" sub={rows ? `${active} ACTIVE · ${archived} ARCHIVED` : undefined} scroll={false}>
+    <EmployerShell back={() => navigation.goBack()} title="Connections" sub={rows ? `${active} active · ${archived} archived` : undefined} scroll={false}>
       {body}
 
       <EmSheet open={!!m} onClose={() => setMenuFor(null)} scroll={false}>
@@ -338,6 +363,8 @@ const styles = StyleSheet.create({
   gap: { height: spaceHalf['2.5'] },
   head: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   contact: { gap: space.xs },
+  actions: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  chat: { flex: 1, minWidth: 0 },
   menu: { paddingHorizontal: space.lg, paddingBottom: space['2xl'] },
   menuRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, minHeight: height['control-lg'], paddingHorizontal: space.sm },
   check: { flexDirection: 'row', alignItems: 'center', gap: spaceHalf['2.5'], minHeight: height.tap },

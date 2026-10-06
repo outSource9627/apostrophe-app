@@ -6,10 +6,10 @@ import {
   FeedSheet, FeedSheetChips, FeedSheetCta, FeedSheetEntry, FeedSheetFace, FeedSheetFacts, FeedSheetFilm, FeedSheetHead, FeedSheetItem,
   FeedSheetNote, FeedSheetPlay, FeedSheetRound, FeedSheetSection,
 } from '../../components/ui/feed-deck'
-import { availabilityOf, ClipPlayer, expectedSalaryOf, experienceShort, linkUrl } from '../../components/employer/profile'
+import { availabilityOf, ClipPlayer, expectedSalaryOf, experienceShort, linkUrl, portfolioLinksOf } from '../../components/employer/profile'
 import { ApiClientError } from '../../lib/api'
 import {
-  fetchCandidateDetail, fetchCandidateDocument, playSelfVideo, type CandidateCard, type CandidateDetail,
+  fetchCandidateDetail, fetchCandidateDocument, playSelfVideo, type CandidateCard, type CandidateDetail, type CandidateDocumentView,
 } from '../../lib/api/employerFeed'
 import {
   clipLength, fileSize, joinsLine, monthYear, nameInitials, salaryLine, tierLine,
@@ -26,9 +26,10 @@ import { SendInterestSheet } from './SendInterestModal'
  * Watch full interview; Expected · Joins · Experience · Based in; then
  * experience, education, what they are looking for, skills, languages, the
  * self-uploaded clips (they play here), documents (a 15-minute link) and links.
- * The foot passes, shortlists or opens Send an Interest. The head and the facts
- * draw at once from the card; the rest loads behind them. A section with
- * nothing in it is not drawn.
+ * When the profile has a résumé (ST-35) it sits right under the facts too, so
+ * the CV is one tap from the top. The foot passes, shortlists or opens Send an
+ * Interest. The head and the facts draw at once from the card; the rest loads
+ * behind them. A section with nothing in it is not drawn.
  */
 export function CandidateProfileSheet({
   open, card, passDays, onClose, onPass, onShortlist, onOpenFull, onInterestSent,
@@ -128,6 +129,9 @@ export function CandidateProfileSheet({
           />
         )}
         <FeedSheetFacts items={facts} />
+        {!!detail?.resume && (
+          <ResumeItem doc={detail.resume} opening={openingDoc === detail.resume.id} onOpen={openDocument} />
+        )}
         {!!notice && <Text style={styles.notice}>{notice}</Text>}
         {detail ? (
           <Sections candidate={detail} openingDoc={openingDoc} onPlayClip={playClip} onOpenDocument={openDocument} />
@@ -158,6 +162,23 @@ export function CandidateProfileSheet({
   )
 }
 
+/** The résumé, one tap from the top of the sheet: the same row the Documents section draws for it. */
+function ResumeItem({ doc, opening, onOpen }: { doc: CandidateDocumentView; opening: boolean; onOpen: (docId: string) => void }) {
+  return (
+    <FeedSheetItem
+      lead={<View style={styles.docMark}><Icon name="file" size={space.lg} tint={color.textOnInkMuted} /></View>}
+      title={label(doc.kind)}
+      sub={[doc.name, fileSize(doc.sizeBytes)].filter(Boolean).join(' · ')}
+      trail={opening
+        ? <ActivityIndicator color={color.textOnInkMuted} />
+        : <Icon name="download" size={space.lg + 2} tint={color.textOnInkMuted} />}
+      label={`Download ${doc.name || label(doc.kind)}`}
+      disabled={opening}
+      onPress={() => onOpen(doc.id)}
+    />
+  )
+}
+
 function Sections({
   candidate, openingDoc, onPlayClip, onOpenDocument,
 }: {
@@ -184,7 +205,7 @@ function Sections({
   ].filter((v, k, all) => !!v && all.indexOf(v) === k)
   const videos = candidate.videos ?? []
   const documents = candidate.documents ?? []
-  const links = (candidate.portfolioLinks ?? []).filter((l) => !!l?.url)
+  const links = portfolioLinksOf(candidate.portfolioLinks)
 
   return (
     <>
@@ -258,15 +279,14 @@ function Sections({
       {links.length > 0 && (
         <FeedSheetSection title="Links">
           <View style={styles.list}>
-            {links.map((l) => (
+            {links.map((l, k) => (
               <FeedSheetItem
-                key={l.url}
+                key={`${k}-${l}`}
                 lead={<View style={styles.docMark}><Icon name="link" size={space.lg} tint={color.textOnInkMuted} /></View>}
-                title={l.label || l.url}
-                sub={l.label ? l.url : null}
+                title={l}
                 trail={<Icon name="arrowUR" size={space.lg} tint={color.textOnInkMuted} />}
-                label={`Open ${l.label || l.url}`}
-                onPress={() => { Linking.openURL(linkUrl(l.url)).catch(() => {}) }}
+                label={`Open ${l}`}
+                onPress={() => { Linking.openURL(linkUrl(l)).catch(() => {}) }}
               />
             ))}
           </View>
@@ -280,6 +300,6 @@ const styles = StyleSheet.create({
   list: { gap: space.sm },
   empty: { fontFamily: FF.body, fontSize: fontSize['ui-md'], lineHeight: leadingNative['ui-md'], color: color.textOnInkMuted },
   notice: { fontFamily: FF.body, fontSize: fontSize['ui-sm'], lineHeight: leadingNative['ui-sm'], color: color.dangerOnInk },
-  trail: { fontFamily: FF.monoMedium, fontSize: fontSize['meta-md'], lineHeight: leadingNative['meta-md'], color: color.textOnInkMuted },
+  trail: { fontFamily: FF.bodyMedium, fontSize: fontSize['meta-md'], lineHeight: leadingNative['meta-md'], fontVariant: ['tabular-nums'], color: color.textOnInkMuted },
   docMark: { width: space['2xl'] + space['2xs'], height: space['2xl'] + space['2xs'], alignItems: 'center', justifyContent: 'center' },
 })

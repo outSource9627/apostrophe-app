@@ -35,7 +35,28 @@ export interface StudentInterview {
   canReschedule: boolean
   canCancel: boolean
   roomReady: boolean
+  /** IR-19 — IN_PROGRESS only: when the student stepped out of the room (ISO); absent while they are in it. */
+  studentLeftAt?: string
+  /** IR-19 — IN_PROGRESS only: minutes they may be out before the session ends without them (the server's setting). */
+  rejoinWindowMinutes?: number
+  /** SC-30 — the server holds a passing, still-valid device check for this interview. */
+  readinessPassed?: boolean
+  /**
+   * BOOKED or IN_PROGRESS only — the student has joined the room and not left it. Absent on an older backend
+   * (or in another status): unknown, never false.
+   */
+  studentInRoom?: boolean
+  /**
+   * BOOKED or IN_PROGRESS only — the interviewer has joined the room and not left it. A yes/no and nothing else:
+   * who they are stays masked until the session starts (SC-16).
+   */
+  interviewerInRoom?: boolean
   joinUrl?: string
+  /**
+   * The server's session clock — present exactly when `interviewer` is (both are revealed by the session
+   * starting). A started session is never "late".
+   */
+  sessionStartedAt?: string
   /**
    * 6.3 — what an admin decided about a session that ended below the completion threshold. Present once it has
    * been reviewed (`status` then names the outcome), so a no-show out of a session that STARTED tells a different
@@ -170,7 +191,8 @@ export const getPreparation = (id: string) => api.get<Preparation>(`/interviews/
 /** Student leaves the room; only the interviewer ends the interview. */
 export const leaveRoom = (id: string) => api.post<{ success?: boolean }>(`/interviews/${id}/room/leave`)
 
-export type StudentEventKind = 'MUTE' | 'UNMUTE' | 'CAMERA' | 'NETWORK' | 'AUDIO_ONLY' | 'RECONNECT'
+/** The server's STUDENT_EVENT_KINDS — any other kind is refused with a 400. */
+export type StudentEventKind = 'MUTE' | 'UNMUTE' | 'CAMERA_ON' | 'CAMERA_OFF' | 'NETWORK' | 'AUDIO_ONLY' | 'RECONNECT'
 export const postRoomEvent = (id: string, kind: StudentEventKind, payload?: Record<string, unknown>) =>
   api.post<{ success?: boolean }>(`/interviews/${id}/events`, payload ? { kind, payload } : { kind })
 

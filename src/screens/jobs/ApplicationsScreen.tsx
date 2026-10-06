@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query'
 
 import { getApplications, type ApplicationRow } from '../../lib/api/jobs'
 import { applicationMark, dateLine, locationLine } from '../../lib/jobs/format'
-import { borderWidth, color, fontFamilyNative as FF } from '../../theme'
+import { borderWidth, color, fontFamilyNative as FF, fontSize } from '../../theme'
 import { StatusPill } from '../../components/ui'
 import { Icon } from '../../components/ui/Icon'
 import { JobsTabs, Skel, StateBlock } from '../../components/tab/kit'
@@ -77,7 +77,7 @@ export function ApplicationsScreen({ onFeed, onChat, onSaved }: {
         {rejected ? (
           !!r.rejectionReason && (
             <View style={styles.quote}>
-              <Text style={styles.quoteLabel}>THEIR NOTE</Text>
+              <Text style={styles.quoteLabel}>Their note</Text>
               <Text style={styles.quoteText}>{r.rejectionReason}</Text>
             </View>
           )
@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
   lineOn: { backgroundColor: color.accent },
 
   quote: { borderLeftWidth: 3, borderLeftColor: color.borderStrong, paddingLeft: 12, paddingVertical: 2, gap: 4 },
-  quoteLabel: { fontFamily: FF.monoMedium, fontSize: 10.5, letterSpacing: 1.05, color: color.textSubtle },
+  quoteLabel: { fontFamily: FF.bodyMedium, fontSize: fontSize['meta-sm'], color: color.textSubtle },
   quoteText: { fontFamily: FF.body, fontSize: 14.5, lineHeight: 21, color: color.textSecondary },
 
   chatBtn: { height: 46, borderRadius: 14, backgroundColor: color.ink, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },

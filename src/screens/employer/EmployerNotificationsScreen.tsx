@@ -152,7 +152,7 @@ export function EmployerNotificationsScreen() {
                 <Text style={item.read ? text.uiMdMedium : text.uiMdSemi}>{item.title}</Text>
                 {!!item.body && <Text style={[text.uiXs, styles.muted]}>{item.body}</Text>}
               </View>
-              <Text style={[text.metaSm, styles.subtle, styles.mono]}>{fmtRowStamp(item.createdAt, now).toUpperCase()}</Text>
+              <Text style={[text.metaSm, styles.subtle, styles.mono]}>{fmtRowStamp(item.createdAt, now)}</Text>
             </Pressable>
           )
         }}

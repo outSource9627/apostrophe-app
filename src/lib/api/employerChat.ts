@@ -17,6 +17,7 @@ import type {
   MessageSearchHit,
   ReportReason,
 } from './chat'
+import type { CandidateDocumentView } from './employerFeed'
 
 export type {
   ConnectionStatus,
@@ -54,6 +55,8 @@ export interface EmployerConnectionRow {
    * a row shows them only when it does, and never asks for them separately.
    */
   contact?: { email?: string | null; mobile?: string | null } | null
+  /** ST-35 — the résumé travels with `contact`: on an ACTIVE row only, absent otherwise. */
+  resume?: CandidateDocumentView | null
 }
 
 export const getEmployerConnections = (
@@ -122,6 +125,12 @@ export const sendEmployerMessage = (
 
 export const markEmployerThreadRead = (id: string) =>
   api.patch<{ read: number; at: string }>(`/employers/messages/${id}`)
+
+/** Pins or unpins a thread on this employer's own list. Idempotent; the candidate is never told. */
+export const pinEmployerThread = (id: string, pinned: boolean) =>
+  pinned
+    ? api.put<{ pinned: boolean; pinnedAt: string | null }>(`/employers/messages/${id}/pin`)
+    : api.del<{ pinned: boolean; pinnedAt: string | null }>(`/employers/messages/${id}/pin`)
 
 export const searchEmployerMessages = (
   q: string,

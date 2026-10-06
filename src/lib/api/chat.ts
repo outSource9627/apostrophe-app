@@ -123,6 +123,8 @@ export interface ThreadDto {
   lastMessagePreview: string | null
   unread: number
   archivedReason: ChatArchiveReason | null
+  /** When THIS person pinned it to the top of their list, or null. Never shown to the other side. */
+  pinnedAt: string | null
 }
 
 export type MessageKind = 'TEXT' | 'ATTACHMENT' | 'SYSTEM'
@@ -192,6 +194,12 @@ export const sendMessage = (
 export const markThreadRead = (id: string) =>
   api.patch<{ read: number; at: string }>(`/students/me/messages/${id}`)
 
+/** Pins or unpins a thread on this person's own list. Idempotent; the server orders pinned threads first. */
+export const pinThread = (id: string, pinned: boolean) =>
+  pinned
+    ? api.put<{ pinned: boolean; pinnedAt: string | null }>(`/students/me/messages/${id}/pin`)
+    : api.del<{ pinned: boolean; pinnedAt: string | null }>(`/students/me/messages/${id}/pin`)
+
 export interface MessageSearchHit {
   id: string
   threadId: string
@@ -238,3 +246,18 @@ export const reportThread = (threadId: string, reason: ReportReason, note?: stri
 
 export const reportMessage = (threadId: string, messageId: string, reason: ReportReason, note?: string) =>
   api.post<{ id: string }>('/me/reports', { target: 'MESSAGE', threadId, messageId, reason, note })
+
+// ── The interviewer's side (CH-07, CH-09) ─────────────────────────────────────
+// The interviewer's list, send and mark-read live in lib/api/interviewer.ts.
+// These two sit here with the chat shapes so the shared thread can page back
+// and the Messages list can search, as the student's and employer's do.
+
+/** One page of an interviewer's thread, newest first; `before` pages back (the server's keyset cursor). */
+export const getInterviewerThreadPage = (id: string, params: { before?: string; limit?: number } = {}) =>
+  api.get<ThreadPage>(`/interviewers/me/messages/${id}`, { query: { before: params.before, limit: params.limit } })
+
+/** CH-09 for an interviewer — whole words, two characters or more, in their own threads only. */
+export const searchInterviewerMessages = (q: string, params: { threadId?: string; limit?: number } = {}) =>
+  api.get<{ rows: MessageSearchHit[] }>('/interviewers/me/messages/search', {
+    query: { q, threadId: params.threadId, limit: params.limit },
+  })

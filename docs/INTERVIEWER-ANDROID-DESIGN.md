@@ -132,3 +132,24 @@ In `apostrophe-user/lib/api/interviewer.ts` and `app/join-us/apply/page.tsx`:
 - **CV upload:** the presign is requested with an empty body, but the server needs `contentType` and `sizeBytes`. Every web CV upload fails.
 - **Password reset:** `resetPassword` posts `password`; the server wants `newPassword`.
 - **Bank form:** saves `AAAAA1234A` (or `AAAAA` plus the last 4 digits) as the PAN when none is typed.
+
+## Live room — direction A "Console, finished" (2026-10-06)
+
+The user compared four room directions (`docs/interviewer-room-mockups.html`) and picked **A** for the app and the web. `InterviewerRoomScreen.tsx` was rebuilt to it.
+
+- **Layout:** three bands and nothing covers the candidate. The candidate takes the top 55.5% of the screen (the mockup's 468 of 844), with REC (or "Not recording yet") and the clock over it, your 16:9 tile top-right, their name bottom-left. Under it, the dock: round icon controls with captions — Mute, Camera, Flag (Sound before the session), and a red, wider End. Under that, the panel: Script · Notes · Profile.
+- **Script:** "Ask next" first (Mark asked, Skip for now), the opening line, Up next, Asked · n (tap to un-tick), the closing line. Asked prompts are kept on the phone (AsyncStorage `room:<id>:asked`); skips are not kept. Nothing is sent.
+- **Lobby:** your own camera stands in the candidate's place with "Your camera · preview" and the setup check (camera, mic, network from the real local state and link quality).
+- **Bands:** reconnecting (90 s), connection lost, student left (with the admin's `rejoinWindowMinutes` countdown from the room DTO; without it, no number), and the wrap-up from the server's first warning.
+- **End sheet:** the session length, and whether it clears the completion mark, in the web room's words (under the mark it goes to review before it can be paid).
+- **New plumbing:** `RoomEngine.receiveAudio` (Sound — silences the candidate on this phone only), `useInterviewerRoom` `soundOff`/`toggleSound`, `studentLeftAt`, `rejoinWindowMinutes`, `now`; the DTO types gained `studentLeftAt` and `rejoinWindowMinutes` (the server already sent both). Icons `mic`, `micOff`, `videoOff`, `hangUp`.
+- **Deviations from the mockup:** the phone's Script tab lists every remaining prompt under Up next plus an Asked group (the mockup showed two rows), so nothing is lost on a phone; "Leave" in the lobby leaves without asking, as before (nothing has started).
+- **Not verified:** not run on a device or against a live session. tsc, eslint and the raw-values check pass for the touched files.
+
+## UI pass 2026-10-06 — labels, chat A, apply C, late join
+
+- **Labels** in Geist, normal case.
+- **Chat A:** "Messages" uses the shared chat pieces, search, a ⋯ with "View interview" and "Report this chat"; text only (the API takes no attachments).
+- **Apply C:** brand band, +91 on mobile, CV limit from `/config`, success screen with the three next steps.
+- **Late join:** Home next-session card, Interviews rows, detail and the room lobby show "{name} not in yet · N min late" / your own lateness with a negative timer and the red fill. The room now sends `issuedAt` with LEAVE so a stale leave is ignored.
+- **Not verified on a device.**

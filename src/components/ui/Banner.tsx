@@ -1,7 +1,7 @@
 import React, { type ReactNode } from 'react'
 import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native'
 import Svg, { Circle, Path } from 'react-native-svg'
-import { color, radius, space, fontSize, fontFamilyNative, trackingNative, leadingNative, fontWeight } from '../../theme'
+import { color, radius, space, fontSize, fontFamilyNative, leadingNative, fontWeight } from '../../theme'
 
 export type BannerTone = 'danger' | 'warning' | 'info' | 'neutral' | 'success'
 
@@ -136,8 +136,7 @@ const styles = StyleSheet.create({
   },
   reference: {
     fontSize: fontSize['meta-md'],
-    fontFamily: fontFamilyNative.mono,
-    letterSpacing: trackingNative['meta-wide'],
-    textTransform: 'uppercase',
+    fontFamily: fontFamilyNative.bodyMedium,
+    fontVariant: ['tabular-nums'],
   },
 })

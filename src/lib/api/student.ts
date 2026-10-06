@@ -144,3 +144,11 @@ export interface SelfVideoInput {
 }
 /** 409 = the same file is already registered, or the cap is reached. */
 export const addSelfVideo = (input: SelfVideoInput) => api.post<{ id: string; slot: number; status: SelfVideoStatus }>('/students/me/videos', input)
+
+/**
+ * ST-35 — a 15-minute signed link to one of the student's OWN profile files, by
+ * the opaque `id` /students/me/profile puts on each document. It is the same id
+ * an employer's download uses, so View opens exactly the file employers get.
+ */
+export const ownDocumentLink = (docId: string) =>
+  api.get<{ url: string; expiresAt: string; name: string | null; contentType: string | null }>(`/students/me/documents/${docId}`)

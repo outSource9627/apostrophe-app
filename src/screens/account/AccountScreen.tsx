@@ -161,15 +161,16 @@ export function AccountScreen({
         <View style={s.pad}><Menu rows={more} plain /></View>
 
         <View style={[s.pad, s.signOut]}>
-          <View style={s.menu}>
+          <View style={[s.menu, s.menuDanger]}>
             <Pressable
               accessibilityRole="button"
               disabled={signingOut}
               onPress={onSignOut}
               style={({ pressed }) => [s.mrow, pressed && s.pressedRow]}
             >
+              <Icon name="out" size={20} tint={color.danger} weight={1.9} />
               <View style={s.grow}>
-                <Text style={s.mTitle}>{signingOut ? 'Signing out…' : 'Sign out'}</Text>
+                <Text style={[s.mTitle, s.mTitleDanger]}>{signingOut ? 'Signing out…' : 'Sign out'}</Text>
                 <Text style={s.mSub}>On this device only</Text>
               </View>
             </Pressable>
@@ -227,6 +228,8 @@ const s = StyleSheet.create({
   icon: { width: 40, height: 40, borderRadius: 12, backgroundColor: color.accentSoft, alignItems: 'center', justifyContent: 'center' },
   iconPlain: { backgroundColor: color.surfaceMuted },
   mTitle: { fontFamily: FF.bodySemiBold, fontSize: 16, letterSpacing: -0.16, color: color.text },
+  mTitleDanger: { color: color.danger },
+  menuDanger: { borderColor: color.dangerBorder },
   mSub: { fontFamily: FF.body, fontSize: 13.5, lineHeight: 18, color: color.textMuted, marginTop: 1 },
   verifyBtn: { height: 38, paddingHorizontal: 14, borderRadius: 12, backgroundColor: color.accent, alignItems: 'center', justifyContent: 'center' },
   verifyText: { fontFamily: FF.bodyBold, fontSize: 14, color: color.textInverse },

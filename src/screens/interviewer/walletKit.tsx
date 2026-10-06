@@ -240,8 +240,8 @@ export const k = StyleSheet.create({
   rt: { alignItems: 'flex-end', gap: 2 },
   nmx: { fontFamily: FF.bodySemiBold, fontSize: 16.5, lineHeight: 21, letterSpacing: -0.33, color: color.text },
   sub: { fontFamily: FF.body, fontSize: 14, lineHeight: 19, color: color.textMuted },
-  amt: { fontFamily: FF.monoMedium, fontSize: 14, color: color.text },
-  bal: { fontFamily: FF.monoMedium, fontSize: 12.5, color: color.textMuted },
+  amt: { fontFamily: FF.bodyMedium, fontSize: 14, fontVariant: ['tabular-nums'], color: color.text },
+  bal: { fontFamily: FF.bodyMedium, fontSize: 12.5, fontVariant: ['tabular-nums'], color: color.textMuted },
 
   center: { alignItems: 'center', paddingTop: 72, paddingHorizontal: 32 },
   centerIc: { width: 72, height: 72, borderRadius: 24, backgroundColor: color.accentSoft, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
