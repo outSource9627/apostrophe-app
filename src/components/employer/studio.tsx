@@ -16,7 +16,7 @@ import { nameInitials } from '../../lib/employer/candidateFormat'
 export function StudioGreeting({ eyebrow, title }: { eyebrow?: string; title: string }) {
   return (
     <View style={styles.greet} accessibilityRole="header">
-      {!!eyebrow && <Text style={[text.metaSm, styles.mono, styles.muted]}>{eyebrow.toUpperCase()}</Text>}
+      {!!eyebrow && <Text style={[text.metaSm, styles.mono, styles.muted]}>{eyebrow}</Text>}
       <Text style={text.displayPage}>{title}</Text>
     </View>
   )
@@ -31,11 +31,11 @@ export function StudioCard({ children, style, lift, tone }: { children: React.Re
   )
 }
 
-/** A mono caps label with an optional right-hand link (“See all”). */
+/** A small grey label with an optional right-hand link (“See all”). */
 export function StudioLabel({ children, action, onAction, style }: { children: string; action?: string; onAction?: () => void; style?: ViewStyle }) {
   return (
     <View style={[styles.labelRow, style]}>
-      <Text style={[text.metaSm, styles.mono, styles.muted]}>{children.toUpperCase()}</Text>
+      <Text style={[text.metaSm, styles.mono, styles.muted]}>{children}</Text>
       {!!action && (
         <Pressable accessibilityRole="button" onPress={onAction} hitSlop={space.sm}>
           <Text style={[text.uiSmSemi, styles.accent]}>{action}</Text>
@@ -45,7 +45,7 @@ export function StudioLabel({ children, action, onAction, style }: { children: s
   )
 }
 
-/** One of Home's counts: the icon, the number, the mono label and a sub-line. A failed read shows “—”. */
+/** One of Home's counts: the icon, the number, the grey label and a sub-line. A failed read shows “—”. */
 export function CountCard({
   icon, value, label, sub, onPress,
 }: { icon: IconName; value: React.ReactNode; label: string; sub?: string | null; onPress?: () => void }) {
@@ -61,7 +61,7 @@ export function CountCard({
       </View>
       <View style={styles.countBody}>
         <Text style={[text.displayMd, styles.tnum]}>{value}</Text>
-        <Text style={[text.metaXs, styles.mono, styles.muted]} numberOfLines={1}>{label.toUpperCase()}</Text>
+        <Text style={[text.metaXs, styles.mono, styles.muted]} numberOfLines={1}>{label}</Text>
         {!!sub && <Text style={[text.uiXs, styles.muted]} numberOfLines={1}>{sub}</Text>}
       </View>
     </Pressable>
@@ -123,12 +123,12 @@ export function FilmStill({
   )
 }
 
-/** A glass pill drawn over a still (“VERIFIED · 22 SEP”, “13 / 40”). */
+/** A glass pill drawn over a still (“Verified · 22 Sep”, “13 / 40”). */
 export function GlassPill({ label, icon }: { label: string; icon?: IconName }) {
   return (
     <View style={styles.glass}>
       {!!icon && <Icon name={icon} size={space.md - 1} tint={color.textOnInk} weight={2.4} />}
-      <Text style={[text.metaXs, styles.mono, styles.onInk]} numberOfLines={1}>{label.toUpperCase()}</Text>
+      <Text style={[text.metaXs, styles.mono, styles.onInk]} numberOfLines={1}>{label}</Text>
     </View>
   )
 }
@@ -201,24 +201,24 @@ export function IconSquare({ name, label, onPress, tone, disabled }: { name: Ico
   )
 }
 
-/** A muted fact tile: mono label over the value (“EXPECTED · ₹3.6–4.8 LPA”). */
+/** A muted fact tile: a grey label over the value (“Expected · ₹3.6–4.8 LPA”). */
 export function FactTile({ label, value, style }: { label: string; value: string; style?: ViewStyle }) {
   return (
     <View style={[styles.fact, style]}>
-      <Text style={[text.metaXs, styles.mono, styles.muted]}>{label.toUpperCase()}</Text>
+      <Text style={[text.metaXs, styles.mono, styles.muted]}>{label}</Text>
       <Text style={text.uiBaseSemi} numberOfLines={1}>{value}</Text>
     </View>
   )
 }
 
-/** Skill tags: mono caps outlines, then “+N”. */
+/** Skill tags: outlined, as written, then “+N”. */
 export function SkillTags({ skills, max = 3, style }: { skills: string[]; max?: number; style?: ViewStyle }) {
   if (!skills.length) return null
   const shown = skills.slice(0, max)
   return (
     <View style={[styles.tags, style]}>
       {shown.map((s) => (
-        <View key={s} style={styles.tag}><Text style={[text.metaXs, styles.mono, styles.secondary]} numberOfLines={1}>{s.toUpperCase()}</Text></View>
+        <View key={s} style={styles.tag}><Text style={[text.metaXs, styles.mono, styles.secondary]} numberOfLines={1}>{s}</Text></View>
       ))}
       {skills.length > max && <View style={styles.tag}><Text style={[text.metaXs, styles.mono, styles.subtle]}>{`+${skills.length - max}`}</Text></View>}
     </View>
@@ -291,18 +291,18 @@ export function ExpiryBar({ fraction, urgent, left, right }: { fraction: number;
         <View style={[styles.fill, { width: `${Math.min(1, Math.max(0, fraction)) * 100}%`, backgroundColor: urgent ? color.warningFill : color.accent }]} />
       </View>
       <View style={styles.meterRow}>
-        <Text style={[text.metaXs, styles.mono, styles.subtle]}>{left.toUpperCase()}</Text>
-        <Text style={[text.metaXs, styles.mono, styles.subtle]}>{right.toUpperCase()}</Text>
+        <Text style={[text.metaXs, styles.mono, styles.subtle]}>{left}</Text>
+        <Text style={[text.metaXs, styles.mono, styles.subtle]}>{right}</Text>
       </View>
     </View>
   )
 }
 
-/** A profile section: a hairline above, a mono label, the content (P1, P2). */
+/** A profile section: a hairline above, a grey label, the content (P1, P2). */
 export function SectionBlock({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <View style={styles.section}>
-      <Text style={[text.metaSm, styles.mono, styles.muted]}>{label.toUpperCase()}</Text>
+      <Text style={[text.metaSm, styles.mono, styles.muted]}>{label}</Text>
       {children}
     </View>
   )

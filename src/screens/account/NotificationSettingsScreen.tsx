@@ -6,7 +6,7 @@ import {
   CATEGORY_LABELS, CHANNEL_ORDER, getNotificationPrefs, putNotificationPrefs,
   type NotificationCategory, type NotificationChannel,
 } from '../../lib/api/account'
-import { borderWidth, color, fontFamilyNative as FF } from '../../theme'
+import { borderWidth, color, fontFamilyNative as FF, fontSize } from '../../theme'
 import { StatusPill, Toggle } from '../../components/ui'
 import { Icon } from '../../components/ui/Icon'
 import { GroupLabel, Skel, StateBlock } from '../../components/tab/kit'
@@ -18,12 +18,12 @@ const SUBLINE: Partial<Record<NotificationCategory, string>> = {
   MARKETING: 'Occasional, never more than monthly',
 }
 const HIDDEN: NotificationCategory[] = ['JOB']
-const channelHead = (c: NotificationChannel) => (c === 'IN_APP' ? 'In-app' : c)
+const channelHead = (c: NotificationChannel) => ({ IN_APP: 'In-app', PUSH: 'Push', EMAIL: 'Email' })[c]
 
 /**
  * ST-47 — notification settings. ACCOUNT, PAYMENT and INTERVIEW CANNOT be switched
- * off (NT-05): they render as a different kind of row — a mono ALWAYS ON pill
- * naming the channels — never a disabled toggle, greyed switch or padlock. The
+ * off (NT-05): they render as a different kind of row — an "All channels" pill
+ * — never a disabled toggle, greyed switch or padlock. The
  * rest are per-category × per-channel switches. (OS push-block detection needs a
  * native permissions module the app does not yet bundle, so the ST-47b variant is
  * a follow-up here.)
@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
   mTitle: { fontFamily: FF.bodySemiBold, fontSize: 16, letterSpacing: -0.16, color: color.text },
   small: { fontFamily: FF.body, fontSize: 12.5, lineHeight: 17, color: color.textMuted, marginTop: 1 },
   headRow: { flexDirection: 'row', alignItems: 'center', paddingLeft: 16, paddingRight: 12, paddingTop: 14, paddingBottom: 4 },
-  colHead: { width: 56, textAlign: 'center', fontFamily: FF.monoMedium, fontSize: 10.5, letterSpacing: 0.84, textTransform: 'uppercase', color: color.textSubtle },
+  colHead: { width: 56, textAlign: 'center', fontFamily: FF.bodyMedium, fontSize: fontSize['meta-sm'], color: color.textSubtle },
   chooseRow: { flexDirection: 'row', alignItems: 'center', paddingLeft: 16, paddingRight: 12, borderTopWidth: borderWidth.thin, borderTopColor: color.border },
   label: { flex: 1, minWidth: 0, paddingVertical: 12, paddingRight: 6 },
   col: { width: 56, minHeight: 44, alignItems: 'center', justifyContent: 'center' },

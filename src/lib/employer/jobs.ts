@@ -39,14 +39,14 @@ export const APPLICATION_TONE: Record<ApplicationStatus, EmTone> = {
   APPLIED: 'gray', VIEWED: 'violet', SHORTLISTED: 'amber', REJECTED: 'red', CONNECTED: 'green',
 }
 
-/** 'PUNE · REMOTE · FULL-TIME · VIDEO POST'. */
+/** 'Pune · Remote · Full-time · Video post'. */
 export function jobMeta(job: Pick<EmployerJobRow, 'location' | 'remote' | 'employmentType' | 'hasVideo'>): string {
   return [
     job.location,
     job.remote && !/remote/i.test(job.location ?? '') ? 'Remote' : null,
     job.employmentType ? employmentLabel(job.employmentType as Parameters<typeof employmentLabel>[0]) : null,
     job.hasVideo ? 'Video post' : null,
-  ].filter(Boolean).join(' · ').toUpperCase()
+  ].filter(Boolean).join(' · ')
 }
 
 // ── IST ──────────────────────────────────────────────────────────────────────

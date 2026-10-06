@@ -176,6 +176,8 @@ export interface Audience {
   openInterests: number
   hiddenFromFeed: boolean
   published: boolean
+  /** Views per IST day, oldest first, today last, zero-filled. Counted daily only since it shipped; absent from an older server. */
+  viewsByDay?: { date: string; views: number }[]
 }
 /**
  * Aggregate counters only — how MANY employers shortlisted you, never WHICH

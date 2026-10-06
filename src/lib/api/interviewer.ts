@@ -43,6 +43,10 @@ export interface NextSessionDto {
   joinOpensAt: string
   joinOpensMinutesBefore: number
   roomReady: boolean
+  /** BOOKED / IN_PROGRESS only — the student has joined the room and not left it. Absent on an older backend. */
+  studentInRoom?: boolean
+  /** BOOKED / IN_PROGRESS only — you have joined the room and not left it. Absent on an older backend. */
+  interviewerInRoom?: boolean
   student: { id: string; name: string; languages: string[]; education?: StudentEducation }
   resumeUrl?: string
 }
@@ -138,6 +142,12 @@ export interface InterviewerInterviewDto {
   roomReady: boolean
   sessionStartedAt?: string
   sessionEndedAt?: string
+  /** IR-19 — set while the student is out of a live session; they may rejoin for `rejoinWindowMinutes`. */
+  studentLeftAt?: string
+  /** BOOKED / IN_PROGRESS only — the student has joined the room and not left it. Absent on an older backend. */
+  studentInRoom?: boolean
+  /** BOOKED / IN_PROGRESS only — you have joined the room and not left it. Absent on an older backend. */
+  interviewerInRoom?: boolean
   completionPct?: number
   threadId?: string
   student: {
@@ -196,13 +206,18 @@ export interface InterviewerRoomDto {
   scheduledEndAt: string
   thresholdPct: number
   warnings: number[]
+  /** How long a student who stepped out can rejoin before the server ends the session (admin setting). */
+  rejoinWindowMinutes?: number
+  /** Server time these credentials were issued; a LEAVE names it so a stale leave is ignored. */
+  issuedAt?: string
   student: { id: string; name: string }
 }
 
 /** Records that the interviewer is in the room (the session starts once both are). Refused outside the join window. */
 export const getRoomCredentials = (id: string) => api.get<InterviewerRoomDto>(`/interviewers/me/interviews/${id}/room`)
 
-export type RoomEventKind = 'JOIN' | 'LEAVE' | 'RECONNECT' | 'HIGHLIGHT' | 'AUDIO_ONLY' | 'NETWORK' | 'MUTE' | 'UNMUTE' | 'CAMERA'
+/** The server's INTERVIEW_EVENT_KINDS a client may send — any other kind is refused with a 400. */
+export type RoomEventKind = 'JOIN' | 'LEAVE' | 'RECONNECT' | 'HIGHLIGHT' | 'AUDIO_ONLY' | 'NETWORK' | 'MUTE' | 'UNMUTE' | 'CAMERA_ON' | 'CAMERA_OFF'
 export const recordRoomEvent = (id: string, kind: RoomEventKind, payload?: Record<string, unknown>) =>
   api.post<{ success: boolean; id: string; kind: string; at: string }>(`/interviewers/me/interviews/${id}/events`, payload ? { kind, payload } : { kind })
 

@@ -47,7 +47,7 @@ export function PricingScreen({ onBack, onPay, onBook }: { onBack: () => void; o
   return frame(
     <>
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
-        <Eyebrow style={styles.eyebrow}>YOUR TIER IS SET BY YOUR HIGHEST QUALIFICATION</Eyebrow>
+        <Eyebrow style={styles.eyebrow}>Your tier is set by your highest qualification</Eyebrow>
 
         {cfg.data!.tiers.map((t) => {
           const on = t.tier === myTier
@@ -61,7 +61,7 @@ export function PricingScreen({ onBack, onPay, onBook }: { onBack: () => void; o
                   <Text style={styles.tierName}>{t.tier} · {TIER_NAME[t.tier] ?? t.tier}</Text>
                   {on && (
                     <View style={styles.yours}>
-                      <Text style={styles.yoursText}>YOURS</Text>
+                      <Text style={styles.yoursText}>Yours</Text>
                     </View>
                   )}
                 </View>
@@ -120,10 +120,10 @@ const styles = StyleSheet.create({
   tierName: { fontFamily: FF.bodySemiBold, fontSize: 15, color: color.text },
   tierNote: { fontFamily: FF.body, fontSize: 12.5, lineHeight: 17.5, color: color.textMuted },
   yours: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.pill, backgroundColor: color.accentSoft },
-  yoursText: { fontFamily: FF.monoMedium, fontSize: 10, letterSpacing: 1, color: color.accentText },
+  yoursText: { fontFamily: FF.bodyMedium, fontSize: 12, color: color.accentText },
   sum: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 4, paddingTop: 6 },
   sumLabel: { fontFamily: FF.body, fontSize: 15, color: color.textMuted },
-  sumValue: { fontFamily: FF.monoMedium, fontSize: 13, color: color.text },
+  sumValue: { fontFamily: FF.bodyMedium, fontSize: 13, fontVariant: ['tabular-nums'], color: color.text },
   total: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   totalLabel: { fontFamily: FF.bodySemiBold, fontSize: 15, color: color.text },
   secured: { fontFamily: FF.body, fontSize: 12, color: color.textMuted, textAlign: 'center' },

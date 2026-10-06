@@ -212,6 +212,8 @@ export const color = {
   /** The ground of a self-uploaded, unverified clip on a candidate profile (EM-09) — lighter than `warningSoft`. */
   warningWash: '#FFFCF3',
   warningOnInk: '#FCC96B',
+  /** The amber band laid on an ink card (a late join before it turns red). */
+  warningOnInkSoft: 'rgba(252, 201, 107, 0.14)',
   danger: '#C22A30',
   dangerSoft: '#FDECEC',
   dangerFill: '#E5484D',
@@ -220,6 +222,10 @@ export const color = {
   dangerBorder: '#F2B8BA',
   dangerOnInk: '#FF8A8E',
   dangerOnInkSoft: 'rgba(229, 72, 77, 0.16)',
+  /** An ink card turned red — a join more than the admin's late threshold overdue (docs/late-join-mockups.html, red fill). */
+  dangerInk: '#2A1216',
+  dangerInkDeep: '#1D0D10',
+  dangerInkEdge: 'rgba(255, 138, 142, 0.45)',
   /** The wash under a hovered Not-interested circle on the job deck. */
   dangerWash: '#FFF7F7',
   /** A wrong code cell's ground. */
@@ -399,13 +405,13 @@ export const fontSize = {
 
   // ── meta · IBM Plex Mono · always uppercase ─────────────────────────────
   /** Dense badges sitting on footage. */
-  'meta-xs': 9,
+  'meta-xs': 11,
   /** Status pills. The canonical badge step. */
-  'meta-sm': 10,
+  'meta-sm': 12,
   /** Transaction references, durations, fine print. */
-  'meta-md': 11,
+  'meta-md': 12.5,
   /** Eyebrows, and the credit chip. The canonical label step. */
-  'meta-base': 12,
+  'meta-base': 13,
   /**
    * 13 — the mono step that is a MARK rather than a line of fine print: the
    * employer monogram inside a 44px Avatar (chat ST-43, ST-43Web, ST-41, ST-42
@@ -559,6 +565,7 @@ export const fontWeight = {
  * is set as a rule.
  */
 export const tracking = {
+  /* meta-* and eyebrow-* are 0 since 2026-10-06: labels are Geist in normal case now, and only capitals needed the extra air. */
   /** A figure set very large — the reply multiple, the score. */
   'tight-2xl': '-0.05em',
   'tight-hero': '-0.045em',
@@ -585,7 +592,7 @@ export const tracking = {
    * air uppercase mono has to be given, so `meta` at 0.1em would space an
    * address out into a ransom note. `Meta uppercase={false}` reaches for this.
    */
-  'meta-tight': '0.02em',
+  'meta-tight': '0em',
   /**
    * The monogram step. A two-letter mono mark inside an Avatar needs the
    * letters held apart so they read as an abbreviation rather than a syllable,
@@ -595,11 +602,11 @@ export const tracking = {
    * boards set 0.06em, and every one of them is a mark: the employer monogram
    * and booking's 13px uppercase date rail.
    */
-  'meta-snug': '0.06em',
+  'meta-snug': '0em',
   /** Status pills and inline mono. */
-  meta: '0.06em',
+  meta: '0em',
   /** The job deck's mono meta line (G2): 0.05em, between `meta-label` and `meta`. */
-  'meta-deck': '0.05em',
+  'meta-deck': '0em',
   /**
    * The two clock tracks, and they tighten as the clock grows for the same
    * reason the display steps do: tracking is air between letters, and a
@@ -612,16 +619,16 @@ export const tracking = {
    * component inserts, because a mono colon sits tight against the digit
    * either side of it and a clock has to be read in groups.
    */
-  'meta-clock': '0.02em',
-  'meta-clock-lg': '0.04em',
+  'meta-clock': '0em',
+  'meta-clock-lg': '0em',
   /** A route or section label in mono. */
-  'meta-label': '0.04em',
+  'meta-label': '0em',
   /** Captions over footage. */
-  'meta-wide': '0.08em',
+  'meta-wide': '0em',
   /** Eyebrow labels. */
-  eyebrow: '0.08em',
+  eyebrow: '0em',
   /** The widest eyebrow — section numbers, the document rule. */
-  'eyebrow-wide': '0.1em',
+  'eyebrow-wide': '0em',
   widest: '0.12em',
 } as const
 
@@ -677,7 +684,13 @@ export const leading = {
 export const fontFamily = {
   display: "var(--font-sans-loaded), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif",
   body: "var(--font-sans-loaded), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif",
-  mono: "var(--font-mono-loaded), ui-monospace, SFMono-Regular, Menlo, monospace",
+  /**
+   * The META face. Since 2026-10-06 it is Geist, the same face as everything
+   * else: Geist Mono in capitals read as code and shouted (the product owner's
+   * call). The key stays `mono` so no call site changes; numbers that count
+   * (timers, codes, money) keep their columns with tabular figures instead.
+   */
+  mono: "var(--font-sans-loaded), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif",
 } as const
 
 /**
@@ -714,9 +727,9 @@ export const fontFamilyNative = {
   bodySemiBold: 'Geist-SemiBold',
   bodyBold: 'Geist-Bold',
 
-  mono: 'GeistMono-Regular',
-  monoMedium: 'GeistMono-Medium',
-  monoSemiBold: 'GeistMono-SemiBold',
+  mono: 'Geist-Regular',
+  monoMedium: 'Geist-Medium',
+  monoSemiBold: 'Geist-SemiBold',
 
   /** The platform's own sans, where the bundled face is not used. */
   displayFallback: 'sans-serif',
@@ -750,12 +763,12 @@ export const trackingNative = {
   'snug-sm': -0.2,
   'snug-xs': -0.1,
   normal: 0,
-  'meta-tight': 0.2,
-  'meta-snug': 0.8,
-  meta: 1,
-  'meta-wide': 1.2,
-  eyebrow: 1.4,
-  'eyebrow-wide': 1.6,
+  'meta-tight': 0,
+  'meta-snug': 0,
+  meta: 0,
+  'meta-wide': 0,
+  eyebrow: 0,
+  'eyebrow-wide': 0,
   widest: 1.8,
 } as const
 

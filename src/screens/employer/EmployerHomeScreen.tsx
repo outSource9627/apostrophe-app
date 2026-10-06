@@ -417,7 +417,7 @@ function VerifiedHome({ state, onFeed }: { state: EmployerMe; onFeed?: () => voi
                   <Text style={text.uiMdSemi} numberOfLines={1}>{n.title}</Text>
                   {!!n.body && <Text style={[text.uiXs, styles.muted]} numberOfLines={1}>{n.body}</Text>}
                 </View>
-                <Text style={[text.metaXs, styles.mono, styles.subtle]}>{activityWhen(n.createdAt, now).toUpperCase()}</Text>
+                <Text style={[text.metaXs, styles.mono, styles.subtle]}>{activityWhen(n.createdAt, now)}</Text>
               </Pressable>
             )
           })}

@@ -81,7 +81,7 @@ async function render(f: VideoResume, videos: SelfVideo[] = [], opts: { audience
   })
   mounted.push({ tree, client })
   // Everything settles on later ticks than the first render: wait for the film card and the videos section to give way.
-  for (let i = 0; i < 30 && !/YOUR VIDEOS/.test(tree.root.findAllByType(Text).map((t) => [t.props.children].flat().join('')).join('|')); i++) {
+  for (let i = 0; i < 30 && !/Your videos/.test(tree.root.findAllByType(Text).map((t) => [t.props.children].flat().join('')).join('|')); i++) {
     await act(async () => { await new Promise<void>((r) => setTimeout(() => r(), 10)) })
   }
   await act(async () => { await new Promise<void>((r) => setTimeout(() => r(), 10)) })
@@ -161,9 +161,9 @@ describe('ProfileViewScreen — your videos', () => {
       selfVideo({ id: 'b', slot: 2, kind: 'INTRO', title: null, status: 'PENDING' }),
       selfVideo({ id: 'c', slot: 3, kind: 'SKILL', title: 'Excel', status: 'REJECTED', rejectionReason: 'Too dark' }),
     ])
-    expect(texts).toContain('YOUR VIDEOS')
+    expect(texts).toContain('Your videos')
     expect(texts).toContain('My first project')
-    expect(texts).toContain('A PROJECT · 0:32')
+    expect(texts).toContain('A project · 0:32')
     expect(texts).toContain('Introduction')
     expect(texts.filter((t) => t === 'Unverified')).toHaveLength(3)
     expect(texts).toContain('Live on your profile')

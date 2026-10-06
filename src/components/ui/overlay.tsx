@@ -1,12 +1,12 @@
-import React from 'react'
-import { Modal, Platform, Pressable, StyleSheet, Text, View, type ViewProps } from 'react-native'
+import React, { useState } from 'react'
+import { Modal, Platform, Pressable, StyleSheet, Text, View, useWindowDimensions, type ViewProps } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Svg, { Path } from 'react-native-svg'
 import { borderWidth, color, height, opacity, radius, space } from '../../theme'
 import { Body, Display, Eyebrow } from './Type'
 import { Button } from './Button'
 import { text } from './typography'
-import { Icon } from './Icon'
+import { Icon, type IconName } from './Icon'
 
 /** Foundations §09 — navigation, sheets, modals. */
 
@@ -222,6 +222,59 @@ export function TabBar({
   )
 }
 
+/** Where a popover opens from, in window coordinates: a measured view, or a touch point (zero size). */
+export type MenuAnchor = { x: number; y: number; width: number; height: number }
+export type PopoverItem = { key: string; label: string; icon?: IconName; danger?: boolean; onPress: () => void }
+
+/** Measures a view for `PopoverMenu`. Resolves null when the view has gone. */
+export function measureAnchor(node: React.ComponentRef<typeof View> | null): Promise<MenuAnchor | null> {
+  return new Promise((resolve) => {
+    if (!node) return resolve(null)
+    node.measureInWindow((x, y, width, h) => resolve({ x, y, width, height: h }))
+  })
+}
+
+/**
+ * A small menu that opens beside what was tapped — a row's ⋯, or a long-pressed
+ * row — rather than a sheet from the bottom. Its right edge lines up with the
+ * anchor's, it drops below unless there is no room, and it stays on screen.
+ * Sized to its rows, so it carries no width of its own. Any tap outside, or
+ * Android back, closes it; choosing a row closes it first, then acts.
+ */
+export function PopoverMenu({ anchor, items, onClose }: { anchor: MenuAnchor | null; items: readonly PopoverItem[]; onClose: () => void }) {
+  const win = useWindowDimensions()
+  // Measured per anchor, so a menu reopened somewhere else never draws at the last one's size.
+  const [measured, setMeasured] = useState<{ w: number; h: number; at: MenuAnchor } | null>(null)
+  if (!anchor) return null
+  const box = measured?.at === anchor ? measured : null
+  const edge = space.md
+  const left = box ? Math.min(Math.max(anchor.x + anchor.width - box.w, edge), win.width - box.w - edge) : 0
+  const below = anchor.y + anchor.height + space.xs
+  const top = box && below + box.h > win.height - space['2xl'] ? Math.max(space['2xl'], anchor.y - box.h - space.xs) : below
+  return (
+    <Modal visible transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
+      <Pressable accessibilityLabel="Close menu" onPress={onClose} style={StyleSheet.absoluteFill} />
+      <View
+        accessibilityRole="menu"
+        onLayout={(e) => { const { width: w, height: h } = e.nativeEvent.layout; if (!box || box.w !== w || box.h !== h) setMeasured({ w, h, at: anchor }) }}
+        style={[styles.popover, { left, top, opacity: box ? 1 : 0 }]}
+      >
+        {items.map((it, i) => (
+          <Pressable
+            key={it.key}
+            accessibilityRole="menuitem"
+            onPress={() => { onClose(); it.onPress() }}
+            style={({ pressed }) => [styles.popRow, i > 0 && styles.popRule, pressed && styles.popPressed]}
+          >
+            {!!it.icon && <Icon name={it.icon} size={space.lg} tint={it.danger ? color.danger : color.text} />}
+            <Text style={[text.uiBaseMedium, { color: it.danger ? color.danger : color.text }]}>{it.label}</Text>
+          </Pressable>
+        ))}
+      </View>
+    </Modal>
+  )
+}
+
 /** A labelled group heading inside a settings or detail list. */
 export function ListSection({ label, children, style }: { label: string; children: React.ReactNode } & ViewProps) {
   return (
@@ -350,6 +403,24 @@ const styles = StyleSheet.create({
   badgeText: { color: color.textInverse },
   lock: { position: 'absolute', top: 0, right: space.xs },
   dot: { position: 'absolute', top: space['2xs'], right: space.md, width: space.sm, height: space.sm, borderRadius: radius.pill, backgroundColor: color.accent, borderWidth: borderWidth.accent, borderColor: color.surface },
+
+  popover: {
+    position: 'absolute',
+    backgroundColor: color.surface,
+    borderWidth: borderWidth.thin,
+    borderColor: color.border,
+    borderRadius: radius.panel,
+    paddingVertical: space.xs,
+    overflow: 'hidden',
+    shadowColor: color.ink,
+    shadowOpacity: 0.12,
+    shadowRadius: radius.lg,
+    shadowOffset: { width: 0, height: space.md },
+    elevation: 8,
+  },
+  popRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, minHeight: height.control, paddingLeft: space.lg, paddingRight: space['2xl'] },
+  popRule: { borderTopWidth: borderWidth.thin, borderTopColor: color.borderSoft },
+  popPressed: { backgroundColor: color.surfaceMuted },
 
   section: { marginBottom: space.xl },
   sectionHead: {

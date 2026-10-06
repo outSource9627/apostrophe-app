@@ -62,12 +62,12 @@ export function thisWeek(nowMs: number): WeekDay[] {
   })
 }
 
-/** '21–27 SEP', or '29 SEP–5 OCT' across a month. */
+/** '21–27 Sep', or '29 Sep–5 Oct' across a month. */
 export function weekRange(week: WeekDay[]): string {
   const a = week[0]
   const b = week[week.length - 1]
   if (!a || !b) return ''
-  return (a.month === b.month ? `${a.day}–${b.day} ${monthShort(b.month)}` : `${a.day} ${monthShort(a.month)}–${b.day} ${monthShort(b.month)}`).toUpperCase()
+  return a.month === b.month ? `${a.day}–${b.day} ${monthShort(b.month)}` : `${a.day} ${monthShort(a.month)}–${b.day} ${monthShort(b.month)}`
 }
 
 /** The week's booked cells from the overview: key → the candidate's short name. */

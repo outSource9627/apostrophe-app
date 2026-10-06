@@ -8,7 +8,7 @@ import { borderWidth, color, height, radius, space, spaceHalf, trackingNative } 
 import { Button, text } from '../../components/ui'
 import { InterviewerShell } from '../../components/interviewer/InterviewerShell'
 import { IvCard } from '../../components/interviewer/iv'
-import { EmEmpty, EmError, EmIconButton, EmSheet } from '../../components/employer/em'
+import { EmDialog, EmEmpty, EmError, EmIconButton, EmSheet } from '../../components/employer/em'
 import { EmDateField, EmField, EmSeg, EmSelect, todayIst, type Ymd } from '../../components/employer/form'
 import { ApiClientError } from '../../lib/api'
 import { getAvailability, saveAvailability, type AvailabilityOverrideDto, type AvailabilityPayload } from '../../lib/api/interviewer'
@@ -25,13 +25,40 @@ const addDaysYmd = (v: Ymd, n: number): Ymd => {
 }
 
 /**
+ * The question before an override goes — here, and on Availability (its
+ * Overrides list and the date sheet's Back to weekly). The date reads as the
+ * rows read it. Inside a sheet, render it among the sheet's children so it
+ * draws over the sheet. The server's refusal shows in it; it stays open.
+ */
+export function RemoveOverrideDialog({
+  date, busy, error, onClose, onConfirm,
+}: { date: string | null; busy: boolean; error?: string | null; onClose: () => void; onConfirm: () => void }) {
+  return (
+    <EmDialog
+      open={!!date}
+      onClose={() => !busy && onClose()}
+      title={date ? `Remove the override on ${weekdayShort(weekdayOfKey(date))} ${dayOfKey(date)} ${monthShort(monthOfKey(date))}?` : ''}
+      body="That day goes back to your weekly hours."
+      actions={
+        <>
+          <Button variant="ghost" size="md" label="Cancel" disabled={busy} onPress={onClose} />
+          <Button variant="dangerFill" size="md" label="Remove" busy={busy} disabled={busy} onPress={onConfirm} />
+        </>
+      }
+    >
+      {!!error && <Text style={[text.uiSm, styles.danger]}>{error}</Text>}
+    </EmDialog>
+  )
+}
+
+/**
  * Date overrides (no artboard — the drawn screens' language). The dated
  * exceptions to the weekly pattern: a whole day off, or that day's own hours.
  * Nothing is saved until the availability has loaded, so a save can never wipe
  * the overrides it did not read; each save sends the weekly pattern unchanged
  * with the edited list. Dates run to the server's `horizonDays`; hours step by
  * its `slotMinutes`. The server's refusal (a booked slot, a past date) is shown
- * as it arrives.
+ * as it arrives. Removing one asks first.
  */
 export function OverridesScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
@@ -41,7 +68,9 @@ export function OverridesScreen() {
   const [payload, setPayload] = useState<AvailabilityPayload | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [removing, setRemoving] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
   const [date, setDate] = useState<Ymd | null>(null)
   const [kind, setKind] = useState<'off' | 'hours'>('off')
@@ -64,6 +93,7 @@ export function OverridesScreen() {
     if (!payload) return
     setBusy(true)
     setNotice(null)
+    setSaveError(null)
     try {
       await saveAvailability({ rules: payload.rules, overrides: next })
       setPayload({ ...payload, overrides: next })
@@ -71,7 +101,9 @@ export function OverridesScreen() {
       qc.invalidateQueries({ queryKey: INTERVIEWER_KEY })
       return true
     } catch (e) {
-      setNotice(e instanceof ApiClientError ? e.message : 'Not saved. Check your connection and try again.')
+      const msg = e instanceof ApiClientError ? e.message : 'Not saved. Check your connection and try again.'
+      setNotice(msg)
+      setSaveError(msg)
       return false
     } finally {
       setBusy(false)
@@ -111,6 +143,10 @@ export function OverridesScreen() {
     }
   }
 
+  async function remove() {
+    if (removing && (await save((payload?.overrides ?? []).filter((x) => x.date !== removing), 'Override removed.'))) setRemoving(null)
+  }
+
   return (
     <InterviewerShell
       back={() => navigation.goBack()}
@@ -127,14 +163,14 @@ export function OverridesScreen() {
           return (
             <IvCard key={o.date} style={styles.row}>
               <View style={[styles.tile, off ? styles.tileOff : styles.tileOn]}>
-                <Text style={[text.metaSm, styles.mono, { color: off ? color.danger : color.success }]}>{monthShort(monthOfKey(o.date)).toUpperCase()}</Text>
+                <Text style={[text.metaSm, styles.mono, { color: off ? color.danger : color.success }]}>{monthShort(monthOfKey(o.date))}</Text>
                 <Text style={[text.uiLgSemi, { color: off ? color.danger : color.success }]}>{dayOfKey(o.date)}</Text>
               </View>
               <View style={styles.grow}>
                 <Text style={text.uiMdSemi}>{`${weekdayShort(weekdayOfKey(o.date))} · ${off ? 'Day off' : 'Own hours'}`}</Text>
                 <Text style={[text.uiXs, styles.muted]}>{describe(o)}</Text>
               </View>
-              <EmIconButton name="trash" label={`Remove the override on ${o.date}`} tint={color.danger} disabled={busy || suspended} onPress={() => { save(payload.overrides.filter((x) => x.date !== o.date), 'Override removed.') }} />
+              <EmIconButton name="trash" label={`Remove the override on ${o.date}`} tint={color.danger} disabled={busy || suspended} onPress={() => { setSaveError(null); setRemoving(o.date) }} />
             </IvCard>
           )
         })
@@ -171,6 +207,8 @@ export function OverridesScreen() {
           </View>
         )}
       </EmSheet>
+
+      <RemoveOverrideDialog date={removing} busy={busy} error={saveError} onClose={() => setRemoving(null)} onConfirm={() => { remove() }} />
     </InterviewerShell>
   )
 }
@@ -179,6 +217,7 @@ const styles = StyleSheet.create({
   grow: { flex: 1, minWidth: 0, gap: space['2xs'] },
   muted: { color: color.textMuted },
   secondary: { color: color.textSecondary },
+  danger: { color: color.danger },
   mono: { letterSpacing: trackingNative.eyebrow },
   loading: { paddingVertical: space['3xl'] },
   row: { flexDirection: 'row', alignItems: 'center', gap: space.md },

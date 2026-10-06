@@ -6,9 +6,10 @@ import {
   A, AButton, AField, AInput, APassword, APhone, AuthSeg, AuthSub, AuthTitle, AuthTop, BottomBar,
   GoogleBtn, Link, Note, NoteStrong, OrRow, Swap,
 } from '../components/auth/kit'
+import { clockIST, readSendRefusal, useAuthConfig } from '../components/auth/config'
 import { api, tokenStore } from '../lib/api'
 import { ApiClientError } from '../lib/api/types'
-import { color } from '../theme'
+import { color, space, spaceHalf } from '../theme'
 
 type Method = 'Mobile OTP' | 'Email & password'
 
@@ -59,6 +60,12 @@ export function SignInScreen({ onSignedIn, onBack, onRegister, onForgot, onJoinU
   const [pending, setPending] = useState(false)
   const [banner, setBanner] = useState<BannerState>(null)
 
+  // The code's length, the resend wait and the hourly allowance are the admin's (/config auth).
+  const auth = useAuthConfig().data?.auth
+  const otpLength = auth?.otpLength
+  const cooldownPeriod = auth?.otpResendCooldownSeconds ?? 0
+  const maxSends = auth?.otpMaxSendsPerHour
+
   // 1 · Submit Mobile to send OTP
   async function handleSendMobileCode() {
     if (pending) return
@@ -77,24 +84,22 @@ export function SignInScreen({ onSignedIn, onBack, onRegister, onForgot, onJoinU
       )
       onOtpSent({
         mobile,
-        resendAfterSeconds: res.resendAfterSeconds ?? 30,
+        resendAfterSeconds: res.resendAfterSeconds ?? cooldownPeriod,
       })
     } catch (err) {
-      if (err instanceof ApiClientError) {
-        if (err.status === 429) {
-          const retrySec = (err.details as { retryAfterSeconds?: number })?.retryAfterSeconds ?? 3600
-          const resumeDate = new Date(Date.now() + retrySec * 1000)
-          const timeStr = resumeDate.toLocaleTimeString('en-IN', {
-            hour: 'numeric',
-            minute: '2-digit',
-            hour12: true,
-          })
-          setBanner({
-            type: 'RATE_LIMITED',
-            message: "That’s 5 codes to this number this hour.",
-            retryTime: `TRY AGAIN AFTER ${timeStr} IST`,
-          })
-        } else if (err.status === 403) {
+      const refusal = readSendRefusal(err, cooldownPeriod)
+      if (refusal?.kind === 'cooldown') {
+        // A code went to this number moments ago and is still live: the code screen opens on the wait.
+        onOtpSent({ mobile, resendAfterSeconds: refusal.seconds })
+      } else if (refusal?.kind === 'hourly') {
+        // The count is the admin's setting; the server's own sentence names it when /config did not.
+        setBanner({
+          type: 'RATE_LIMITED',
+          message: maxSends ? `That’s ${maxSends} codes to this number this hour.` : refusal.message,
+          retryTime: refusal.retryAt ? `Try again after ${clockIST(refusal.retryAt)} IST` : undefined,
+        })
+      } else if (err instanceof ApiClientError) {
+        if (err.status === 403) {
           setBanner({
             type: 'SUSPENDED',
             message: "This account is suspended. Signing in again won’t help — our team has to lift it.",
@@ -202,7 +207,11 @@ export function SignInScreen({ onSignedIn, onBack, onRegister, onForgot, onJoinU
 
         {method === 'Mobile OTP' ? (
           <>
-            <AField label="Mobile number" helper="We’ll send a 6-digit code by SMS." error={mobileError}>
+            <AField
+              label="Mobile number"
+              helper={otpLength ? `We’ll send a ${otpLength}-digit code by SMS.` : 'We’ll send a code by SMS.'}
+              error={mobileError}
+            >
               <APhone
                 value={mobile}
                 onChangeText={(v) => {
@@ -277,8 +286,8 @@ export function SignInScreen({ onSignedIn, onBack, onRegister, onForgot, onJoinU
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: color.background },
-  scroll: { paddingHorizontal: A.gutter, paddingBottom: 24 },
-  titleGap: { height: 12 },
-  banner: { marginTop: 16 },
-  cta: { marginTop: 22 },
+  scroll: { paddingHorizontal: A.gutter, paddingBottom: spaceHalf['6'] },
+  titleGap: { height: space.md },
+  banner: { marginTop: space.lg },
+  cta: { marginTop: space.xl },
 })

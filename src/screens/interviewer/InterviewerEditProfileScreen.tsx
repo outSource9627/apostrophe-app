@@ -195,7 +195,7 @@ const st = StyleSheet.create({
   photo: { alignItems: 'center', gap: 10, paddingTop: 4, paddingBottom: 2 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   hint: { fontFamily: FF.body, fontSize: 12.5, color: color.textMuted },
-  count: { fontFamily: FF.monoMedium, fontSize: 12, color: color.textMuted },
+  count: { fontFamily: FF.bodyMedium, fontSize: 12, fontVariant: ['tabular-nums'], color: color.textMuted },
   managed: { gap: 12, paddingTop: 14, borderTopWidth: borderWidth.thin, borderTopColor: color.border },
   managedTitle: { fontFamily: FF.bodySemiBold, fontSize: 13, color: color.text },
   mg: { flexDirection: 'row', gap: 8, alignItems: 'flex-start' },

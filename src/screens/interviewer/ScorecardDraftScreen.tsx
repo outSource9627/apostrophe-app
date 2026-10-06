@@ -192,7 +192,7 @@ export function ScorecardDraftScreen() {
       }
     >
       <View style={[styles.band, { backgroundColor: band.bg }]}>
-        <Text style={[text.metaBand, styles.onInk]}>{band.big}</Text>
+        <Text style={[text.metaBand, styles.onInk, styles.tnum]}>{band.big}</Text>
         <Text style={[text.uiXsSemi, styles.onInk, styles.grow]} numberOfLines={2}>{band.small}</Text>
       </View>
 
@@ -239,7 +239,7 @@ export function ScorecardDraftScreen() {
         <TextField label="Internal note" help="Never shown to the student." value={internalNote} onChange={setInternalNote} max={sc?.internalNoteMaxChars} locked={locked} optional />
         {!!notes.trim() && (
           <View style={styles.scratch}>
-            <Text style={[text.metaSm, styles.muted, styles.mono]}>FROM YOUR NOTES</Text>
+            <Text style={[text.metaSm, styles.muted, styles.mono]}>From your notes</Text>
             <Text style={[text.uiSm, styles.secondary]}>{notes}</Text>
           </View>
         )}
@@ -294,7 +294,7 @@ function TextField({
   const short = !!min && n > 0 && n < min
   return (
     <View style={styles.field}>
-      <EmLabel hint={optional ? 'optional' : min ? `${n} / ${min} MIN` : undefined}>{title}</EmLabel>
+      <EmLabel hint={optional ? 'Optional' : min ? `${n} / ${min} min` : undefined}>{title}</EmLabel>
       <Input value={value} onChangeText={onChange} editable={!locked} maxLength={max} multiline textAlignVertical="top" invalid={short} style={styles.area} />
       <Text style={[text.uiXs, { color: short ? color.danger : color.textMuted }]}>{short ? `At least ${min} characters.` : help}</Text>
     </View>
@@ -309,6 +309,7 @@ const styles = StyleSheet.create({
   secondary: { color: color.textSecondary },
   danger: { color: color.danger },
   onInk: { color: color.textOnInk },
+  tnum: { fontVariant: ['tabular-nums'] },
   mono: { letterSpacing: trackingNative.eyebrow },
   loading: { paddingVertical: space['3xl'] },
   band: { flexDirection: 'row', alignItems: 'center', gap: spaceHalf['2.5'], borderRadius: radius.tile, paddingVertical: spaceHalf['2.5'], paddingHorizontal: spaceHalf['3.5'] },

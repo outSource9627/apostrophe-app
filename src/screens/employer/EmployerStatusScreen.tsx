@@ -196,7 +196,7 @@ function DocumentList({
   const rows = statusRowOrder(state.requirements)
   return (
     <EmCard style={styles.list}>
-      <EmMono>DOCUMENTS</EmMono>
+      <EmMono>Documents</EmMono>
       {rows.map((req, i) => {
         const badge = REQ_BADGE[req.status]
         const kind = req.key === 'WORK_EMAIL' ? req.email ?? state.contact.email : requirementKindLine(req)
@@ -209,7 +209,7 @@ function DocumentList({
               <View style={styles.grow}>
                 <Text style={text.uiBaseSemi}>{req.key === 'WORK_EMAIL' ? 'Work email' : requirementLine(req, { short: true })}</Text>
                 {!!kind && kind !== requirementLine(req, { short: true }) && <Text style={[text.uiSm, styles.muted]} numberOfLines={1}>{kind}</Text>}
-                {!!stamp && <Text style={[text.metaMd, styles.stamp]}>{stamp.toUpperCase()}</Text>}
+                {!!stamp && <Text style={[text.metaMd, styles.stamp]}>{stamp}</Text>}
               </View>
               <EmBadge label={req.key === 'WORK_EMAIL' && req.status === 'APPROVED' ? 'Verified' : badge.label} tone={badge.tone} small />
             </View>
@@ -301,7 +301,7 @@ export function RowActionButton({ action, onPress }: { action: RowAction; onPres
   )
 }
 
-/** The screen's title in the serif, the mono line over it (a time) and the sentence under it. */
+/** The screen's title in the serif, the grey line over it (a time) and the sentence under it. */
 export function TitleBlock({ over, title, sub }: { over?: string | null; title: string; sub?: string | null }) {
   return (
     <View style={styles.titleBlock}>

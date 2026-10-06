@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { borderWidth, color, height, opacity, radius, space, spaceHalf, trackingNative } from '../../theme'
 import { text } from '../ui'
 import { Icon } from '../ui/Icon'
-import type { CandidateCard, CandidateDetail } from '../../lib/api/employerFeed'
+import type { CandidateCard, CandidateDetail, CandidateDocumentView } from '../../lib/api/employerFeed'
 import {
   clipLength, experienceLine, fileSize, interviewDate, joinsLine, joinsSentence, monthYear, salaryLine, tierLine,
 } from '../../lib/employer/candidateFormat'
@@ -24,7 +24,7 @@ import { FactTile, FilmStill, SectionBlock, SkillTags } from './studio'
 
 type Candidate = CandidateCard | CandidateDetail
 
-/** 'VERIFIED INTERVIEW · 12 SEP 2026', when the interview is verified. */
+/** 'Verified interview · 12 Sep 2026', when the interview is verified. */
 export function VerifiedInterviewBadge({ candidate }: { candidate: Candidate }) {
   const date = candidate.verifiedInterview?.verified ? interviewDate(candidate.verifiedInterview.at) : null
   if (!date) return null
@@ -61,14 +61,14 @@ export function ProfileHead({ candidate, onPlay }: { candidate: Candidate; onPla
   )
 }
 
-/** EXPECTED · JOINS · SHORTLISTED — the three facts, on a muted well. Unknown ones are left out. */
+/** Expected · Joins · Shortlisted — the three facts, on a muted well. Unknown ones are left out. */
 export function ProfileFacts({ candidate, well = true }: { candidate: Candidate; well?: boolean }) {
   const facts: [string, string][] = []
   const salary = salaryLine(candidate.expectedSalary)
-  if (salary) facts.push(['EXPECTED', salary])
+  if (salary) facts.push(['Expected', salary])
   const joins = joinsLine(candidate.availability)
-  if (joins) facts.push(['JOINS', joins])
-  if (candidate.shortlistCount > 0) facts.push(['SHORTLISTED', `${candidate.shortlistCount} ${candidate.shortlistCount === 1 ? 'employer' : 'employers'}`])
+  if (joins) facts.push(['Joins', joins])
+  if (candidate.shortlistCount > 0) facts.push(['Shortlisted', `${candidate.shortlistCount} ${candidate.shortlistCount === 1 ? 'employer' : 'employers'}`])
   if (facts.length === 0) return null
   return (
     <View style={[styles.facts, well ? styles.factsWell : styles.factsCard]}>
@@ -122,16 +122,16 @@ export function ProfileSections({
   const roles = [...(prefs?.desiredRoles ?? []), ...(prefs?.targetRoles ?? [])]
   const locations = [...(prefs?.preferredLocations ?? []), ...(prefs?.remote ? ['open to remote'] : [])]
   const prefRows: [string, string][] = []
-  if (roles.length) prefRows.push(['ROLES', roles.join(', ')])
-  if (locations.length) prefRows.push(['LOCATIONS', locations.join(', ')])
-  if (prefs?.employmentTypes?.length) prefRows.push(['EMPLOYMENT TYPE', prefs.employmentTypes.map(label).join(', ')])
+  if (roles.length) prefRows.push(['Roles', roles.join(', ')])
+  if (locations.length) prefRows.push(['Locations', locations.join(', ')])
+  if (prefs?.employmentTypes?.length) prefRows.push(['Employment type', prefs.employmentTypes.map(label).join(', ')])
   const joins = joinsSentence(prefs?.availabilityToJoin ?? candidate.availability)
-  if (joins) prefRows.push(['JOINS', joins])
+  if (joins) prefRows.push(['Joins', joins])
   const salary = salaryLine({
     minPaise: prefs?.expectedSalaryMinPaise ?? candidate.expectedSalary?.minPaise ?? null,
     maxPaise: prefs?.expectedSalaryMaxPaise ?? candidate.expectedSalary?.maxPaise ?? null,
   })
-  if (salary) prefRows.push(['EXPECTED SALARY', salary])
+  if (salary) prefRows.push(['Expected salary', salary])
 
   const experience = candidate.experience ?? []
   const videos = candidate.videos ?? []
@@ -140,10 +140,10 @@ export function ProfileSections({
   return (
     <>
       {edu && (eduTitle || eduMeta) ? (
-        <Box title="EDUCATION"><Line title={eduTitle || 'Education'} meta={eduMeta} /></Box>
+        <Box title="Education"><Line title={eduTitle || 'Education'} meta={eduMeta} /></Box>
       ) : null}
 
-      <Box title="EXPERIENCE">
+      <Box title="Experience">
         {experience.length > 0 ? (
           experience.map((x, i) => (
             <Line
@@ -159,17 +159,17 @@ export function ProfileSections({
       </Box>
 
       {candidate.skills?.length > 0 && (
-        <Box title="SKILLS">
+        <Box title="Skills">
           <View style={styles.tags}>
             {candidate.skills.map((s) => (
-              <View key={s} style={styles.tag}><Text style={[text.metaMd, styles.mono, styles.secondary]}>{s.toUpperCase()}</Text></View>
+              <View key={s} style={styles.tag}><Text style={[text.metaMd, styles.mono, styles.secondary]}>{s}</Text></View>
             ))}
           </View>
         </Box>
       )}
 
       {prefRows.length > 0 && (
-        <Box title="PREFERENCES">
+        <Box title="Preferences">
           <View style={styles.prefs}>
             {prefRows.map(([k, v]) => (
               <View key={k} style={styles.pref}>
@@ -181,7 +181,7 @@ export function ProfileSections({
         </Box>
       )}
 
-      <Box title="SELF-UPLOADED VIDEOS">
+      <Box title="Self-uploaded videos">
         {videos.length > 0 ? (
           videos.map((v) => (
             <Pressable
@@ -206,7 +206,7 @@ export function ProfileSections({
       </Box>
 
       {documents.length > 0 && (
-        <Box title="DOCUMENTS">
+        <Box title="Documents">
           {documents.map((d) => (
             <Pressable
               key={d.id}
@@ -219,7 +219,7 @@ export function ProfileSections({
               <View style={styles.docTile}><Text style={[text.metaXs, styles.docExt]}>{d.contentType?.includes('pdf') ? 'PDF' : 'DOC'}</Text></View>
               <View style={styles.grow}>
                 <Text style={text.uiMdMedium} numberOfLines={1}>{d.name || label(d.kind)}</Text>
-                <Text style={[text.metaSm, styles.mono, styles.subtle]}>{[label(d.kind), fileSize(d.sizeBytes)].filter(Boolean).join(' · ').toUpperCase()}</Text>
+                <Text style={[text.metaSm, styles.mono, styles.subtle]}>{[label(d.kind), fileSize(d.sizeBytes)].filter(Boolean).join(' · ')}</Text>
               </View>
               {openingDoc === d.id ? <ActivityIndicator color={color.textSecondary} /> : <Icon name="download" size={space.lg + 2} tint={color.textSecondary} />}
             </Pressable>
@@ -274,7 +274,7 @@ export function personLine(c: { qualification?: string | null; tier?: string | n
   return [c.qualification ? label(c.qualification) : null, tierName(c.tier), tail].filter(Boolean).join(' · ')
 }
 
-/** EXPECTED · JOINS · EXPERIENCE (P1). A fact the API did not send is left out. */
+/** Expected · Joins · Experience (P1). A fact the API did not send is left out. */
 export function ProfileFactTiles({
   salary, availability, experienceYears,
 }: { salary: Paise | null; availability: string | null; experienceYears: number | null | undefined }) {
@@ -294,7 +294,7 @@ export function ProfileFactTiles({
 }
 
 /**
- * VIDEOS · N (P1): the verified interview first, then each self-uploaded clip,
+ * Videos · N (P1): the verified interview first, then each self-uploaded clip,
  * marked as such. Each still is the interview's poster or the photo — the API
  * sends no frame of a self-uploaded clip.
  */
@@ -356,6 +356,60 @@ export function ProfileVideoRow({
 export const linkUrl = (url: string) => (/^[a-z][a-z0-9+.-]*:/i.test(url) ? url : `https://${url}`)
 const linkHost = (url: string) => url.replace(/^[a-z][a-z0-9+.-]*:\/\//i, '').replace(/^www\./i, '').split(/[/?#]/)[0]
 
+/** The portfolio links worth drawing: the server sends plain URL strings (ST-35), so a blank one is the only thing to drop. */
+export const portfolioLinksOf = (links: readonly unknown[] | null | undefined): string[] =>
+  (links ?? []).filter((l): l is string => typeof l === 'string' && l.trim().length > 0)
+
+/**
+ * One document on a profile (P2's Documents · links): the PDF / DOC tile, its
+ * kind over its name and size, and the download mark — a spinner while its
+ * 15-minute link is being fetched. The applicant screen draws the same row.
+ */
+export function DocumentRow({
+  doc, opening, onOpen,
+}: { doc: CandidateDocumentView; opening?: boolean; onOpen?: (docId: string) => void }) {
+  const sub = [doc.name, fileSize(doc.sizeBytes)].filter(Boolean).join(' · ')
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Download ${doc.name || label(doc.kind)}`}
+      accessibilityState={{ busy: !!opening }}
+      disabled={!onOpen || opening}
+      onPress={() => onOpen?.(doc.id)}
+      style={({ pressed }) => [styles.fileRow, pressed && styles.pressed]}
+    >
+      <View style={styles.fileTile}><Text style={[text.metaXs, styles.fileExt]}>{doc.contentType?.includes('pdf') ? 'PDF' : 'DOC'}</Text></View>
+      <View style={styles.grow}>
+        <Text style={text.uiSmMedium} numberOfLines={1}>{label(doc.kind)}</Text>
+        {!!sub && <Text style={[text.uiXs, styles.muted]} numberOfLines={1}>{sub}</Text>}
+      </View>
+      {opening
+        ? <ActivityIndicator color={color.textMuted} />
+        : <Icon name="download" size={space.lg + borderWidth.thin} tint={color.textMuted} />}
+    </Pressable>
+  )
+}
+
+/** One portfolio link: its host over the URL as typed. */
+export function LinkRow({ url, onOpen }: { url: string; onOpen?: (url: string) => void }) {
+  const host = linkHost(url) || url
+  return (
+    <Pressable
+      accessibilityRole="link"
+      accessibilityLabel={`Open ${host}`}
+      disabled={!onOpen}
+      onPress={() => onOpen?.(linkUrl(url))}
+      style={({ pressed }) => [styles.fileRow, pressed && styles.pressed]}
+    >
+      <View style={[styles.fileTile, styles.linkTile]}><Icon name="link" size={space.lg} tint={color.textSecondary} /></View>
+      <View style={styles.grow}>
+        <Text style={text.uiSmMedium} numberOfLines={1}>{host}</Text>
+        <Text style={[text.uiXs, styles.muted]} numberOfLines={1}>{url}</Text>
+      </View>
+    </Pressable>
+  )
+}
+
 /**
  * The résumé half of the page (P2): Experience as a timeline, Education,
  * Skills, Looking for, and Documents · links. Experience says so when there is
@@ -392,7 +446,7 @@ export function ProfileResume({
   if (candidate.languages?.length) looking.push(['Languages', candidate.languages.join(', ')])
 
   const documents = candidate.documents ?? []
-  const links = (candidate.portfolioLinks ?? []).filter((l) => !!l?.url)
+  const links = portfolioLinksOf(candidate.portfolioLinks)
   const filesLabel = documents.length && links.length ? 'Documents · links' : documents.length ? 'Documents' : 'Links'
 
   return (
@@ -451,44 +505,10 @@ export function ProfileResume({
 
       {documents.length + links.length > 0 && (
         <SectionBlock label={filesLabel}>
-          {documents.map((d) => {
-            const sub = [d.name, fileSize(d.sizeBytes)].filter(Boolean).join(' · ')
-            return (
-              <Pressable
-                key={d.id}
-                accessibilityRole="button"
-                accessibilityLabel={`Download ${d.name || label(d.kind)}`}
-                disabled={!onOpenDocument || openingDoc === d.id}
-                onPress={() => onOpenDocument?.(d.id)}
-                style={({ pressed }) => [styles.fileRow, pressed && styles.pressed]}
-              >
-                <View style={styles.fileTile}><Text style={[text.metaXs, styles.fileExt]}>{d.contentType?.includes('pdf') ? 'PDF' : 'DOC'}</Text></View>
-                <View style={styles.grow}>
-                  <Text style={text.uiSmMedium} numberOfLines={1}>{label(d.kind)}</Text>
-                  {!!sub && <Text style={[text.uiXs, styles.muted]} numberOfLines={1}>{sub}</Text>}
-                </View>
-                {openingDoc === d.id
-                  ? <ActivityIndicator color={color.textMuted} />
-                  : <Icon name="download" size={space.lg + borderWidth.thin} tint={color.textMuted} />}
-              </Pressable>
-            )
-          })}
-          {links.map((l, i) => (
-            <Pressable
-              key={`${l.url}-${i}`}
-              accessibilityRole="link"
-              accessibilityLabel={`Open ${l.label || linkHost(l.url)}`}
-              disabled={!onOpenLink}
-              onPress={() => onOpenLink?.(linkUrl(l.url))}
-              style={({ pressed }) => [styles.fileRow, pressed && styles.pressed]}
-            >
-              <View style={[styles.fileTile, styles.linkTile]}><Icon name="link" size={space.lg} tint={color.textSecondary} /></View>
-              <View style={styles.grow}>
-                <Text style={text.uiSmMedium} numberOfLines={1}>{l.label || linkHost(l.url)}</Text>
-                <Text style={[text.uiXs, styles.muted]} numberOfLines={1}>{l.url}</Text>
-              </View>
-            </Pressable>
+          {documents.map((d) => (
+            <DocumentRow key={d.id} doc={d} opening={openingDoc === d.id} onOpen={onOpenDocument} />
           ))}
+          {links.map((l, i) => <LinkRow key={`${l}-${i}`} url={l} onOpen={onOpenLink} />)}
         </SectionBlock>
       )}
     </>

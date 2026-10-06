@@ -1,0 +1,869 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Interviewer Room – Directions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FAFAFC; --surface:#fff; --muted:#F1F3F7; --sunken:#E6E8EE;
+    --text:#0B0F1A; --text2:#3A4256; --text3:#6B7385; --text4:#8A91A2;
+    --border:#E3E6ED; --border-strong:#C9CED9; --border-soft:#EEF0F4;
+    --accent:#5B3DF5; --accent-text:#4A2FE0; --accent-soft:#EFEBFF; --accent-wash:#F7F6FF; --accent-muted:#C4B8FF; --accent-bright:#7258FF;
+    --ink:#0B0F1A; --ink-raised:#151B2B; --ink-hover:#2A3142; --ink-deep:#07090F; --ink-deeper:#11151F;
+    --on:#fff; --on-soft:#E3E6ED; --on-muted:#C9CED9; --on-body:#A6ACBA; --on-subtle:#8A91A2;
+    --glass:rgba(11,15,26,.6); --hair:rgba(255,255,255,.1); --ground:rgba(255,255,255,.12); --edge:rgba(255,255,255,.2); --play:rgba(255,255,255,.16);
+    --ok:#0B7A55; --ok-fill:#0E9F6E; --ok-soft:#E6F7F0; --ok-on:#6EE7B7;
+    --warn:#935F00; --warn-soft:#FFF5E1; --warn-edge:#F5E2B8; --warn-on:#FCC96B;
+    --danger:#C22A30; --danger-fill:#E5484D; --danger-soft:#FDECEC; --danger-on:#FF8A8E;
+    --s:.755; --ps:.8;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{font-family:'Geist',system-ui,sans-serif;background:#E9EAF2;color:var(--text);padding:36px 24px 90px}
+  button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;text-align:inherit}
+  button:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  svg.i{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex:none}
+  .mono{font:500 11px 'Geist Mono',monospace;letter-spacing:.12em;text-transform:uppercase}
+  .tnum{font-variant-numeric:tabular-nums}
+  .grow{flex:1;min-width:0}
+  .ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(229,72,77,.45)}50%{box-shadow:0 0 0 5px rgba(229,72,77,0)}}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+  /* ── page ─────────────────────────────────────────────── */
+  .wrap{max-width:1400px;margin:0 auto}
+  .intro{background:var(--surface);border:1px solid var(--border);border-radius:28px;padding:28px 32px;margin-bottom:18px}
+  .intro h1{font-size:30px;letter-spacing:-.035em;line-height:1.1}
+  .intro .lede{font-size:16px;color:var(--text3);margin-top:8px;line-height:1.5;max-width:980px}
+  .intro .facts{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:14px;font-size:13.5px;color:var(--text2)}
+  .chip{display:inline-flex;align-items:center;gap:6px}
+  .st{display:inline-block;font:600 11.5px 'Geist',sans-serif;border-radius:99px;padding:1px 8px;white-space:nowrap}
+  .st.real{background:var(--ok-soft);color:var(--ok)}.st.app{background:var(--accent-soft);color:var(--accent-text)}.st.need{background:var(--warn-soft);color:var(--warn)}.st.omit{background:var(--muted);color:var(--text3)}
+  .bar{position:sticky;top:10px;z-index:200;display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:18px}
+  .seg{display:flex;flex-wrap:wrap;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:22px;padding:4px;box-shadow:0 8px 24px rgba(11,15,26,.08)}
+  .seg button{padding:8px 14px;border-radius:99px;font-size:14px;font-weight:600;color:var(--text3);white-space:nowrap}
+  .seg button.on{background:var(--accent);color:#fff}
+  .seg .lab{font:500 10.5px 'Geist Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--text4);padding:9px 6px 0 10px}
+  .dir{background:var(--surface);border:1px solid var(--border);border-radius:28px;padding:26px 28px 28px;margin-bottom:22px}
+  .dir-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+  .dir-letter{width:34px;height:34px;border-radius:10px;background:var(--ink);color:#fff;display:grid;place-items:center;font-weight:800;font-size:17px;align-self:center}
+  .dir-head h2{font-size:24px;letter-spacing:-.03em}
+  .dir-head .pitch{font-size:15px;color:var(--text3)}
+  .frames{display:flex;flex-wrap:wrap;gap:36px;align-items:flex-start;margin-top:20px}
+  .cap{font-size:13px;color:var(--text3);margin:0 0 8px 4px}.cap b{color:var(--text);font-weight:600}
+  .webwrap{width:calc(1280px*var(--s));height:calc(840px*var(--s));flex:none}
+  .phonewrap{width:calc(390px*var(--ps));height:calc(844px*var(--ps));flex:none}
+  .scaled{transform-origin:0 0}
+  .webwrap .scaled{transform:scale(var(--s))}
+  .phonewrap .scaled{transform:scale(var(--ps))}
+  .notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-top:22px}
+  .note{background:var(--muted);border-radius:18px;padding:16px 18px}
+  .note h4{font:500 11px 'Geist Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+  .note ul{padding-left:18px;font-size:13.5px;line-height:1.55;color:var(--text2)}
+  .note li{margin-bottom:5px}
+  .note table{width:100%;border-collapse:collapse;font-size:12.5px;line-height:1.45;color:var(--text2)}
+  .note td{padding:6px 8px 6px 0;border-bottom:1px solid var(--border);vertical-align:top}
+  .note td:first-child{font-weight:600;color:var(--text);width:42%}
+  .compare{background:var(--surface);border:1px solid var(--border);border-radius:28px;padding:22px 26px;margin-bottom:22px;overflow-x:auto}
+  .compare h3{font-size:18px;letter-spacing:-.02em;margin-bottom:10px}
+  .compare table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:820px}
+  .compare th{font:500 10.5px 'Geist Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);text-align:left;padding:6px 10px 8px 0;border-bottom:1px solid var(--border-strong)}
+  .compare td{padding:9px 10px 9px 0;border-bottom:1px solid var(--border);vertical-align:top;color:var(--text2)}
+  .compare td:first-child{font-weight:700;color:var(--text);white-space:nowrap}
+
+  /* ── device frames ────────────────────────────────────── */
+  .web{width:1280px;height:840px;border-radius:14px;overflow:hidden;background:#fff;border:1px solid var(--border-strong);box-shadow:0 30px 70px rgba(11,15,26,.18);display:flex;flex-direction:column}
+  .chrome{height:40px;flex:none;background:#F1F3F7;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;padding:0 14px}
+  .chrome i{width:11px;height:11px;border-radius:99px;background:#D7DAE2}
+  .chrome .url{margin-left:14px;height:26px;flex:1;max-width:560px;background:#fff;border:1px solid var(--border);border-radius:8px;display:flex;align-items:center;padding:0 10px;font-size:12.5px;color:var(--text3)}
+  .viewport{flex:1;min-height:0;position:relative;display:flex;flex-direction:column}
+  .phone{width:390px;height:844px;background:var(--ink-deep);border-radius:46px;border:10px solid #000;overflow:hidden;position:relative;color:#fff;box-shadow:0 30px 70px rgba(11,15,26,.22)}
+  .sbar{position:absolute;top:0;left:0;right:0;height:40px;display:flex;justify-content:space-between;align-items:center;padding:0 26px;font-size:14px;font-weight:600;z-index:90;pointer-events:none;color:#fff}
+  .sbar.dark{color:var(--text)}
+  .sbar::after{content:'';position:absolute;left:50%;top:9px;width:86px;height:22px;background:#000;border-radius:14px;transform:translateX(-50%)}
+
+  /* ── room atoms ───────────────────────────────────────── */
+  .feed{position:relative;overflow:hidden;color:#fff;background:radial-gradient(ellipse 70% 55% at 50% 38%,#3b4157 0%,#1f2435 55%,#121622 100%)}
+  .feed.self{background:radial-gradient(ellipse 60% 70% at 50% 40%,#353b50 0%,#1b2030 60%,#10141e 100%)}
+  .sil{position:absolute;inset:0;width:100%;height:100%;fill:rgba(255,255,255,.13);stroke:none}
+  .feed .lamp{position:absolute;inset:0;background:radial-gradient(ellipse 40% 30% at 30% 20%,rgba(255,214,170,.08),transparent 70%)}
+  .feed .initials{position:absolute;inset:0;display:grid;place-items:center}
+  .feed .initials b{width:84px;height:84px;border-radius:99px;background:var(--ground);display:grid;place-items:center;font-size:28px;font-weight:700;letter-spacing:-.02em}
+  .feed .fill-blur{position:absolute;inset:-40px;filter:blur(28px) saturate(1.1);opacity:.9}
+  .tag{display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 10px;border-radius:9px;background:var(--glass);backdrop-filter:blur(10px);font-size:13px;font-weight:600;color:#fff;white-space:nowrap}
+  .tag .mono{font-size:9.5px;color:var(--on-muted)}
+  .tag .mono.red{color:var(--danger-on)}
+  .rec{display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 11px;border-radius:99px;font:500 11px 'Geist Mono',monospace;letter-spacing:.12em;text-transform:uppercase;white-space:nowrap}
+  .rec i{width:8px;height:8px;border-radius:99px;background:var(--danger-fill);animation:pulse 1.8s infinite}
+  .rec.ink{background:var(--glass);backdrop-filter:blur(10px);color:var(--danger-on);border:1px solid var(--hair)}
+  .rec.paper{background:var(--danger-soft);color:var(--danger)}
+  .rec.idle{background:var(--muted);color:var(--text3)}.rec.idle i{background:var(--text4);animation:none}
+  .rec.idle.ink{background:var(--glass);color:var(--on-muted)}
+  .bars{display:inline-flex;align-items:flex-end;gap:2px;height:14px}
+  .bars i{width:4px;border-radius:2px;background:var(--ok-on)}
+  .bars.paper i{background:var(--ok-fill)}
+  .ctl{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:58px}
+  .ctl .c{width:52px;height:52px;border-radius:99px;display:grid;place-items:center;background:var(--play);color:#fff;transition:.15s}
+  .ctl .c:hover{background:rgba(255,255,255,.24)}
+  .ctl.off .c{background:#fff;color:var(--ink)}
+  .ctl.end .c{background:var(--danger-fill);color:#fff;width:64px;border-radius:99px}
+  .ctl small{font-size:11.5px;font-weight:600;color:var(--on-body);white-space:nowrap}
+  .ctl.paper .c{background:var(--muted);color:var(--text)}
+  .ctl.paper.off .c{background:var(--ink);color:#fff}
+  .ctl.paper small{color:var(--text3)}
+  .pill-end{display:inline-flex;align-items:center;gap:8px;height:48px;padding:0 20px;border-radius:99px;background:var(--danger-fill);color:#fff;font-weight:700;font-size:15px;white-space:nowrap}
+  .self-lab{position:absolute;left:8px;bottom:8px;font-size:11px;font-weight:600;background:var(--glass);border-radius:6px;padding:2px 7px;color:#fff}
+  .band{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:14px;font-size:13.5px;font-weight:600;line-height:1.35}
+  .band.warn{background:var(--warn-soft);color:var(--warn);border:1px solid var(--warn-edge)}
+  .band.ink-warn{background:rgba(252,201,107,.14);color:var(--warn-on);border:1px solid rgba(252,201,107,.3);backdrop-filter:blur(10px)}
+  .band small{font-weight:500;opacity:.85}
+  .scrim{position:absolute;inset:0;background:rgba(11,15,26,.82);display:grid;place-items:center;text-align:center;padding:20px}
+  .scrim b{display:block;font-size:20px;letter-spacing:-.02em}
+  .scrim span{display:block;margin-top:6px;font-size:13.5px;color:var(--on-muted)}
+  .wait{position:absolute;left:16px;right:16px;bottom:16px;background:rgba(11,15,26,.82);backdrop-filter:blur(12px);border:1px solid var(--hair);border-radius:16px;padding:14px 16px;text-align:center}
+  .wait b{font-size:17px;letter-spacing:-.02em}
+  .wait p{font-size:13px;color:var(--on-muted);margin-top:4px}
+  .checks{display:flex;justify-content:center;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .checks span{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:4px 9px;border-radius:99px;background:rgba(110,231,183,.14);color:var(--ok-on)}
+  .checks span.off{background:rgba(255,138,142,.14);color:var(--danger-on)}
+  .checks svg.i{width:13px;height:13px;stroke-width:2.6}
+
+  /* paper rail atoms */
+  .tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);padding:0 12px;flex:none}
+  .tabs button{flex:1;height:46px;display:flex;align-items:center;justify-content:center;gap:6px;font-weight:600;font-size:14px;color:var(--text3);border-bottom:2px solid transparent;margin-bottom:-1px}
+  .tabs button.on{color:var(--text);border-color:var(--accent)}
+  .tabs .ct{font:500 11px 'Geist Mono',monospace;color:var(--text4)}
+  .eb{font:500 10.5px 'Geist Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--text4)}
+  .ask{background:var(--accent-wash);border:1px solid var(--accent-muted);border-radius:16px;padding:14px 16px;display:grid;gap:8px}
+  .ask .eb{color:var(--accent-text)}
+  .ask p{font-size:16px;line-height:1.45;font-weight:500;letter-spacing:-.01em}
+  .row{display:flex;align-items:center;gap:8px}
+  .btn{height:36px;padding:0 14px;border-radius:99px;font-weight:600;font-size:13.5px;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+  .btn svg.i{width:16px;height:16px}
+  .btn.pri{background:var(--accent);color:#fff}
+  .btn.out{border:1px solid var(--border-strong);background:#fff;color:var(--text)}
+  .btn.ghost{color:var(--text3)}
+  .btn.lg{height:46px;padding:0 20px;font-size:15px}
+  .btn.ink{background:var(--ink);color:#fff}
+  .area{display:grid;gap:6px}
+  .area-h{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .area-h .n{font:500 11px 'Geist Mono',monospace;color:var(--text4)}
+  .area-h .n.done{color:var(--ok)}
+  .q{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:#fff;font-size:14px;line-height:1.45;width:100%;color:var(--text)}
+  .q.done{color:var(--text4)}
+  .q.now{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .box{width:18px;height:18px;border-radius:5px;border:1.5px solid var(--border-strong);flex:none;display:grid;place-items:center;margin-top:1px;background:#fff}
+  .box.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .box svg.i{width:12px;height:12px;stroke-width:3}
+  .line-card{background:var(--muted);border-radius:12px;padding:10px 12px;font-size:13px;line-height:1.45;color:var(--text2)}
+  .line-card .eb{display:block;margin-bottom:3px}
+  .notes-box{border:1px solid var(--border);border-radius:14px;padding:12px 14px;font-size:14px;line-height:1.6;color:var(--text);background:#fff;white-space:pre-wrap;min-height:160px}
+  .stamp{display:inline-flex;align-items:center;font:500 11.5px 'Geist Mono',monospace;color:var(--accent-text);background:var(--accent-soft);border-radius:6px;padding:0 6px;margin-right:6px;line-height:20px}
+  .saved{font:500 10.5px 'Geist Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--ok)}
+  .fact{display:grid;gap:5px}
+  .fact p{font-size:14px;line-height:1.5}
+  .skill{display:inline-block;font-size:12.5px;font-weight:600;background:var(--muted);border-radius:99px;padding:3px 10px;margin:0 4px 4px 0}
+  .person{display:flex;align-items:center;gap:12px}
+  .av{width:44px;height:44px;border-radius:99px;background:var(--accent-bright);color:#fff;display:grid;place-items:center;font-weight:700;flex:none}
+  .prog{position:relative;height:6px;border-radius:99px;background:var(--sunken)}
+  .prog>i{position:absolute;left:0;top:0;bottom:0;border-radius:99px;background:var(--ink)}
+  .prog>i.ok{background:var(--ok-fill)}
+  .prog>b{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--text);border-radius:2px}
+  .prog.ink{background:rgba(255,255,255,.14)}
+  .prog.ink>i{background:#fff}.prog.ink>i.ok{background:var(--ok-on)}
+  .prog.ink>b{background:var(--on-muted)}
+  .ptag{display:inline-block;font:500 9.5px 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase;border:1px dashed var(--accent);color:var(--accent);border-radius:99px;padding:0 6px;background:var(--accent-wash);white-space:nowrap;vertical-align:middle;line-height:1.6}
+  .kbd{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 5px;border-radius:5px;border:1px solid var(--edge);font:500 10.5px 'Geist Mono',monospace;color:var(--on-muted)}
+
+  /* dialogs */
+  .modal{position:absolute;inset:0;background:rgba(7,9,15,.7);display:grid;place-items:center;z-index:120;backdrop-filter:blur(3px)}
+  .dlg{width:480px;background:#fff;border-radius:22px;padding:26px;color:var(--text);display:grid;gap:14px}
+  .dlg h3{font-size:22px;letter-spacing:-.03em;line-height:1.2}
+  .dlg p{font-size:14.5px;line-height:1.55;color:var(--text3)}
+  .len{display:flex;justify-content:space-between;background:var(--muted);border-radius:12px;padding:11px 14px;font-size:13.5px}
+  .len b{font:500 13px 'Geist Mono',monospace}
+  .mark{border-radius:14px;padding:12px 14px;font-size:13.5px;line-height:1.45}
+  .mark b{display:block;font-size:14px;margin-bottom:2px}
+  .mark.warn{background:var(--warn-soft);color:var(--warn);border:1px solid var(--warn-edge)}
+  .mark.ok{background:var(--ok-soft);color:var(--ok)}
+  .psheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:26px 26px 0 0;padding:12px 20px 30px;color:var(--text);display:grid;gap:12px;z-index:121}
+  .psheet .grab{width:44px;height:5px;border-radius:9px;background:var(--border-strong);margin:0 auto 6px}
+  .psheet h3{font-size:21px;letter-spacing:-.03em}
+
+  /* ═══ A · Console ════════════════════════════════════════ */
+  .a-top{height:64px;flex:none;display:flex;align-items:center;gap:16px;padding:0 20px;border-bottom:1px solid var(--border);background:#fff}
+  .a-who b{font-size:15px;letter-spacing:-.01em}.a-who span{display:block;font-size:12.5px;color:var(--text3);margin-top:1px}
+  .a-progress{width:300px;display:grid;gap:6px}
+  .a-progress .lbl{display:flex;justify-content:space-between;font-size:12px;color:var(--text3)}
+  .a-progress .lbl b{color:var(--text);font-weight:600}
+  .a-timer{display:flex;align-items:center;gap:10px;height:40px;padding:0 14px;border-radius:12px;border:1px solid var(--border);background:#fff}
+  .a-timer .tmr{font:500 22px 'Geist Mono',monospace}
+  .a-timer small{font-size:11.5px;color:var(--text3);font-weight:600}
+  .a-timer.warn{background:var(--warn-soft);border-color:var(--warn-edge);color:var(--warn)}
+  .a-body{flex:1;min-height:0;display:flex}
+  .a-stage{width:64%;background:var(--ink);display:flex;flex-direction:column;position:relative}
+  .a-video{flex:1;min-height:0;display:flex;justify-content:center;align-items:center;padding:18px 24px 6px;position:relative}
+  .a-cand{height:100%;aspect-ratio:9/16;border-radius:20px;box-shadow:0 0 0 1px var(--hair)}
+  .a-self{position:absolute;right:26px;bottom:14px;width:208px;aspect-ratio:16/9;border-radius:14px;box-shadow:0 0 0 1px var(--edge),0 12px 30px rgba(0,0,0,.45)}
+  .a-bands{position:absolute;top:14px;left:50%;transform:translateX(-50%);width:420px;display:grid;gap:8px;z-index:20}
+  .a-dock{height:96px;flex:none;display:flex;align-items:center;justify-content:center;gap:14px;position:relative}
+  .a-dock .sep{width:1px;height:40px;background:var(--hair);margin:0 6px}
+  .a-dock .side{position:absolute;left:22px;bottom:14px;display:flex;align-items:center;gap:10px;font-size:12px;color:var(--on-body)}
+  .a-dock .keys{position:absolute;right:22px;bottom:16px;display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--on-subtle)}
+  .a-rail{flex:1;display:flex;flex-direction:column;min-width:0;background:#fff}
+  .a-pane{flex:1;min-height:0;overflow:auto;padding:16px;display:grid;gap:14px;align-content:start}
+  /* A phone */
+  .ap-video{position:absolute;left:0;right:0;top:0;height:468px}
+  .ap-top{position:absolute;top:48px;left:14px;right:14px;display:flex;justify-content:space-between;align-items:center;z-index:5}
+  .ap-tmr{display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 12px;border-radius:99px;background:var(--glass);backdrop-filter:blur(10px);border:1px solid var(--hair);font:500 17px 'Geist Mono',monospace}
+  .ap-tmr.warn{color:var(--warn-on);border-color:rgba(252,201,107,.4)}
+  .ap-self{position:absolute;right:14px;top:94px;width:118px;aspect-ratio:16/9;border-radius:12px;box-shadow:0 0 0 1px var(--edge)}
+  .ap-name{position:absolute;left:14px;top:424px;z-index:5}
+  .ap-dock{position:absolute;left:0;right:0;top:468px;height:92px;display:flex;justify-content:space-around;align-items:center;padding:0 10px;background:var(--ink)}
+  .ap-dock .ctl{min-width:56px}
+  .ap-dock .ctl .c{width:48px;height:48px}
+  .ap-dock .ctl.end .c{width:58px}
+  .ap-panel{position:absolute;left:0;right:0;top:560px;bottom:0;background:#fff;border-radius:22px 22px 0 0;color:var(--text);display:flex;flex-direction:column}
+  .ap-panel .tabs button{height:44px;font-size:13.5px}
+  .ap-pane{flex:1;min-height:0;overflow:auto;padding:12px 14px 24px;display:grid;gap:10px;align-content:start}
+  .ap-pane .ask p{font-size:15px}
+  .ap-band{position:absolute;top:92px;left:14px;right:146px;z-index:6}
+
+  /* ═══ B · Guided script ══════════════════════════════════ */
+  .b-body{flex:1;min-height:0;display:flex}
+  .b-left{width:33%;background:var(--ink);display:flex;flex-direction:column;padding:16px;gap:12px}
+  .b-lefttop{display:flex;justify-content:space-between;align-items:center}
+  .b-video{flex:1;min-height:0;position:relative;display:flex;justify-content:center}
+  .b-cand{height:100%;aspect-ratio:9/16;border-radius:18px;box-shadow:0 0 0 1px var(--hair)}
+  .b-self{position:absolute;right:6px;bottom:8px;width:150px;aspect-ratio:16/9;border-radius:12px;box-shadow:0 0 0 1px var(--edge),0 10px 24px rgba(0,0,0,.45)}
+  .b-ctls{display:flex;justify-content:center;gap:8px}
+  .b-ctls .ctl{min-width:52px}.b-ctls .ctl .c{width:46px;height:46px}.b-ctls .ctl.end .c{width:56px}
+  .b-desk{flex:1;min-width:0;display:flex;flex-direction:column;background:#fff}
+  .b-deskhead{display:flex;align-items:center;gap:14px;padding:16px 28px;border-bottom:1px solid var(--border)}
+  .b-steps{display:flex;gap:6px;flex:1;min-width:0}
+  .b-step{flex:1;min-width:0;border-radius:12px;padding:8px 10px;background:var(--muted);display:grid;gap:6px}
+  .b-step b{font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .b-step .meter{height:4px;border-radius:99px;background:var(--sunken);overflow:hidden}
+  .b-step .meter i{display:block;height:100%;background:var(--accent);border-radius:99px}
+  .b-step.done{background:var(--ok-soft)}.b-step.done .meter i{background:var(--ok-fill)}
+  .b-step.now{background:var(--accent-soft)}
+  .b-tmr{display:flex;align-items:center;gap:10px}
+  .b-tmr .tmr{font:500 22px 'Geist Mono',monospace}
+  .b-tmr.warn .tmr{color:var(--warn)}
+  .b-q{flex:1;min-height:0;padding:34px 56px 20px;display:flex;flex-direction:column;gap:18px;overflow:auto}
+  .b-q .eb{color:var(--accent-text);font-size:11.5px}
+  .b-q h2{font-size:32px;line-height:1.25;letter-spacing:-.03em;font-weight:600;max-width:760px}
+  .b-q .acts{display:flex;gap:10px;align-items:center}
+  .b-q .after{display:grid;gap:8px;margin-top:6px;max-width:760px}
+  .b-q .after .row{justify-content:space-between}
+  .b-noteline{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--border);border-radius:14px;padding:12px 14px;font-size:14px;line-height:1.5;color:var(--text4);min-height:70px}
+  .b-upnext{display:flex;gap:10px;align-items:center;font-size:13.5px;color:var(--text3);padding:12px 14px;border-radius:12px;background:var(--muted);max-width:760px}
+  .b-upnext b{color:var(--text);font-weight:600}
+  .b-foot{border-top:1px solid var(--border);padding:12px 28px 14px;display:grid;gap:7px}
+  .b-foot .lbl{display:flex;justify-content:space-between;font-size:12px;color:var(--text3)}
+  .b-foot .lbl b{color:var(--text);font-weight:600}
+  .b-bands{position:absolute;top:66px;right:28px;width:360px;display:grid;gap:8px;z-index:20}
+  /* B phone */
+  .bp-video{position:absolute;left:0;right:0;top:0;height:372px}
+  .bp-top{position:absolute;top:48px;left:14px;right:14px;display:flex;justify-content:space-between;align-items:center;z-index:5}
+  .bp-self{position:absolute;right:14px;top:250px;width:104px;aspect-ratio:16/9;border-radius:10px;box-shadow:0 0 0 1px var(--edge)}
+  .bp-ctls{position:absolute;left:14px;right:14px;top:308px;display:flex;gap:8px;z-index:5;align-items:center}
+  .bp-ctls .mini{width:40px;height:40px;border-radius:99px;display:grid;place-items:center;background:var(--glass);backdrop-filter:blur(10px);border:1px solid var(--hair);color:#fff}
+  .bp-ctls .mini.off{background:#fff;color:var(--ink)}
+  .bp-ctls .mini.end{background:var(--danger-fill);border-color:transparent;width:56px}
+  .bp-panel{position:absolute;left:0;right:0;top:360px;bottom:0;background:#fff;border-radius:22px 22px 0 0;color:var(--text);display:flex;flex-direction:column}
+  .bp-steps{display:flex;gap:5px;padding:14px 14px 0}
+  .bp-steps i{flex:1;height:5px;border-radius:99px;background:var(--sunken);overflow:hidden;position:relative}
+  .bp-steps i b{position:absolute;left:0;top:0;bottom:0;background:var(--accent);border-radius:99px}
+  .bp-steps i.done b{background:var(--ok-fill)}
+  .bp-q{padding:14px 18px 0;display:grid;gap:10px}
+  .bp-q .eb{color:var(--accent-text)}
+  .bp-q h2{font-size:22px;line-height:1.3;letter-spacing:-.025em;font-weight:600}
+  .bp-acts{display:flex;gap:8px;padding:14px 18px 0}
+  .bp-acts .btn.lg{flex:1}
+  .bp-noteline{margin:12px 18px 0;border:1px solid var(--border);border-radius:12px;padding:10px 12px;font-size:13.5px;color:var(--text4);display:flex;justify-content:space-between;align-items:center}
+  .bp-tabs{position:absolute;left:0;right:0;bottom:0;height:64px;border-top:1px solid var(--border);display:flex;background:#fff}
+  .bp-tabs button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11px;font-weight:600;color:var(--text4)}
+  .bp-tabs button.on{color:var(--accent)}
+
+  /* ═══ C · Immersive ══════════════════════════════════════ */
+  .c-stage{flex:1;min-height:0;position:relative;background:var(--ink-deep);overflow:hidden}
+  .c-fill{position:absolute;inset:0}
+  .c-cand{position:absolute;top:0;bottom:0;left:50%;transform:translateX(-50%);aspect-ratio:9/16;box-shadow:0 0 0 1px var(--hair),0 0 80px rgba(0,0,0,.6)}
+  .c-topbar{position:absolute;top:16px;left:16px;right:16px;display:flex;align-items:center;gap:10px;z-index:10}
+  .c-glass{display:inline-flex;align-items:center;gap:10px;height:42px;padding:0 14px;border-radius:14px;background:var(--glass);backdrop-filter:blur(14px);border:1px solid var(--hair);color:#fff;font-size:13.5px;font-weight:600;white-space:nowrap}
+  .c-glass .tmr{font:500 19px 'Geist Mono',monospace}
+  .c-glass.warn .tmr{color:var(--warn-on)}
+  .c-glass .sub{font-weight:500;color:var(--on-body);font-size:12.5px}
+  .c-prompter{position:absolute;top:70px;left:50%;transform:translateX(-50%);width:560px;color:#fff;z-index:9;border-radius:18px;background:rgba(11,15,26,.72);backdrop-filter:blur(16px);border:1px solid var(--hair);padding:14px 18px;display:grid;gap:8px}
+  .c-prompter .eb{color:var(--accent-muted)}
+  .c-stage.drawer .c-prompter,.c-stage.drawer .c-dock{left:calc((100% - 376px)/2)}
+  .c-fill::after{content:'';position:absolute;inset:0;background:rgba(7,9,15,.55)}
+  .c-prompter p{font-size:19px;line-height:1.4;font-weight:500;letter-spacing:-.015em}
+  .c-prompter .row{justify-content:space-between}
+  .c-pbtn{height:32px;padding:0 12px;border-radius:99px;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.14);color:#fff}
+  .c-pbtn.pri{background:var(--accent);}
+  .c-dock{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:8px;padding:8px;border-radius:99px;background:rgba(11,15,26,.72);backdrop-filter:blur(16px);border:1px solid var(--hair);z-index:10}
+  .c-dock .ib{width:48px;height:48px;border-radius:99px;display:grid;place-items:center;background:rgba(255,255,255,.1);color:#fff;position:relative}
+  .c-dock .ib.off{background:#fff;color:var(--ink)}
+  .c-dock .ib.on{background:var(--accent-soft);color:var(--accent-text)}
+  .c-dock .sep{width:1px;height:28px;background:var(--hair);margin:0 4px}
+  .c-dock .tip{position:absolute;bottom:56px;left:50%;transform:translateX(-50%);font-size:11px;font-weight:600;background:#fff;color:var(--ink);padding:3px 8px;border-radius:6px;white-space:nowrap}
+  .c-self{position:absolute;left:20px;bottom:20px;width:180px;aspect-ratio:16/9;border-radius:14px;box-shadow:0 0 0 1px var(--edge),0 14px 34px rgba(0,0,0,.5);z-index:9}
+  .c-drawer{position:absolute;top:72px;right:16px;bottom:88px;width:360px;background:#fff;border-radius:20px;z-index:11;display:flex;flex-direction:column;color:var(--text);box-shadow:0 30px 70px rgba(0,0,0,.45);overflow:hidden}
+  .c-drawer .pane{flex:1;min-height:0;overflow:auto;padding:14px;display:grid;gap:12px;align-content:start}
+  .c-drawer .dh{display:flex;align-items:center;justify-content:space-between;padding:12px 12px 0 16px}
+  .c-drawer .dh b{font-size:15px}
+  .c-bands{position:absolute;top:70px;left:20px;width:330px;display:grid;gap:8px;z-index:12}
+  .c-lobbycard{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:315px;z-index:9;color:#fff}
+  .c-stage.drawer .c-lobbycard{left:calc((100% - 376px)/2)}
+  /* C phone */
+  .cp-video{position:absolute;inset:0}
+  .cp-top{position:absolute;top:48px;left:14px;right:14px;display:flex;align-items:center;gap:8px;z-index:5}
+  .cp-ring{position:relative;width:46px;height:46px;flex:none}
+  .cp-ring svg{position:absolute;inset:0;width:46px;height:46px;transform:rotate(-90deg)}
+  .cp-timer{display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 12px 0 6px;border-radius:99px;background:var(--glass);backdrop-filter:blur(12px);border:1px solid var(--hair)}
+  .cp-timer .tmr{font:500 16px 'Geist Mono',monospace}
+  .cp-timer.warn .tmr{color:var(--warn-on)}
+  .cp-self{position:absolute;right:14px;top:100px;width:112px;aspect-ratio:16/9;border-radius:12px;box-shadow:0 0 0 1px var(--edge);z-index:5}
+  .cp-prompt{position:absolute;left:12px;right:12px;bottom:112px;border-radius:18px;background:rgba(11,15,26,.74);backdrop-filter:blur(16px);border:1px solid var(--hair);padding:12px 14px;display:grid;gap:8px;z-index:6}
+  .cp-prompt .eb{color:var(--accent-muted)}
+  .cp-prompt p{font-size:15.5px;line-height:1.4;font-weight:500}
+  .cp-dock{position:absolute;left:12px;right:12px;bottom:30px;height:68px;border-radius:99px;background:rgba(11,15,26,.74);backdrop-filter:blur(16px);border:1px solid var(--hair);display:flex;align-items:center;justify-content:space-around;padding:0 8px;z-index:6}
+  .cp-dock .ib{width:46px;height:46px;border-radius:99px;display:grid;place-items:center;background:rgba(255,255,255,.1);color:#fff}
+  .cp-dock .ib.off{background:#fff;color:var(--ink)}
+  .cp-dock .ib.end{background:var(--danger-fill);width:60px}
+  .cp-sheet{position:absolute;left:0;right:0;bottom:0;top:300px;background:#fff;border-radius:24px 24px 0 0;color:var(--text);display:flex;flex-direction:column;z-index:30}
+  .cp-sheet .grab{width:44px;height:5px;border-radius:9px;background:var(--border-strong);margin:10px auto 2px}
+  .cp-sheet .pane{flex:1;min-height:0;overflow:auto;padding:12px 14px 24px;display:grid;gap:10px;align-content:start}
+  .cp-band{position:absolute;top:100px;left:14px;right:140px;z-index:7}
+
+  /* ═══ D · Notes + timeline ═══════════════════════════════ */
+  .d-top{height:58px;flex:none;display:flex;align-items:center;gap:14px;padding:0 18px;background:var(--ink);color:#fff;border-bottom:1px solid var(--hair)}
+  .d-top .who b{font-size:14.5px}.d-top .who span{font-size:12.5px;color:var(--on-body);margin-left:8px}
+  .d-top .tmr{font:500 21px 'Geist Mono',monospace}
+  .d-top .tmr.warn{color:var(--warn-on)}
+  .d-body{flex:1;min-height:0;display:flex}
+  .d-left{width:29%;background:var(--ink);display:flex;flex-direction:column;padding:14px;gap:10px}
+  .d-video{flex:1;min-height:0;position:relative;display:flex;justify-content:center}
+  .d-cand{height:100%;aspect-ratio:9/16;border-radius:16px;box-shadow:0 0 0 1px var(--hair)}
+  .d-selfrow{display:flex;gap:10px;align-items:center}
+  .d-self{width:132px;aspect-ratio:16/9;border-radius:10px;box-shadow:0 0 0 1px var(--edge);flex:none}
+  .d-ctls{display:flex;gap:6px;flex-wrap:wrap}
+  .d-ctls .ctl{min-width:46px}.d-ctls .ctl .c{width:42px;height:42px}.d-ctls .ctl small{font-size:10.5px}
+  .d-mid{flex:1;min-width:0;display:flex;flex-direction:column;background:#fff;border-right:1px solid var(--border)}
+  .d-midhead{display:flex;align-items:center;justify-content:space-between;padding:14px 18px 10px}
+  .d-midhead b{font-size:17px;letter-spacing:-.02em}
+  .d-editor{flex:1;min-height:0;margin:0 18px;border:1px solid var(--border);border-radius:16px;padding:14px 16px;font-size:14.5px;line-height:1.7;overflow:auto;white-space:pre-wrap}
+  .d-editor .caret{display:inline-block;width:2px;height:18px;background:var(--accent);vertical-align:-3px;animation:pulse 1s infinite}
+  .d-flags{padding:12px 18px 14px;display:grid;gap:6px}
+  .d-flag{display:flex;gap:10px;align-items:center;font-size:13.5px;color:var(--text2)}
+  .d-flag .t{font:500 11.5px 'Geist Mono',monospace;color:#fff;background:var(--ink);border-radius:6px;padding:2px 7px}
+  .d-right{width:28%;background:var(--muted);display:flex;flex-direction:column;min-width:0}
+  .d-right .tabs{background:var(--muted)}
+  .d-rpane{flex:1;min-height:0;overflow:auto;padding:12px;display:grid;gap:10px;align-content:start}
+  .d-rpane .q{padding:8px 10px;font-size:13px}
+  .d-timeline{height:86px;flex:none;border-top:1px solid var(--border);background:#fff;padding:12px 22px 10px;display:grid;gap:6px;position:relative}
+  .d-tl{position:relative;height:30px}
+  .d-tl .track{position:absolute;left:0;right:0;top:12px;height:8px;border-radius:99px;background:var(--sunken)}
+  .d-tl .done{position:absolute;left:0;top:12px;height:8px;border-radius:99px;background:var(--ink)}
+  .d-tl .warnzone{position:absolute;top:12px;height:8px;background:repeating-linear-gradient(45deg,#FCE7B8 0 4px,#FFF5E1 4px 8px);border-radius:0 99px 99px 0}
+  .d-tl .mk{position:absolute;top:4px;width:2px;height:24px;background:var(--ok-fill)}
+  .d-tl .mk span{position:absolute;top:-2px;left:6px;font:500 10px 'Geist Mono',monospace;color:var(--ok);white-space:nowrap}
+  .d-tl .pin{position:absolute;top:2px;width:14px;height:14px;margin-left:-7px;border-radius:99px 99px 99px 0;transform:rotate(-45deg);background:var(--accent);box-shadow:0 0 0 2px #fff}
+  .d-tl .area{position:absolute;top:22px;width:2px;height:8px;background:var(--text4)}
+  .d-tl .now{position:absolute;top:6px;width:4px;height:20px;margin-left:-2px;background:var(--danger-fill);border-radius:2px;box-shadow:0 0 0 2px #fff}
+  .d-tlab{display:flex;justify-content:space-between;font:500 10.5px 'Geist Mono',monospace;color:var(--text4)}
+  .d-legend{position:absolute;right:22px;top:10px;display:flex;gap:12px;font-size:11.5px;color:var(--text3)}
+  .d-legend span{display:inline-flex;align-items:center;gap:5px}
+  .d-legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+  .d-bands{position:absolute;top:74px;left:24px;width:322px;display:grid;gap:8px;z-index:20}
+  /* D phone */
+  .dp-video{position:absolute;left:0;right:0;top:0;height:330px}
+  .dp-top{position:absolute;top:48px;left:14px;right:14px;display:flex;justify-content:space-between;align-items:center;z-index:5}
+  .dp-self{position:absolute;right:14px;bottom:14px;width:100px;aspect-ratio:16/9;border-radius:10px;box-shadow:0 0 0 1px var(--edge)}
+  .dp-tl{position:absolute;left:0;right:0;top:330px;height:58px;background:var(--ink);padding:10px 16px 8px}
+  .dp-tl .d-tl{height:26px}
+  .dp-panel{position:absolute;left:0;right:0;top:388px;bottom:84px;background:#fff;color:var(--text);display:flex;flex-direction:column;border-radius:20px 20px 0 0}
+  .dp-panel .tabs button{height:42px;font-size:13.5px}
+  .dp-pane{flex:1;min-height:0;overflow:auto;padding:12px 14px;display:grid;gap:10px;align-content:start}
+  .dp-dock{position:absolute;left:0;right:0;bottom:0;height:84px;background:#fff;border-top:1px solid var(--border);display:flex;justify-content:space-around;align-items:center;padding:0 8px 10px}
+  .dp-dock .ctl small{color:var(--text3)}
+  .dp-band{position:absolute;top:96px;left:14px;right:14px;z-index:6}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="intro">
+    <h1>Interviewer room — four directions</h1>
+    <p class="lede">The live interview panel, redesigned four ways. Each direction is drawn for the <b>Android app</b> (phone) and the <b>web</b> (desktop browser), from the same parts the room has today: the candidate's 9:16 picture, your own 16:9 tile, the clock against the booked length and the completion mark, the assigned question script, private notes with time stamps, Flag moment, and End &amp; score. Use the bar to switch every frame between the room's states. Tabs, Mark asked, mute, camera, Flag and End are clickable.</p>
+    <div class="facts">
+      <span class="chip"><span class="st real">Real</span> the API or room already has it</span>
+      <span class="chip"><span class="st app">App only</span> client work, no API change</span>
+      <span class="chip"><span class="st need">Needs API</span> small backend addition</span>
+      <span class="chip"><span class="ptag">Proposal</span> marks a proposal inside a frame</span>
+      <span class="chip" style="color:var(--text3)">Sample candidate, script and notes — real ones come from the interview and the admin's question script. 30-minute slot, 80% completion mark, warnings at 5 and 1 min (all server settings).</span>
+    </div>
+  </header>
+
+  <div class="bar">
+    <div class="seg" id="states"></div>
+    <div class="seg" id="only"></div>
+  </div>
+
+  <div id="root"></div>
+</div>
+
+<script>
+/* ── sample data (placeholders; the real ones come from the API) ── */
+const CAND = { name:'Riya Sharma', first:'Riya', initials:'RS', city:'Pune', langs:['English','Hindi','Marathi'], tier:'Tier 2', domain:'Sales',
+  edu:'B.Com · Commerce · Symbiosis College of Arts & Commerce · 2025', skills:['Negotiation','CRM','Excel','Cold calling','Hindi'],
+  exp:[{t:'Sales intern',c:'Zomato',d:'6 months'},{t:'Campus ambassador',c:'Unacademy',d:'1 year'}] }
+const SCRIPT = {
+  intro:'Introduce yourself, say the session is recorded, and check they can hear and see you.',
+  areas:[
+    {title:'Introduction',prompts:['Walk me through your background and why sales interests you.','What do you know about the kind of role you are applying for?']},
+    {title:'Communication',prompts:['Explain a product you like to someone who has never used it.','Tell me about a time you convinced someone who disagreed with you.','A customer is upset about a delayed order. How do you handle the call?']},
+    {title:'Domain knowledge',prompts:['What does a typical sales funnel look like, and where do most leads drop off?','Which numbers would you track in your first month?','How do you prepare for a cold call to a new prospect?']},
+    {title:'Problem solving',prompts:['Your monthly target is 40% done with a week left. What do you do?','Two important clients need you at the same time. How do you decide?']},
+  ],
+  closing:'Ask if they have any questions for you, then thank them.',
+}
+const PROMPTS = SCRIPT.areas.flatMap((a,ai)=>a.prompts.map((t,pi)=>({k:`${ai}-${pi}`,t,area:a.title,ai})))
+const DUR = 1800, MARK = 80, MARK_SEC = DUR*MARK/100, WARN_MIN = 5, REJOIN_LEFT = 167
+const STATES = {
+  lobby:{label:'Waiting', started:false, elapsed:0},
+  live:{label:'Live', started:true, elapsed:1039},
+  warn:{label:'5 min left', started:true, elapsed:1548},
+  left:{label:'Candidate left', started:true, elapsed:1145, left:true},
+  end:{label:'End dialog', started:true, elapsed:1039, end:true},
+}
+const S = {
+  st:'live', only:null,
+  tab:{A:'script',B:'script',C:'script',D:'notes'}, ptab:{A:'script',B:'q',C:'script',D:'notes'},
+  asked:new Set(['0-0','0-1','1-0']), skipped:new Set(), muted:false, cam:true, spk:true,
+  flags:[252,690], notes:[[252,'Clear, structured intro. Brings up the Zomato internship without being asked.'],[690,'Good objection example — numbers in it (12 of 20 renewals).']],
+  drawer:true, csheet:false, bi:null, prevSt:'live',
+}
+
+/* ── helpers ── */
+const fmt = (s)=>`${String(Math.floor(Math.abs(s)/60)).padStart(2,'0')}:${String(Math.abs(s)%60).padStart(2,'0')}`
+const esc = (t)=>String(t).replace(/[&<>"]/g,(c)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))
+function clk(){
+  const st = STATES[S.st], rem = DUR-st.elapsed
+  return { ...st, rem, pct:Math.round(st.elapsed/DUR*100), meets:st.elapsed>=MARK_SEC, toMark:Math.max(0,MARK_SEC-st.elapsed),
+    warn:st.started && rem<=WARN_MIN*60, time: st.started ? fmt(Math.max(0,rem)) : fmt(DUR) }
+}
+// A skipped prompt waits until every other unasked one has been asked (client only).
+const nextQ = ()=>PROMPTS.find((p)=>!S.asked.has(p.k) && !S.skipped.has(p.k)) || PROMPTS.find((p)=>!S.asked.has(p.k)) || null
+const askedN = ()=>PROMPTS.filter((p)=>S.asked.has(p.k)).length
+const areaN = (ai)=>{ const ps = PROMPTS.filter((p)=>p.ai===ai); return [ps.filter((p)=>S.asked.has(p.k)).length, ps.length] }
+
+const ICON = {
+  mic:'<path d="M12 3a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V6a3 3 0 0 1 3-3Z"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>',
+  micOff:'<path d="M3 3l18 18"/><path d="M9 9v3a3 3 0 0 0 5.1 2.1"/><path d="M15 11V6a3 3 0 0 0-5.7-1.3"/><path d="M19 11a7 7 0 0 1-1.3 4M5 11a7 7 0 0 0 10.6 6M12 18v3"/>',
+  cam:'<path d="m16 10 5-3v10l-5-3"/><rect x="3" y="6" width="13" height="12" rx="2"/>',
+  camOff:'<path d="M3 3l18 18"/><path d="M16 10.5 21 7v10l-3.5-2.1"/><path d="M16 16v.5a1.5 1.5 0 0 1-1.5 1.5H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h1M10 6h4.5A1.5 1.5 0 0 1 16 7.5V10"/>',
+  spk:'<path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 6a9 9 0 0 1 0 12"/>',
+  spkOff:'<path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="m16 9 5 6M21 9l-5 6"/>',
+  flag:'<path d="M5 21V4"/><path d="M5 4h11l-2.2 4L16 12H5"/>',
+  end:'<path d="M3.2 14.6c4.9-4.4 12.7-4.4 17.6 0l-2.1 2.5-3.5-1.4v-2.4a12 12 0 0 0-6.4 0v2.4l-3.5 1.4z"/>',
+  check:'<path d="M20 6 9 17l-5-5"/>',
+  script:'<path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/>',
+  note:'<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/>',
+  user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>',
+  arrR:'<path d="M5 12h14M13 6l6 6-6 6"/>', arrL:'<path d="M19 12H5M11 6l-6 6 6 6"/>',
+  skip:'<path d="M6 5l9 7-9 7z"/><path d="M18 5v14"/>',
+  panel:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M15 4v16"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  file:'<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z"/><path d="M14 3v5h5"/>',
+  up:'<path d="m6 15 6-6 6 6"/>', down:'<path d="m6 9 6 6 6-6"/>', x:'<path d="M6 6l12 12M18 6 6 18"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+}
+const I = (n,sz)=>`<svg class="i" viewBox="0 0 24 24"${sz?` style="width:${sz}px;height:${sz}px"`:''}>${ICON[n]}</svg>`
+const SIL_P = '<svg class="sil" viewBox="0 0 90 160" preserveAspectRatio="xMidYMax slice"><ellipse cx="45" cy="72" rx="13" ry="15.5"/><path d="M12 160c0-27 14-44 33-44s33 17 33 44z"/></svg>'
+const SIL_L = '<svg class="sil" viewBox="0 0 160 90" preserveAspectRatio="xMidYMax slice"><ellipse cx="80" cy="40" rx="11" ry="13"/><path d="M50 90c0-20 13-32 30-32s30 12 30 32z"/></svg>'
+const bars = (paper)=>`<span class="bars${paper?' paper':''}" aria-label="Network good"><i style="height:6px"></i><i style="height:10px"></i><i style="height:14px"></i></span>`
+const rec = (kind)=>{ const c = clk(); return c.started ? `<span class="rec ${kind}"><i></i>Rec</span>` : `<span class="rec idle ${kind}"><i></i>Not recording yet</span>` }
+
+/* The candidate's picture, in every state. `fit` is the tile class. */
+function cand(cls, opts={}){
+  const c = clk()
+  if (!c.started) return selfPreview(cls, opts)
+  const st = opts.style ? ` style="${opts.style}"` : ''
+  let inner = `<div class="lamp"></div>${SIL_P}`
+  let tag = opts.tag===false ? '' : `<span class="tag" style="position:absolute;left:12px;bottom:12px">${CAND.name}</span>`
+  let over = ''
+  if (c.left) {
+    over = `<div class="scrim"><div><b>${CAND.first} has left the room</b><span class="tnum">They can rejoin for ${fmt(REJOIN_LEFT)} · after that the session ends on its own</span></div></div>`
+    tag = opts.tag===false ? '' : `<span class="tag" style="position:absolute;left:12px;bottom:12px;z-index:3">${CAND.name}<span class="mono">Not in the room</span></span>`
+  }
+  return `<div class="feed ${cls}"${st}>${inner}${tag}${over}</div>`
+}
+/* Lobby: your own camera fills the candidate's place, with the setup check. */
+function selfPreview(cls, opts={}){
+  return `<div class="feed self ${cls}"${opts.style?` style="${opts.style}"`:''}>${SIL_P}
+    <span class="tag" style="position:absolute;left:12px;top:${opts.tagTop||12}px">Your camera · preview</span>
+    <div class="wait" style="${opts.compact?'padding:12px;':''}${opts.waitBottom?`bottom:${opts.waitBottom}px;`:''}"><b>Waiting for ${CAND.first} to join</b>
+      <p>The clock and the recording start when you are both in.</p>
+      <div class="checks"><span class="${S.cam?'':'off'}">${I(S.cam?'check':'x')}Camera ${S.cam?'on':'off'}</span><span class="${S.muted?'off':''}">${I(S.muted?'x':'check')}Mic ${S.muted?'muted':'on'}</span><span>${I('check')}Network good</span></div>
+    </div></div>`
+}
+function selfTile(cls, lab=true){
+  const c = clk()
+  if (!c.started) return ''
+  return `<div class="feed self ${cls}">${S.cam?SIL_L:'<div class="initials" style="font:500 10.5px Geist Mono;letter-spacing:.1em;color:var(--on-subtle)">CAMERA OFF</div>'}${lab?`<span class="self-lab">You${S.muted?' · muted':''}</span>`:''}</div>`
+}
+/* Transient bands, most urgent first (the room's own list). */
+function bands(ink){
+  const c = clk(), cls = ink ? 'band ink-warn' : 'band warn', out = []
+  if (c.left) out.push(`<div class="${cls}">${I('clock',16)}<span>Student left · <small class="tnum">they can rejoin for ${fmt(REJOIN_LEFT)}</small></span></div>`)
+  if (c.warn) out.push(`<div class="${cls}">${I('clock',16)}<span>${WARN_MIN} minutes left · <small>time to wrap up</small></span></div>`)
+  return out.join('')
+}
+function ctl(kind, paper){
+  const p = paper ? ' paper' : ''
+  if (kind==='mic') return `<button class="ctl${p}${S.muted?' off':''}" data-act="mute" aria-pressed="${S.muted}"><span class="c">${I(S.muted?'micOff':'mic')}</span><small>${S.muted?'Unmute':'Mute'}</small></button>`
+  if (kind==='cam') return `<button class="ctl${p}${S.cam?'':' off'}" data-act="cam" aria-pressed="${!S.cam}"><span class="c">${I(S.cam?'cam':'camOff')}</span><small>${S.cam?'Camera':'Camera off'}</small></button>`
+  if (kind==='spk') return `<button class="ctl${p}${S.spk?'':' off'}" data-act="spk"><span class="c">${I(S.spk?'spk':'spkOff')}</span><small>${S.spk?'Sound':'Sound off'}</small></button>`
+  if (kind==='flag') return `<button class="ctl${p}" data-act="flag"><span class="c">${I('flag')}</span><small>Flag</small></button>`
+  if (kind==='end') { const c = clk(); return `<button class="ctl end${p}" data-act="end"><span class="c">${I('end',22)}</span><small>${c.started?'End':'Leave'}</small></button>` }
+}
+/* Web A: the keyboard shortcut rides the caption (client only). */
+const keyed = (html, key)=>html.replace(/<small>(.*?)<\/small>/, `<small>$1 <span class="kbd" style="height:16px;min-width:16px;font-size:9.5px">${key}</span></small>`)
+function completion(ink){
+  const c = clk()
+  return `<div class="prog${ink?' ink':''}" role="progressbar" aria-label="Session progress" aria-valuenow="${c.pct}"><i class="${c.meets?'ok':''}" style="width:${c.pct}%"></i><b style="left:${MARK}%"></b></div>`
+}
+const markLine = ()=>{ const c = clk(); return !c.started ? `Starts when you are both in` : c.meets ? `<b style="color:var(--ok)">Counts as complete</b>` : `Complete at <b class="tnum">${fmt(MARK_SEC)}</b>` }
+
+/* Rail panes, shared */
+function askCard(compact){
+  const q = nextQ()
+  if (!q) return `<div class="line-card">Every prompt is marked asked. ${SCRIPT.closing?`<br><span class="eb">Closing</span>${esc(SCRIPT.closing)}`:''}</div>`
+  return `<div class="ask"><span class="eb">Ask next · ${esc(q.area)}</span><p>${esc(q.t)}</p>
+    <div class="row"><button class="btn pri" data-act="ask:${q.k}">${I('check')}Mark asked</button><button class="btn ghost" data-act="skip:${q.k}">Skip for now <span class="ptag">App only</span></button></div></div>`
+}
+function scriptPane(noAsk){
+  const q = nextQ()
+  return `${noAsk ? '' : askCard()}
+    <div class="line-card"><span class="eb">Opening</span>${esc(SCRIPT.intro)}</div>
+    ${SCRIPT.areas.map((a,ai)=>{ const [d,n] = areaN(ai); return `<div class="area"><div class="area-h"><span class="eb">${esc(a.title)}</span><span class="n${d===n?' done':''}">${d}/${n}</span></div>
+      ${a.prompts.map((t,pi)=>{ const k = `${ai}-${pi}`, on = S.asked.has(k); return `<button class="q${on?' done':''}${q&&q.k===k?' now':''}" data-act="ask:${k}" aria-pressed="${on}"><span class="box${on?' on':''}">${on?I('check'):''}</span><span>${esc(t)}</span></button>` }).join('')}</div>` }).join('')}
+    <div class="line-card"><span class="eb">Closing</span>${esc(SCRIPT.closing)}</div>`
+}
+function notesPane(min){
+  const c = clk()
+  return `<div class="row" style="justify-content:space-between"><span class="saved">● Saved · private · flows into the scorecard</span>${c.started?`<button class="btn out" data-act="flag" style="height:30px;font:500 12px 'Geist Mono',monospace">+ ${fmt(c.elapsed)}</button>`:''}</div>
+    <div class="notes-box" style="min-height:${min||200}px">${S.notes.map(([t,x])=>`<span class="stamp">${fmt(t)}</span>${esc(x)}`).join('\n')}${S.notes.length?'\n':''}<span style="color:var(--text4)">Observations, strengths, answers…</span></div>`
+}
+function profilePane(){
+  return `<div class="person"><div class="av">${CAND.initials}</div><div><b style="font-size:17px;letter-spacing:-.02em">${CAND.name}</b><div style="font-size:13px;color:var(--text3);margin-top:2px">${CAND.city} · ${CAND.langs.join(', ')}</div></div></div>
+    <div class="fact"><span class="eb">Interview</span><p>${CAND.tier} · ${CAND.domain} · 30 min</p></div>
+    <div class="fact"><span class="eb">Education</span><p>${esc(CAND.edu)}</p></div>
+    <div class="fact"><span class="eb">Experience</span>${CAND.exp.map((e)=>`<p>${e.t} · ${e.c} <span style="color:var(--text3)">— ${e.d}</span></p>`).join('')}</div>
+    <div class="fact"><span class="eb">Skills</span><div>${CAND.skills.map((s)=>`<span class="skill">${s}</span>`).join('')}</div></div>
+    <button class="btn out" style="justify-self:start">${I('file')}Open their résumé</button>`
+}
+function tabs(id, map, cur, act='tab'){
+  return `<div class="tabs" role="tablist">${map.map(([k,l,extra])=>`<button role="tab" class="${cur===k?'on':''}" data-act="${act}:${id}:${k}" aria-selected="${cur===k}">${l}${extra?`<span class="ct">${extra}</span>`:''}</button>`).join('')}</div>`
+}
+const railTabs = (id, cur, act)=>tabs(id,[['script','Script',`${askedN()}/${PROMPTS.length}`],['notes','Notes'],['profile','Profile']],cur,act)
+const pane = (k, min)=> k==='script' ? scriptPane() : k==='notes' ? notesPane(min) : profilePane()
+
+/* End: dialog on the web, sheet on the phone — the same facts. */
+function endBody(){
+  const c = clk()
+  return `<div class="len"><span style="color:var(--text3)">Session length</span><b class="tnum">${fmt(c.elapsed)} of 30:00 · ${c.pct}%</b></div>
+    ${c.meets ? `<div class="mark ok"><b>This will count as a complete interview</b>Once you submit the scorecard in time, the fee is payable.</div>`
+      : `<div class="mark warn"><b>Below the ${MARK}% completion mark</b>Sessions under ${MARK}% go to review before they can be paid. <span class="tnum">${fmt(c.toMark)}</span> more reaches the mark.</div>`}`
+}
+function endWeb(){
+  if (!STATES[S.st].end) return ''
+  return `<div class="modal"><div class="dlg" role="dialog" aria-label="End the session"><h3>End the session for both of you?</h3><p>This stops the recording and takes you to the scorecard. Neither of you can reopen the room afterwards.</p>${endBody()}
+    <div class="row" style="gap:10px;margin-top:4px"><button class="btn out lg grow" data-act="endx">Keep going</button><button class="btn lg grow" style="background:var(--danger-fill);color:#fff" data-act="endx">End &amp; score</button></div></div></div>`
+}
+function endPhone(){
+  if (!STATES[S.st].end) return ''
+  return `<div class="modal" style="place-items:end stretch"><div class="psheet" role="dialog" aria-label="End the session"><div class="grab"></div><h3>End the session?</h3><p style="font-size:14px;line-height:1.5;color:var(--text3)">The recording stops and the scorecard opens. The room can't be reopened.</p>${endBody()}
+    <button class="btn lg" style="background:var(--danger-fill);color:#fff;width:100%" data-act="endx">End &amp; score</button><button class="btn lg ghost" style="width:100%" data-act="endx">Keep going</button></div></div>`
+}
+const chrome = ()=>`<div class="chrome"><i></i><i></i><i></i><div class="url">apostrophe.work/interviewer/interviews/…/room</div></div>`
+const sbar = (dark)=>`<div class="sbar${dark?' dark':''}"><span>9:41</span><span>●●●</span></div>`
+
+/* ═══ A · Console ═══ */
+function aWeb(){
+  const c = clk()
+  return `<div class="web">${chrome()}<div class="viewport">
+    <div class="a-top">
+      ${rec('paper')}
+      <div class="a-who grow"><b>${CAND.name}</b><span>${CAND.tier} · ${CAND.domain} · ${CAND.langs[0]}</span></div>
+      <div class="a-progress"><div class="lbl"><span>Session · <b class="tnum">${c.pct}%</b></span><span>${markLine()}</span></div>${completion()}</div>
+      ${bars(true)}
+      <div class="a-timer${c.warn?' warn':''}"><span class="tmr tnum">${c.time}</span><small>${c.started?'left':'booked'}</small></div>
+    </div>
+    <div class="a-body">
+      <main class="a-stage">
+        <div class="a-video">${cand('a-cand')}${selfTile('a-self')}<div class="a-bands">${bands(false)}</div></div>
+        <div class="a-dock">
+          ${keyed(ctl('mic'),'M')}${keyed(ctl('cam'),'V')}${ctl('spk')}${c.started?keyed(ctl('flag'),'F'):''}<span class="sep"></span>
+          <button class="pill-end" data-act="end">${I('end',20)}${c.started?'End &amp; score':'Leave room'}</button>
+          <span class="side">${S.flagged!=null?`<span style="color:var(--ok-on)" class="tnum">● Marked at ${fmt(S.flagged)}</span>`:''}</span>
+        </div>
+      </main>
+      <aside class="a-rail">${railTabs('A',S.tab.A)}<div class="a-pane">${pane(S.tab.A,360)}</div></aside>
+    </div>${endWeb()}</div></div>`
+}
+function aPhone(){
+  const c = clk()
+  return `<div class="phone">${sbar()}
+    <div class="ap-video">${cand('', {tag:false, style:'position:absolute;inset:0', tagTop:92})}</div>
+    <div class="ap-top">${rec('ink')}<span class="ap-tmr tnum${c.warn?' warn':''}">${c.time}</span></div>
+    ${c.started?`<div class="ap-self feed self">${S.cam?SIL_L:''}<span class="self-lab">You${S.muted?' · muted':''}</span></div>`:''}
+    ${c.started?`<span class="tag ap-name">${CAND.name}${c.left?'<span class="mono">Not in the room</span>':''}</span>`:''}
+    <div class="ap-band">${bands(true)}</div>
+    <div class="ap-dock">${ctl('mic')}${ctl('cam')}${c.started?ctl('flag'):ctl('spk')}${ctl('end')}</div>
+    <div class="ap-panel">${tabs('A',[['script','Script',`${askedN()}/${PROMPTS.length}`],['notes','Notes'],['profile','Profile']],S.ptab.A,'ptab')}<div class="ap-pane">${S.ptab.A==='script'?askCard()+`<div class="area"><div class="area-h"><span class="eb">Up next</span><span class="n">${askedN()}/${PROMPTS.length} asked</span></div>${PROMPTS.filter((p)=>!S.asked.has(p.k)).slice(1,3).map((p)=>`<button class="q" data-act="ask:${p.k}"><span class="box"></span><span>${esc(p.t)}</span></button>`).join('')}</div>`:pane(S.ptab.A,150)}</div></div>
+    ${endPhone()}</div>`
+}
+
+/* ═══ B · Guided script ═══ */
+function curB(){ const q = nextQ(); const i = S.bi!=null ? S.bi : (q ? PROMPTS.indexOf(q) : PROMPTS.length-1); return Math.max(0,Math.min(PROMPTS.length-1,i)) }
+function bSteps(){
+  const q = PROMPTS[curB()]
+  return SCRIPT.areas.map((a,ai)=>{ const [d,n] = areaN(ai); return `<div class="b-step${d===n?' done':''}${q.ai===ai&&d<n?' now':''}"><b>${d===n?'✓ ':''}${esc(a.title)}</b><div class="meter"><i style="width:${d/n*100}%"></i></div></div>` }).join('')
+}
+function bWeb(){
+  const c = clk(), i = curB(), q = PROMPTS[i], on = S.asked.has(q.k), nx = PROMPTS.slice(i+1).find((p)=>!S.asked.has(p.k))
+  return `<div class="web">${chrome()}<div class="viewport">
+    <div class="b-body">
+      <section class="b-left">
+        <div class="b-lefttop">${rec('ink')}${bars()}</div>
+        <div class="b-video">${cand('b-cand')}${selfTile('b-self')}</div>
+        <div class="b-ctls">${ctl('mic')}${ctl('cam')}${ctl('spk')}${c.started?ctl('flag'):''}${ctl('end')}</div>
+      </section>
+      <section class="b-desk">
+        <div class="b-deskhead"><div class="b-steps">${bSteps()}</div><div class="b-tmr${c.warn?' warn':''}">${I('clock',18)}<span class="tmr tnum">${c.time}</span></div></div>
+        <div class="b-q">
+          <span class="eb">Question ${i+1} of ${PROMPTS.length} · ${esc(q.area)}${on?' · asked':''}</span>
+          <h2>${esc(q.t)}</h2>
+          <div class="acts">
+            <button class="btn out lg" data-act="bprev" ${i===0?'disabled style="opacity:.4"':''}>${I('arrL')}Previous</button>
+            <button class="btn lg pri" data-act="bmark">${on?'Next question':'Mark asked &amp; next'}${I('arrR')}</button>
+            <button class="btn ghost" data-act="bnext">Skip</button>
+          </div>
+          <div class="after">
+            <div class="row"><span class="eb">Your note on this answer</span><span class="saved">● Saved · goes into your private notes</span></div>
+            <div class="b-noteline">${c.started?`<span class="stamp">${fmt(c.elapsed)}</span>`:''}<span>Q${i+1} — type while they answer…</span></div>
+          </div>
+          ${nx?`<div class="b-upnext">${I('arrR',16)}<span>Up next · <b>${esc(nx.t)}</b></span></div>`:''}
+        </div>
+        <div class="b-foot"><div class="lbl"><span>${c.started?`<b class="tnum">${fmt(c.elapsed)}</b> of 30:00 · ${c.pct}%`:'30:00 booked'}</span><span>${markLine()}</span></div>${completion()}</div>
+        <div class="b-bands">${bands(false)}</div>
+      </section>
+    </div>${endWeb()}</div></div>`
+}
+function bPhone(){
+  const c = clk(), i = curB(), q = PROMPTS[i], on = S.asked.has(q.k)
+  const qview = `<div class="bp-steps">${SCRIPT.areas.map((a,ai)=>{ const [d,n] = areaN(ai); return `<i class="${d===n?'done':''}"><b style="width:${d/n*100}%"></b></i>` }).join('')}</div>
+    <div class="bp-q"><span class="eb">Q${i+1} of ${PROMPTS.length} · ${esc(q.area)}</span><h2>${esc(q.t)}</h2></div>
+    <div class="bp-acts"><button class="btn out lg" style="flex:none;width:52px;padding:0" data-act="bprev" aria-label="Previous">${I('arrL')}</button><button class="btn lg pri" data-act="bmark">${on?'Next':'Mark asked &amp; next'}${I('arrR')}</button></div>
+    <div class="bp-noteline"><span>${c.started?`<span class="stamp">${fmt(c.elapsed)}</span>`:''}Add a note on this answer…</span>${I('note',18)}</div>`
+  const body = S.ptab.B==='q' ? qview : `<div class="ap-pane" style="padding-bottom:80px">${pane(S.ptab.B==='notes'?'notes':'profile',150)}</div>`
+  return `<div class="phone">${sbar()}
+    <div class="bp-video">${cand('', {tag:false, style:'position:absolute;inset:0', compact:true, tagTop:92})}</div>
+    <div class="bp-top">${rec('ink')}<span class="ap-tmr tnum${c.warn?' warn':''}">${c.time}</span></div>
+    ${c.started?`<div class="bp-self feed self">${S.cam?SIL_L:''}<span class="self-lab">You</span></div>`:''}
+    <div class="ap-band" style="top:92px;right:14px">${bands(true)}</div>
+    <div class="bp-ctls">${c.started?`<span class="tag">${CAND.name}</span><span class="grow"></span>`:'<span class="grow"></span>'}<button class="mini${S.muted?' off':''}" data-act="mute">${I(S.muted?'micOff':'mic',18)}</button><button class="mini${S.cam?'':' off'}" data-act="cam">${I(S.cam?'cam':'camOff',18)}</button><button class="mini end" data-act="end">${I('end',20)}</button></div>
+    <div class="bp-panel">${body}
+      <div class="bp-tabs">${[['q','Questions','script'],['notes','Notes','note'],['profile','Profile','user']].map(([k,l,ic])=>`<button class="${S.ptab.B===k?'on':''}" data-act="ptab:B:${k}">${I(ic,20)}${l}</button>`).join('')}</div>
+    </div>${endPhone()}</div>`
+}
+
+/* ═══ C · Immersive ═══ */
+function cWeb(){
+  const c = clk(), q = nextQ()
+  const blurFill = c.started && !c.left ? `<div class="c-fill feed"><div class="fill-blur feed"></div></div>` : ''
+  const prompter = c.started && q && !c.left ? `<div class="c-prompter"><span class="eb">Ask next · ${esc(q.area)} · ${askedN()}/${PROMPTS.length}</span><p>${esc(q.t)}</p><div class="row"><span style="font-size:12px;color:var(--on-subtle)">Sits under your webcam, so you read it without looking away</span><span class="row"><button class="c-pbtn" data-act="skip:${q.k}">Skip</button><button class="c-pbtn pri" data-act="ask:${q.k}">${I('check',15)}Mark asked</button></span></div></div>` : ''
+  return `<div class="web">${chrome()}<div class="viewport">
+    <div class="c-stage${S.drawer?' drawer':''}">
+      ${blurFill}
+      ${c.started ? cand('c-cand',{tag:false}) : `<div class="c-fill">${''}</div>`}
+      ${!c.started ? `<div class="c-lobbycard" style="height:560px">${selfPreview('', {style:'position:absolute;inset:0;border-radius:20px'})}</div>` : ''}
+      <div class="c-topbar">
+        <span class="c-glass">${c.started?'<span class="rec" style="height:auto;padding:0;color:var(--danger-on)"><i></i>Rec</span>':'<span class="rec idle ink" style="height:auto;padding:0;background:none;border:0"><i></i>Not recording yet</span>'}<span style="width:1px;height:18px;background:var(--hair)"></span>${CAND.name}<span class="sub">${CAND.tier} · ${CAND.domain}</span></span>
+        <span class="grow"></span>
+        ${c.left?`<span class="c-glass" style="color:var(--warn-on)">${CAND.first} left · <span class="tnum">${fmt(REJOIN_LEFT)}</span> to rejoin</span>`:''}
+        <span class="c-glass${c.warn?' warn':''}">${bars()}<span style="width:1px;height:18px;background:var(--hair)"></span><span class="tmr tnum">${c.time}</span><span style="width:84px">${completion(true)}</span></span>
+      </div>
+      ${prompter}
+      ${c.left?`<div style="position:absolute;inset:0;display:grid;place-items:center;z-index:8;pointer-events:none"><div class="scrim" style="position:static;border-radius:20px;width:420px;padding:22px"><div><b>${CAND.first} has left the room</b><span class="tnum">They can rejoin for ${fmt(REJOIN_LEFT)} · after that the session ends on its own</span></div></div></div>`:''}
+      <div class="c-bands">${c.warn?bands(true):''}</div>
+      ${selfTile('c-self')}
+      ${S.drawer?`<aside class="c-drawer"><div class="dh"><b>Interview panel</b><button class="btn ghost" style="height:30px;padding:0 8px" data-act="drawer" aria-label="Hide panel">${I('x',16)}</button></div>${railTabs('C',S.tab.C)}<div class="pane">${S.tab.C==='script' ? scriptPane(c.started && !c.left && !!q) : pane(S.tab.C,300)}</div></aside>`:''}
+      <div class="c-dock">
+        <button class="ib${S.muted?' off':''}" data-act="mute" aria-label="Mute">${I(S.muted?'micOff':'mic')}</button>
+        <button class="ib${S.cam?'':' off'}" data-act="cam" aria-label="Camera">${I(S.cam?'cam':'camOff')}</button>
+        <button class="ib${S.spk?'':' off'}" data-act="spk" aria-label="Sound">${I(S.spk?'spk':'spkOff')}</button>
+        ${c.started?`<button class="ib" data-act="flag" aria-label="Flag moment">${I('flag')}${S.flagged!=null?`<span class="tip tnum">Marked at ${fmt(S.flagged)}</span>`:''}</button>`:''}
+        <span class="sep"></span>
+        <button class="ib${S.drawer?' on':''}" data-act="drawer" aria-label="Script, notes and profile">${I('panel')}</button>
+        <span class="sep"></span>
+        <button class="pill-end" style="height:48px" data-act="end">${I('end',20)}${c.started?'End':'Leave'}</button>
+      </div>
+    </div>${endWeb()}</div></div>`
+}
+function cPhone(){
+  const c = clk(), q = nextQ()
+  const r = 19, C = 2*Math.PI*r, done = c.started ? Math.min(1,c.elapsed/DUR) : 0
+  return `<div class="phone">${sbar()}
+    <div class="cp-video">${cand('', {tag:false, style:'position:absolute;inset:0', tagTop:96, waitBottom:116})}</div>
+    <div class="cp-top">${rec('ink')}<span class="grow"></span>
+      <span class="cp-timer${c.warn?' warn':''}"><span class="cp-ring" style="width:28px;height:28px"><svg viewBox="0 0 46 46" style="width:28px;height:28px"><circle cx="23" cy="23" r="${r}" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="5"/><circle cx="23" cy="23" r="${r}" fill="none" stroke="${c.meets?'#6EE7B7':'#fff'}" stroke-width="5" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C*(1-done)}"/></svg></span><span class="tmr tnum">${c.time}</span></span></div>
+    ${c.started?`<div class="cp-self feed self">${S.cam?SIL_L:''}<span class="self-lab">You${S.muted?' · muted':''}</span></div>`:''}
+    <div class="cp-band">${bands(true)}</div>
+    ${c.started && q && !c.left?`<div class="cp-prompt"><span class="eb">Ask next · ${esc(q.area)} · ${askedN()}/${PROMPTS.length}</span><p>${esc(q.t)}</p><div class="row" style="justify-content:space-between"><button class="c-pbtn" data-act="csheet">${I('up',15)}Script · Notes · Profile</button><button class="c-pbtn pri" data-act="ask:${q.k}">${I('check',15)}Asked</button></div></div>`:''}
+    <div class="cp-dock">
+      <button class="ib${S.muted?' off':''}" data-act="mute">${I(S.muted?'micOff':'mic')}</button>
+      <button class="ib${S.cam?'':' off'}" data-act="cam">${I(S.cam?'cam':'camOff')}</button>
+      ${c.started?`<button class="ib" data-act="flag">${I('flag')}</button>`:''}
+      <button class="ib" data-act="csheet">${I('panel')}</button>
+      <button class="ib end" data-act="end">${I('end',22)}</button>
+    </div>
+    ${S.csheet?`<div class="cp-sheet"><button class="grab" data-act="csheet" aria-label="Close"></button>${railTabs('C',S.ptab.C,'ptab')}<div class="pane">${pane(S.ptab.C,150)}</div></div>`:''}
+    ${endPhone()}</div>`
+}
+
+/* ═══ D · Notes + timeline ═══ */
+function timeline(compact){
+  const c = clk(), at = (s)=>`${s/DUR*100}%`
+  const areaStarts = [0,190,560]
+  return `<div class="d-tl">
+    <div class="track"></div>
+    <div class="warnzone" style="left:${at(DUR-WARN_MIN*60)};right:0"></div>
+    ${c.started?`<div class="done" style="width:${at(c.elapsed)}"></div>`:''}
+    <div class="mk" style="left:${at(MARK_SEC)}">${compact?'':`<span>${MARK}% · complete</span>`}</div>
+    ${areaStarts.map((s)=>`<div class="area" style="left:${at(s)}"></div>`).join('')}
+    ${S.flags.map((s)=>`<div class="pin" style="left:${at(s)}" title="Flag at ${fmt(s)}"></div>`).join('')}
+    ${c.started?`<div class="now" style="left:${at(c.elapsed)}"></div>`:''}
+  </div>`
+}
+function dWeb(){
+  const c = clk()
+  return `<div class="web">${chrome()}<div class="viewport">
+    <div class="d-top">${rec('ink')}<div class="who grow"><b>${CAND.name}</b><span>${CAND.tier} · ${CAND.domain} · ${CAND.city}</span></div>${bars()}<span class="tmr tnum${c.warn?' warn':''}">${c.time}</span><button class="pill-end" style="height:38px;padding:0 16px;font-size:14px" data-act="end">${I('end',18)}${c.started?'End &amp; score':'Leave'}</button></div>
+    <div class="d-body">
+      <section class="d-left">
+        <div class="d-video">${cand('d-cand')}</div>
+        <div class="d-selfrow">${c.started?selfTile('d-self'):''}<div class="d-ctls">${ctl('mic')}${ctl('cam')}${ctl('spk')}</div></div>
+      </section>
+      <section class="d-mid">
+        <div class="d-midhead"><b>Notes</b><div class="row"><span class="saved">● Saved · private</span>${c.started?`<button class="btn ink" data-act="flag">${I('flag',16)}Flag &amp; stamp <span class="tnum" style="font:500 12px 'Geist Mono',monospace;opacity:.75">${fmt(c.elapsed)}</span></button>`:''}</div></div>
+        <div class="d-editor">${S.notes.map(([t,x])=>`<span class="stamp">${fmt(t)}</span>${esc(x)}`).join('\n')}\n${c.started?`<span class="stamp">${fmt(c.elapsed)}</span>`:''}<span class="caret"></span></div>
+        <div class="d-flags"><span class="eb">Flagged moments · ${S.flags.length} <span class="ptag">App only</span></span>${S.flags.map((s)=>{ const n = S.notes.find(([t])=>t===s); return `<div class="d-flag"><span class="t tnum">${fmt(s)}</span><span class="ell">${n?esc(n[1]):'Flag'}</span></div>` }).join('')}</div>
+      </section>
+      <aside class="d-right">${tabs('D',[['script','Script',`${askedN()}/${PROMPTS.length}`],['profile','Profile']],S.tab.D==='notes'?'script':S.tab.D)}<div class="d-rpane">${(S.tab.D==='profile')?profilePane():scriptPane()}</div></aside>
+    </div>
+    <div class="d-timeline">
+      <div class="d-legend"><span><i style="background:var(--ink)"></i>Elapsed</span><span><i style="background:var(--ok-fill);width:2px"></i>Completion mark</span><span><i style="background:repeating-linear-gradient(45deg,#FCE7B8 0 3px,#FFF5E1 3px 6px)"></i>Wrap-up</span><span><i style="background:var(--accent);border-radius:99px"></i>Flags</span><span><i style="background:var(--text4);width:2px"></i>Area started <span class="ptag">App only</span></span></div>
+      <span class="eb">Session timeline</span>
+      ${timeline()}
+      <div class="d-tlab"><span>00:00</span><span>10:00</span><span>20:00</span><span>30:00</span></div>
+    </div>
+    <div class="d-bands">${bands(false)}</div>${endWeb()}</div></div>`
+}
+function dPhone(){
+  const c = clk()
+  const body = S.ptab.D==='notes'
+    ? `<div class="row" style="justify-content:space-between"><span class="saved">● Saved · private</span><span class="eb">${S.flags.length} flags</span></div><div class="notes-box" style="min-height:150px">${S.notes.map(([t,x])=>`<span class="stamp">${fmt(t)}</span>${esc(x)}`).join('\n')}</div>`
+    : pane(S.ptab.D,150)
+  return `<div class="phone">${sbar()}
+    <div class="dp-video">${cand('', {tag:false, style:'position:absolute;inset:0', compact:true, tagTop:92})}${c.started?`<div class="dp-self feed self">${S.cam?SIL_L:''}<span class="self-lab">You</span></div>`:''}</div>
+    <div class="dp-top">${rec('ink')}<span class="ap-tmr tnum${c.warn?' warn':''}">${c.time}</span></div>
+    <div class="dp-band">${bands(true)}</div>
+    <div class="dp-tl">${timeline(true)}<div class="d-tlab" style="color:var(--on-subtle);margin-top:2px"><span>00:00</span><span>${MARK}% · ${fmt(MARK_SEC)}</span><span>30:00</span></div></div>
+    <div class="dp-panel">${tabs('D',[['notes','Notes'],['script','Script',`${askedN()}/${PROMPTS.length}`],['profile','Profile']],S.ptab.D,'ptab')}<div class="dp-pane">${body}</div></div>
+    <div class="dp-dock">${ctl('mic',true)}${ctl('cam',true)}${c.started?`<button class="ctl paper" data-act="flag"><span class="c" style="background:var(--ink);color:#fff">${I('flag')}</span><small>Flag &amp; stamp</small></button>`:''}${ctl('end',true)}</div>
+    ${endPhone()}</div>`
+}
+
+/* ── directions ── */
+const DIRS = [
+  { id:'A', name:'Console, finished', pitch:'Today’s split, made calm and complete: a dark stage, an icon dock, and the script rail beside it.', web:aWeb, phone:aPhone,
+    what:['One header carries everything about time: REC, who, the session bar with the completion mark, signal, and the clock.','Round icon controls with a caption under each (Mute, Camera, Sound, Flag), and one red “End & score” set apart from them.','The rail opens on “Ask next”: the first unasked prompt in a card with Mark asked; areas below with done/total counts.','Phone: the video no longer sits under a sheet. Video on top, the dock under it, and the panel below that, so nothing covers the candidate.'],
+    good:['Smallest change from today — interviewers already know this layout.','Reads as a professional tool on a laptop; easy to build from the current room.'],
+    trade:['The script and notes compete for one rail; you switch tabs to write.','On the phone, the candidate gets a little over half the height.'],
+    data:[['Completion bar in the header','real','thresholdPct and the clock from the room DTO'],['Ask next / Mark asked','real','the script areas; asked state is kept by the client (web already keeps it per tab)'],['Area done/total counts','app','counted from the asked state'],['Skip for now','app','moves to the next unasked prompt; nothing is sent'],['Keyboard shortcuts M · V · F (web)','app','mute, camera, flag']] },
+  { id:'B', name:'Guided script', pitch:'The question leads: one big prompt at a time, the areas as a stepper, and a note box for the answer you are hearing.', web:bWeb, phone:bPhone,
+    what:['The current question is the largest thing on the desk, with Previous, Mark asked & next, and Skip.','The four areas run across the top as a stepper, each filling as its prompts are asked.','“Your note on this answer” writes into the same private notes, stamped with the time and the question number.','Phone: the candidate keeps the top 45%; the question and a big Mark asked & next button sit under it, with Questions / Notes / Profile tabs at the foot.'],
+    good:['New interviewers can run a consistent interview without thinking about the order.','Notes are tied to questions, which makes the scorecard faster to write.'],
+    trade:['The candidate’s picture is smaller on the web (a third of the width).','Interviewers who go off-script get less from the layout.'],
+    data:[['Question n of N, area stepper','app','from the script areas and the asked state'],['Note on this answer','real','appended to the private notes (PUT notes) as “[mm:ss] Qn — …”; no new field'],['Up next','app','the next unasked prompt'],['Previous / Skip','app','client-side navigation only']] },
+  { id:'C', name:'Immersive', pitch:'The candidate fills the room; the clock, the next question and the controls float on glass, and the panel slides in only when you want it.', web:cWeb, phone:cPhone,
+    what:['The candidate fills the stage; the letterbox around a 9:16 picture is a soft blur of the same picture instead of black.','“Ask next” floats as a teleprompter at the top centre, right under the webcam, so reading it keeps your eyes near the camera.','A floating capsule holds the controls; the panel (Script · Notes · Profile) is a card you open and close from the capsule.','Phone: full-bleed candidate, the prompt card above a pill dock; the panel rises as a sheet.'],
+    good:['Feels most like a real conversation — best eye contact and the biggest picture.','The most modern look of the four.'],
+    trade:['Glass over video can be harder to read on a bright picture; needs care with contrast.','The blurred fill draws the remote video twice — heavier on low-end laptops (fallback: a plain gradient).','Writing notes means opening the panel over the picture.'],
+    data:[['Teleprompter Ask next','app','same script data, new placement'],['Blurred letterbox','app','a second, blurred render of the remote track; plain gradient on weak devices'],['Floating panel, open/closed','app','layout only'],['Timer ring (phone)','real','elapsed against the booked length; turns green at the completion mark']] },
+  { id:'D', name:'Notes cockpit', pitch:'Built for writing: a large notes editor in the middle, the script on the side, and a session timeline with your flags along the bottom.', web:dWeb, phone:dPhone,
+    what:['Three panes on the web: the candidate and controls, a large notes editor, and the script / profile.','“Flag & stamp” does both at once: marks the moment on the recording and starts a stamped line in the notes.','A timeline runs along the foot: time used, the completion mark, the wrap-up zone, your flags as pins, and when each area began.','Phone: the video on top, the timeline under it, then Notes / Script / Profile, with Flag & stamp in the dock.'],
+    good:['Best for interviewers who take detailed notes — the scorecard almost writes itself.','The timeline makes “am I on track?” answerable at a glance.'],
+    trade:['The busiest of the four; needs a wide screen to breathe on the web.','The candidate’s picture is the smallest on the web.'],
+    data:[['Flag & stamp','real','markMoment (the recording marker) + the private notes'],['Flagged moments list, pins','app','the flags this device made this session; lost on a reload unless the server lists them'],['List flags after a reload','need','a GET for the interview’s flagged moments'],['Area started ticks','app','when the first prompt of an area was marked asked, on this device'],['Completion mark & wrap-up zone','real','thresholdPct and the warnings list from the room DTO']] },
+]
+
+function render(){
+  document.getElementById('states').innerHTML = `<span class="lab">State</span>` + Object.entries(STATES).map(([k,v])=>`<button class="${S.st===k?'on':''}" data-act="st:${k}">${v.label}</button>`).join('')
+  document.getElementById('only').innerHTML = `<span class="lab">Show</span>` + [['all','All'],...DIRS.map((d)=>[d.id,`${d.id} · ${d.name}`])].map(([k,l])=>`<button class="${(S.only||'all')===k?'on':''}" data-act="only:${k}">${l}</button>`).join('')
+  const shown = S.only ? DIRS.filter((d)=>d.id===S.only) : DIRS
+  const statusTag = (s)=>({real:'<span class="st real">Real</span>',app:'<span class="st app">App only</span>',need:'<span class="st need">Needs API</span>'}[s])
+  document.getElementById('root').innerHTML = (S.only ? '' : `<div class="compare"><h3>At a glance</h3><table><tr><th></th><th>Candidate picture</th><th>Script</th><th>Notes</th><th>Best for</th><th>Build effort</th></tr>
+    <tr><td>A · Console</td><td>Large (web) · half height (phone)</td><td>Rail, Ask next on top</td><td>Rail tab</td><td>Every interviewer; least change</td><td>Low — restyle of today</td></tr>
+    <tr><td>B · Guided script</td><td>Medium (web) · 45% (phone)</td><td>One question at a time, stepper</td><td>Per-question box</td><td>Consistent, structured interviews</td><td>Medium</td></tr>
+    <tr><td>C · Immersive</td><td>Largest, full stage</td><td>Teleprompter + slide-in panel</td><td>Slide-in panel</td><td>Natural conversation, eye contact</td><td>Medium — glass and contrast care</td></tr>
+    <tr><td>D · Notes cockpit</td><td>Smallest (web)</td><td>Side checklist</td><td>Large editor + timeline</td><td>Detailed note-takers</td><td>Medium-high</td></tr></table></div>`)
+    + shown.map((d)=>`<section class="dir" id="${d.id}">
+      <div class="dir-head"><span class="dir-letter">${d.id}</span><h2>${d.name}</h2><span class="pitch">${d.pitch}</span></div>
+      <div class="frames">
+        <div><div class="cap"><b>Web</b> · desktop browser</div><div class="webwrap"><div class="scaled">${d.web()}</div></div></div>
+        <div><div class="cap"><b>Android</b> · phone</div><div class="phonewrap"><div class="scaled">${d.phone()}</div></div></div>
+      </div>
+      <div class="notes">
+        <div class="note"><h4>What changes</h4><ul>${d.what.map((x)=>`<li>${x}</li>`).join('')}</ul></div>
+        <div class="note"><h4>Good for</h4><ul>${d.good.map((x)=>`<li>${x}</li>`).join('')}</ul><h4 style="margin-top:12px">Trade-offs</h4><ul>${d.trade.map((x)=>`<li>${x}</li>`).join('')}</ul></div>
+        <div class="note"><h4>Data behind it</h4><table>${d.data.map(([a,s,b])=>`<tr><td>${a}</td><td>${statusTag(s)} ${b}</td></tr>`).join('')}</table></div>
+      </div></section>`).join('')
+}
+
+document.addEventListener('click', (e)=>{
+  const el = e.target.closest('[data-act]'); if (!el) return
+  const [a,b,c] = el.dataset.act.split(':')
+  if (a==='st') { S.st = b; if (b!=='end') S.prevSt = b }
+  else if (a==='only') { S.only = b==='all' ? null : b; history.replaceState(null,'',S.only?`?only=${S.only}`:location.pathname) }
+  else if (a==='tab') S.tab[b] = c
+  else if (a==='ptab') S.ptab[b] = c
+  else if (a==='ask') { S.asked.has(b) ? S.asked.delete(b) : S.asked.add(b); S.skipped.delete(b); S.bi = null }
+  else if (a==='skip') S.skipped.add(b)
+  else if (a==='bmark') { const i = curB(); S.asked.add(PROMPTS[i].k); const nx = PROMPTS.slice(i+1).find((p)=>!S.asked.has(p.k)); S.bi = nx ? PROMPTS.indexOf(nx) : i }
+  else if (a==='bnext') { const i = curB(); S.bi = Math.min(PROMPTS.length-1, i+1) }
+  else if (a==='bprev') { const i = curB(); S.bi = Math.max(0, i-1) }
+  else if (a==='mute') S.muted = !S.muted
+  else if (a==='cam') S.cam = !S.cam
+  else if (a==='spk') S.spk = !S.spk
+  else if (a==='flag') { const t = STATES[S.st].elapsed; if (STATES[S.st].started && !S.flags.includes(t)) { S.flags.push(t); S.notes.push([t,'Flagged moment']) } S.flagged = t; setTimeout(()=>{ S.flagged = null; render() }, 2500) }
+  else if (a==='end') { S.prevSt = S.st==='end' ? S.prevSt : S.st; if (STATES[S.st].started) S.st = 'end' }
+  else if (a==='endx') S.st = S.prevSt && S.prevSt!=='end' ? S.prevSt : 'live'
+  else if (a==='drawer') S.drawer = !S.drawer
+  else if (a==='csheet') S.csheet = !S.csheet
+  render()
+})
+
+const q = new URLSearchParams(location.search)
+if (q.get('only')) S.only = q.get('only').toUpperCase()
+if (q.get('state') && STATES[q.get('state')]) S.st = q.get('state')
+render()
+</script>
+</body>
+</html>

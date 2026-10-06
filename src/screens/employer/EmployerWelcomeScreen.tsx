@@ -1,7 +1,7 @@
 import React from 'react'
 import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { color, height, radius, space, spaceHalf, trackingNative } from '../../theme'
+import { color, height, radius, space, spaceHalf } from '../../theme'
 import { BrandMark, Button, text } from '../../components/ui'
 import { Icon } from '../../components/ui/Icon'
 import { EmBadge } from '../../components/employer/em'
@@ -9,7 +9,7 @@ import { EmBadge } from '../../components/employer/em'
 /**
  * EM-01 · the employer's way in. The ink film card is decorative: the design's
  * sample name and date would read as a real person, so it keeps the obvious
- * placeholders ("Candidate name", QUALIFICATION · CITY · LENGTH) and the badge
+ * placeholders ("Candidate name", "Qualification · City · Length") and the badge
  * carries no date — the same call the web landing makes.
  */
 export function EmployerWelcomeScreen({ onCreate, onSignIn }: { onCreate: () => void; onSignIn: () => void }) {
@@ -32,7 +32,7 @@ export function EmployerWelcomeScreen({ onCreate, onSignIn }: { onCreate: () => 
         <View style={styles.filmFoot}>
           <EmBadge label="Verified interview" tone="green" icon="check" small />
           <Text style={[text.displayCard, styles.onInk]}>Candidate name</Text>
-          <Text style={[text.metaSm, styles.onInkMuted]}>QUALIFICATION · CITY · LENGTH</Text>
+          <Text style={[text.metaSm, styles.onInkMuted]}>Qualification · City · Length</Text>
         </View>
       </View>
 
@@ -61,6 +61,6 @@ const styles = StyleSheet.create({
   play: { width: height.control + 2, height: height.control + 2, borderRadius: radius.pill, backgroundColor: color.surfaceMuted, alignItems: 'center', justifyContent: 'center', paddingLeft: space['2xs'] },
   filmFoot: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: space.xl, gap: spaceHalf['1.5'], backgroundColor: color.scrimStrong },
   onInk: { color: color.textOnInk },
-  onInkMuted: { color: color.textOnInkMuted, letterSpacing: trackingNative.eyebrow },
+  onInkMuted: { color: color.textOnInkMuted },
   muted: { color: color.textMuted },
 })

@@ -214,7 +214,7 @@ export function DocumentSlot({
           <View style={styles.grow}>
             <Text style={text.uiBaseMedium} numberOfLines={1}>{value.name}</Text>
             <Text style={[text.metaMd, styles.mono, styles.ok]} numberOfLines={1}>
-              {`${KIND_SHORT[value.kind].toUpperCase()} · ${megabytes(value.size)} · UPLOADED`}
+              {`${KIND_SHORT[value.kind]} · ${megabytes(value.size)} · Uploaded`}
             </Text>
           </View>
           <Button variant="ghost" size="sm" label="Replace" disabled={disabled} onPress={() => { choose() }} style={styles.slim} />
@@ -334,7 +334,7 @@ export function DropZone({
 const KIND_SHORT: Record<DocKind, string> = { GST: 'GST', CIN: 'CIN', PAN: 'Company PAN', PHOTO_ID: 'Photo ID' }
 
 /** 'PDF', 'JPG', 'PNG' — the tag on the file tile. */
-const extOf = (name: string) => (name.includes('.') ? name.split('.').pop()!.slice(0, 4).toUpperCase() : 'FILE')
+const extOf = (name: string) => (name.includes('.') ? name.split('.').pop()!.slice(0, 4).toUpperCase() : 'File')
 
 /** The segmented company-proof choice (H.seg): one slot, three kinds, a radio group. */
 function KindChoice({
@@ -370,7 +370,7 @@ const styles = StyleSheet.create({
   muted: { color: color.textMuted },
   danger: { color: color.danger },
   ok: { color: color.success },
-  pct: { color: color.accentText },
+  pct: { color: color.accentText, fontVariant: ['tabular-nums'] },
   mono: { letterSpacing: trackingNative.eyebrow },
   slot: { gap: spaceHalf['2.5'] },
   slim: { paddingHorizontal: spaceHalf['3.5'] },

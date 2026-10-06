@@ -1,108 +1,108 @@
 import React, { useEffect, useState } from 'react'
-import { KeyboardAvoidingView, Linking, Platform, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { StyleSheet, Text, View } from 'react-native'
 import { Banner } from '../components/ui/Banner'
 import {
-  A, AButton, AuthSub, AuthTitle, AuthTop, BottomBar, Link, Note, NoteStrong, OtpBoxes, ResendLine,
+  AButton, BrandScreen, Link, Meta, MetaRow, OtpBoxes, ResendAction, SheetSub, SheetTitle, Tip,
 } from '../components/auth/kit'
+import {
+  CONTRACT_CODE_LENGTH, clockIST, clockMMSS, groupedMobile, numberWord, readSendRefusal, serverAttemptsLeft, useAuthConfig,
+} from '../components/auth/config'
 import { api, tokenStore } from '../lib/api'
 import { ApiClientError } from '../lib/api/types'
-import { color } from '../theme'
+import { openSupport } from '../lib/support'
+import { color, fontFamilyNative, fontSize, leadingNative, space } from '../theme'
 import type { RegistrationData } from './CreateAccountScreen'
 
 interface Props {
   mobile: string
   purpose: 'REGISTER' | 'LOGIN'
   registrationData?: RegistrationData
+  /** The send's own `resendAfterSeconds` — the wait before another code may be asked for. */
   initialCooldown?: number
   onBack: () => void
   onVerified: () => void
   onSignIn?: () => void
 }
 
+/**
+ * ST-03 · Verify your number, in the direction C look: the brand band, then the
+ * code in the sheet. Every number it quotes is the server's (/config `auth`):
+ * how many digits, how long the code lives, how long to wait to ask again, how
+ * many tries a code takes and how many sends a number gets in an hour. One the
+ * server did not send is simply not quoted.
+ */
 export function VerifyMobileScreen({
   mobile,
   purpose,
   registrationData,
-  initialCooldown = 30,
+  initialCooldown,
   onBack,
   onVerified,
   onSignIn,
 }: Props) {
-  const insets = useSafeAreaInsets()
+  const config = useAuthConfig()
+  const auth = config.data?.auth
+  const codeLength = auth?.otpLength ?? CONTRACT_CODE_LENGTH
+  const ttlMinutes = auth?.otpTtlMinutes
+  const cooldownPeriod = auth?.otpResendCooldownSeconds ?? 0
+  const maxSends = auth?.otpMaxSendsPerHour
+  const maxAttempts = auth?.otpMaxAttempts
 
+  const now = useClock()
   const [code, setCode] = useState('')
-  const [cooldown, setCooldown] = useState(initialCooldown)
-  const [codeExpirySeconds, setCodeExpirySeconds] = useState(600) // 10 min
+  /** When the live code went out (this screen opens right after the send). */
+  const [sentAt, setSentAt] = useState(() => Date.now())
+  const [resendAt, setResendAt] = useState(() => Date.now() + (initialCooldown ?? 0) * 1000)
+  /** Sends spent this hour that this screen knows of — the one that brought us here, then each resend. */
+  const [sendsUsed, setSendsUsed] = useState(1)
   const [attemptsLeft, setAttemptsLeft] = useState<number | null>(null)
-  const [sendsRemaining, setSendsRemaining] = useState(4)
-  const [hourlyLimitHit, setHourlyLimitHit] = useState(false)
+  const [limit, setLimit] = useState<{ retryAt: Date | null } | null>(null)
   const [isMobileRegistered, setIsMobileRegistered] = useState(false)
-  const [nextCodeTime, setNextCodeTime] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
+  const [resending, setResending] = useState(false)
 
-  const CODE_LENGTH = 6
-
-  function formatMMSS(sec: number) {
-    const m = Math.floor(sec / 60)
-    const s = sec % 60
-    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
-  }
-
-  // Cooldown countdown
-  useEffect(() => {
-    if (cooldown <= 0) return
-    const timer = setInterval(() => {
-      setCooldown((n) => (n <= 1 ? (clearInterval(timer), 0) : n - 1))
-    }, 1000)
-    return () => clearInterval(timer)
-  }, [cooldown])
-
-  // Expiry countdown
-  useEffect(() => {
-    if (codeExpirySeconds <= 0) return
-    const timer = setInterval(() => {
-      setCodeExpirySeconds((n) => Math.max(0, n - 1))
-    }, 1000)
-    return () => clearInterval(timer)
-  }, [codeExpirySeconds])
+  const cooldown = Math.max(0, Math.ceil((resendAt - now) / 1000))
+  const expiresIn = ttlMinutes ? Math.max(0, Math.round((sentAt + ttlMinutes * 60_000 - now) / 1000)) : null
+  const sendsLeft = maxSends ? Math.max(0, maxSends - sendsUsed) : null
+  const blocked = !!limit
+  const lengthWord = auth?.otpLength ? `${auth.otpLength}-digit code` : 'code'
 
   async function handleResendCode() {
-    if (cooldown > 0 || pending) return
-    setPending(true)
+    if (cooldown > 0 || pending || resending) return
+    setResending(true)
     setError(null)
-
     try {
       const res = await api.post<{ sent: boolean; resendAfterSeconds?: number }>(
         '/auth/otp/send',
         { mobile, purpose },
         { anonymous: true },
       )
-      setCooldown(res.resendAfterSeconds ?? 30)
-      setCodeExpirySeconds(600)
-      setSendsRemaining((prev) => Math.max(0, prev - 1))
+      const at = Date.now()
+      setResendAt(at + (res.resendAfterSeconds ?? cooldownPeriod) * 1000)
+      setSentAt(at)
+      setSendsUsed((n) => n + 1)
       setAttemptsLeft(null)
+      setCode('')
     } catch (err) {
-      if (err instanceof ApiClientError && err.status === 429) {
-        setHourlyLimitHit(true)
-        const retrySec = (err.details as { retryAfterSeconds?: number })?.retryAfterSeconds ?? 3600
-        const resumeDate = new Date(Date.now() + retrySec * 1000)
-        setNextCodeTime(
-          resumeDate.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true }),
-        )
+      const refusal = readSendRefusal(err, cooldownPeriod)
+      if (refusal?.kind === 'cooldown') {
+        // Too early, not out of sends: the wait restarts and no send is spent.
+        setResendAt(Date.now() + refusal.seconds * 1000)
+      } else if (refusal?.kind === 'hourly') {
+        setLimit({ retryAt: refusal.retryAt })
       } else {
-        setError(err instanceof ApiClientError ? err.message : 'Could not resend code.')
+        setError(err instanceof ApiClientError ? err.message : 'Could not resend the code.')
       }
     } finally {
-      setPending(false)
+      setResending(false)
     }
   }
 
   async function handleVerify() {
-    if (pending) return
-    if (code.length !== CODE_LENGTH) {
-      setError('Enter the 6-digit code')
+    if (pending || blocked) return
+    if (code.length !== codeLength) {
+      setError(auth?.otpLength ? `Enter the ${auth.otpLength}-digit code` : 'Enter the whole code')
       return
     }
     setPending(true)
@@ -116,7 +116,6 @@ export function VerifyMobileScreen({
           { anonymous: true },
         )
         await tokenStore.set(data)
-        onVerified()
       } else {
         const data = await api.post<{ accessToken: string; refreshToken: string }>(
           '/auth/login',
@@ -124,106 +123,125 @@ export function VerifyMobileScreen({
           { anonymous: true },
         )
         await tokenStore.set(data)
-        onVerified()
       }
+      onVerified()
     } catch (err) {
       if (err instanceof ApiClientError) {
-        setError(err.message)
-        if (err.status === 409 || err.message.toLowerCase().includes('already exists') || err.message.toLowerCase().includes('already registered')) {
+        const m = err.message.toLowerCase()
+        if (err.status === 409 || m.includes('already exists') || m.includes('already registered')) {
           setIsMobileRegistered(true)
+          setError(err.message)
+        } else if (err.fields?.code) {
+          // A wrong or expired code: counted down from the server's own figure when it sends one.
+          const fromServer = serverAttemptsLeft(err)
+          setAttemptsLeft((prev) =>
+            fromServer !== null ? fromServer : prev !== null ? Math.max(0, prev - 1) : maxAttempts ? maxAttempts - 1 : null,
+          )
+          setError(err.message)
         } else {
-          setAttemptsLeft((prev) => (prev !== null ? Math.max(0, prev - 1) : 4))
+          setError(err.message)
         }
       } else {
-        setError('Verification failed.')
+        setError('Verification failed. Check your connection and try again.')
       }
     } finally {
       setPending(false)
     }
   }
 
-  const blocked = hourlyLimitHit
+  const attemptsNote =
+    attemptsLeft === null ? '' : `  ·  ${attemptsLeft}${maxAttempts ? ` of ${maxAttempts}` : ''} attempts left`
 
   return (
-    <KeyboardAvoidingView
-      style={[styles.root, { paddingTop: insets.top }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <AuthTop onBack={onBack} brand={false} />
-
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        <View style={styles.gap} />
-        <AuthTitle>Verify your number</AuthTitle>
-        <AuthSub>
-          Enter the 6-digit code sent to <Text style={styles.strong}>+91 {mobile}</Text>. <Link onPress={onBack}>Edit</Link>
-        </AuthSub>
-
-        <OtpBoxes
-          value={code}
-          onChange={(v) => { setCode(v); setError(null) }}
-          invalid={Boolean(error && !blocked)}
-          autoFocus
-        />
-
-        {!!error && !blocked && !isMobileRegistered && (
-          <Text style={styles.error}>
-            {error}
-            {attemptsLeft !== null ? `  ·  ${attemptsLeft} of 5 attempts left` : ''}
-          </Text>
-        )}
-        {isMobileRegistered && (
-          <Text style={styles.error}>
-            This mobile number is already registered. {onSignIn && <Link onPress={onSignIn}>Log in</Link>}
-          </Text>
-        )}
-
-        {blocked ? (
-          <View style={styles.banner}>
-            <Banner tone="warning" title="Hourly limit reached">
-              You’ve used all five codes this number gets in an hour. Nothing is wrong with your account — the count
-              rolls over. Next code at {nextCodeTime ?? 'the next hour'} IST.
-            </Banner>
-            <View style={styles.cta}>
-              <AButton
-                variant="outline"
-                label="Message support"
-                onPress={() => Linking.openURL('mailto:support@apostrophe.work')}
-              />
-            </View>
-          </View>
-        ) : (
-          <>
-            <ResendLine seconds={cooldown} onResend={handleResendCode} />
-            <Text style={styles.small}>{sendsRemaining} of 5 sends left this hour</Text>
-          </>
-        )}
-
-        <Note>
-          <NoteStrong>Tip</NoteStrong>{' '}
-          {blocked
-            ? 'Codes last 10 minutes.'
-            : `Paste all six digits and we’ll fill them in. This code expires in ${formatMMSS(codeExpirySeconds)}.`}
-        </Note>
-      </ScrollView>
-
-      <BottomBar insetBottom={insets.bottom + 14}>
+    <BrandScreen
+      onBack={onBack}
+      footer={
         <AButton
           label={pending ? 'Verifying…' : 'Verify & continue'}
           busy={pending}
-          onPress={blocked ? undefined : handleVerify}
+          disabled={blocked}
+          onPress={handleVerify}
         />
-      </BottomBar>
-    </KeyboardAvoidingView>
+      }
+    >
+      <SheetTitle>Verify your number</SheetTitle>
+      <SheetSub>
+        Enter the {lengthWord} sent to <Text style={styles.strong}>+91 {groupedMobile(mobile)}</Text> ·{' '}
+        <Link onPress={onBack}>Edit</Link>
+      </SheetSub>
+
+      <View style={styles.cells}>
+        <OtpBoxes
+          length={codeLength}
+          value={code}
+          onChange={(v) => { setCode(v); setError(null) }}
+          invalid={Boolean(error && !blocked && !isMobileRegistered)}
+          editable={!pending && !blocked}
+          autoFocus
+        />
+      </View>
+
+      {!!error && !isMobileRegistered && (
+        <Text style={styles.error}>
+          {error}
+          {attemptsNote}
+        </Text>
+      )}
+      {isMobileRegistered && (
+        <Text style={styles.error}>
+          This mobile number is already registered. {onSignIn && <Link onPress={onSignIn}>Log in</Link>}
+        </Text>
+      )}
+
+      {blocked ? (
+        <View style={styles.banner}>
+          <Banner tone="warning" title="Hourly limit reached">
+            {`You’ve used all ${maxSends ? `${numberWord(maxSends)} codes` : 'the codes'} this number gets in an hour. Nothing is wrong with your account — the count rolls over. ${
+              limit?.retryAt ? `Next code at ${clockIST(limit.retryAt)} IST.` : 'Try again in an hour.'
+            }`}
+          </Banner>
+          <View style={styles.cta}>
+            <AButton variant="outline" label="Message support" onPress={() => openSupport('Verification code limit')} />
+          </View>
+        </View>
+      ) : (
+        <MetaRow>
+          <ResendAction seconds={cooldown} busy={resending} onResend={handleResendCode} />
+          {sendsLeft !== null && <Meta>{sendsLeft} of {maxSends} sends left this hour</Meta>}
+        </MetaRow>
+      )}
+
+      {blocked ? (
+        ttlMinutes ? <Tip title="Tip">Codes last {ttlMinutes} minutes.</Tip> : null
+      ) : (
+        <Tip title="Tip">
+          Paste all {auth?.otpLength ? `${numberWord(auth.otpLength)} digits` : 'the digits'} and we’ll fill them in.
+          {expiresIn === null
+            ? ''
+            : expiresIn > 0
+              ? <> This code expires in <Text style={styles.figure}>{clockMMSS(expiresIn)}</Text>.</>
+              : ' This code has expired — send a new one.'}
+        </Tip>
+      )}
+    </BrandScreen>
   )
 }
 
+/** Date.now(), re-read once a second while the screen is up — the countdowns run on it. */
+function useClock() {
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(t)
+  }, [])
+  return now
+}
+
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: color.background },
-  scroll: { paddingHorizontal: A.gutter, paddingBottom: 24 },
-  gap: { height: 12 },
-  strong: { color: color.text },
-  error: { color: A.danger, fontSize: 13, textAlign: 'center', marginTop: 12 },
-  small: { color: color.textSubtle, fontSize: 13, textAlign: 'center', marginTop: 6 },
-  banner: { marginTop: 22 },
-  cta: { marginTop: 12 },
+  strong: { fontFamily: fontFamilyNative.bodySemiBold, color: color.text },
+  figure: { fontVariant: ['tabular-nums'] },
+  cells: { marginTop: space.xl },
+  error: { fontFamily: fontFamilyNative.body, fontSize: fontSize['ui-sm'], lineHeight: leadingNative['ui-sm'], color: color.danger, marginTop: space.md },
+  banner: { marginTop: space.lg },
+  cta: { marginTop: space.md },
 })

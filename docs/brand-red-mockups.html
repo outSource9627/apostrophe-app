@@ -1,0 +1,525 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Brand Red Mockups</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /*
+   * The new palette (user, 2026-10-06):
+   *   Primary #B22222 · Headings #141414 · Body #2C2C2C · Background #FCFCFC · Borders #E5E5E5 · Muted #777777
+   * Every other step below is DERIVED from those six (hover/soft/wash/deep of the primary, the ink for dark cards).
+   * `?palette=today` shows the same screens in today's violet tokens for comparison.
+   */
+  :root, .p-new{
+    --accent:#B22222; --accent-hover:#951C1C; --accent-text:#951C1C; --accent-soft:#F9EAEA; --accent-wash:#FDF5F5;
+    --accent-muted:#E8B4B4; --accent-bright:#C83333; --accent-deep:#6B1414; --accent-shadow:rgba(178,34,34,.28);
+    --bg:#FCFCFC; --surface:#FFFFFF; --muted:#F3F3F3; --text:#141414; --body:#2C2C2C; --text3:#777777; --text4:#9A9A9A;
+    --border:#E5E5E5; --border-strong:#D4D4D4;
+    --ink:#141414; --ink-raised:#1F1F1F; --ink-deep:#0A0A0A; --ink-deeper:#161616;
+    --info:#951C1C; --info-soft:#F9EAEA;
+    --feed-hl:#B22222; --feed-hl-pill:rgba(178,34,34,.88); --feed-hl-text:#FF9C9C;
+    --page:#ECEBEA;
+  }
+  .p-today{
+    --accent:#5B3DF5; --accent-hover:#4A2FE0; --accent-text:#4A2FE0; --accent-soft:#EFEBFF; --accent-wash:#F7F6FF;
+    --accent-muted:#C4B8FF; --accent-bright:#7258FF; --accent-deep:#3B2A8F; --accent-shadow:rgba(91,61,245,.3);
+    --bg:#FAFAFC; --surface:#FFFFFF; --muted:#F1F3F7; --text:#0B0F1A; --body:#3A4256; --text3:#6B7385; --text4:#8A91A2;
+    --border:#E3E6ED; --border-strong:#C9CED9;
+    --ink:#0B0F1A; --ink-raised:#151B2B; --ink-deep:#07090F; --ink-deeper:#11151F;
+    --info:#4A2FE0; --info-soft:#EFEBFF;
+    --feed-hl:#FD3A73; --feed-hl-pill:rgba(253,58,115,.85); --feed-hl-text:#FF8FB0;
+    --page:#E9EAF2;
+  }
+  /* states — unchanged by the re-brand */
+  :root{
+    --ok:#0B7A55; --ok-fill:#0E9F6E; --ok-soft:#E6F7F0; --ok-halo:rgba(14,159,110,.18); --ok-on-ink:#6EE7B7;
+    --warn:#935F00; --warn-soft:#FFF5E1; --danger:#C22A30; --danger-soft:#FDECEC;
+    --like:#20D575; --undo:#FFC000;
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Geist',system-ui,sans-serif;background:var(--page);color:var(--text);min-height:100vh;transition:background .25s}
+  button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+  svg.i{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex:none}
+  .num{font-variant-numeric:tabular-nums}
+
+  /* ── page chrome ───────────────────────────────── */
+  .bar{position:sticky;top:0;z-index:50;display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;justify-content:space-between;padding:14px 24px;background:rgba(255,255,255,.86);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+  .bar h1{font-size:17px;font-weight:700;letter-spacing:-.01em}
+  .bar p{font-size:13px;color:var(--text3);margin-top:2px}
+  .swatches{display:flex;gap:6px;flex-wrap:wrap}
+  .sw{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--body);background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:4px 10px 4px 4px}
+  .sw i{width:16px;height:16px;border-radius:50%;border:1px solid rgba(0,0,0,.08)}
+  .seg{display:flex;background:var(--muted);border-radius:12px;padding:3px}
+  .seg button{height:34px;padding:0 14px;border-radius:9px;font-size:13.5px;font-weight:600;color:var(--text3)}
+  .seg button.on{background:var(--surface);color:var(--accent);box-shadow:0 0 0 1px var(--border)}
+  .stage{display:flex;gap:40px;flex-wrap:wrap;justify-content:center;padding:36px 16px 60px}
+  .col{display:flex;flex-direction:column;align-items:center}
+  .cap{font-size:14px;font-weight:600;color:var(--body);margin-bottom:4px}
+  .cap2{font-size:12.5px;color:var(--text3);margin-bottom:14px}
+
+  .phone{width:390px;height:812px;background:var(--bg);border-radius:46px;border:10px solid #111;overflow:hidden;position:relative;box-shadow:0 30px 60px rgba(0,0,0,.18);display:flex;flex-direction:column}
+  .status{height:44px;flex:none;display:flex;justify-content:space-between;align-items:center;padding:0 26px;font-size:14px;font-weight:600;position:relative;z-index:5}
+  .status.light{color:#fff}
+  .status.over{position:absolute;top:0;left:0;right:0}
+  .status::after{content:"";width:90px;height:24px;background:#111;border-radius:14px;position:absolute;left:50%;top:9px;transform:translateX(-50%)}
+  @media (max-width:440px){.phone{width:100%;max-width:390px}}
+
+  /* tab bar */
+  .tabs{flex:none;display:flex;justify-content:space-around;padding:8px 6px 22px;background:var(--surface);border-top:1px solid var(--border)}
+  .tabs button{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11.5px;font-weight:600;color:var(--text4);width:68px}
+  .tabs button.on{color:var(--accent)}
+  .tabs.dark{background:var(--ink-deep);border-top-color:transparent}
+  .tabs.dark button{color:rgba(255,255,255,.5)}
+  .tabs.dark button.on{color:#fff}
+
+  /* ── 1 · Landing ───────────────────────────────── */
+  .landing{background:linear-gradient(170deg,var(--accent-bright) 0%,var(--accent-hover) 50%,var(--accent-deep) 100%);color:#fff;position:relative}
+  .landing .orb{position:absolute;border-radius:50%;background:rgba(255,255,255,.06)}
+  .brand-row{display:flex;align-items:center;gap:12px;padding:14px 28px 0;position:relative;z-index:2}
+  .mark{width:40px;height:40px;border-radius:12px;background:#fff;display:grid;place-items:center}
+  .mark svg{width:22px;height:22px}
+  .word{font-size:22px;font-weight:700;letter-spacing:-.02em}
+  .slide{flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 28px;position:relative;z-index:2}
+  .art{height:260px;position:relative;margin-bottom:28px}
+  .film{position:absolute;width:150px;height:220px;border-radius:22px;background:var(--accent-soft);padding:12px;display:flex;align-items:flex-end}
+  .film.l{left:40px;top:8px;transform:rotate(-8deg)}
+  .film.r{right:40px;top:0;transform:rotate(7deg);background:var(--accent-muted)}
+  .film .seal{position:absolute;top:12px;right:12px;width:28px;height:28px;border-radius:50%;background:var(--ok-fill);display:grid;place-items:center}
+  .film .seal svg{width:14px;height:14px;stroke:#fff;stroke-width:2.8}
+  .film .lab{width:100%;white-space:nowrap;background:#fff;color:var(--text);border-radius:12px;padding:8px 12px;font-size:12.5px;font-weight:600}
+  .l-title{font-size:31px;line-height:37px;font-weight:700;letter-spacing:-.025em}
+  .l-sub{font-size:15px;line-height:22px;color:rgba(255,255,255,.8);margin-top:12px}
+  .dots{display:flex;gap:8px;justify-content:center;padding:14px 0;position:relative;z-index:2}
+  .dots i{width:7px;height:7px;border-radius:99px;background:rgba(255,255,255,.28)}
+  .dots i.on{width:28px;background:#fff}
+  .l-cta{padding:0 28px 34px;display:flex;flex-direction:column;gap:4px;position:relative;z-index:2}
+  .btn{height:52px;border-radius:14px;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;width:100%}
+  .btn.white{background:#fff;color:var(--ink)}
+  .btn.ghost{color:#fff;font-weight:600;height:46px}
+  .btn.primary{background:var(--accent);color:#fff}
+  .btn.outline{background:var(--surface);border:1.5px solid var(--border);color:var(--text)}
+  .terms{font-size:12px;color:rgba(255,255,255,.55);text-align:center;margin-top:6px}
+
+  /* ── 2 · Login ─────────────────────────────────── */
+  .a-top{display:flex;justify-content:space-between;align-items:center;padding:8px 14px 0}
+  .back{width:44px;height:44px;border-radius:50%;border:1px solid var(--border);background:var(--surface);display:grid;place-items:center;color:var(--text)}
+  .a-brand{display:flex;align-items:center;gap:8px;padding-right:10px}
+  .a-mark{width:32px;height:32px;border-radius:8px;background:var(--accent);display:grid;place-items:center}
+  .a-mark svg{width:18px;height:18px}
+  .a-word{font-size:18px;font-weight:700;letter-spacing:-.015em;color:var(--text)}
+  .a-body{flex:1;overflow:hidden;padding:24px 24px 0}
+  .a-title{font-size:28px;line-height:34px;font-weight:700;letter-spacing:-.025em;color:var(--text)}
+  .a-sub{font-size:16px;line-height:23px;color:var(--text3);margin-top:8px}
+  .a-seg{display:flex;background:var(--muted);border-radius:14px;padding:4px;margin-top:24px}
+  .a-seg div{flex:1;height:42px;border-radius:11px;display:grid;place-items:center;font-size:15px;font-weight:600;color:var(--text3)}
+  .a-seg div.on{background:var(--surface);border:1px solid var(--border);color:var(--accent)}
+  .field{margin-top:18px;display:flex;flex-direction:column;gap:6px}
+  .field label{font-size:14px;font-weight:600;color:var(--body)}
+  .box{height:52px;display:flex;align-items:center;gap:10px;padding:0 14px;background:var(--surface);border:1.5px solid var(--accent);border-radius:14px;font-size:15.5px}
+  .box .pre{font-weight:600;padding-right:10px;border-right:1px solid var(--border);color:var(--text)}
+  .box .val{color:var(--text)}
+  .box .caret{width:1.5px;height:20px;background:var(--accent);margin-left:-8px}
+  .help{font-size:12.5px;color:var(--text3)}
+  .or{display:flex;align-items:center;gap:12px;margin:22px 0 14px;font-size:13px;color:var(--text4)}
+  .or::before,.or::after{content:"";flex:1;height:1px;background:var(--border)}
+  .g{width:18px;height:18px}
+  .note{margin-top:18px;background:var(--accent-wash);border:1px solid var(--accent-muted);border-radius:14px;padding:12px 14px;font-size:13.5px;line-height:20px;color:var(--body)}
+  .note b{color:var(--text)}
+  .link{color:var(--accent-text);font-weight:700}
+  .a-foot{flex:none;border-top:1px solid var(--border);background:var(--surface);padding:14px 24px 30px;text-align:center;font-size:14.5px;color:var(--text3)}
+
+  /* ── 3 · Student home ──────────────────────────── */
+  .scroll{flex:1;overflow:hidden;position:relative}
+  .h-head{background:linear-gradient(165deg,var(--accent-bright),var(--accent-deep));color:#fff;padding:58px 20px 46px}
+  .h-row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+  .h-date{font-size:13px;color:rgba(255,255,255,.75)}
+  .h-greet{font-size:26px;line-height:31px;font-weight:700;letter-spacing:-.02em;margin-top:4px}
+  .h-right{display:flex;align-items:center;gap:8px}
+  .chip{height:30px;padding:0 12px;border-radius:99px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.2);font-size:12.5px;font-weight:600;display:flex;align-items:center;white-space:nowrap}
+  .round{width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.2);display:grid;place-items:center;color:#fff}
+  .pad{padding:0 16px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:18px}
+  .vis{display:flex;align-items:center;gap:12px;padding:14px;margin-top:-28px;position:relative}
+  .halo{width:30px;height:30px;border-radius:50%;background:var(--ok-halo);display:grid;place-items:center}
+  .halo i{width:10px;height:10px;border-radius:50%;background:var(--ok-fill)}
+  .grow{flex:1;min-width:0}
+  .t1{font-size:15px;font-weight:700;color:var(--text)}
+  .t2{font-size:13px;color:var(--text3);margin-top:2px}
+  .toggle{width:46px;height:28px;border-radius:99px;background:var(--ok-fill);position:relative}
+  .toggle::after{content:"";position:absolute;right:3px;top:3px;width:22px;height:22px;border-radius:50%;background:#fff}
+  .c-head{display:flex;justify-content:space-between;align-items:center;padding:14px 16px 4px}
+  .metrics{display:flex;padding:6px 6px 14px}
+  .metric{flex:1;padding:6px 10px;border-right:1px solid var(--border)}
+  .metric:last-child{border-right:0}
+  .m-n{font-size:26px;font-weight:700;letter-spacing:-.02em;color:var(--text)}
+  .m-l{font-size:12px;line-height:16px;color:var(--text3);margin-top:2px}
+  .m-f{font-size:11.5px;font-weight:600;color:var(--accent-text);margin-top:4px}
+  .sec{display:flex;justify-content:space-between;align-items:center;padding:22px 20px 10px}
+  .sec h3{font-size:17px;font-weight:700;letter-spacing:-.01em;color:var(--text)}
+  .ink{background:var(--ink);color:#fff;border-radius:22px;padding:18px;position:relative;overflow:hidden}
+  .ink-top{display:flex;justify-content:space-between;align-items:center}
+  .ink-pill{height:26px;padding:0 10px;border-radius:99px;background:rgba(255,255,255,.12);font-size:12px;font-weight:600;display:flex;align-items:center;color:rgba(255,255,255,.9)}
+  .ink-until{font-size:13px;color:rgba(255,255,255,.65)}
+  .ink-title{font-size:21px;font-weight:700;letter-spacing:-.015em;margin-top:14px}
+  .ink-sub{font-size:13.5px;color:rgba(255,255,255,.65);margin-top:4px}
+  .ink-actions{display:flex;gap:8px;margin-top:16px}
+  .ink-btn{flex:1;height:46px;border-radius:13px;font-size:15px;font-weight:700;display:grid;place-items:center}
+  .ink-btn.w{background:#fff;color:var(--ink)}
+  .ink-btn.g{background:rgba(255,255,255,.1);color:#fff}
+  .film-row{display:flex;gap:12px;align-items:center;padding:12px}
+  .thumb{width:54px;height:72px;border-radius:12px;background:linear-gradient(160deg,#3a3a3a,#141414);display:grid;place-items:center;color:#fff}
+  .thumb svg{width:18px;height:18px;fill:#fff;stroke:none}
+  .pill{display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:99px;font-size:12px;font-weight:600}
+  .pill.ok{background:var(--ok-soft);color:var(--ok)}
+  .fab{position:absolute;right:16px;bottom:14px;height:50px;padding:0 18px 0 14px;border-radius:99px;background:var(--accent);color:#fff;display:flex;align-items:center;gap:8px;font-size:15px;font-weight:700;box-shadow:0 10px 22px var(--accent-shadow)}
+  .fab svg{stroke:#fff;stroke-width:2.2}
+
+  /* ── 4 · Interviewer home ──────────────────────── */
+  .iv-bar{display:flex;justify-content:space-between;align-items:center;padding:6px 20px 0}
+  .iv-bell{width:42px;height:42px;border-radius:50%;border:1px solid var(--border);background:var(--surface);display:grid;place-items:center;color:var(--text);position:relative}
+  .iv-bell i{position:absolute;top:9px;right:10px;width:8px;height:8px;border-radius:50%;background:var(--accent);border:2px solid var(--surface)}
+  .greet{padding:16px 20px 14px}
+  .greet h2{font-size:28px;line-height:33px;font-weight:700;letter-spacing:-.025em;color:var(--text)}
+  .greet p{font-size:14px;color:var(--text3);margin-top:3px}
+  .nx{background:var(--ink);border-radius:24px;padding:18px;color:#fff;position:relative;overflow:hidden}
+  .nx::before{content:"";position:absolute;inset:0;background:radial-gradient(70% 60% at 100% 0%,color-mix(in srgb,var(--accent-bright) 34%,transparent),transparent 70%)}
+  .nx > *{position:relative}
+  .nx-top{display:flex;justify-content:space-between;align-items:center}
+  .nx-lab{font-size:13px;font-weight:600;color:rgba(255,255,255,.7)}
+  .st-pill{height:24px;padding:0 10px;border-radius:99px;background:rgba(255,255,255,.1);font-size:12px;font-weight:600;color:rgba(255,255,255,.75);display:flex;align-items:center}
+  .cd{display:flex;align-items:baseline;gap:8px;margin-top:12px}
+  .cd b{font-size:46px;font-weight:700;letter-spacing:-.03em}
+  .cd span{font-size:14px;color:rgba(255,255,255,.6)}
+  .nm{font-size:18px;font-weight:700;margin-top:10px}
+  .nm-l{font-size:13.5px;color:rgba(255,255,255,.6);margin-top:3px}
+  .jb{height:56px;border-radius:99px;margin-top:16px;display:flex;align-items:center;justify-content:center;gap:10px;font-size:16px;font-weight:700}
+  .jb.locked{background:rgba(255,255,255,.09);color:rgba(255,255,255,.62)}
+  .jb.open{background:#fff;color:var(--accent-deep)}
+  .jb.open i{width:9px;height:9px;border-radius:50%;background:var(--ok-fill)}
+  .grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:12px}
+  .tile{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:12px}
+  .tile-top{display:flex;align-items:center;gap:6px}
+  .tchip{width:20px;height:20px;border-radius:6px;display:grid;place-items:center}
+  .tchip svg{width:13px;height:13px}
+  .tile-l{font-size:12px;font-weight:500;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .fig{font-size:24px;font-weight:700;letter-spacing:-.02em;margin-top:8px;color:var(--text)}
+  .owed{margin-top:4px}
+  .or-row{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--border)}
+  .or-row:last-child{border-bottom:0}
+  .or-row.urgent{background:linear-gradient(90deg,var(--danger-soft),transparent 55%)}
+  .ck{height:28px;padding:0 10px;border-radius:99px;background:var(--muted);font-size:13px;font-weight:600;display:flex;align-items:center;color:var(--text)}
+  .urgent .ck{background:var(--danger-soft);color:var(--danger)}
+
+  /* ── 5 · Feed ──────────────────────────────────── */
+  .feed{background:var(--ink-deep);color:#fff}
+  .f-top{display:flex;align-items:center;justify-content:space-between;padding:4px 14px 10px}
+  .f-tabs{display:flex;gap:4px}
+  .f-tabs span{height:34px;padding:0 13px;border-radius:99px;font-size:14px;font-weight:600;color:rgba(255,255,255,.62);display:flex;align-items:center}
+  .f-tabs span.on{background:#fff;color:var(--ink)}
+  .f-btns{display:flex;gap:8px}
+  .f-btn{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.1);display:grid;place-items:center;color:#fff;position:relative}
+  .f-btn svg{width:19px;height:19px}
+  .f-btn em{position:absolute;top:-3px;right:-3px;min-width:17px;height:17px;border-radius:99px;background:var(--feed-hl);font:700 10.5px/17px 'Geist';text-align:center;font-style:normal}
+  .f-card{flex:1;margin:0 8px;border-radius:22px 22px 0 0;position:relative;overflow:hidden;background:
+      radial-gradient(60% 40% at 50% 34%,rgba(255,255,255,.14),transparent 70%),
+      linear-gradient(180deg,#4b4b4b 0%,#2a2a2a 40%,var(--ink-deep) 72%)}
+  .f-card .face{position:absolute;left:50%;top:21%;width:120px;height:150px;transform:translateX(-50%);border-radius:60px 60px 46px 46px;background:rgba(255,255,255,.08)}
+  .f-card .shoulders{position:absolute;left:50%;top:44%;width:250px;height:140px;transform:translateX(-50%);border-radius:130px 130px 0 0;background:rgba(255,255,255,.06)}
+  .story{position:absolute;top:10px;left:12px;right:12px;height:3px;border-radius:3px;background:rgba(255,255,255,.28)}
+  .story i{display:block;width:38%;height:100%;border-radius:3px;background:var(--feed-hl)}
+  .f-tagrow{position:absolute;top:22px;left:12px;right:12px;display:flex;justify-content:space-between}
+  .f-tag{height:30px;padding:0 12px;border-radius:99px;background:rgba(10,10,10,.55);backdrop-filter:blur(6px);font-size:12.5px;font-weight:600;display:flex;align-items:center}
+  .f-foot{position:absolute;left:16px;right:16px;bottom:88px}
+  .f-co{display:flex;align-items:center;gap:10px}
+  .logo{width:40px;height:40px;border-radius:12px;background:#fff;color:var(--ink);display:grid;place-items:center;font-size:14px;font-weight:800}
+  .f-name{font-size:15px;font-weight:700}
+  .f-posted{font-size:12.5px;color:rgba(255,255,255,.6)}
+  .up{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.92);color:var(--ink);display:grid;place-items:center}
+  .up svg{width:18px;height:18px;stroke-width:2.4}
+  .f-title{font-size:25px;line-height:30px;font-weight:700;letter-spacing:-.02em;margin-top:12px}
+  .f-pills{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .fp{height:28px;padding:0 11px;border-radius:99px;font-size:13px;font-weight:600;display:flex;align-items:center}
+  .fp.hl{background:var(--feed-hl-pill)}
+  .fp.dk{background:rgba(30,30,30,.8);border:1px solid rgba(255,255,255,.12)}
+  .f-meta{display:flex;align-items:center;gap:6px;font-size:13px;color:rgba(255,255,255,.62);margin-top:10px}
+  .f-meta svg{width:15px;height:15px}
+  .f-actions{position:absolute;left:0;right:0;bottom:16px;display:flex;justify-content:center;align-items:center;gap:18px}
+  .fa{border-radius:50%;background:rgba(24,24,24,.92);border:1px solid rgba(255,255,255,.1);display:grid;place-items:center}
+  .fa.s{width:48px;height:48px}.fa.l{width:60px;height:60px}
+  .fa svg{stroke-width:2.6}
+  .fa.undo{color:var(--undo)}.fa.pass{color:var(--feed-hl)}.fa.save{color:var(--like)}.fa.apply{color:#fff}
+
+  /* the "what changed" notes */
+  .notes{max-width:980px;margin:0 auto 60px;padding:0 16px}
+  .notes h2{font-size:17px;font-weight:700;margin-bottom:10px}
+  .notes ul{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px 18px 14px 34px;font-size:14px;line-height:22px;color:var(--body)}
+  .notes li+li{margin-top:6px}
+  .notes code{font-size:12.5px;background:var(--muted);padding:1px 6px;border-radius:6px}
+</style>
+</head>
+<body class="p-new">
+
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="logo" viewBox="0 0 100 100"><path d="M62.5 8C42.8 8 28 21.6 28 39.2c0 15.4 11.4 26.6 26.4 26.6 4.6 0 8.6-1 11.9-2.9 1.7-1 3.3.9 2.3 2.7C62.2 76.4 51.6 85.6 38.4 92.4l4.9 8.6C67.4 89.4 84 68.6 84 43.5 84 22.6 75.4 8 62.5 8Z"/></symbol>
+  </defs>
+</svg>
+
+<header class="bar">
+  <div>
+    <h1>New colours · app mockups</h1>
+    <p>Landing, Login, Home, Interviewer home and Feed, drawn from today's app screens. Sample data.</p>
+  </div>
+  <div class="swatches">
+    <span class="sw"><i style="background:#B22222"></i>Primary #B22222</span>
+    <span class="sw"><i style="background:#141414"></i>Headings #141414</span>
+    <span class="sw"><i style="background:#2C2C2C"></i>Body #2C2C2C</span>
+    <span class="sw"><i style="background:#FCFCFC"></i>Background #FCFCFC</span>
+    <span class="sw"><i style="background:#E5E5E5"></i>Borders #E5E5E5</span>
+    <span class="sw"><i style="background:#777777"></i>Muted #777777</span>
+  </div>
+  <div class="seg" role="tablist" aria-label="Palette">
+    <button class="on" data-p="new">New · red</button>
+    <button data-p="today">Today · violet</button>
+  </div>
+</header>
+
+<main class="stage">
+
+  <!-- 1 · Landing -->
+  <section class="col">
+    <div class="cap">1 · Landing</div><div class="cap2">WelcomeScreen</div>
+    <div class="phone landing">
+      <i class="orb" style="width:380px;height:380px;right:-140px;top:-90px"></i>
+      <i class="orb" style="width:300px;height:300px;left:-150px;bottom:140px"></i>
+      <div class="status light"><span class="num">9:41</span><span>●●●</span></div>
+      <div class="brand-row">
+        <div class="mark"><svg style="fill:var(--accent)"><use href="#logo"/></svg></div>
+        <span class="word">apostrophe</span>
+      </div>
+      <div class="slide">
+        <div class="art">
+          <div class="film l"><span class="seal"><svg class="i" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span class="lab">Verified interview</span></div>
+          <div class="film r"><span class="seal"><svg class="i" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span class="lab">Verified interview</span></div>
+        </div>
+        <div class="l-title">Beyond resumes.<br>Meet the person.</div>
+        <div class="l-sub">A hiring app built on real, verified video interviews.</div>
+      </div>
+      <div class="dots"><i class="on"></i><i></i><i></i></div>
+      <div class="l-cta">
+        <button class="btn white">Get started</button>
+        <button class="btn ghost">I already have an account</button>
+        <div class="terms">By continuing you agree to our Terms &amp; Privacy Policy</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2 · Login -->
+  <section class="col">
+    <div class="cap">2 · Login</div><div class="cap2">SignInScreen</div>
+    <div class="phone">
+      <div class="status"><span class="num">9:41</span><span>●●●</span></div>
+      <div class="a-top">
+        <button class="back" aria-label="Back"><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M11 18l-6-6 6-6"/></svg></button>
+        <div class="a-brand"><div class="a-mark"><svg style="fill:#fff"><use href="#logo"/></svg></div><span class="a-word">apostrophe</span></div>
+      </div>
+      <div class="a-body">
+        <div class="a-title">Welcome back</div>
+        <div class="a-sub">Log in to your Apostrophe account.</div>
+        <div class="a-seg"><div class="on">Mobile OTP</div><div>Email &amp; password</div></div>
+        <div class="field">
+          <label>Mobile number</label>
+          <div class="box"><span class="pre">+91</span><span class="val num">98765 43210</span><i class="caret"></i></div>
+          <span class="help">We’ll send a 6-digit code by SMS.</span>
+        </div>
+        <div style="margin-top:22px"><button class="btn primary">Send OTP</button></div>
+        <div class="or">or</div>
+        <button class="btn outline">
+          <svg class="g" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
+          Continue with Google
+        </button>
+        <div class="note"><b>Interviewer?</b> Log in with the email and temporary password we sent you. You’ll set a new one the first time. New here? <span class="link">Join us as HR</span></div>
+      </div>
+      <div class="a-foot">New to Apostrophe? <span class="link">Create account</span></div>
+    </div>
+  </section>
+
+  <!-- 3 · Student home -->
+  <section class="col">
+    <div class="cap">3 · Home (student)</div><div class="cap2">PaidHome</div>
+    <div class="phone">
+      <div class="status light over"><span class="num">9:41</span><span>●●●</span></div>
+      <div class="scroll">
+        <div class="h-head">
+          <div class="h-row">
+            <div><div class="h-date">Tuesday, 6 October</div><div class="h-greet">Good evening, Riya</div></div>
+            <div class="h-right"><span class="chip">1 credit</span><span class="round"><svg class="i" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.9A8 8 0 1 1 21 12z"/></svg></span></div>
+          </div>
+        </div>
+        <div class="pad">
+          <div class="card vis">
+            <span class="halo"><i></i></span>
+            <div class="grow"><div class="t1">Live in employer feeds</div><div class="t2 num">24 views · 2 interests</div></div>
+            <span class="toggle"></span>
+          </div>
+          <div class="card" style="margin-top:12px">
+            <div class="c-head"><span class="t1">Your audience</span><span class="link" style="font-size:13.5px">View interests</span></div>
+            <div class="metrics">
+              <div class="metric"><div class="m-n num">24</div><div class="m-l">Profile views</div></div>
+              <div class="metric"><div class="m-n num">3</div><div class="m-l">Shortlisted by employers</div></div>
+              <div class="metric"><div class="m-n num">2</div><div class="m-l">Open interests</div><div class="m-f">Needs reply</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="sec"><h3>Upcoming interview</h3><span class="link" style="font-size:13.5px">View all</span></div>
+        <div class="pad">
+          <div class="ink">
+            <div class="ink-top"><span class="ink-pill">Upcoming</span><span class="ink-until">in 2 days</span></div>
+            <div class="ink-title num">Thu, 8 Oct · 4:30 PM</div>
+            <div class="ink-sub">30-minute interview · IST</div>
+            <div class="ink-actions"><span class="ink-btn g">Reschedule</span><span class="ink-btn w">Details</span></div>
+          </div>
+        </div>
+        <div class="sec"><h3>Your profile</h3></div>
+        <div class="pad">
+          <div class="card film-row">
+            <span class="thumb"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span>
+            <div class="grow"><div class="t1">Video resume</div><div class="t2">From your last interview</div></div>
+            <span class="pill ok">✓ Published</span>
+          </div>
+        </div>
+        <button class="fab"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Book interview</button>
+      </div>
+      <nav class="tabs">
+        <button class="on"><svg class="i" viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>Home</button>
+        <button><svg class="i" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Interviews</button>
+        <button><svg class="i" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Jobs</button>
+        <button><svg class="i" viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8z"/></svg>Interests</button>
+        <button><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Profile</button>
+      </nav>
+    </div>
+  </section>
+
+  <!-- 4 · Interviewer home -->
+  <section class="col">
+    <div class="cap">4 · Interviewer home</div><div class="cap2">InterviewerDashboardScreen</div>
+    <div class="phone">
+      <div class="status"><span class="num">9:41</span><span>●●●</span></div>
+      <div class="iv-bar">
+        <div class="a-brand" style="padding:0"><div class="a-mark"><svg style="fill:#fff"><use href="#logo"/></svg></div><span class="a-word">apostrophe</span></div>
+        <span class="iv-bell"><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg><i></i></span>
+      </div>
+      <div class="scroll">
+        <div class="greet"><h2>Good afternoon</h2><p>Tuesday, 6 October</p></div>
+        <div class="pad">
+          <div class="nx">
+            <div class="nx-top"><span class="nx-lab num">Next · 4:30 PM</span><span class="st-pill">Join locked</span></div>
+            <div class="cd"><b class="num">00:42:10</b><span>to start</span></div>
+            <div class="nm">Aarav S.</div>
+            <div class="nm-l">Tier 1 · Software · English, Hindi</div>
+            <div class="jb locked"><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Join opens in <span class="num">00:32:10</span></div>
+          </div>
+          <div class="grid">
+            <div class="tile"><div class="tile-top"><span class="tchip" style="background:var(--info-soft);color:var(--info)"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg></span><span class="tile-l">Done</span></div><div class="fig num">18</div></div>
+            <div class="tile"><div class="tile-top"><span class="tchip" style="background:var(--ok-soft);color:var(--ok)"><svg class="i" viewBox="0 0 24 24"><path d="M21 12A9 9 0 1 1 12 3v9z"/></svg></span><span class="tile-l">Completion</span></div><div class="fig num" style="color:var(--ok)">94%</div></div>
+            <div class="tile"><div class="tile-top"><span class="tchip" style="background:var(--warn-soft);color:var(--warn)"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><span class="tile-l">On-time</span></div><div class="fig num" style="color:var(--ok)">100%</div></div>
+            <div class="tile"><div class="tile-top"><span class="tchip" style="background:var(--accent-soft);color:var(--accent)"><svg class="i" viewBox="0 0 24 24"><path d="M7 4h11M7 9h11M7 4c6 0 6 9 0 9h0l8 8"/></svg></span><span class="tile-l">October</span></div><div class="fig num" style="font-size:22px">₹4,200</div></div>
+            <div class="tile"><div class="tile-top"><span class="tchip" style="background:var(--accent-soft);color:var(--accent)"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M16 13h2M3 10h18"/></svg></span><span class="tile-l">Wallet</span></div><div class="fig num" style="font-size:22px">₹2,800</div></div>
+            <div class="tile"><div class="tile-top"><span class="tchip" style="background:var(--accent-soft);color:var(--accent)"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></span><span class="tile-l">Open slots</span></div><div class="fig num">6</div></div>
+          </div>
+        </div>
+        <div class="sec" style="padding-top:20px"><h3>Scorecards owed</h3></div>
+        <div class="pad">
+          <div class="card owed">
+            <div class="or-row urgent"><div class="grow"><div class="t1">Neha P.</div><div class="t2">Today · 2:00 PM · Tier 2</div></div><span class="ck num">01:12:40</span></div>
+            <div class="or-row"><div class="grow"><div class="t1">Kabir R.</div><div class="t2">Yesterday · 6:30 PM · Tier 1</div></div><span class="ck num">19:05:12</span></div>
+          </div>
+        </div>
+      </div>
+      <nav class="tabs">
+        <button class="on"><svg class="i" viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>Home</button>
+        <button><svg class="i" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Interviews</button>
+        <button><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Availability</button>
+        <button><svg class="i" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M16 13h2M3 10h18"/></svg>Wallet</button>
+        <button><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Account</button>
+      </nav>
+    </div>
+  </section>
+
+  <!-- 5 · Feed -->
+  <section class="col">
+    <div class="cap">5 · Feed (student jobs)</div><div class="cap2">JobFeedScreen · feed-deck</div>
+    <div class="phone feed">
+      <div class="status light"><span class="num">9:41</span><span>●●●</span></div>
+      <div class="f-top">
+        <div class="f-tabs"><span class="on">For you</span><span>Saved</span><span>Applied</span></div>
+        <div class="f-btns">
+          <span class="f-btn"><svg class="i" viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4"/></svg><em>2</em></span>
+          <span class="f-btn"><svg class="i" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.9A8 8 0 1 1 21 12z"/></svg></span>
+        </div>
+      </div>
+      <div class="f-card">
+        <i class="face"></i><i class="shoulders"></i>
+        <div class="story"><i></i></div>
+        <div class="f-tagrow">
+          <span class="f-tag num">Video pitch · 0:45</span>
+          <span class="f-tag" style="width:30px;padding:0;justify-content:center"><svg class="i" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M11 5L6 9H3v6h3l5 4zM15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg></span>
+        </div>
+        <div class="f-foot">
+          <div class="f-co">
+            <span class="logo">NS</span>
+            <div class="grow"><div class="f-name">Northstar Labs</div><div class="f-posted">Posted 2 days ago</div></div>
+            <span class="up"><svg class="i" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg></span>
+          </div>
+          <div class="f-title">Frontend Developer</div>
+          <div class="f-pills">
+            <span class="fp hl num">₹6–9 LPA</span><span class="fp hl">Full-time</span>
+            <span class="fp dk">React</span><span class="fp dk">TypeScript</span><span class="fp dk">CSS</span>
+          </div>
+          <div class="f-meta"><svg class="i" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>Pune · Hybrid · 0–2 yrs</div>
+        </div>
+        <div class="f-actions">
+          <span class="fa s undo"><svg class="i" viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg></span>
+          <span class="fa l pass"><svg class="i" viewBox="0 0 24 24" style="width:28px;height:28px"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+          <span class="fa l save"><svg class="i" viewBox="0 0 24 24" style="width:27px;height:27px"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8z"/></svg></span>
+          <span class="fa s apply"><svg class="i" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg></span>
+        </div>
+      </div>
+      <nav class="tabs dark">
+        <button><svg class="i" viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>Home</button>
+        <button><svg class="i" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Interviews</button>
+        <button class="on"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Jobs</button>
+        <button><svg class="i" viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8z"/></svg>Interests</button>
+        <button><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Profile</button>
+      </nav>
+    </div>
+  </section>
+</main>
+
+<section class="notes">
+  <h2>How the six colours were applied</h2>
+  <ul>
+    <li><b>#B22222</b> replaces the violet everywhere it is the brand: primary buttons, links, the active tab, the selected segment, the focus ring, the landing and home-header gradients (with a lighter <code>#C83333</code> and a deeper <code>#6B1414</code> derived from it), and the soft tints (<code>#F9EAEA</code>, <code>#FDF5F5</code>).</li>
+    <li><b>#141414</b> is the heading colour and also the dark “ink” for the interview cards, so they become neutral black instead of navy. <b>#2C2C2C</b> is labels and body copy, <b>#777777</b> the muted copy, <b>#E5E5E5</b> every hairline and <b>#FCFCFC</b> the page.</li>
+    <li>Feed: the pink highlight (pay and job-type pills, Pass, the film progress and filter count) becomes the brand red. Green Save and yellow Undo stay as they are.</li>
+    <li>Green (published / live / completion) and amber (warnings) stay as they are.</li>
+    <li><b>Open point:</b> today's error red <code>#C22A30</code> is almost the same as the new primary. Errors and the late-join red card would look like normal buttons. See the urgent scorecard row on screen 4.</li>
+  </ul>
+</section>
+
+<script>
+  const btns = document.querySelectorAll('.seg button')
+  function set(p) {
+    document.body.className = p === 'today' ? 'p-today' : 'p-new'
+    btns.forEach((b) => b.classList.toggle('on', b.dataset.p === p))
+    try { history.replaceState(null, '', p === 'today' ? '?palette=today' : location.pathname) } catch (e) {}
+  }
+  btns.forEach((b) => b.addEventListener('click', () => set(b.dataset.p)))
+  if (new URLSearchParams(location.search).get('palette') === 'today') set('today')
+</script>
+</body>
+</html>

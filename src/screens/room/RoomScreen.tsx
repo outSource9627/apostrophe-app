@@ -1,12 +1,15 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Image, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Svg, { Ellipse, Path, Rect } from 'react-native-svg'
 import { RtcSurfaceView, RenderModeType } from 'react-native-agora'
 import { useRoom } from '../../lib/room/useRoom'
+import { lateJoin, studentLateInput, useLateRules, useTicker } from '../../lib/interviews/late'
+import { OtherBand } from '../../lib/interviews/LateJoin'
+import { fmtTime } from '../../lib/interviews/slots'
 import { LogoMark } from '../../components/Logo'
-import { borderWidth, color, fontFamilyNative as FF, radius } from '../../theme'
-import { Btn } from '../../components/tab/kit'
+import { borderWidth, color, fontFamilyNative as FF, radius, space } from '../../theme'
+import { Btn, ConfirmSheet } from '../../components/tab/kit'
 import { Disc } from '../../components/tab/flow'
 
 /**
@@ -34,6 +37,15 @@ export function RoomScreen({ id, onEnded, onLeft, onReadiness, onBack }: {
   // IR-04 — from a tablet's width the interviewer is a panel beside the portrait pane, not a corner tile.
   const wide = width >= TABLET_MIN_WIDTH
   const room = useRoom(id, { onLeft: onLeft ?? onEnded, onEnded, onReadinessRequired: onReadiness })
+  const [askLeave, setAskLeave] = useState(false)
+  // Waiting in the room: the student is in, so only the interviewer's side is shown — in, or how
+  // late — from the server's yes/no (polled with the interview), never a name (SC-16).
+  const lateRules = useLateRules()
+  const waitNow = useTicker(room.state === 'waiting')
+  const waitLate = room.interview && waitNow
+    ? lateJoin({ ...studentLateInput(room.interview), selfInRoom: true }, lateRules, waitNow)
+    : null
+  const other = waitLate?.phase === 'off' ? null : waitLate?.other ?? null
 
   const audioOnly = room.state === 'audio-only'
   const showGuide = !room.cameraOff && !audioOnly
@@ -68,7 +80,7 @@ export function RoomScreen({ id, onEnded, onLeft, onReadiness, onBack }: {
 
         <View style={styles.topRow}>
           <View style={{ gap: 8 }}>
-            {room.recording && <View style={styles.recChip}><View style={styles.recDot} /><Text style={styles.recText}>REC</Text></View>}
+            {room.recording && <View style={styles.recChip}><View style={styles.recDot} /><Text style={styles.recText}>Rec</Text></View>}
             {room.state === 'live' && <View style={styles.recChip}><Text style={styles.clock}>{fmtElapsed(room.elapsedSec)}</Text></View>}
           </View>
           {!wide && <InterviewerTile name={room.interviewer?.name ?? null} photoUrl={room.interviewer?.photoUrl ?? null} remoteUid={room.remoteVideoOn && !audioOnly ? room.remoteUid : null} />}
@@ -76,8 +88,28 @@ export function RoomScreen({ id, onEnded, onLeft, onReadiness, onBack }: {
 
         {room.state === 'waiting' && (
           <View style={styles.centre}>
-            <Text style={styles.waitTitle}>Waiting for your interviewer</Text>
-            <Text style={styles.waitBody}>They will appear here the moment the session starts.</Text>
+            {other === 'in' ? (
+              <>
+                <Text style={styles.waitTitle}>Starting…</Text>
+                <Text style={styles.waitBody}>Your interviewer is here — the session starts in a moment.</Text>
+              </>
+            ) : (
+              <>
+                <Text style={styles.waitTitle}>Waiting for your interviewer</Text>
+                {waitLate && other ? (
+                  <View style={styles.waitStack}>
+                    <OtherBand j={waitLate} who="Interviewer" />
+                    <Text style={styles.waitBody}>
+                      {other === 'red' && waitLate.closesAt != null
+                        ? `If they haven't joined by ${fmtTime(new Date(waitLate.closesAt).toISOString())}, it's settled as their no-show and you can rebook free, ahead of the queue.`
+                        : 'The clock and the recording start when you are both in.'}
+                    </Text>
+                  </View>
+                ) : (
+                  <Text style={styles.waitBody}>They will appear here the moment the session starts.</Text>
+                )}
+              </>
+            )}
           </View>
         )}
         {room.state === 'reconnecting' && (
@@ -128,10 +160,22 @@ export function RoomScreen({ id, onEnded, onLeft, onReadiness, onBack }: {
           {room.speakerOn ? <><Path d="M11 5 6 9H3v6h3l5 4V5Z" /><Path d="M15.5 8.5a5 5 0 0 1 0 7" /><Path d="M18.5 6a9 9 0 0 1 0 12" /></> : <><Path d="M11 5 6 9H3v6h3l5 4V5Z" /></>}
         </Ctl>
         <View style={[styles.ctl, styles.ctlIdle]} accessibilityLabel="Network quality"><Quality quality={room.quality} /></View>
-        <Pressable accessibilityRole="button" accessibilityLabel="Leave" onPress={room.leave} style={styles.leavePill}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Leave" onPress={() => setAskLeave(true)} style={styles.leavePill}>
           <Text style={styles.leaveText}>Leave</Text>
         </Pressable>
       </View>
+
+      {/* Leaving mid-interview asks first — the same facts the Ended screen states. */}
+      <ConfirmSheet
+        open={askLeave}
+        title="Leave the interview?"
+        body="It keeps running — only your interviewer can end it — and you can rejoin while it is in progress."
+        confirmLabel="Leave"
+        cancelLabel="Stay in the interview"
+        destructive
+        onConfirm={() => { setAskLeave(false); room.leave() }}
+        onClose={() => setAskLeave(false)}
+      />
     </View>
   )
 }
@@ -155,7 +199,7 @@ function InterviewerTile({ name, photoUrl, remoteUid, panel = false }: { name: s
             : name ? <Text style={styles.initials}>{initials}</Text> : <LogoMark size={20} fill={color.ink} />}
         </View>
       )}
-      <Text style={styles.tileEyebrow}>YOUR INTERVIEWER</Text>
+      <Text style={styles.tileEyebrow}>Your interviewer</Text>
       {!!name && <Text style={styles.tileName} numberOfLines={1}>{name}</Text>}
     </View>
   )
@@ -192,12 +236,12 @@ const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.ink },
   stage: { flex: 1, overflow: 'hidden' },
   previewNote: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
-  mono: { fontFamily: FF.monoMedium, fontSize: 10.5, letterSpacing: 0.63, textTransform: 'uppercase' },
+  mono: { fontFamily: FF.bodyMedium, fontSize: 10.5 },
   topRow: { position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', padding: 16 },
   recChip: { flexDirection: 'row', alignItems: 'center', gap: 7, borderRadius: radius.pill, backgroundColor: color.onInkGlass, paddingHorizontal: 12, paddingVertical: 7, alignSelf: 'flex-start' },
   recDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: color.dangerFill },
-  recText: { fontFamily: FF.monoMedium, fontSize: 10.5, letterSpacing: 1.05, color: color.textOnInk },
-  clock: { fontFamily: FF.monoMedium, fontSize: 13, letterSpacing: 0.52, color: color.textOnInk, fontVariant: ['tabular-nums'] },
+  recText: { fontFamily: FF.bodyMedium, fontSize: 10.5, color: color.textOnInk },
+  clock: { fontFamily: FF.bodyMedium, fontSize: 13, color: color.textOnInk, fontVariant: ['tabular-nums'] },
   tile: { width: 112, alignItems: 'center', gap: 4, borderRadius: 18, backgroundColor: color.inkRaised, borderWidth: borderWidth.thin, borderColor: color.onInkEdge, padding: 8 },
   // The interviewer publishes 16:9 (IR-05): draw it 16:9 so nothing is cropped away.
   tileVideo: { width: '100%', aspectRatio: 16 / 9, borderRadius: 8, overflow: 'hidden', backgroundColor: color.onInkGround },
@@ -208,10 +252,11 @@ const styles = StyleSheet.create({
   photo: { width: '100%', height: '100%', borderRadius: 22 },
   plate: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: color.onInkGround },
   initials: { fontFamily: FF.bodySemiBold, fontSize: 15, color: color.textOnInk },
-  tileEyebrow: { fontFamily: FF.monoMedium, fontSize: 9.5, letterSpacing: 0.76, color: color.textOnInkSubtle },
+  tileEyebrow: { fontFamily: FF.bodyMedium, fontSize: 9.5, color: color.textOnInkSubtle },
   tileName: { fontFamily: FF.body, fontSize: 12, color: color.textOnInk, maxWidth: '100%' },
   waitTitle: { fontFamily: FF.bodySemiBold, fontSize: 22, letterSpacing: -0.33, color: color.textOnInk, textAlign: 'center' },
   waitBody: { fontFamily: FF.body, fontSize: 14, lineHeight: 20, color: color.textOnInkBody, textAlign: 'center', marginTop: 8 },
+  waitStack: { alignSelf: 'stretch', alignItems: 'center', gap: space.xs, marginTop: space.md },
   centre: { position: 'absolute', top: '30%', left: 24, right: 24, alignItems: 'center' },
   errorCard: { alignSelf: 'stretch', backgroundColor: color.surface, borderWidth: borderWidth.thin, borderColor: color.border, borderRadius: 18, padding: 20, gap: 10, alignItems: 'center' },
   errorTitle: { fontFamily: FF.bodyBold, fontSize: 20, letterSpacing: -0.4, color: color.text, textAlign: 'center' },
@@ -220,9 +265,9 @@ const styles = StyleSheet.create({
   errorBtn: { height: 38, borderRadius: 12 },
   reconnect: { position: 'absolute', left: 16, right: 16, bottom: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderRadius: radius.pill, backgroundColor: color.onInkGlass, paddingHorizontal: 16, paddingVertical: 9 },
   warnBand: { position: 'absolute', left: 20, right: 20, bottom: 44, alignItems: 'center', borderRadius: radius.pill, backgroundColor: color.onInkGlass, paddingVertical: 9 },
-  glassWarn: { fontFamily: FF.monoMedium, fontSize: 11, letterSpacing: 0.66, textTransform: 'uppercase', color: color.warningFill },
+  glassWarn: { fontFamily: FF.bodyMedium, fontSize: 11, color: color.warningFill, fontVariant: ['tabular-nums'] },
   truth: { position: 'absolute', left: 0, right: 0, bottom: 12, alignItems: 'center' },
-  truthText: { fontFamily: FF.monoMedium, fontSize: 10.5, letterSpacing: 0.63, textTransform: 'uppercase', color: color.textOnInkSubtle, textAlign: 'center' },
+  truthText: { fontFamily: FF.bodyMedium, fontSize: 10.5, color: color.textOnInkSubtle, textAlign: 'center' },
   controls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: color.ink, paddingHorizontal: 20, paddingTop: 18 },
   ctl: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
   ctlIdle: { backgroundColor: color.onInkGround },

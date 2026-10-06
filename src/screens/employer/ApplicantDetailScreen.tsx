@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react'
-import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, Image, Linking, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
@@ -8,12 +8,14 @@ import { Button, Input, text } from '../../components/ui'
 import { Icon } from '../../components/ui/Icon'
 import { EmployerShell } from '../../components/employer'
 import { EmBadge, EmCard, EmChip, EmError, EmLabel, EmMono, EmSheet } from '../../components/employer/em'
+import { DocumentRow, LinkRow, portfolioLinksOf } from '../../components/employer/profile'
 import {
   EMPLOYER_APPLICATION_STATUS_LABEL, fetchApplicationDetail, updateApplicationStatus,
   type ApplicationDetail, type ApplicationStatus,
 } from '../../lib/api/employerJobs'
 import { experienceLine, interviewDate, joinsLine, monthYear, nameInitials, salaryLine } from '../../lib/employer/candidateFormat'
 import { APPLICATION_TONE, istStamp, useJobConfig } from '../../lib/employer/jobs'
+import { useCandidateDocument } from '../../lib/employer/useCandidateDocument'
 import { label } from '../../lib/profile/labels'
 import type { RootStackParamList } from '../../../App'
 
@@ -31,7 +33,8 @@ const REASONS = [
  * EM-21 · one application (Employer Android): the film and the facts, the
  * application status as steps, the profile, and the actions in the foot —
  * Reject (a sheet with the design's reasons), Shortlist, and Open chat once
- * connected.
+ * connected. ST-35: a Résumé button beside Full video when there is one, and
+ * the documents and links they sent, each a 15-minute link.
  *
  * The server's rules, as on the web: opening this marks an Applied application
  * Viewed (the GET does it); an employer can move it to Shortlisted or Rejected
@@ -51,6 +54,7 @@ export function ApplicantDetailScreen() {
   const [notice, setNotice] = useState<string | null>(null)
   const [rejecting, setRejecting] = useState(false)
   const [reason, setReason] = useState('')
+  const docs = useCandidateDocument()
 
   const load = useCallback(async () => {
     setError(null)
@@ -107,12 +111,26 @@ export function ApplicantDetailScreen() {
   const edu = c.education
   const eduTitle = edu ? [edu.qualification ? label(edu.qualification) : null, edu.fieldOfStudy].filter(Boolean).join(', ') : ''
   const eduMeta = edu ? [edu.institution, edu.yearOfCompletion].filter(Boolean).join(' · ') : ''
+  const documents = c.documents ?? []
+  const links = portfolioLinksOf(c.portfolioLinks)
+  const filesLabel = documents.length && links.length ? 'Documents · links' : documents.length ? 'Documents' : 'Links'
+
+  async function openDocument(docId: string) {
+    setNotice(null)
+    const failed = await docs.open(c.id, docId)
+    if (failed) setNotice(failed)
+  }
+
+  function openLink(url: string) {
+    setNotice(null)
+    Linking.openURL(url).catch(() => setNotice('The link did not open. Try again.'))
+  }
 
   return (
     <EmployerShell
       back={() => navigation.goBack()}
       title={c.name}
-      sub={app.job?.title.toUpperCase()}
+      sub={app.job?.title}
       footer={
         c.removed ? undefined : (
           <>
@@ -140,7 +158,21 @@ export function ApplicantDetailScreen() {
           <Text style={[text.uiSm, styles.muted]}>{[c.tier, c.city, experienceLine(c.experienceYears)].filter(Boolean).join(' · ')}</Text>
           {(!!salary || !!joins) && <Text style={[text.uiSm, styles.secondary]}>{[salary, joins ? `joins ${joins.toLowerCase()}` : null].filter(Boolean).join(' · ')}</Text>}
           <EmBadge label={EMPLOYER_APPLICATION_STATUS_LABEL[status]} tone={APPLICATION_TONE[status]} small />
-          <Button variant="outline" size="sm" icon="video" label="Full video" onPress={openFull} style={styles.start} />
+          <View style={styles.headActions}>
+            <Button variant="outline" size="sm" icon="video" label="Full video" onPress={openFull} style={styles.start} />
+            {!!c.resume && (
+              <Button
+                variant="outline"
+                size="sm"
+                icon="download"
+                label="Résumé"
+                accessibilityLabel={`Download ${c.name}’s résumé`}
+                busy={docs.opening === c.resume.id}
+                onPress={() => { if (c.resume) openDocument(c.resume.id) }}
+                style={styles.start}
+              />
+            )}
+          </View>
         </View>
       </View>
 
@@ -148,7 +180,7 @@ export function ApplicantDetailScreen() {
       {!!notice && <Text style={[text.uiSm, styles.danger]}>{notice}</Text>}
 
       <EmCard>
-        <EmMono>APPLICATION STATUS</EmMono>
+        <EmMono>Application status</EmMono>
         <View>
           {STEPS.map((s, i) => {
             const on = s === status
@@ -176,14 +208,14 @@ export function ApplicantDetailScreen() {
 
       {!!app.message && (
         <EmCard>
-          <EmMono>{`${first.toUpperCase()}’S NOTE`}</EmMono>
+          <EmMono>{`${first}’s note`}</EmMono>
           <Text style={[text.uiMd, styles.secondary]}>{app.message}</Text>
         </EmCard>
       )}
 
       {edu && (eduTitle || eduMeta) ? (
         <EmCard>
-          <EmMono>EDUCATION</EmMono>
+          <EmMono>Education</EmMono>
           <View style={styles.line}>
             <Text style={text.uiMdSemi}>{eduTitle || 'Education'}</Text>
             {!!eduMeta && <Text style={[text.uiXs, styles.muted]}>{eduMeta}</Text>}
@@ -192,7 +224,7 @@ export function ApplicantDetailScreen() {
       ) : null}
 
       <EmCard>
-        <EmMono>EXPERIENCE</EmMono>
+        <EmMono>Experience</EmMono>
         {c.experience.length > 0 ? (
           c.experience.map((x, i) => (
             <View key={i} style={styles.line}>
@@ -208,17 +240,27 @@ export function ApplicantDetailScreen() {
 
       {c.skills.length > 0 && (
         <EmCard>
-          <EmMono>SKILLS</EmMono>
+          <EmMono>Skills</EmMono>
           <View style={styles.tags}>
-            {c.skills.map((s) => <View key={s} style={styles.tag}><Text style={[text.metaMd, styles.mono, styles.secondary]}>{s.toUpperCase()}</Text></View>)}
+            {c.skills.map((s) => <View key={s} style={styles.tag}><Text style={[text.metaMd, styles.mono, styles.secondary]}>{s}</Text></View>)}
           </View>
         </EmCard>
       )}
 
       {c.languages.length > 0 && (
         <EmCard>
-          <EmMono>LANGUAGES</EmMono>
+          <EmMono>Languages</EmMono>
           <Text style={text.uiMd}>{c.languages.join(', ')}</Text>
+        </EmCard>
+      )}
+
+      {documents.length + links.length > 0 && (
+        <EmCard>
+          <EmMono>{filesLabel}</EmMono>
+          {documents.map((d) => (
+            <DocumentRow key={d.id} doc={d} opening={docs.opening === d.id} onOpen={(docId) => { openDocument(docId) }} />
+          ))}
+          {links.map((l, i) => <LinkRow key={`${l}-${i}`} url={l} onOpen={openLink} />)}
         </EmCard>
       )}
 
@@ -270,6 +312,7 @@ const styles = StyleSheet.create({
   thumbText: { color: color.textOnInkMuted },
   disc: { position: 'absolute', width: height.chip + 4, height: height.chip + 4, borderRadius: radius.pill, backgroundColor: color.onInkBadge, alignItems: 'center', justifyContent: 'center', paddingLeft: space['2xs'] },
   headText: { flex: 1, minWidth: 0, gap: spaceHalf['1.5'] },
+  headActions: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
 
   step: { flexDirection: 'row', gap: space.md },
   rail: { alignItems: 'center' },

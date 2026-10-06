@@ -6,6 +6,7 @@ import { getConfig, type AppConfig } from '../api/config'
 import {
   getInterviewerMe, listInterviewerInterviews, type InterviewerInterviewDto, type InterviewerMeDto,
 } from '../api/interviewer'
+import { LIVE_POLL_MS } from '../interviews/late'
 
 /**
  * The interviewer's shared reads, one cache for every screen (react-query):
@@ -18,6 +19,9 @@ import {
  * sign-in pages never fire these without a token. A refusal is surfaced as it is:
  * `mustChangePassword` (403 PASSWORD_CHANGE_REQUIRED) and `suspended` are read off
  * the error or the status, never guessed.
+ *
+ * While an interview's join window is open (the server's `roomReady`) the two reads
+ * poll faster, so the late-join warning's "is the student in the room" stays current.
  */
 export const INTERVIEWER_KEY = ['interviewer'] as const
 const FRESH_MS = 5_000
@@ -30,7 +34,7 @@ export function useInterviewerMe(enabled = true) {
     queryKey: [...INTERVIEWER_KEY, 'me'],
     queryFn: getInterviewerMe,
     staleTime: FRESH_MS,
-    refetchInterval: POLL_MS,
+    refetchInterval: (query) => (query.state.data?.nextSession?.roomReady ? LIVE_POLL_MS : POLL_MS),
     retry: false,
     enabled,
   })
@@ -51,7 +55,8 @@ export function useInterviewerInterviews(enabled = true) {
     queryKey: [...INTERVIEWER_KEY, 'interviews'],
     queryFn: listInterviewerInterviews,
     staleTime: FRESH_MS,
-    refetchInterval: POLL_MS,
+    refetchInterval: (query) =>
+      (query.state.data ?? []).some((i) => i.status === 'BOOKED' && i.roomReady) ? LIVE_POLL_MS : POLL_MS,
     retry: false,
     enabled,
   })

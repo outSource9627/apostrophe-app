@@ -1,117 +1,69 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import React, { useEffect, useState } from 'react'
+import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import Svg, { Circle, Path } from 'react-native-svg'
 import {
-  actOnConnection, getConnections, getThread, markThreadRead, reportThread,
-  type ConnectionRow, type MessageDto, type ReportReason, type ThreadDto,
+  actOnConnection, getConnections, getThread, markThreadRead, reportThread, sendMessage,
+  type ConnectionRow, type MessageDto, type ReportReason,
 } from '../../lib/api/chat'
-import { ApiClientError } from '../../lib/api'
-import { ChatSendError, useThreadSocket } from '../../lib/chat/socket'
-import { fmtClock, fmtDayDivider, fmtDayMon, fmtStampZone, newClientMessageId, originLabel, refusalCopy } from '../../lib/chat/format'
-import { color, space, borderWidth, fontFamilyNative as FF } from '../../theme'
-import { Body, EmptyState, Skeleton } from '../../components/ui'
+import { getInterview } from '../../lib/api/interviews'
+import { useChatThread, type ChatThreadSource } from '../../lib/chat/useChatThread'
+import { useChatConfig } from '../../lib/chat/config'
 import {
-  BlockSheet, Bubble, ClosesLine, Composer, CounterpartyPlate, DayDivider,
-  MaskInfoLine, MenuSheet, ReadOnlyFoot, ReconnectingStrip, RecordingPill, ReportSheet, SystemLine, TypingDots,
-} from './parts'
+  firstWord, fmtClock, fmtDayMon, fmtHours, fmtRelDay, fmtRelDayInline, fmtStampZone, originLabel, refusalCopy,
+} from '../../lib/chat/format'
+import { color, height, space } from '../../theme'
+import { Body, Skeleton } from '../../components/ui'
+import {
+  ChatHeader, ChatPlate, ClosesLine, Composer, MaskInfo, ReadOnlyFoot, ReconnectingStrip, RecordingPill, RoundButton,
+  SystemLine, Transcript,
+} from '../../components/chat'
+import { BlockSheet, MenuSheet, ReportSheet } from './parts'
 
-const OPENS_HOURS_BEFORE = 24
-const SYSTEM_TEXT: Record<string, string> = {
-  THREAD_OPENED: 'This chat opened for your interview',
-  THREAD_WITHDRAWN: 'This conversation has been archived.',
-  THREAD_BLOCKED: 'This conversation has been archived.',
-  THREAD_EXPIRED: 'This chat is now read-only.',
-  IDENTITY_REVEALED: 'Your session started',
-}
+const SOURCE: ChatThreadSource = { getPage: getThread, rest: { send: sendMessage, markRead: markThreadRead } }
 
 /**
  * The thread — ST-44 (employer, live), ST-44-closed (withdrawn), ST-45
  * (interviewer, masked) and ST-45-revealed (name shown, recording), one screen
- * driven by `thread.state` + kind + `counterparty.masked`. Sending is the only
- * thing state gates; the transcript reads in every state. The composer is REMOVED
- * (never a dead send arrow) when read-only or archived. Report and Block live in
- * the header menu. A phone number in a message is drawn plainly (CH-12).
+ * driven by `thread.state` + kind + `counterparty.masked`, drawn with the
+ * shared chat pieces (docs/chat-redesign-mockups.html, A). Sending is the only
+ * thing state gates; the transcript reads in every state, and scrolling up
+ * reads further back. The composer is REMOVED (never a dead send arrow) when
+ * read-only or archived. Report and Block live in the header menu, which stays
+ * reachable while the session records. A phone number in a message is drawn
+ * plainly (CH-12). The open / read-only hours are the admin's (`/config`); the
+ * slot time is the interview's own.
  */
 export function ThreadScreen({ id, onBack, onSupport }: { id: string; onBack: () => void; onSupport: () => void }) {
   const insets = useSafeAreaInsets()
   const [now] = useState(() => Date.now())
-  const [thread, setThread] = useState<ThreadDto | null>(null)
+  const chat = useChatThread(id, SOURCE)
+  const cfg = useChatConfig()
   const [conn, setConn] = useState<ConnectionRow | null>(null)
-  const [messages, setMessages] = useState<MessageDto[]>([])
-  const [error, setError] = useState<string | null>(null)
-  const [sendError, setSendError] = useState<string | null>(null)
-  const [text, setText] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [peerTyping, setPeerTyping] = useState(false)
+  const [slotStart, setSlotStart] = useState<string | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
   const [blockOpen, setBlockOpen] = useState(false)
+  const [blockBusy, setBlockBusy] = useState(false)
+  const thread = chat.thread
 
-  const scrollRef = useRef<React.ComponentRef<typeof ScrollView>>(null)
-  const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const peerTypingTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const scrollDown = useCallback(() => { requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: false })) }, [])
+  // The employer line and the archived reasons live on the Connection (re-read after every reload, so a block shows).
+  useEffect(() => {
+    if (thread?.kind !== 'STUDENT_EMPLOYER' || !thread.connectionId) return
+    let alive = true
+    const want = thread.connectionId
+    Promise.all([getConnections('ACTIVE'), getConnections('CLOSED'), getConnections('BLOCKED')])
+      .then(([a, c, b]) => alive && setConn([...a.rows, ...c.rows, ...b.rows].find((r) => r.id === want) ?? null))
+      .catch(() => {})
+    return () => { alive = false }
+  }, [thread])
 
-  const load = useCallback(() => {
-    void getThread(id, { limit: 50 })
-      .then((page) => {
-        setThread(page.thread)
-        setMessages([...page.rows].reverse())
-        scrollDown()
-        if (page.thread.kind === 'STUDENT_EMPLOYER' && page.thread.connectionId) {
-          void Promise.all([getConnections('ACTIVE'), getConnections('CLOSED'), getConnections('BLOCKED')])
-            .then(([a, c, b]) => setConn([...a.rows, ...c.rows, ...b.rows].find((r) => r.id === page.thread.connectionId) ?? null))
-            .catch(() => {})
-        }
-      })
-      .catch((e) => setError(e instanceof Error ? e.message : 'This conversation is not available.'))
-  }, [id, scrollDown])
-  useEffect(load, [load])
-
-  const upsert = useCallback((m: MessageDto) => {
-    setMessages((prev) => {
-      const i = prev.findIndex((x) => x.id === m.id)
-      if (i === -1) return [...prev, m]
-      const next = [...prev]; next[i] = m; return next
-    })
-    scrollDown()
-  }, [scrollDown])
-
-  const sock = useThreadSocket(id, {
-    onMessage: (m) => { upsert(m); sock.markRead() },
-    onRead: () => setMessages((prev) => prev.map((m) => (m.mine && !m.readAt ? { ...m, readAt: new Date().toISOString() } : m))),
-    onTyping: (t) => {
-      setPeerTyping(t.typing)
-      if (peerTypingTimer.current) clearTimeout(peerTypingTimer.current)
-      if (t.typing) peerTypingTimer.current = setTimeout(() => setPeerTyping(false), 4000)
-    },
-  })
-
-  useEffect(() => { if (thread) { sock.markRead(); void markThreadRead(id).catch(() => {}) } }, [thread, id]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  async function submit() {
-    const body = text.trim()
-    if (!body || busy) return
-    const clientMessageId = newClientMessageId()
-    const optimistic: MessageDto = { id: clientMessageId, mine: true, kind: 'TEXT', systemKind: null, body, attachment: null, deliveredAt: null, readAt: null, createdAt: new Date().toISOString() }
-    setMessages((prev) => [...prev, optimistic]); setText(''); setSendError(null); scrollDown()
-    sock.setTyping(false); setBusy(true)
-    try {
-      const { message } = await sock.send({ body, clientMessageId })
-      setMessages((prev) => prev.map((m) => (m.id === clientMessageId ? message : m)))
-    } catch (e) {
-      setMessages((prev) => prev.filter((m) => m.id !== clientMessageId)); setText(body)
-      const reason = e instanceof ChatSendError ? e.reason : e instanceof ApiClientError && typeof e.meta?.reason === 'string' ? e.meta.reason : undefined
-      setSendError(reason ? refusalCopy(reason as never) : e instanceof Error ? e.message : 'That did not send.')
-    } finally { setBusy(false) }
-  }
-
-  function onType(v: string) {
-    setText(v); sock.setTyping(true)
-    if (typingTimer.current) clearTimeout(typingTimer.current)
-    typingTimer.current = setTimeout(() => sock.setTyping(false), 2500)
-  }
+  const interviewId = thread?.kind === 'STUDENT_INTERVIEWER' ? thread.interviewId : null
+  useEffect(() => {
+    if (!interviewId) return
+    let alive = true
+    getInterview(interviewId).then((iv) => alive && setSlotStart(iv.slotStart)).catch(() => {})
+    return () => { alive = false }
+  }, [interviewId])
 
   async function submitReport(reason: ReportReason, note: string) {
     try { await reportThread(id, reason, note || undefined) } catch { /* already reported is fine */ }
@@ -119,31 +71,36 @@ export function ThreadScreen({ id, onBack, onSupport }: { id: string; onBack: ()
   }
   async function confirmBlock() {
     if (!thread?.connectionId) return
-    setBusy(true)
-    try { await actOnConnection(thread.connectionId, 'BLOCK') } catch { /* refetch reflects truth */ } finally { setBusy(false); setBlockOpen(false); load() }
+    setBlockBusy(true)
+    try { await actOnConnection(thread.connectionId, 'BLOCK') } catch { /* the reload reflects the truth */ } finally {
+      setBlockBusy(false); setBlockOpen(false); chat.load()
+    }
   }
 
-  if (error) return <View style={[styles.page, { paddingTop: insets.top }]}><Header onBack={onBack} /><View style={styles.centre}><Body tone="muted">{error}</Body></View></View>
-  if (!thread) return <View style={[styles.page, { paddingTop: insets.top }]}><Header onBack={onBack} /><View style={styles.loading}><Skeleton lines={3} /></View></View>
+  const frame = (body: React.ReactNode) => (
+    <View style={[styles.page, { paddingTop: insets.top }]}>
+      <ChatHeader onBack={onBack} title="Conversation" />
+      {body}
+    </View>
+  )
+  if (!thread && chat.error) return frame(<View style={styles.centre}><Body tone="muted">{chat.error}</Body></View>)
+  if (!thread) return frame(<View style={styles.loading}><Skeleton lines={3} /></View>)
 
   const isInterviewer = thread.kind === 'STUDENT_INTERVIEWER'
   const isEmployer = thread.kind === 'STUDENT_EMPLOYER'
   const masked = isInterviewer && thread.counterparty.masked
   const open = thread.state.open
   const recording = Boolean(isInterviewer && !thread.counterparty.masked && open)
-  const slotStartIso = thread.opensAt ? new Date(+new Date(thread.opensAt) + OPENS_HOURS_BEFORE * 3_600_000).toISOString() : null
   const notYetOpen = thread.state.refusal === 'THREAD_NOT_OPEN'
+  const name = thread.counterparty.name
 
   const subtitle = (() => {
     if (thread.kind === 'USER_ADMIN') return 'Support'
     if (isInterviewer) {
-      if (thread.state.readOnly && !open) return slotStartIso ? `Interview ${fmtDayMon(slotStartIso)} · read-only` : 'Read-only'
+      if (notYetOpen && thread.opensAt) return `Opens ${fmtDayMon(thread.opensAt)}${slotStart ? ` · Interview ${fmtRelDayInline(slotStart, now)} ${fmtClock(slotStart)}` : ''}`
+      if (thread.state.readOnly && !open) return slotStart ? `Interview ${fmtDayMon(slotStart)} · read-only` : 'Read-only'
       if (recording) return 'Your interviewer'
-      if (slotStartIso) {
-        const diff = Math.round((+new Date(slotStartIso) - now) / 86_400_000)
-        const rel = diff <= 0 ? 'Today' : diff === 1 ? 'Tomorrow' : fmtDayMon(slotStartIso)
-        return `${rel}, ${fmtClock(slotStartIso)}`
-      }
+      if (slotStart) return `${fmtRelDay(slotStart, now)}, ${fmtClock(slotStart)}`
       return 'Your interview'
     }
     if (thread.state.archived && conn) return `${conn.status === 'BLOCKED' ? 'Blocked' : 'Withdrawn'}${conn.closedAt ? ` ${fmtDayMon(conn.closedAt)}` : ''}`
@@ -151,17 +108,32 @@ export function ThreadScreen({ id, onBack, onSupport }: { id: string; onBack: ()
     return 'Connected'
   })()
 
-  const groups = groupByDay(messages, now)
-  const closesText = isInterviewer && thread.readOnlyAt && (open || recording)
-    ? `Closes ${fmtStampZone(thread.readOnlyAt)} · 48 hours after your interview` : null
+  const closesText = isInterviewer && thread.readOnlyAt && open
+    ? `Closes ${fmtStampZone(thread.readOnlyAt)}${cfg.readOnlyHoursAfter != null ? ` · ${fmtHours(cfg.readOnlyHoursAfter)} after your interview` : ''}`
+    : null
+  const before = cfg.opensHoursBefore != null ? ` — ${fmtHours(cfg.opensHoursBefore)} before your interview` : ''
 
+  // No bottom inset under the foot: the floating tab bar sits right under it and already clears the home indicator.
   const foot = open ? (
-    <Composer value={text} busy={busy} error={sendError} onChange={onType} onSend={submit} />
+    <Composer
+      value={chat.draft}
+      onChange={chat.onDraft}
+      onSend={chat.sendText}
+      busy={chat.busy}
+      placeholder={masked ? 'Message your interviewer' : thread.kind === 'USER_ADMIN' ? 'Message support' : `Message ${firstWord(name)}`}
+      error={chat.sendError}
+      uploading={chat.uploading}
+      attach={{
+        onPick: (kind) => { chat.attach(kind, kind === 'image' ? cfg.imageMaxBytes : cfg.documentMaxBytes) },
+        imageMaxBytes: cfg.imageMaxBytes, documentMaxBytes: cfg.documentMaxBytes,
+      }}
+    />
   ) : notYetOpen ? (
     <ReadOnlyFoot title={refusalCopy('THREAD_NOT_OPEN')}
-      body={thread.opensAt ? `It opens ${fmtStampZone(thread.opensAt)} — a day before your interview. There is no composer because there is no thread yet, and no name because none has been sent.` : 'This chat opens closer to your interview.'} />
+      body={thread.opensAt ? `It opens ${fmtStampZone(thread.opensAt)}${before}. There is no composer because there is no thread yet, and no name because none has been sent.` : 'This chat opens closer to your interview.'} />
   ) : isInterviewer ? (
-    <ReadOnlyFoot title="Interviewer chats stay open for 48 hours after the session."
+    <ReadOnlyFoot
+      title={cfg.readOnlyHoursAfter != null ? `Interviewer chats stay open for ${fmtHours(cfg.readOnlyHoursAfter)} after the session.` : refusalCopy('THREAD_READ_ONLY')}
       body="Everything above stays and remains searchable. Your written feedback and your film arrive on your profile, not here." />
   ) : thread.state.archived ? (
     <ReadOnlyFoot title={thread.archivedReason === 'BLOCKED' ? 'This connection was blocked.' : `This connection was withdrawn${conn?.closedAt ? ` on ${fmtDayMon(conn.closedAt)}` : ''}.`}
@@ -170,95 +142,59 @@ export function ThreadScreen({ id, onBack, onSupport }: { id: string; onBack: ()
     <ReadOnlyFoot title={refusalCopy(thread.state.refusal)} body="Everything above stays and remains searchable." />
   )
 
+  // The reveal names the interviewer beside their plate; every other system line is the shared pill.
+  const renderSystem = (m: MessageDto) => (m.systemKind === 'IDENTITY_REVEALED' && isInterviewer && !masked
+    ? <SystemLine media={<ChatPlate thread={thread} size={height['chip-sm']} />} label={`Your session started · your interviewer is ${name}`} time={fmtClock(m.createdAt)} />
+    : null)
+
   return (
     <KeyboardAvoidingView style={[styles.page, { paddingTop: insets.top }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={insets.top}>
-      <Header onBack={onBack} plate={<CounterpartyPlate thread={thread} size={38} tinted />} title={thread.counterparty.name} subtitle={subtitle}
-        right={recording ? <RecordingPill /> : <Pressable accessibilityLabel="More" hitSlop={8} onPress={() => setMenuOpen(true)} style={styles.headerBtn}><Dots /></Pressable>} />
-      {!sock.connected && open && <ReconnectingStrip />}
-      {masked && open && <MaskInfoLine />}
-
-      <ScrollView ref={scrollRef} contentContainerStyle={styles.transcript} onContentSizeChange={scrollDown}>
-        {groups.length === 0 && !peerTyping ? (
-          <EmptyState title="No messages yet" body="Nothing has been sent in this conversation yet." />
-        ) : (
+      <ChatHeader
+        onBack={onBack}
+        plate={<ChatPlate thread={thread} size={height['header-avatar']} muted={thread.state.archived} />}
+        title={name}
+        subtitle={subtitle}
+        right={(
           <>
-            {groups.map((g) => (
-              <View key={g.key} style={{ gap: 3 }}>
-                <DayDivider label={g.label} ruled />
-                {g.items.map((m, k) => {
-                  if (m.kind === 'SYSTEM') {
-                    return (
-                      <View key={m.id} style={styles.sysGap}>
-                        {m.systemKind === 'IDENTITY_REVEALED'
-                          ? <SystemLine media={<CounterpartyPlate thread={thread} size={36} />} text={`Your session started · your interviewer is ${thread.counterparty.name}`} time={fmtClock(m.createdAt)} />
-                          : <SystemLine text={SYSTEM_TEXT[m.systemKind ?? ''] ?? 'Update'} time={fmtClock(m.createdAt)} />}
-                      </View>
-                    )
-                  }
-                  const prev = g.items[k - 1], next = g.items[k + 1]
-                  const sameP = !!prev && prev.kind !== 'SYSTEM' && prev.mine === m.mine
-                  const sameN = !!next && next.kind !== 'SYSTEM' && next.mine === m.mine
-                  return (
-                    <View key={m.id} style={sameP ? undefined : styles.runGap}>
-                      <Bubble msg={m} now={now} run={{ first: !sameP, last: !sameN }} />
-                    </View>
-                  )
-                })}
-              </View>
-            ))}
-            {peerTyping && <View style={{ paddingTop: 9 }}><TypingDots /></View>}
+            {recording && <RecordingPill />}
+            <RoundButton icon="more" label="More" onPress={() => setMenuOpen(true)} />
           </>
         )}
-      </ScrollView>
+      />
+      <ReconnectingStrip visible={!chat.connected && open} />
+      {masked && open && (
+        <MaskInfo
+          title="Assigned anonymously · named when your session starts"
+          body="Every student gets the interviewer they would have got anyway. We do not send their name or photo to your phone before the session, so nobody can pick or avoid one."
+        />
+      )}
+
+      <Transcript
+        messages={chat.messages}
+        sending={chat.sending}
+        threadKind={thread.kind}
+        viewer="student"
+        now={now}
+        peerTyping={chat.peerTyping}
+        hasOlder={chat.hasOlder}
+        older={chat.older}
+        onLoadOlder={chat.loadOlder}
+        endSignal={chat.endSignal}
+        renderSystem={renderSystem}
+      />
 
       {!!closesText && <ClosesLine text={closesText} />}
-      <View style={{ paddingBottom: open ? insets.bottom : insets.bottom }}>{foot}</View>
+      {foot}
 
-      <MenuSheet open={menuOpen} name={thread.counterparty.name}
+      <MenuSheet open={menuOpen} name={name}
         canBlock={Boolean(isEmployer && thread.connectionId && thread.archivedReason !== 'BLOCKED')} isInterviewer={isInterviewer}
         onClose={() => setMenuOpen(false)}
         onReport={() => { setMenuOpen(false); setReportOpen(true) }}
         onBlock={() => { setMenuOpen(false); setBlockOpen(true) }}
         onSupport={() => { setMenuOpen(false); onSupport() }} />
-      <ReportSheet open={reportOpen} name={thread.counterparty.name} onClose={() => setReportOpen(false)} onSubmit={submitReport} />
-      <BlockSheet open={blockOpen} name={thread.counterparty.name} busy={busy} onConfirm={confirmBlock} onClose={() => setBlockOpen(false)} />
+      <ReportSheet open={reportOpen} name={name} onClose={() => setReportOpen(false)} onSubmit={submitReport} />
+      <BlockSheet open={blockOpen} name={name} busy={blockBusy} onConfirm={confirmBlock} onClose={() => setBlockOpen(false)} />
     </KeyboardAvoidingView>
-  )
-}
-
-function groupByDay(messages: MessageDto[], now: number) {
-  const out: { key: string; label: string; items: MessageDto[] }[] = []
-  for (const m of messages) {
-    const label = fmtDayDivider(m.createdAt, now)
-    const last = out[out.length - 1]
-    if (last && last.label === label) last.items.push(m)
-    else out.push({ key: `${label}-${m.id}`, label, items: [m] })
-  }
-  return out
-}
-
-function Dots() {
-  return <Svg width={22} height={22} viewBox="0 0 24 24" fill={color.text} stroke={color.text} strokeWidth={1.5}><Circle cx={5} cy={12} r={1.3} /><Circle cx={12} cy={12} r={1.3} /><Circle cx={19} cy={12} r={1.3} /></Svg>
-}
-
-function Header({ onBack, plate, title, subtitle, right }: {
-  onBack: () => void; plate?: React.ReactNode; title?: string; subtitle?: string; right?: React.ReactNode
-}) {
-  return (
-    <View style={styles.header}>
-      <Pressable accessibilityRole="button" accessibilityLabel="Back" hitSlop={8} onPress={onBack} style={styles.back}>
-        <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={color.text} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="m15 18-6-6 6-6" /></Svg>
-      </Pressable>
-      {plate}
-      {!!title && (
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={styles.headTitle} numberOfLines={1}>{title}</Text>
-          {!!subtitle && <Text style={styles.headSub} numberOfLines={1}>{subtitle.toUpperCase()}</Text>}
-        </View>
-      )}
-      {!title && <View style={{ flex: 1 }} />}
-      {right}
-    </View>
   )
 }
 
@@ -266,15 +202,4 @@ const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.background },
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   loading: { padding: space.xl },
-  header: {
-    flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 10, paddingVertical: 10,
-    backgroundColor: color.surface, borderBottomWidth: borderWidth.thin, borderBottomColor: color.border,
-  },
-  back: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', borderWidth: borderWidth.thin, borderColor: color.border },
-  headerBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  headTitle: { fontFamily: FF.bodySemiBold, fontSize: 17, letterSpacing: -0.17, color: color.text },
-  headSub: { fontFamily: FF.monoMedium, fontSize: 10.5, letterSpacing: 0.63, color: color.textSubtle },
-  runGap: { marginTop: 6 },
-  sysGap: { marginVertical: 6 },
-  transcript: { paddingHorizontal: 16, paddingVertical: 14, gap: 3, flexGrow: 1, justifyContent: 'flex-end' },
 })

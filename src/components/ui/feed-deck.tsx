@@ -250,7 +250,7 @@ export function FeedToast({
           hitSlop={space.sm}
           style={({ pressed }) => [styles.toastBtn, (pressed || disabled) && styles.pressed]}
         >
-          <Text style={styles.toastAction}>{action.toUpperCase()}</Text>
+          <Text style={styles.toastAction}>{action}</Text>
         </Pressable>
       )}
     </View>
@@ -374,11 +374,11 @@ export function FeedSheetChips({ items, soft }: { items: string[]; soft?: boolea
   )
 }
 
-/** A section: the mono heading, then whatever it holds. */
+/** A section: the heading, then whatever it holds. */
 export function FeedSheetSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <View>
-      <Text style={styles.secTitle}>{title.toUpperCase()}</Text>
+      <Text style={styles.secTitle}>{title}</Text>
       {children}
     </View>
   )
@@ -561,7 +561,7 @@ const styles = StyleSheet.create({
   stamp: { paddingHorizontal: spaceHalf['4.5'], paddingVertical: spaceHalf['1.5'], borderRadius: radius.tile, borderWidth: borderWidth.stamp, backgroundColor: color.onInkGlass },
   tiltLeft: { transform: [{ rotate: '-15deg' }] },
   tiltRight: { transform: [{ rotate: '15deg' }] },
-  stampText: { fontFamily: FF.monoSemiBold, fontSize: fontSize['meta-otp'], lineHeight: leadingNative['meta-otp'], letterSpacing: trackingNative.widest },
+  stampText: { fontFamily: FF.bodySemiBold, fontSize: fontSize['meta-otp'], lineHeight: leadingNative['meta-otp'], letterSpacing: trackingNative.widest },
 
   actions: { position: 'absolute', left: 0, right: 0, bottom: space.md, zIndex: 4, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', paddingHorizontal: spaceHalf['6'] },
   round: { borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', backgroundColor: color.feedAction, borderWidth: borderWidth.thin, borderColor: color.onInkGround },
@@ -578,7 +578,7 @@ const styles = StyleSheet.create({
   toastMsg: { fontFamily: FF.bodySemiBold, fontSize: fontSize['ui-sm'], lineHeight: leadingNative['ui-sm'], color: color.textOnInk },
   toastNote: { fontFamily: FF.body, fontSize: fontSize['ui-xs'], lineHeight: leadingNative['ui-xs'], color: color.textOnInkMuted },
   toastBtn: { paddingHorizontal: space.xs, paddingVertical: space.xs },
-  toastAction: { fontFamily: FF.monoSemiBold, fontSize: fontSize['ui-sm'], lineHeight: leadingNative['ui-sm'], letterSpacing: trackingNative['meta-snug'], color: color.feedUndo },
+  toastAction: { fontFamily: FF.bodySemiBold, fontSize: fontSize['ui-sm'], lineHeight: leadingNative['ui-sm'], color: color.feedUndo },
 
   top: { width: height['feed-top'], height: height['feed-top'], borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', borderWidth: borderWidth.thin },
   topDark: { backgroundColor: color.onInkGlass, borderColor: color.onInkEdge },
@@ -588,7 +588,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.xs, borderRadius: radius.pill, borderWidth: borderWidth.accent,
     backgroundColor: color.feedPink, alignItems: 'center', justifyContent: 'center',
   },
-  badgeText: { fontFamily: FF.monoSemiBold, fontSize: fontSize['meta-xs'], lineHeight: leadingNative['meta-xs'], color: color.textOnInk },
+  badgeText: { fontFamily: FF.bodySemiBold, fontSize: fontSize['meta-xs'], lineHeight: leadingNative['meta-xs'], fontVariant: ['tabular-nums'], color: color.textOnInk },
 
   grow: { flex: 1, minWidth: 0 },
   shrink: { flexShrink: 1 },
@@ -635,7 +635,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.onInkWash, borderWidth: borderWidth.thin, borderColor: color.onInkHairline,
   },
   factSpacer: { flex: 1 },
-  factKey: { fontFamily: FF.monoMedium, fontSize: fontSize['meta-sm'], lineHeight: leadingNative['meta-sm'], letterSpacing: trackingNative['meta-snug'], color: color.textOnInkSubtle, textTransform: 'uppercase' },
+  factKey: { fontFamily: FF.bodyMedium, fontSize: fontSize['meta-sm'], lineHeight: leadingNative['meta-sm'], color: color.textOnInkSubtle },
   factValue: { fontFamily: FF.bodySemiBold, fontSize: fontSize['ui-md'], lineHeight: leadingNative['ui-md'], color: color.textOnInk, marginTop: space['2xs'] },
   factPink: { color: color.feedPinkSoft },
 
@@ -644,7 +644,7 @@ const styles = StyleSheet.create({
   chipSoft: { backgroundColor: color.onInkWash, borderColor: color.onInkWash },
   chipText: { fontFamily: FF.bodyMedium, fontSize: fontSize['ui-xs'], lineHeight: leadingNative['ui-xs'], color: color.textOnInkSoft },
 
-  secTitle: { fontFamily: FF.monoSemiBold, fontSize: fontSize['meta-md'], lineHeight: leadingNative['meta-md'], letterSpacing: trackingNative['meta-snug'], color: color.textOnInkSubtle, marginBottom: spaceHalf['1.5'] },
+  secTitle: { fontFamily: FF.bodySemiBold, fontSize: fontSize['meta-md'], lineHeight: leadingNative['meta-md'], color: color.textOnInkSubtle, marginBottom: spaceHalf['1.5'] },
   prose: { fontFamily: FF.body, fontSize: fontSize['ui-md'], lineHeight: leadingNative['ui-md'] + space['2xs'], color: color.textOnInkSoft },
   bullets: { gap: spaceHalf['1.5'] },
   bullet: { flexDirection: 'row', gap: spaceHalf['2.5'] },

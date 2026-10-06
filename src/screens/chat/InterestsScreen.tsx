@@ -8,10 +8,10 @@ import { getInterests, respondToInterest, type InterestRow } from '../../lib/api
 import { fmtDayMon, fmtDayMonthLong, interestClock } from '../../lib/chat/format'
 import { employmentLabel } from '../../lib/jobs/format'
 import type { EmploymentType } from '../../lib/api/jobs'
-import { borderWidth, color, fontFamilyNative as FF } from '../../theme'
+import { borderWidth, color, fontFamilyNative as FF, fontSize, leadingNative } from '../../theme'
 import { StatusPill } from '../../components/ui'
 import type { Tone } from '../../components/ui/status'
-import { Btn, GroupLabel, Panel, Skel, StateBlock } from '../../components/tab/kit'
+import { Btn, ConfirmSheet, GroupLabel, Panel, Skel, StateBlock } from '../../components/tab/kit'
 import { InterestClock } from './parts'
 import { LogoTile } from './LogoTile'
 import { ConnectionsBody, useConnectionRows } from './ConnectionsScreen'
@@ -33,6 +33,7 @@ export function InterestsScreen({ onChats, onOpenThread, onBrowseJobs, onVideoRe
   const insets = useSafeAreaInsets()
   const qc = useQueryClient()
   const [now] = useState(() => Date.now())
+  const [declining, setDeclining] = useState<InterestRow | null>(null)
   const q = useQuery({ queryKey: ['interests'], queryFn: () => getInterests() })
   const cfg = useQuery({ queryKey: ['config'], queryFn: () => api.get<{ employer?: { interest?: { cooldownDays?: number; expiryDays?: number } } }>('/config') })
   // Admin settings; 0 or absent means "not stated", so the sentence that would quote it drops the number.
@@ -44,6 +45,7 @@ export function InterestsScreen({ onChats, onOpenThread, onBrowseJobs, onVideoRe
     // NOT IDEMPOTENT — a 404 after a timeout means it probably landed. Refetch either way.
     onSettled: () => qc.invalidateQueries({ queryKey: ['interests'] }),
     onError: (e) => { if (e instanceof ApiClientError && e.status === 404) qc.invalidateQueries({ queryKey: ['interests'] }) },
+    onSuccess: () => setDeclining(null),
   })
 
   const isLive = (r: InterestRow) => r.status === 'SENT' && interestClock(r.sentAt, r.expiresAt, now).reading !== 'spent'
@@ -106,7 +108,7 @@ export function InterestsScreen({ onChats, onOpenThread, onBrowseJobs, onVideoRe
         pending.map((r) => (
           <PendingCard key={r.id} row={r} now={now} busy={busyId === r.id}
             onAccept={() => respond.mutate({ id: r.id, response: 'ACCEPT' })}
-            onDecline={() => respond.mutate({ id: r.id, response: 'DECLINE' })} />
+            onDecline={() => { respond.reset(); setDeclining(r) }} />
         ))
       ) : (
         <View style={styles.stack}>
@@ -122,7 +124,38 @@ export function InterestsScreen({ onChats, onOpenThread, onBrowseJobs, onVideoRe
           <View style={styles.closedCard}>{closedRest.map((r, i) => <ClosedRow key={r.id} row={r} first={i === 0} />)}</View>
         </View>
       )}
+      <DeclineSheet row={declining} cooldownDays={cooldownDays}
+        busy={respond.isPending && respond.variables?.id === declining?.id}
+        error={respond.isError && respond.variables?.id === declining?.id ? 'Nothing was declined. Try again.' : null}
+        onConfirm={() => declining && respond.mutate({ id: declining.id, response: 'DECLINE' })}
+        onClose={() => setDeclining(null)} />
     </>,
+  )
+}
+
+/**
+ * A decline is final — no chat opens, and the employer's clock to write again
+ * starts — so it asks first, saying what the company does and does not see
+ * (the same facts the lapsed card states).
+ */
+function DeclineSheet({ row, cooldownDays, busy, error, onConfirm, onClose }: {
+  row: InterestRow | null; cooldownDays?: number; busy: boolean; error: string | null; onConfirm: () => void; onClose: () => void
+}) {
+  const name = row?.company?.name ?? 'This company'
+  const cooldown = row && cooldownDays ? new Date(+new Date(row.sentAt) + cooldownDays * 86_400_000).toISOString() : null
+  return (
+    <ConfirmSheet
+      open={!!row}
+      title={`Decline ${row?.company?.name ? `${row.company.name}’s` : 'this'} Interest?`}
+      body={`This can’t be undone, and no chat opens. ${name} isn’t told you declined — their list shows only that it was not accepted, the same as if it had lapsed${cooldown ? `, and they can’t send you another Interest until ${fmtDayMonthLong(cooldown)}` : ''}.`}
+      confirmLabel="Decline"
+      cancelLabel="Keep it open"
+      destructive
+      busy={busy}
+      error={error}
+      onConfirm={onConfirm}
+      onClose={onClose}
+    />
   )
 }
 
@@ -133,7 +166,7 @@ function CompanyHead({ row, muted }: { row: InterestRow; muted?: boolean }) {
       <LogoTile name={c?.name} size={44} />
       <View style={styles.grow}>
         <Text style={[styles.company, muted && styles.mutedText]} numberOfLines={1}>{c?.name ?? 'A company'}</Text>
-        {!!c && <Text style={styles.mono}>{[c.industry, c.size, c.officeLocation].filter(Boolean).join(' · ').toUpperCase()}</Text>}
+        {!!c && <Text style={styles.mono}>{[c.industry, c.size, c.officeLocation].filter(Boolean).join(' · ')}</Text>}
       </View>
     </View>
   )
@@ -144,7 +177,7 @@ function RoleWell({ row, muted }: { row: InterestRow; muted?: boolean }) {
   const meta = [row.role.location, row.role.employmentType ? employmentLabel(row.role.employmentType as EmploymentType) : null].filter(Boolean).join(' · ')
   return (
     <View style={[styles.roleWell, muted && styles.roleWellMuted]}>
-      <Text style={styles.monoLabel}>FOR THIS ROLE</Text>
+      <Text style={styles.monoLabel}>For this role</Text>
       <Text style={[styles.roleTitle, muted && styles.mutedText]} numberOfLines={1}>{row.role.title}</Text>
       {!!meta && <Text style={styles.roleMeta}>{meta}</Text>}
     </View>
@@ -195,7 +228,7 @@ function ClosedRow({ row, first }: { row: InterestRow; first: boolean }) {
           <Text style={[styles.company, styles.grow]} numberOfLines={1}>{c?.name ?? 'A company'}</Text>
           <StatusPill tone={pill.tone} label={pill.label} />
         </View>
-        <Text style={styles.mono}>{line.toUpperCase()}</Text>
+        <Text style={styles.mono}>{line}</Text>
         <Text style={styles.note}>{note}</Text>
       </View>
     </View>
@@ -223,7 +256,7 @@ function LapsedCard({ row, cooldownDays }: { row: InterestRow; cooldownDays?: nu
       <RoleWell row={row} muted />
       <View style={styles.rowTop}>
         <StatusPill tone="neutral" label={`Expired ${fmtDayMon(row.respondedAt ?? row.expiresAt)}`} />
-        <Text style={styles.mono}>{`SENT ${fmtDayMon(row.sentAt).toUpperCase()}`}</Text>
+        <Text style={styles.mono}>{`Sent ${fmtDayMon(row.sentAt)}`}</Text>
       </View>
       <Text style={styles.note}>{`${c?.name ?? 'They'} was not told. Their list shows only that it was not accepted — a lapse and a decline are the same thing from their side — ${cooldown ? ` and they may not write to you again until ${fmtDayMonthLong(cooldown)}` : ''}.`}</Text>
     </Panel>
@@ -242,7 +275,7 @@ const styles = StyleSheet.create({
   segBtn: { flex: 1, height: 32, borderRadius: 9, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderWidth: borderWidth.thin, borderColor: 'transparent' },
   segOn: { backgroundColor: color.surface, borderColor: color.border },
   segText: { fontFamily: FF.bodySemiBold, fontSize: 13, color: color.textSubtle },
-  segCount: { fontFamily: FF.monoMedium, fontSize: 10, marginLeft: 3, opacity: 0.7, color: color.textSubtle },
+  segCount: { fontFamily: FF.bodyMedium, fontSize: 10, fontVariant: ['tabular-nums'], marginLeft: 3, opacity: 0.7, color: color.textSubtle },
   segTextOn: { color: color.accent },
   stack: { gap: 12 },
   grow: { flex: 1, minWidth: 0 },
@@ -253,8 +286,8 @@ const styles = StyleSheet.create({
   company: { fontFamily: FF.bodySemiBold, fontSize: 17, letterSpacing: -0.17, color: color.text },
   mutedText: { color: color.textMuted },
   subtleText: { color: color.textSubtle },
-  mono: { fontFamily: FF.monoMedium, fontSize: 10.5, lineHeight: 15, letterSpacing: 0.63, color: color.textSubtle, marginTop: 2 },
-  monoLabel: { fontFamily: FF.monoMedium, fontSize: 10.5, letterSpacing: 1.05, color: color.textMuted },
+  mono: { fontFamily: FF.bodyMedium, fontSize: fontSize['meta-sm'], lineHeight: leadingNative['meta-sm'], color: color.textSubtle, marginTop: 2 },
+  monoLabel: { fontFamily: FF.bodyMedium, fontSize: fontSize['meta-sm'], color: color.textMuted },
   quote: { fontFamily: FF.body, fontSize: 14.5, lineHeight: 21, color: color.textMuted },
   roleWell: { borderRadius: 14, backgroundColor: color.surfaceMuted, paddingHorizontal: 14, paddingVertical: 11, gap: 3 },
   roleWellMuted: { backgroundColor: color.surfaceSunken },
@@ -262,7 +295,7 @@ const styles = StyleSheet.create({
   roleMeta: { fontFamily: FF.body, fontSize: 13, color: color.textMuted },
   actions: { flexDirection: 'row', gap: 8 },
   note: { fontFamily: FF.body, fontSize: 13.5, lineHeight: 19, color: color.textMuted },
-  fine: { fontFamily: FF.monoMedium, fontSize: 10.5, letterSpacing: 0.63, textTransform: 'uppercase', color: color.textSubtle },
+  fine: { fontFamily: FF.bodyMedium, fontSize: fontSize['meta-sm'], color: color.textSubtle },
   emptyTitle: { fontFamily: FF.bodyBold, fontSize: 20, letterSpacing: -0.4, color: color.text },
   closedGroup: { gap: 8, paddingTop: 12 },
   closedCard: { backgroundColor: color.surface, borderRadius: 18, borderWidth: borderWidth.thin, borderColor: color.borderStrong, paddingHorizontal: 14 },

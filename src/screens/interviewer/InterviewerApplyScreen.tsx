@@ -1,27 +1,31 @@
-import React, { useRef, useState } from 'react'
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import React, { useState } from 'react'
+import { ActivityIndicator, Keyboard, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { borderWidth, color, height, opacity, radius, space, spaceHalf } from '../../theme'
-import { Banner, Button, Field, Input, text } from '../../components/ui'
+import { borderWidth, color, fontFamilyNative, fontSize, height, leadingNative, opacity, radius, space, spaceHalf } from '../../theme'
+import { Banner } from '../../components/ui'
 import { Icon } from '../../components/ui/Icon'
-import { IvLabel } from '../../components/interviewer/iv'
-import { EmBar, EmChip, EmDone, EmFoot, EmTitle } from '../../components/employer/em'
+import {
+  AButton, AChips, AField, AInput, APhone, BrandScreen, DropTile, FieldRow, Section, SheetTitle, Swap, useFieldFocus,
+} from '../../components/auth/kit'
+import { useAuthConfig } from '../../components/auth/config'
 import { CONNECTION_DROPPED } from '../employer/EmployerRegisterScreen'
 import { ApiClientError, ErrorCode } from '../../lib/api'
 import { getResumeUploadUrl, submitInterviewerApplication, type InterviewerApplicationInput } from '../../lib/api/interviewer'
 import { pickChatDocument, type ChatFile } from '../../lib/chat/upload'
-import { useAppConfig } from '../../lib/interviewer/useInterviewer'
 import type { RootStackParamList } from '../../../App'
 
 type Key = 'name' | 'email' | 'mobile' | 'city' | 'background' | 'yearsExperience' | 'linkedinUrl' | 'domains' | 'languages' | 'resume'
 type Errs = Partial<Record<Key, string>>
+const ORDER: Key[] = ['name', 'email', 'mobile', 'city', 'background', 'yearsExperience', 'linkedinUrl', 'resume', 'domains', 'languages']
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const MOBILE_RE = /^[6-9]\d{9}$/
 /** contracts/interviewer.ts interviewerApplicationInput — the server's own bounds. */
 const LIMIT = { background: { min: 20, max: 2000 }, years: 60, picks: 12 }
+
+/** The three things that happen after an application, in the order they happen (the mockup's next steps). */
+const NEXT_STEPS = ['A person on our team reads it', 'If we go ahead, we create your account', 'Your sign-in details arrive by email']
 
 /** PUTs the file to the presigned URL the public résumé route hands out. */
 async function uploadResume(file: ChatFile, onProgress: (f: number) => void): Promise<string> {
@@ -57,19 +61,18 @@ async function uploadResume(file: ChatFile, onProgress: (f: number) => void): Pr
 }
 
 /**
- * Apply to interview (no artboard — the drawn screens' language). The body
- * POST /interviewers/apply validates: name, email, mobile, city, background
- * (20+ characters), years, the domains and languages (the same master lists
- * the admin approves against — `config.masterData`), and an optional employer,
- * LinkedIn and résumé (PDF or Word, uploaded before submit). The old screen
- * sent `phone`, `bio`, `domain` and `resumeUrl`, none of which the server
- * reads, so every application came back 400.
+ * Apply to interview, drawn as direction C (docs/registration-mockups.html
+ * ?dir=C&flow=interviewer): About you, Your experience, What you can interview
+ * for, then the "Application received." state. The body POST
+ * /interviewers/apply validates: name, email, mobile, city, background (20+
+ * characters), years, the domains and languages (the same master lists the
+ * admin approves against — `config.masterData`), and an optional employer,
+ * LinkedIn and résumé (PDF or Word, uploaded before submit).
  */
 export function InterviewerApplyScreen() {
-  const insets = useSafeAreaInsets()
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
-  const config = useAppConfig()
-  const scroll = useRef<React.ComponentRef<typeof ScrollView>>(null)
+  const config = useAuthConfig()
+  const ff = useFieldFocus<Key>()
 
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -89,8 +92,11 @@ export function InterviewerApplyScreen() {
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState<string | null>(null)
 
-  const domainOptions = config?.masterData?.domains?.map((d) => d.name) ?? []
-  const languageOptions = config?.masterData?.languages?.map((l) => l.name) ?? []
+  const domainOptions = config.data?.masterData?.domains?.map((d) => d.name) ?? []
+  const languageOptions = config.data?.masterData?.languages?.map((l) => l.name) ?? []
+  const resumeMaxBytes = config.data?.uploads?.RESUME?.maxBytes
+  const resumeRule = resumeMaxBytes ? `PDF or Word · up to ${Math.round(resumeMaxBytes / (1024 * 1024))} MB` : 'PDF or Word'
+
   const clear = (k: Key) => { if (errs[k]) setErrs((x) => ({ ...x, [k]: undefined })) }
   const toggle = (list: string[], set: (v: string[]) => void, v: string, k: Key) => {
     if (list.includes(v)) set(list.filter((x) => x !== v))
@@ -137,6 +143,12 @@ export function InterviewerApplyScreen() {
     return e
   }
 
+  /** The banner at the top of the form, then the first field that needs an answer. */
+  function land(found: Errs) {
+    const first = ORDER.find((k) => found[k])
+    requestAnimationFrame(() => (first ? ff.to(first) : ff.scroller.current?.scrollTo({ y: 0, animated: true })))
+  }
+
   async function submit() {
     if (busy || uploadPct !== null) return
     const e = check()
@@ -144,9 +156,10 @@ export function InterviewerApplyScreen() {
     setError(null)
     if (Object.keys(e).length) {
       setError('Some fields need attention.')
-      scroll.current?.scrollTo({ y: 0, animated: true })
+      land(e)
       return
     }
+    Keyboard.dismiss()
     setBusy(true)
     const body: InterviewerApplicationInput = {
       name: name.trim(),
@@ -167,15 +180,17 @@ export function InterviewerApplyScreen() {
     } catch (err) {
       if (err instanceof ApiClientError && err.code === ErrorCode.VALIDATION && err.fields) {
         const f = err.fields
-        setErrs({
+        const found: Errs = {
           name: f.name, email: f.email, mobile: f.mobile, city: f.city, background: f.background,
           yearsExperience: f.yearsExperience, linkedinUrl: f.linkedinUrl, domains: f.domains, languages: f.languages, resume: f.resumeKey,
-        })
+        }
+        setErrs(found)
         setError('Some fields need attention.')
+        land(found)
       } else {
         setError(err instanceof ApiClientError ? err.message : CONNECTION_DROPPED)
+        requestAnimationFrame(() => ff.scroller.current?.scrollTo({ y: 0, animated: true }))
       }
-      scroll.current?.scrollTo({ y: 0, animated: true })
     } finally {
       setBusy(false)
     }
@@ -183,120 +198,242 @@ export function InterviewerApplyScreen() {
 
   if (done) {
     return (
-      <View style={[styles.page, { paddingTop: insets.top }]}>
-        <EmBar />
-        <View style={styles.centre}>
-          <EmDone
-            icon="check"
-            tone="green"
-            title="Application received."
-            body={done}
-            actions={<View style={styles.grow}><Button variant="secondary" size="lg" full label="Done" onPress={() => navigation.navigate('JoinUs')} /></View>}
-          />
+      <BrandScreen footer={<AButton label="Done" onPress={() => navigation.navigate('JoinUs')} />}>
+        <View style={styles.done}>
+          <View style={styles.doneMark}>
+            <Icon name="check" size={spaceHalf['6'] + spaceHalf['1.5']} tint={color.success} weight={2.4} />
+          </View>
+          <SheetTitle>Application received.</SheetTitle>
+          <Text style={styles.doneBody}>{done}</Text>
+          <View style={styles.steps}>
+            {NEXT_STEPS.map((t, i) => (
+              <View key={t} style={styles.step}>
+                <View style={styles.stepNum}><Text style={styles.stepNumText}>{i + 1}</Text></View>
+                <Text style={styles.stepText}>{t}</Text>
+              </View>
+            ))}
+          </View>
         </View>
-      </View>
+      </BrandScreen>
     )
   }
 
   const chips = (options: string[], list: string[], set: (v: string[]) => void, k: Key) =>
-    config === null ? (
+    config.isPending ? (
       <ActivityIndicator color={color.textSubtle} style={styles.start} />
     ) : options.length === 0 ? (
-      <Text style={[text.uiSm, styles.muted]}>The list didn’t load. Go back and open this page again.</Text>
+      <Text style={styles.muted}>The list didn’t load. Go back and open this page again.</Text>
     ) : (
-      <View style={styles.chips}>
-        {options.map((o) => <EmChip key={o} label={o} on={list.includes(o)} onPress={() => toggle(list, set, o, k)} />)}
-      </View>
+      <AChips
+        options={options.map((o) => ({ value: o, label: o }))}
+        selected={list}
+        invalid={!!errs[k]}
+        onToggle={(o) => toggle(list, set, o, k)}
+      />
     )
 
   return (
-    <KeyboardAvoidingView style={[styles.page, { paddingTop: insets.top }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <EmBar onBack={() => navigation.goBack()} />
-      <ScrollView ref={scroll} style={styles.grow} contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-        <EmTitle eyebrow="Interviewer" title="Apply to interview" sub="We read every application and reply by email." />
-        {!!error && <Banner tone="danger">{error}</Banner>}
+    <BrandScreen
+      title="Apply to interview"
+      sub="We read every application and reply by email."
+      onBack={() => navigation.goBack()}
+      scrollRef={ff.scroller}
+      contentRef={ff.content}
+      footer={
+        <>
+          <AButton
+            busy={busy}
+            disabled={uploadPct !== null}
+            label={uploadPct !== null ? 'Uploading your CV…' : busy ? 'Sending your application…' : 'Submit application'}
+            onPress={() => { submit() }}
+          />
+          <Swap lead="Already an interviewer?" action="Sign in" onPress={() => navigation.navigate('SignIn')} />
+        </>
+      }
+    >
+      {!!error && <View style={styles.banner}><Banner tone="danger">{error}</Banner></View>}
 
-        <IvLabel>ABOUT YOU</IvLabel>
-        <Field label="Full name" error={errs.name}>
-          <Input value={name} onChangeText={(v) => { setName(v); clear('name') }} placeholder="Your name" autoComplete="name" textContentType="name" invalid={!!errs.name} editable={!busy} />
-        </Field>
-        <Field label="Email" helper="We write to you here, and it becomes your sign-in if you’re approved." error={errs.email}>
-          <Input value={email} onChangeText={(v) => { setEmail(v); clear('email') }} placeholder="you@example.com" keyboardType="email-address" autoCapitalize="none" autoCorrect={false} autoComplete="email" textContentType="emailAddress" invalid={!!errs.email} editable={!busy} />
-        </Field>
-        <Field label="Mobile" error={errs.mobile}>
-          <Input value={mobile} onChangeText={(v) => { setMobile(v); clear('mobile') }} placeholder="10-digit mobile" keyboardType="phone-pad" autoComplete="tel" textContentType="telephoneNumber" invalid={!!errs.mobile} editable={!busy} />
-        </Field>
-        <Field label="City" error={errs.city}>
-          <Input value={city} onChangeText={(v) => { setCity(v); clear('city') }} placeholder="Where you live" invalid={!!errs.city} editable={!busy} />
-        </Field>
+      <Section title="About you" first>
+        <AField label="Full name" error={errs.name} anchorRef={ff.anchor('name')}>
+          <AInput
+            icon="user"
+            inputRef={ff.input('name')}
+            value={name}
+            onChangeText={(v) => { setName(v); clear('name') }}
+            placeholder="Your name"
+            autoCapitalize="words"
+            autoComplete="name"
+            textContentType="name"
+            invalid={!!errs.name}
+            editable={!busy}
+          />
+        </AField>
+        <AField
+          label="Email"
+          helper="We write to you here, and it becomes your sign-in if you’re approved."
+          error={errs.email}
+          anchorRef={ff.anchor('email')}
+        >
+          <AInput
+            icon="mail"
+            inputRef={ff.input('email')}
+            value={email}
+            onChangeText={(v) => { setEmail(v); clear('email') }}
+            placeholder="you@example.com"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+            autoComplete="email"
+            textContentType="emailAddress"
+            invalid={!!errs.email}
+            editable={!busy}
+          />
+        </AField>
+        <AField label="Mobile" error={errs.mobile} anchorRef={ff.anchor('mobile')}>
+          <APhone
+            inputRef={ff.input('mobile')}
+            value={mobile}
+            onChangeText={(v) => { setMobile(v.replace(/\D/g, '')); clear('mobile') }}
+            invalid={!!errs.mobile}
+            editable={!busy}
+          />
+        </AField>
+        <AField label="City" error={errs.city} anchorRef={ff.anchor('city')}>
+          <AInput
+            icon="pin"
+            inputRef={ff.input('city')}
+            value={city}
+            onChangeText={(v) => { setCity(v); clear('city') }}
+            placeholder="Where you live"
+            autoCapitalize="words"
+            textContentType="addressCity"
+            maxLength={60}
+            invalid={!!errs.city}
+            editable={!busy}
+          />
+        </AField>
+      </Section>
 
-        <IvLabel style={styles.section}>YOUR EXPERIENCE</IvLabel>
-        <Field label="Your background" helper={`At least ${LIMIT.background.min} characters · ${background.trim().length}/${LIMIT.background.max}`} error={errs.background}>
-          <Input value={background} onChangeText={(v) => { setBackground(v); clear('background') }} maxLength={LIMIT.background.max} multiline textAlignVertical="top" placeholder="Where you have hired, for which roles, and how you run interviews" style={styles.area} invalid={!!errs.background} editable={!busy} />
-        </Field>
-        <Field label="Current employer (optional)">
-          <Input value={employer} onChangeText={setEmployer} placeholder="Where you work now" maxLength={120} editable={!busy} />
-        </Field>
-        <Field label="Years of experience" helper="Whole years, across hiring and HR roles." error={errs.yearsExperience}>
-          <Input value={years} onChangeText={(v) => { setYears(v.replace(/\D/g, '').slice(0, 2)); clear('yearsExperience') }} placeholder="0" keyboardType="number-pad" invalid={!!errs.yearsExperience} editable={!busy} />
-        </Field>
-        <Field label="LinkedIn profile (optional)" error={errs.linkedinUrl}>
-          <Input value={linkedin} onChangeText={(v) => { setLinkedin(v); clear('linkedinUrl') }} placeholder="https://www.linkedin.com/in/your-name" keyboardType="url" autoCapitalize="none" autoCorrect={false} invalid={!!errs.linkedinUrl} editable={!busy} />
-        </Field>
-        <Field label="CV / résumé (optional)" error={errs.resume}>
+      <Section title="Your experience">
+        <AField
+          label="Your background"
+          hint={`${background.trim().length} / ${LIMIT.background.max}`}
+          helper={`At least ${LIMIT.background.min} characters.`}
+          error={errs.background}
+          anchorRef={ff.anchor('background')}
+        >
+          <AInput
+            area
+            inputRef={ff.input('background')}
+            value={background}
+            onChangeText={(v) => { setBackground(v); clear('background') }}
+            maxLength={LIMIT.background.max}
+            placeholder="Where you have hired, for which roles, and how you run interviews"
+            invalid={!!errs.background}
+            editable={!busy}
+          />
+        </AField>
+        <AField label="Current employer" optional>
+          <AInput
+            icon="brief"
+            value={employer}
+            onChangeText={setEmployer}
+            placeholder="Where you work now"
+            autoCapitalize="words"
+            maxLength={120}
+            editable={!busy}
+          />
+        </AField>
+        <FieldRow>
+          <AField label="Years" error={errs.yearsExperience} anchorRef={ff.anchor('yearsExperience')} style={styles.years}>
+            <AInput
+              inputRef={ff.input('yearsExperience')}
+              value={years}
+              onChangeText={(v) => { setYears(v.replace(/\D/g, '').slice(0, 2)); clear('yearsExperience') }}
+              placeholder="0"
+              keyboardType="number-pad"
+              invalid={!!errs.yearsExperience}
+              editable={!busy}
+            />
+          </AField>
+          <AField label="LinkedIn profile" optional error={errs.linkedinUrl} anchorRef={ff.anchor('linkedinUrl')} style={styles.linkedin}>
+            <AInput
+              inputRef={ff.input('linkedinUrl')}
+              value={linkedin}
+              onChangeText={(v) => { setLinkedin(v); clear('linkedinUrl') }}
+              placeholder="https://www.linkedin.com/in/…"
+              keyboardType="url"
+              autoCapitalize="none"
+              autoCorrect={false}
+              invalid={!!errs.linkedinUrl}
+              editable={!busy}
+            />
+          </AField>
+        </FieldRow>
+        <AField label="CV / résumé" optional error={errs.resume} anchorRef={ff.anchor('resume')}>
           {file ? (
-            <View style={styles.file}>
-              <View style={styles.fileMark}><Icon name="file" size={space.lg + 2} tint={color.accent} /></View>
-              <View style={styles.grow}>
-                <Text style={text.uiMdSemi} numberOfLines={1}>{file.name}</Text>
-                <Text style={[text.uiXs, styles.muted]}>{uploadPct !== null ? `Uploading · ${Math.round(uploadPct * 100)}%` : resumeKey ? 'Uploaded' : ''}</Text>
-              </View>
-              {uploadPct === null && (
-                <Pressable accessibilityRole="button" accessibilityLabel="Remove" hitSlop={space.sm} onPress={() => { setFile(null); setResumeKey(null) }} style={({ pressed }) => pressed && styles.pressed}>
-                  <Icon name="x" size={space.lg} tint={color.textMuted} />
-                </Pressable>
-              )}
-            </View>
+            <DropTile
+              glyph="file"
+              title={file.name}
+              sub={uploadPct !== null ? `Uploading · ${Math.round(uploadPct * 100)}%` : resumeKey ? 'Uploaded' : undefined}
+              trailing={
+                uploadPct === null ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Remove"
+                    hitSlop={space.sm}
+                    onPress={() => { setFile(null); setResumeKey(null) }}
+                    style={({ pressed }) => pressed && styles.pressed}
+                  >
+                    <Icon name="x" size={space.lg} tint={color.textMuted} />
+                  </Pressable>
+                ) : null
+              }
+            />
           ) : (
-            <Pressable accessibilityRole="button" onPress={() => { chooseResume() }} disabled={busy} style={({ pressed }) => [styles.file, styles.fileEmpty, pressed && styles.pressed]}>
-              <View style={styles.fileMark}><Icon name="upload" size={space.lg + 2} tint={color.accent} /></View>
-              <View style={styles.grow}>
-                <Text style={text.uiMdSemi}>Choose a file</Text>
-                <Text style={[text.uiXs, styles.muted]}>PDF or Word</Text>
-              </View>
-            </Pressable>
+            <DropTile title="Choose a file" sub={resumeRule} disabled={busy} onPress={() => { chooseResume() }} />
           )}
-        </Field>
+        </AField>
+      </Section>
 
-        <IvLabel style={styles.section}>WHAT YOU CAN INTERVIEW FOR</IvLabel>
-        <Field label="Domains" helper={`Choose one or more · up to ${LIMIT.picks}`} error={errs.domains}>
+      <Section title="What you can interview for" sub={`Choose one or more · up to ${LIMIT.picks} each.`}>
+        <AField label="Domains" error={errs.domains} anchorRef={ff.anchor('domains')}>
           {chips(domainOptions, domains, setDomains, 'domains')}
-        </Field>
-        <Field label="Languages" helper={`Up to ${LIMIT.picks}`} error={errs.languages}>
+        </AField>
+        <AField label="Languages" error={errs.languages} anchorRef={ff.anchor('languages')}>
           {chips(languageOptions, languages, setLanguages, 'languages')}
-        </Field>
-      </ScrollView>
-      <EmFoot>
-        <View style={styles.grow}>
-          <Button variant="primary" size="lg" full busy={busy} disabled={uploadPct !== null} label={uploadPct !== null ? 'Uploading your CV…' : 'Submit application'} onPress={() => { submit() }} />
-        </View>
-      </EmFoot>
-    </KeyboardAvoidingView>
+        </AField>
+      </Section>
+    </BrandScreen>
   )
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: color.background },
-  grow: { flex: 1, minWidth: 0, gap: space['2xs'] },
-  centre: { flex: 1, justifyContent: 'center', paddingHorizontal: space.lg },
-  body: { paddingHorizontal: space.lg, paddingTop: space.xs, paddingBottom: space.xl, gap: spaceHalf['4.5'] },
-  muted: { color: color.textMuted },
+  banner: { marginBottom: space.md },
+  muted: { fontFamily: fontFamilyNative.body, fontSize: fontSize['ui-sm'], color: color.textMuted },
   pressed: { opacity: opacity.pressed },
   start: { alignSelf: 'flex-start' },
-  section: { marginTop: space.sm },
-  area: { height: height['note-field'] + space.xl, paddingTop: space.md },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
-  file: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: spaceHalf['3.5'], borderRadius: radius.panel, backgroundColor: color.surface, borderWidth: borderWidth.thin, borderColor: color.border },
-  fileEmpty: { borderStyle: 'dashed', borderColor: color.borderStrong },
-  fileMark: { width: height.avatar, height: height.avatar, borderRadius: radius.tile, backgroundColor: color.accentSoft, alignItems: 'center', justifyContent: 'center' },
+  years: { flex: 1, minWidth: 0 },
+  linkedin: { flex: 2, minWidth: 0 },
+
+  done: { alignItems: 'center', gap: space.md, paddingTop: space['3xl'] },
+  doneMark: {
+    width: height['deck-action'], height: height['deck-action'], borderRadius: radius.pill,
+    backgroundColor: color.successSoft, alignItems: 'center', justifyContent: 'center',
+  },
+  doneBody: {
+    fontFamily: fontFamilyNative.body, fontSize: fontSize['ui-base'], lineHeight: leadingNative['ui-base'],
+    color: color.textMuted, textAlign: 'center',
+  },
+  steps: {
+    alignSelf: 'stretch', gap: spaceHalf['2.5'], padding: space.lg, marginTop: space.xs,
+    backgroundColor: color.surface, borderRadius: radius['card-lg'], borderWidth: borderWidth.thin, borderColor: color.border,
+  },
+  step: { flexDirection: 'row', alignItems: 'center', gap: spaceHalf['2.5'] },
+  stepNum: {
+    width: height.glyph, height: height.glyph, borderRadius: radius.pill, backgroundColor: color.accentSoft,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  stepNumText: { fontFamily: fontFamilyNative.bodyBold, fontSize: fontSize['ui-xs'], color: color.accentText, fontVariant: ['tabular-nums'] },
+  stepText: { flex: 1, fontFamily: fontFamilyNative.body, fontSize: fontSize['ui-md'], lineHeight: leadingNative['ui-md'], color: color.text },
 })

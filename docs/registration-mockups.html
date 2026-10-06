@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Registration Redesign</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FAFAFC; --surface:#fff; --muted:#F1F3F7; --sunken:#E6E8EE;
+    --text:#0B0F1A; --text2:#3A4256; --text3:#6B7385; --text4:#8A91A2;
+    --border:#E3E6ED; --border-strong:#C9CED9;
+    --accent:#5B3DF5; --accent-text:#4A2FE0; --accent-soft:#EFEBFF; --accent-wash:#F7F6FF; --accent-muted:#C4B8FF; --accent-bright:#7258FF; --accent-deep:#3B2A8F;
+    --ink:#0B0F1A; --on-body:#A6ACBA;
+    --ok:#0B7A55; --ok-fill:#0E9F6E; --ok-soft:#E6F7F0; --warn:#935F00; --warn-soft:#FFF5E1; --danger:#C22A30; --danger-soft:#FDECEC;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Geist',system-ui,sans-serif;background:#E9EAF2;color:var(--text);padding:36px 24px 90px}
+  button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+  svg.i{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+  .num{font-variant-numeric:tabular-nums}
+  .wrap{max-width:1440px;margin:0 auto}
+  .intro{background:var(--surface);border:1px solid var(--border);border-radius:28px;padding:28px 32px;margin-bottom:16px}
+  .intro h1{font-size:30px;letter-spacing:-.035em;line-height:1.1}
+  .intro p{font-size:16px;color:var(--text3);margin-top:8px;line-height:1.5;max-width:1060px}
+  .bar{position:sticky;top:10px;z-index:50;display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px}
+  .seg{display:flex;flex-wrap:wrap;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:22px;padding:4px;box-shadow:0 8px 24px rgba(11,15,26,.08)}
+  .seg button{padding:8px 13px;border-radius:99px;font-size:14px;font-weight:600;color:var(--text3);white-space:nowrap}
+  .seg button.on{background:var(--accent);color:#fff}
+  .seg .lab{font-size:12.5px;font-weight:500;color:var(--text4);padding:9px 6px 0 10px}
+  .dir{background:var(--surface);border:1px solid var(--border);border-radius:28px;padding:24px 26px;margin-bottom:18px}
+  .dir-h{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+  .dir-h b{width:34px;height:34px;border-radius:10px;background:var(--ink);color:#fff;display:grid;place-items:center;font-size:17px;align-self:center}
+  .dir-h h2{font-size:24px;letter-spacing:-.03em}
+  .dir-h span{font-size:15px;color:var(--text3)}
+  .frames{display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start}
+  .cap{font-size:13px;color:var(--text3);margin:0 0 8px 4px}.cap b{color:var(--text);font-weight:600}
+  .phone{width:340px;height:720px;border-radius:40px;border:9px solid #000;overflow:hidden;position:relative;background:var(--bg);display:flex;flex-direction:column}
+  .sbar{height:32px;flex:none;display:flex;justify-content:space-between;align-items:center;padding:0 22px;font-size:13px;font-weight:600}
+  .sbar.on{color:#fff}
+  .scroll{flex:1;min-height:0;overflow:auto}
+  .webwrap{width:calc(1280px*.66);height:calc(820px*.66);flex:none}
+  .web{width:1280px;height:820px;transform:scale(.66);transform-origin:0 0;border-radius:14px;border:1px solid var(--border-strong);overflow:hidden;display:flex;flex-direction:column;background:#fff}
+  .chrome{height:34px;flex:none;background:#F1F3F7;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px;padding:0 12px}
+  .chrome i{width:10px;height:10px;border-radius:99px;background:#D7DAE2}
+  .grow{flex:1;min-width:0}
+  .row{display:flex;align-items:center;gap:10px}
+  .stack{display:grid;gap:14px;grid-template-columns:minmax(0,1fr)}
+  .stack>*{min-width:0}
+  .lbl{font-size:12.5px;font-weight:500;color:var(--text3);line-height:1.35}
+  .t1{font-size:27px;font-weight:700;letter-spacing:-.035em;line-height:1.12}
+  .sub{font-size:14.5px;line-height:1.5;color:var(--text3)}
+  /* fields */
+  .f{display:grid;gap:6px}
+  .f label{display:flex;justify-content:space-between;font-size:14px;font-weight:600;color:var(--text2)}
+  .f label span{font-weight:500;color:var(--text4);font-size:13px}
+  .inp{height:48px;border-radius:12px;border:1.5px solid var(--border);background:#fff;display:flex;align-items:center;gap:8px;padding:0 14px;font-size:15px;color:var(--text4)}
+  .inp.v{color:var(--text)}
+  .inp.focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(91,61,245,.12)}
+  .inp .pre{color:var(--text);font-weight:600;padding-right:8px;border-right:1px solid var(--border)}
+  .inp .icon{color:var(--text4)}
+  .help{font-size:12.5px;line-height:1.4;color:var(--text3)}
+  .err{font-size:12.5px;color:var(--danger)}
+  .tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .tile{border:1.5px solid var(--border);border-radius:14px;padding:10px 12px;background:#fff;display:grid;gap:2px}
+  .tile b{font-size:14.5px;font-weight:600}
+  .tile.on{border-color:var(--accent);background:var(--accent-wash);box-shadow:0 0 0 3px rgba(91,61,245,.1)}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{height:34px;border-radius:99px;border:1.5px solid var(--border);padding:0 12px;display:inline-flex;align-items:center;gap:6px;font-size:13.5px;font-weight:600;color:var(--text2);background:#fff}
+  .chip.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-text)}
+  .check{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;line-height:1.45;color:var(--text2)}
+  .check .bx{width:20px;height:20px;border-radius:6px;background:var(--accent);color:#fff;display:grid;place-items:center;flex:none;margin-top:1px}
+  .check a{color:var(--accent-text);font-weight:600;text-decoration:none}
+  .btn{height:50px;border-radius:14px;font-weight:700;font-size:15.5px;display:flex;align-items:center;justify-content:center;gap:8px;width:100%}
+  .btn.pri{background:var(--accent);color:#fff}.btn.ink{background:var(--ink);color:#fff}.btn.out{border:1.5px solid var(--border-strong);background:#fff}.btn.white{background:#fff;color:var(--accent-deep)}
+  .foot{flex:none;padding:12px 18px 18px;background:#fff;border-top:1px solid var(--border);display:grid;gap:10px}
+  .link{text-align:center;font-size:14px;color:var(--text3)}.link b{color:var(--accent-text)}
+  .card{background:#fff;border:1px solid var(--border);border-radius:18px;padding:16px;display:grid;gap:14px}
+  .sec-h b{font-size:16px;font-weight:700;letter-spacing:-.01em}.sec-h p{font-size:13px;color:var(--text3);margin-top:2px;line-height:1.4}
+  .progress{display:flex;gap:5px}.progress i{flex:1;height:4px;border-radius:99px;background:var(--sunken)}.progress i.d{background:var(--accent)}
+  .otp{display:flex;gap:7px}.otp span{flex:1;height:54px;border-radius:12px;border:1.5px solid var(--border-strong);background:#fff;display:grid;place-items:center;font-size:22px;font-weight:600}
+  .otp span.f{border-color:var(--accent);box-shadow:0 0 0 3px rgba(91,61,245,.12)}
+  .otp span.ok{border-color:var(--ok-fill);background:var(--ok-soft);color:var(--ok)}
+  .pill{display:inline-flex;align-items:center;gap:6px;border-radius:99px;padding:3px 10px;font-size:12.5px;font-weight:600}
+  .pill.ok{background:var(--ok-soft);color:var(--ok)}
+  .tip{background:var(--accent-wash);border:1px solid var(--accent-muted);border-radius:14px;padding:12px 14px;font-size:13.5px;line-height:1.45;color:var(--text2)}
+  .drop{border:1.5px dashed var(--border-strong);border-radius:14px;padding:14px;display:flex;align-items:center;gap:12px;background:#fff}
+  .brand{background:linear-gradient(150deg,#7258FF 0%,#5B3DF5 45%,#3B2A8F 100%);color:#fff;position:relative;overflow:hidden}
+  .brand::after{content:'';position:absolute;width:260px;height:260px;border-radius:99px;background:rgba(255,255,255,.08);right:-80px;top:-90px}
+  .mark{width:30px;height:30px;border-radius:9px;background:#fff;color:var(--accent);display:grid;place-items:center;font-weight:800;font-size:20px}
+  .aside{background:var(--ink);color:#fff;border-radius:22px;padding:26px;display:grid;gap:16px;align-content:start}
+  .aside .n{width:28px;height:28px;border-radius:99px;background:rgba(255,255,255,.1);display:grid;place-items:center;font-size:13px;font-weight:700;flex:none}
+  .aside .n.on{background:var(--accent);}
+  .stepper{display:flex;gap:6px;align-items:center}
+  .stepper span{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--text4)}
+  .stepper span i{width:22px;height:22px;border-radius:99px;background:var(--sunken);display:grid;place-items:center;font-style:normal;font-size:12px}
+  .stepper span.on{color:var(--accent-text)}.stepper span.on i{background:var(--accent);color:#fff}
+  .stepper span.d i{background:var(--ok-fill);color:#fff}
+  .stepper em{width:28px;height:1.5px;background:var(--border-strong)}
+  .notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-top:20px}
+  .note{background:var(--muted);border-radius:18px;padding:16px 18px}
+  .note h4{font-size:13px;font-weight:700;color:var(--accent-text);margin-bottom:8px}
+  .note ul{padding-left:18px;font-size:13.5px;line-height:1.55;color:var(--text2)}
+  .note li{margin-bottom:5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="intro">
+    <h1>Registration — three directions</h1>
+    <p>Student sign-up, employer register and interviewer apply, redrawn three ways in Geist with normal-case labels. Every field, rule and helper is the real one (the server's rules and the admin's lists); prices and lengths are the admin's tier settings. Pick the flow and the direction in the bar. Each shows the app's form, the app's next step, and the web page.</p>
+  </header>
+  <div class="bar"><div class="seg" id="dirs"></div><div class="seg" id="flows"></div></div>
+  <div id="root"></div>
+</div>
+<script>
+const I = (d, s=18)=>`<svg class="i" viewBox="0 0 24 24" style="width:${s}px;height:${s}px">${d}</svg>`
+const IC = { back:'<path d="m15 18-6-6 6-6"/>', user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>', phone:'<rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/>', mail:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>', pin:'<path d="M12 21s7-6 7-12a7 7 0 0 0-14 0c0 6 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/>', lock:'<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>', check:'<path d="M20 6 9 17l-5-5"/>', chev:'<path d="m6 9 6 6 6-6"/>', building:'<path d="M4 21V5l8-3 8 3v16"/><path d="M9 21v-4h6v4M8 9h.01M12 9h.01M16 9h.01M8 13h.01M12 13h.01M16 13h.01"/>', brief:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5h6v2"/>', upload:'<path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v4h16v-4"/>', link:'<path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/>', eye:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>', shield:'<path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/><path d="m9 12 2 2 4-4"/>' }
+const S = { d:'A', f:'student' }
+
+/* ── atoms ── */
+const field = (label, ph, o={})=>`<div class="f"><label>${label}${o.opt?'<span>Optional</span>':''}</label><div class="inp${o.v?' v':''}${o.focus?' focus':''}">${o.icon?`<span class="icon">${I(IC[o.icon])}</span>`:''}${o.pre?`<span class="pre">${o.pre}</span>`:''}<span class="grow">${o.v||ph}</span>${o.end||''}</div>${o.help?`<div class="help">${o.help}</div>`:''}${o.err?`<div class="err">${o.err}</div>`:''}</div>`
+const select = (label, ph, o={})=>field(label, ph, {...o, end:`<span style="color:var(--text4)">${I(IC.chev)}</span>`})
+const pw = (label, ph, o={})=>field(label, ph, {...o, icon:o.icon?'lock':null, end:`<span style="color:var(--text4);font-size:13px;font-weight:600">Show</span>`})
+const tiles = ()=>`<div class="f"><label>Highest qualification</label><div class="tiles">${[['Class 12','₹99 · 20 min'],['Graduation','₹199 · 20 min',1],['Post Graduation','₹299 · 30 min'],['PhD','₹399 · 30 min']].map(([t,p,on])=>`<div class="tile${on?' on':''}"><b>${t}</b><span class="lbl num">${p}</span></div>`).join('')}</div><div class="help">This sets your interview length and what it costs. You pay only when you book.</div></div>`
+const terms = ()=>`<div class="check"><span class="bx">${I(IC.check,14)}</span><span>I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a></span></div>`
+const strength = ()=>`<div class="row" style="gap:4px">${[1,1,1,0].map((on)=>`<i style="flex:1;height:4px;border-radius:99px;background:${on?'var(--ok-fill)':'var(--sunken)'}"></i>`).join('')}</div><div class="help" style="margin-top:-6px">Good — at least 8 characters</div>`
+const chips = (list, on)=>`<div class="chips">${list.map((c)=>`<span class="chip${on.includes(c)?' on':''}">${on.includes(c)?I(IC.check,14):''}${c}</span>`).join('')}</div>`
+const otp = (filled, focusAt, ok)=>`<div class="otp">${[0,1,2,3,4,5].map((i)=>`<span class="num${ok?' ok':i===focusAt?' f':''}">${filled[i]||''}</span>`).join('')}</div>`
+
+/* ── content per flow (real fields, real copy) ── */
+const FLOW = {
+  student:{
+    name:'Student sign-up', title:'Create your account', sub:'Join Apostrophe in a minute.', cta:'Continue',
+    steps:['About you','Your interview','Secure your account'],
+    groups:[
+      { h:'About you', p:'We send a code to your mobile to check it’s yours.', f:()=>[field('Full name','As on your ID',{icon:S.d==='C'?'user':null, v:'Riya Sharma'}), field('Mobile number','98765 43210',{pre:'+91', focus:true, v:'98250 41127'}), field('Email','you@example.com',{opt:true, icon:S.d==='C'?'mail':null, help:'We’ll email a verification link. It won’t hold you up.'})] },
+      { h:'Your interview', p:'Your qualification sets the interview length and fee.', f:()=>[select('City','Select your city',{icon:S.d==='C'?'pin':null, v:'Pune'}), tiles()] },
+      { h:'Secure your account', p:'Use your mobile or email to sign in later.', f:()=>[pw('Password','At least 8 characters',{icon:S.d==='C', v:'••••••••••'}), strength(), pw('Confirm password','Re-enter password',{icon:S.d==='C'}), terms()] },
+    ],
+    next:()=>`<div class="stack"><div><div class="t1">Verify your number</div><p class="sub" style="margin-top:6px">Enter the 6-digit code sent to <b style="color:var(--text)">+91 98250 41127</b> · <b style="color:var(--accent-text)">Edit</b></p></div>
+      ${otp(['4','2','4','2'],4)}<div class="row" style="justify-content:space-between"><span class="lbl num">Resend code in 0:24</span><span class="lbl num">4 of 5 sends left this hour</span></div>
+      <div class="tip"><b>Tip</b> Paste all six digits and we’ll fill them in. This code expires in <span class="num">09:12</span>.</div></div>`,
+    nextCta:'Verify & continue', nextName:'Verify your number',
+    aside:()=>`<div class="lbl" style="color:var(--on-body)">What ₹199 gets you</div>${[['A live 20-minute interview with a verified expert in your domain'],['The edited film, published as your 9:16 video resume'],['A private scorecard with written coaching']].map(([t],i)=>`<div class="row" style="align-items:flex-start;gap:12px"><span class="n">${i+1}</span><span style="font-size:15px;line-height:1.45">${t}</span></div>`).join('')}<div style="height:1px;background:rgba(255,255,255,.12)"></div><div class="lbl" style="color:var(--on-body)">You pay only when you book. Creating an account is free.</div>`,
+    brand:{ h:'Beyond résumés. Meet the person.', p:'A hiring app built on real, verified video interviews.', pts:['One live interview becomes your video resume','Employers watch, shortlist and reach out','Free to create an account'] },
+  },
+  employer:{
+    name:'Employer register', title:'Create your employer account', sub:'Free, with no plan to pick. We verify your company before you see candidates.', cta:'Continue',
+    steps:['The company','You','Secure your account'],
+    groups:[
+      { h:'The company', p:'As on your GST certificate or PAN.', f:()=>[field('Company name','As on your GST certificate or PAN',{icon:S.d==='C'?'building':null, v:'Northwind Traders Pvt Ltd'}), select('Industry','Choose an industry',{v:'Retail'}), `<div class="f"><label>Company size<span>People on the payroll</span></label>${chips(['1–10','11–50','51–200','201–500','501–1,000','1,000+'],['11–50'])}</div>`, field('Website','https://',{opt:true, icon:S.d==='C'?'link':null}), field('Office location','City',{icon:'pin', v:'Pune, Maharashtra'})] },
+      { h:'You, the authorised person', p:'The person who can vouch that this company is real.', f:()=>[`<div class="row" style="gap:10px;align-items:flex-start"><div class="grow">${field('Your name','Full name',{v:'Asha Rao'})}</div><div class="grow">${field('Designation','e.g. HR Manager',{v:'HR Manager'})}</div></div>`, field('Work email','you@yourcompany.in',{icon:S.d==='C'?'mail':null, v:'asha@northwind.in', help:'An address on your company’s domain. A reviewer checks it against your website.'}), field('Mobile number','98765 43210',{pre:'+91', help:'We send a code by SMS.'})] },
+      { h:'Secure your account', p:'At least 10 characters.', f:()=>[pw('Password','At least 10 characters',{icon:S.d==='C', v:'••••••••••••'}), pw('Confirm password','Re-enter password',{icon:S.d==='C'}), terms()] },
+    ],
+    next:()=>`<div class="stack"><div><div class="t1">Check two codes</div><p class="sub" style="margin-top:6px">We sent a 6-digit code to your work email and another to your mobile. Both need to match.</p></div>
+      <div class="card" style="gap:10px"><div class="row"><span style="color:var(--text3)">${I(IC.mail)}</span><div class="grow"><b style="font-size:14.5px">Work email</b><div class="lbl">asha@northwind.in</div></div><span class="pill ok">${I(IC.check,13)}Confirmed</span></div>${otp(['8','1','5','3','0','9'],-1,true)}</div>
+      <div class="card" style="gap:10px"><div class="row"><span style="color:var(--text3)">${I(IC.phone)}</span><div class="grow"><b style="font-size:14.5px">Mobile number</b><div class="lbl num">+91 98000 00003</div></div><b style="color:var(--accent-text);font-size:13.5px">Edit</b></div>${otp(['2','7'],2)}<div class="row" style="justify-content:space-between"><span class="help">Sent by SMS. On most phones it fills in by itself.</span><span class="lbl num">Resend in 0:30</span></div></div>
+      <div class="tip"><b>What happens next?</b> When both are confirmed, we create your account and open your home, where you send two documents to verify the company.</div></div>`,
+    nextCta:'Creating your account…', nextName:'Check two codes',
+    aside:()=>`<div class="lbl" style="color:var(--on-body)">How it works for employers</div>${[['Create your account','Company details and the authorised person.'],['Verify email and mobile','A 6-digit code to each.'],['Submit two documents','GST, CIN or company PAN, plus a photo ID.'],['Get verified','A reviewer decides, usually within 24 hours.'],['Open the feed','Watch verified interviews, shortlist, send Interests.']].map(([t,p],i)=>`<div class="row" style="align-items:flex-start;gap:12px"><span class="n${i===0?' on':''}">${i+1}</span><div><div style="font-size:15px;font-weight:600">${t}</div><div class="lbl" style="color:var(--on-body);margin-top:2px">${p}</div></div></div>`).join('')}<div class="row" style="gap:8px;color:var(--on-body)">${I(IC.shield)}<span class="lbl" style="color:var(--on-body)">Free for employers. No plan, no trial, nothing to upgrade.</span></div>`,
+    brand:{ h:'The first interview has already happened.', p:'Watch verified interviews, shortlist privately and send an Interest.', pts:['Every candidate interviewed live, on film','Shortlist privately, reach out with an Interest','Free for employers'] },
+  },
+  interviewer:{
+    name:'Interviewer apply', title:'Apply to interview', sub:'We read every application and reply by email.', cta:'Submit application',
+    steps:['About you','Your experience','What you can interview for'],
+    groups:[
+      { h:'About you', p:'Use an email and mobile not already on an Apostrophe account.', f:()=>[field('Full name','Your name',{icon:S.d==='C'?'user':null, v:'Arjun Mehta'}), field('Email','you@example.com',{icon:S.d==='C'?'mail':null, help:'We write to you here, and it becomes your sign-in if you’re approved.'}), field('Mobile','98765 43210',{pre:'+91'}), field('City','Where you live',{icon:'pin'})] },
+      { h:'Your experience', p:'Where you have hired, and how you run interviews.', f:()=>[`<div class="f"><label>Your background<span class="num">142 / 2000</span></label><div class="inp v" style="height:96px;align-items:flex-start;padding-top:12px;line-height:1.45">8 years in campus hiring for sales and operations roles. I run structured interviews with a scorecard…</div><div class="help">At least 20 characters.</div></div>`, field('Current employer','Where you work now',{opt:true, icon:S.d==='C'?'brief':null}), `<div class="row" style="gap:10px;align-items:flex-start"><div style="width:110px">${field('Years','0',{v:'8'})}</div><div class="grow">${field('LinkedIn profile','https://www.linkedin.com/in/…',{opt:true})}</div></div>`, `<div class="f"><label>CV / résumé<span>Optional</span></label><div class="drop"><span style="color:var(--accent)">${I(IC.upload,22)}</span><div class="grow"><b style="font-size:14.5px">Choose a file</b><div class="help">PDF or Word · up to 10 MB</div></div></div></div>`] },
+      { h:'What you can interview for', p:'Choose one or more · up to 12 each.', f:()=>[`<div class="f"><label>Domains</label>${chips(['Sales','Operations','Finance','Customer support','Marketing','IT'],['Sales','Operations'])}</div>`, `<div class="f"><label>Languages</label>${chips(['English','Hindi','Marathi','Tamil','Telugu','Bengali'],['English','Hindi'])}</div>`] },
+    ],
+    next:()=>`<div class="stack" style="padding-top:40px;text-align:center;justify-items:center"><span style="width:64px;height:64px;border-radius:99px;background:var(--ok-soft);color:var(--ok);display:grid;place-items:center">${I(IC.check,30)}</span><div class="t1">Application received.</div><p class="sub">Thank you — we read every application and will be in touch by email.</p>
+      <div class="card" style="text-align:left;gap:10px;width:100%">${['A person on our team reads it','If we go ahead, we create your account','Your sign-in details arrive by email'].map((t,i)=>`<div class="row" style="gap:10px"><span style="width:24px;height:24px;border-radius:99px;background:var(--accent-soft);color:var(--accent-text);display:grid;place-items:center;font-size:12px;font-weight:700">${i+1}</span><span style="font-size:14px">${t}</span></div>`).join('')}</div></div>`,
+    nextCta:'Done', nextName:'Application received',
+    aside:()=>`<div class="lbl" style="color:var(--on-body)">From application to your first booking</div>${[['You apply'],['A person screens it'],['We create your account'],['Sign-in details by email'],['You change the password'],['You publish your hours']].map(([t],i)=>`<div class="row" style="gap:12px"><span class="n${i===0?' on':''}">${i+1}</span><span style="font-size:15px;font-weight:600">${t}</span></div>`).join('')}<div class="lbl" style="color:var(--on-body)">An application, not an account. A person reads every one.</div>`,
+    brand:{ h:'Interview students live, on the hours you set.', p:'You run the interview from a question script, write a scorecard, and are paid a fee for each one.', pts:['You set your own hours','A fee per interview, by tier','Paid to your bank from your wallet'] },
+  },
+}
+const F = ()=>FLOW[S.f]
+const signin = ()=>S.f==='interviewer' ? 'Already an interviewer? <b>Sign in</b>' : 'Already have an account? <b>Log in</b>'
+
+/* ── A · guided steps ── */
+const A = {
+  name:'Guided steps', pitch:'One short screen per group, with progress — nothing feels long.',
+  phone(i){ const f = F(), g = f.groups[i]
+    return `<div class="phone"><div class="sbar"><span>9:41</span><span>●●●</span></div>
+      <div style="padding:6px 18px 0" class="stack"><div class="row"><span style="width:40px;height:40px;border-radius:99px;border:1px solid var(--border);display:grid;place-items:center;background:#fff">${I(IC.back,20)}</span><span class="grow"></span><span class="lbl">Step ${i+1} of ${f.groups.length+1}</span></div>
+      <div class="progress">${[...f.groups,0].map((_,k)=>`<i class="${k<=i?'d':''}"></i>`).join('')}</div></div>
+      <div class="scroll" style="padding:18px"><div class="stack"><div><div class="t1">${i===0?f.title:g.h}</div><p class="sub" style="margin-top:6px">${i===0?f.sub:g.p}</p></div>${g.f().join('')}</div></div>
+      <div class="foot"><span class="btn pri">${i===f.groups.length-1?(S.f==='interviewer'?'Submit application':'Continue'):'Continue'}</span>${i===0?`<div class="link">${signin()}</div>`:''}</div></div>` },
+  next(){ const f = F()
+    return `<div class="phone"><div class="sbar"><span>9:41</span><span>●●●</span></div>
+      <div style="padding:6px 18px 0" class="stack"><div class="row"><span style="width:40px;height:40px;border-radius:99px;border:1px solid var(--border);display:grid;place-items:center;background:#fff">${I(IC.back,20)}</span><span class="grow"></span><span class="lbl">${S.f==='interviewer'?'Sent':`Step ${f.groups.length+1} of ${f.groups.length+1}`}</span></div><div class="progress">${[...f.groups,0].map(()=>`<i class="d"></i>`).join('')}</div></div>
+      <div class="scroll" style="padding:18px">${f.next()}</div><div class="foot"><span class="btn pri">${f.nextCta}</span></div></div>` },
+  web(){ const f = F()
+    return `<div class="web"><div class="chrome"><i></i><i></i><i></i></div>
+      <div class="row" style="padding:16px 40px;border-bottom:1px solid var(--border)"><span class="mark" style="background:var(--accent);color:#fff">’</span><b style="font-size:17px">apostrophe</b><span class="grow"></span><span class="lbl" style="font-size:14px">Already have an account?</span><span class="chip">Sign in</span></div>
+      <div style="flex:1;display:grid;place-items:start center;padding:34px 0;background:var(--bg);overflow:hidden"><div style="width:560px" class="stack">
+        <div class="stepper">${[...f.steps, S.f==='interviewer'?'Sent':'Verify'].map((s,k)=>`${k?'<em></em>':''}<span class="${k===0?'d':k===1?'on':''}"><i>${k===0?'✓':k+1}</i>${s}</span>`).join('')}</div>
+        <div class="card" style="padding:28px;gap:16px"><div><div class="t1">${f.groups[1].h}</div><p class="sub" style="margin-top:6px">${f.groups[1].p}</p></div>${f.groups[1].f().join('')}
+          <div class="row" style="gap:10px;margin-top:4px"><span class="btn out" style="width:140px">Back</span><span class="btn pri grow">Continue</span></div></div></div></div></div>` },
+}
+/* ── B · one calm page ── */
+const B = {
+  name:'One calm page', pitch:'Everything on one scroll, in clear cards with a sentence each; the button stays in reach.',
+  phone(i){ const f = F()
+    return `<div class="phone"><div class="sbar"><span>9:41</span><span>●●●</span></div>
+      <div class="scroll" style="padding:8px 16px 16px"><div class="stack"><div class="row"><span style="width:40px;height:40px;border-radius:99px;border:1px solid var(--border);display:grid;place-items:center;background:#fff">${I(IC.back,20)}</span></div><div><div class="t1">${f.title}</div><p class="sub" style="margin-top:6px">${f.sub}</p></div>
+      ${f.groups.map((g)=>`<div class="card"><div class="sec-h"><b>${g.h}</b><p>${g.p}</p></div>${g.f().join('')}</div>`).join('')}</div></div>
+      <div class="foot"><span class="btn ink">${f.cta}</span><div class="link">${signin()}</div></div></div>` },
+  next(){ const f = F()
+    return `<div class="phone"><div class="sbar"><span>9:41</span><span>●●●</span></div><div class="scroll" style="padding:8px 16px 16px"><div class="row" style="margin-bottom:14px"><span style="width:40px;height:40px;border-radius:99px;border:1px solid var(--border);display:grid;place-items:center;background:#fff">${I(IC.back,20)}</span></div>${f.next()}</div><div class="foot"><span class="btn ink">${f.nextCta}</span></div></div>` },
+  web(){ const f = F()
+    return `<div class="web"><div class="chrome"><i></i><i></i><i></i></div>
+      <div class="row" style="padding:16px 40px;border-bottom:1px solid var(--border)"><span class="mark" style="background:var(--accent);color:#fff">’</span><b style="font-size:17px">apostrophe</b><span class="grow"></span><span class="lbl" style="font-size:14px">Already have an account?</span><span class="chip">Sign in</span></div>
+      <div style="flex:1;display:flex;gap:28px;padding:30px 40px;background:var(--bg);overflow:hidden">
+        <div class="grow stack" style="max-width:640px;align-content:start"><div><div class="t1" style="font-size:32px">${f.title}</div><p class="sub" style="margin-top:6px;font-size:16px">${f.sub}</p></div>
+          ${f.groups.slice(0,2).map((g)=>`<div class="card" style="padding:20px"><div class="sec-h"><b>${g.h}</b><p>${g.p}</p></div>${g.f().join('')}</div>`).join('')}</div>
+        <div style="width:400px;flex:none"><div class="aside">${f.aside()}</div></div></div></div>` },
+}
+/* ── C · brand header ── */
+const C = {
+  name:'Brand header', pitch:'A short brand moment on top, then a clean form sheet; on the web, a brand panel beside the form.',
+  phone(i){ const f = F()
+    return `<div class="phone" style="background:#fff"><div class="brand" style="padding:0 0 30px"><div class="sbar on"><span>9:41</span><span>●●●</span></div>
+      <div style="padding:6px 20px 0;position:relative;z-index:1" class="stack"><div class="row"><span class="mark">’</span><b style="font-size:17px">apostrophe</b></div><div><div class="t1" style="color:#fff">${f.title}</div><p class="sub" style="margin-top:6px;color:rgba(255,255,255,.8)">${f.sub}</p></div></div></div>
+      <div class="scroll" style="margin-top:-18px;background:#fff;border-radius:22px 22px 0 0;position:relative;padding:20px 18px"><div class="stack">${f.groups.map((g,k)=>`<div class="stack" style="gap:12px">${k?'<div style="height:1px;background:var(--border)"></div>':''}<div class="sec-h"><b>${g.h}</b></div>${g.f().join('')}</div>`).join('')}</div></div>
+      <div class="foot"><span class="btn pri">${f.cta}</span><div class="link">${signin()}</div></div></div>` },
+  next(){ const f = F()
+    return `<div class="phone" style="background:#fff"><div class="brand" style="padding:0 0 26px"><div class="sbar on"><span>9:41</span><span>●●●</span></div><div style="padding:6px 20px 0;position:relative;z-index:1" class="row"><span class="mark">’</span><b style="font-size:17px">apostrophe</b></div></div>
+      <div class="scroll" style="margin-top:-18px;background:#fff;border-radius:22px 22px 0 0;position:relative;padding:22px 18px">${f.next()}</div><div class="foot"><span class="btn pri">${f.nextCta}</span></div></div>` },
+  web(){ const f = F(), b = f.brand
+    return `<div class="web"><div class="chrome"><i></i><i></i><i></i></div>
+      <div style="flex:1;display:flex;min-height:0">
+        <div class="brand" style="width:44%;padding:44px 48px;display:flex;flex-direction:column;gap:26px"><div class="row" style="position:relative;z-index:1"><span class="mark">’</span><b style="font-size:18px">apostrophe</b></div>
+          <div style="position:relative;z-index:1;margin-top:40px"><div style="font-size:40px;font-weight:700;letter-spacing:-.04em;line-height:1.08">${b.h}</div><p style="font-size:17px;line-height:1.5;color:rgba(255,255,255,.82);margin-top:14px">${b.p}</p></div>
+          <div class="stack" style="position:relative;z-index:1">${b.pts.map((p)=>`<div class="row" style="gap:12px;font-size:16px"><span style="width:28px;height:28px;border-radius:99px;background:rgba(255,255,255,.16);display:grid;place-items:center">${I(IC.check,15)}</span>${p}</div>`).join('')}</div></div>
+        <div class="grow" style="padding:40px 56px;overflow:hidden"><div class="row" style="justify-content:flex-end;margin-bottom:20px"><span class="lbl" style="font-size:14px">Already have an account?</span><span class="chip" style="margin-left:10px">Sign in</span></div>
+          <div class="stack" style="max-width:520px"><div><div class="t1" style="font-size:30px">${f.title}</div><p class="sub" style="margin-top:6px">${f.sub}</p></div>${f.groups[0].f().join('')}<span class="btn pri">${f.cta}</span></div></div></div></div>` },
+}
+const DIRS = { A, B, C }
+
+function render(){
+  const D = DIRS[S.d], f = F()
+  document.getElementById('dirs').innerHTML = `<span class="lab">Direction</span>` + Object.entries(DIRS).map(([k,v])=>`<button class="${S.d===k?'on':''}" data-d="${k}">${k} · ${v.name}</button>`).join('')
+  document.getElementById('flows').innerHTML = `<span class="lab">Flow</span>` + Object.entries(FLOW).map(([k,v])=>`<button class="${S.f===k?'on':''}" data-f="${k}">${v.name}</button>`).join('')
+  const phones = S.d==='A'
+    ? `<div><div class="cap"><b>App</b> · step 1 — ${f.groups[0].h}</div>${D.phone(0)}</div><div><div class="cap"><b>App</b> · step 2 — ${f.groups[1].h}</div>${D.phone(1)}</div><div><div class="cap"><b>App</b> · ${f.nextName}</div>${D.next()}</div>`
+    : `<div><div class="cap"><b>App</b> · the form</div>${D.phone(0)}</div><div><div class="cap"><b>App</b> · ${f.nextName}</div>${D.next()}</div>`
+  document.getElementById('root').innerHTML = `<section class="dir"><div class="dir-h"><b>${S.d}</b><h2>${D.name}</h2><span>${D.pitch}</span></div>
+    <div class="frames">${phones}</div>
+    <div class="cap" style="margin-top:22px"><b>Web</b> · ${f.name.toLowerCase()} page</div><div class="webwrap">${D.web()}</div>
+    <div class="notes">
+      <div class="note"><h4>Same in every direction</h4><ul>
+        <li>Every field, rule, helper and error is today’s, from the server; prices, lengths, cities, industries, domains and languages come from the admin’s settings and lists.</li>
+        <li>Section titles and labels in Geist, normal case (today: “ABOUT YOU”, “SECURE YOUR ACCOUNT” in capitals).</li>
+        <li>“Sign up with Google” is not drawn — it has never worked (no handler, no server support). Terms and Privacy become real links.</li>
+        <li>The app’s code screen reads the code length, expiry and send limits from the server, as the web already does.</li></ul></div>
+      <div class="note"><h4>Decide before building</h4><ul>
+        <li><b>Student:</b> the app asks for a password, confirm password and terms; the web asks for none of them. Drawn with them — say if both should drop them.</li>
+        <li><b>Employer:</b> company first, then you (the web’s order); company size as chips on both; confirm password and terms on both.</li>
+        <li><b>Interviewer:</b> mobile gets the +91 prefix on the app, as everywhere else.</li></ul></div>
+      <div class="note"><h4>Broken today (found while checking)</h4><ul>
+        <li><b>Web interviewer apply never succeeds:</b> the form sends the wrong field names, so the server refuses every application, and the CV upload always fails.</li>
+        <li>Web interviewer apply hard-codes its domain and language lists; fees on the web Join-us page are typed in, not the admin’s.</li>
+        <li>App employer: the error summary and focus order assume company first while the screen shows you first; the code screen shows a Continue that is always disabled.</li>
+        <li>The web’s “Want to hire” on the home page signs employers up through the student form.</li></ul></div>
+    </div></section>`
+}
+document.addEventListener('click', (e)=>{
+  const el = e.target.closest('[data-d],[data-f]'); if (!el) return
+  if (el.dataset.d) S.d = el.dataset.d
+  if (el.dataset.f) S.f = el.dataset.f
+  history.replaceState(null,'',`?dir=${S.d}&flow=${S.f}`)
+  render()
+})
+const q = new URLSearchParams(location.search)
+if (q.get('dir')) S.d = q.get('dir').toUpperCase()
+if (q.get('flow')) S.f = q.get('flow')
+render()
+</script>
+</body>
+</html>

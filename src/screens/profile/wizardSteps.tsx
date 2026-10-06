@@ -1,21 +1,24 @@
-import React from 'react'
+import React, { useRef, useState } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { space } from '../../theme'
-import { Banner, Body, Chip, Eyebrow, Field, FileField, Input, StatusPill } from '../../components/ui'
-import { Panel } from '../../components/tab/kit'
+import { Banner, Body, Chip, Eyebrow, Field, FileField, Input, ProgressBar, StatusPill } from '../../components/ui'
+import { ConfirmSheet, Panel } from '../../components/tab/kit'
+import type { UploadRule } from '../../lib/api/uploads'
+import { label as kindLabel } from '../../lib/profile/labels'
+import { ruleSentence, useProfileUpload, withResume, withoutDocument, type DocEntry } from '../../lib/profile/upload'
 
 /**
  * The six step bodies of the profile wizard — the app half of the web step
  * components. Each takes the same contract: the draft the shell holds, a `patch`
  * that merges into it, the server config for option lists, and the profile for
- * read-back (pending skills, etc.). No step talks to the API — the shell owns
- * saving, so autosave and Continue cannot diverge.
+ * read-back (pending skills, etc.). No step saves — the shell owns saving, so
+ * autosave and Continue cannot diverge.
  *
- * FILE UPLOADS ARE STUBBED. The photo, qualification document and résumé need a
- * native image/document picker (not yet a dependency), so those affordances say
- * what they will take and are wired to `onPick` for when the picker lands. The
- * text and choice fields — which is what completion is mostly weighted on — are
- * real and autosave.
+ * The documents step uploads its own files (ST-35, `lib/profile/upload.ts`, as
+ * the web's FileUpload does) and hands only the storage key back through
+ * `patch`. The photo and the qualification document are STILL STUBBED: their
+ * affordances say what they will take and set a marker nothing reads yet; the
+ * same upload hook can serve them when they are wired.
  */
 export interface Config {
   profile: {
@@ -25,6 +28,8 @@ export interface Config {
     employmentTypes: string[]
   }
   limits: { minSkills: number }
+  /** The server's file rules by upload purpose. Absent on an older backend — then the server alone decides. */
+  uploads?: Record<string, UploadRule>
   masterData: {
     skills: { name: string }[]
     cities: { name: string }[]
@@ -137,7 +142,7 @@ export function EducationStep({ draft, patch, config }: StepProps) {
       <Panel tone="muted" style={styles.proof}>
         <View style={styles.proofHead}>
           <Eyebrow>Proof of qualification</Eyebrow>
-          <StatusPill tone="warning" label="required" />
+          <StatusPill tone="warning" label="Required" />
         </View>
         <Body size="sm" tone="muted">Your interviewer checks this against what you enter. Never shown to employers. PDF, JPG or PNG up to 10 MB.</Body>
         <FileField
@@ -153,8 +158,12 @@ export function EducationStep({ draft, patch, config }: StepProps) {
 
 export function ExperienceStep({ draft, patch }: StepProps) {
   const entries: any[] = draft.experience ?? []
+  // Remove asks first: the shell autosaves the draft, so a stray tap would take the role off the profile.
+  const [removingAt, setRemovingAt] = useState<number | null>(null)
   const setEntry = (i: number, next: Record<string, unknown>) =>
     patch({ experience: entries.map((e, n) => (n === i ? { ...e, ...next } : e)) })
+  const removing = removingAt === null ? null : entries[removingAt]
+  const what = removing ? [removing.role, removing.company].map((v) => String(v ?? '').trim()).filter(Boolean).join(' · ') : ''
   return (
     <View style={styles.stack}>
       <Body size="sm" tone="muted">Internships and part-time work count. This step is optional.</Body>
@@ -162,10 +171,20 @@ export function ExperienceStep({ draft, patch }: StepProps) {
         <Panel key={i} style={styles.entry}>
           <Field label="Company"><Input value={String(e.company ?? '')} onChangeText={(v) => setEntry(i, { company: v })} placeholder="Where you worked" /></Field>
           <Field label="Role"><Input value={String(e.role ?? '')} onChangeText={(v) => setEntry(i, { role: v })} placeholder="What you did" /></Field>
-          <Chip label="Remove" onPress={() => patch({ experience: entries.filter((_, n) => n !== i) })} />
+          <Chip label="Remove" onPress={() => setRemovingAt(i)} />
         </Panel>
       ))}
       <Chip label="Add another role" add onPress={() => patch({ experience: [...entries, {}] })} />
+      <ConfirmSheet
+        open={removingAt !== null}
+        title="Remove this role?"
+        body={`${what || 'It'} comes off your profile.`}
+        confirmLabel="Remove"
+        cancelLabel="Keep it"
+        destructive
+        onConfirm={() => { const at = removingAt; setRemovingAt(null); if (at !== null) patch({ experience: entries.filter((_, n) => n !== at) }) }}
+        onClose={() => setRemovingAt(null)}
+      />
     </View>
   )
 }
@@ -248,23 +267,101 @@ export function PreferencesStep({ draft, patch, config }: StepProps) {
   )
 }
 
-export function DocumentsStep({ draft, patch }: StepProps) {
+/**
+ * ST-35 — optional extras: one résumé, certificates, links to work. A résumé
+ * already on the profile is replaced IN PLACE (the server keeps one and
+ * refuses a second); a certificate is added beside it. The file rules under
+ * each are the server's (`/config` uploads.RESUME / DOCUMENT).
+ */
+export function DocumentsStep({ draft, patch, config }: StepProps) {
   const links: string[] = draft.portfolioLinks ?? []
+  const documents: DocEntry[] = draft.documents ?? []
+  // The upload outlives the render that started it: what it lands in is the list as it is THEN.
+  const latest = useRef(documents)
+  latest.current = documents
+  const upload = useProfileUpload()
+  const [target, setTarget] = useState<'RESUME' | 'CERTIFICATE'>('RESUME')
+  const resume = documents.find((d) => d.kind === 'RESUME') ?? null
+  const others = documents.filter((d) => d.kind !== 'RESUME')
+  const resumeRule = config.uploads?.RESUME
+  const docRule = config.uploads?.DOCUMENT
+
+  const add = async (kind: 'RESUME' | 'CERTIFICATE') => {
+    setTarget(kind)
+    const done = await upload.run(kind === 'RESUME' ? 'RESUME' : 'DOCUMENT', kind === 'RESUME' ? resumeRule : docRule)
+    if (!done) return
+    const entry = { kind, key: done.key, name: done.name }
+    patch({ documents: kind === 'RESUME' ? withResume(latest.current, entry) : [...latest.current, entry] })
+  }
+  // Remove asks first (the shell autosaves); the sheet's Remove takes it off the draft.
+  const [removing, setRemoving] = useState<DocEntry | null>(null)
+  const remove = (key: string) => {
+    upload.setError(null)
+    patch({ documents: withoutDocument(documents, key) })
+  }
+
+  const uploadingHere = (kind: 'RESUME' | 'CERTIFICATE') => upload.uploading && target === kind
+  const progressRow = upload.file ? (
+    <>
+      <FileField filename={upload.file.name} detail={`${(upload.file.size / 1048576).toFixed(1)} MB · uploading`} />
+      <ProgressBar pct={(upload.progress ?? 0) * 100} thin />
+      <View style={styles.chips}><Chip label="Cancel" onPress={upload.cancel} /></View>
+    </>
+  ) : null
+
   return (
     <View style={styles.stack}>
       <Body size="sm" tone="muted">Your résumé and any supporting files. Private, reachable only through a signed link. This step is optional.</Body>
       <Panel tone="muted" style={styles.proof}>
         <Eyebrow>Résumé</Eyebrow>
-        <Body size="sm" tone="muted">PDF, DOC or DOCX.</Body>
-        <FileField onPress={() => patch({ __pickResume: Date.now() })} />
+        <Body size="sm" tone="muted">{ruleSentence(resumeRule)}</Body>
+        {uploadingHere('RESUME') ? progressRow : resume ? (
+          <>
+            <FileField filename={resume.name || fileName(resume.key)} detail={kindLabel(resume.kind)} state="uploaded" />
+            {!upload.uploading && (
+              <View style={styles.chips}>
+                <Chip label="Replace résumé" onPress={() => { add('RESUME') }} />
+                <Chip label="Remove" onPress={() => setRemoving(resume)} />
+              </View>
+            )}
+          </>
+        ) : (
+          <FileField onPress={() => { if (!upload.uploading) add('RESUME') }} />
+        )}
+        {!!upload.error && target === 'RESUME' && <Banner tone="danger">{upload.error}</Banner>}
       </Panel>
+      {others.map((d) => (
+        <View key={d.key} style={styles.group}>
+          <FileField filename={d.name || fileName(d.key)} detail={kindLabel(d.kind)} state="uploaded" />
+          <View style={styles.chips}><Chip label="Remove" onPress={() => setRemoving(d)} /></View>
+        </View>
+      ))}
+      <View style={styles.group}>
+        {uploadingHere('CERTIFICATE') ? progressRow : (
+          !upload.uploading && <View style={styles.chips}><Chip label="Add a certificate" add onPress={() => { add('CERTIFICATE') }} /></View>
+        )}
+        <Body size="sm" tone="muted">{ruleSentence(docRule)}</Body>
+        {!!upload.error && target === 'CERTIFICATE' && <Banner tone="danger">{upload.error}</Banner>}
+      </View>
       <Field label="Portfolio links" helper="A site, a repo, a reel.">
         <ChipRow values={links} onRemove={(i) => patch({ portfolioLinks: links.filter((_, n) => n !== i) })} />
         <Input value="" onSubmitEditing={(e) => { const v = e.nativeEvent.text.trim(); if (v) patch({ portfolioLinks: [...links, v] }) }} placeholder="https://… , press return" autoCapitalize="none" />
       </Field>
+      <ConfirmSheet
+        open={!!removing}
+        title={removing?.kind === 'RESUME' ? 'Remove this résumé?' : 'Remove this file?'}
+        body={removing ? `${removing.name || fileName(removing.key)} comes off your profile.` : undefined}
+        confirmLabel="Remove"
+        cancelLabel="Keep it"
+        destructive
+        onConfirm={() => { const doc = removing; setRemoving(null); if (doc) remove(doc.key) }}
+        onClose={() => setRemoving(null)}
+      />
     </View>
   )
 }
+
+const fileName = (key: string) => key.split('/').pop() ?? key
 
 const styles = StyleSheet.create({
   stack: { gap: space.lg },
@@ -274,5 +371,6 @@ const styles = StyleSheet.create({
   // The mockup's proof panel: muted ground, 18 radius, no visible border.
   proof: { gap: 8, borderColor: 'transparent' },
   proofHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  group: { gap: space.sm },
   entry: { gap: 12 },
 })

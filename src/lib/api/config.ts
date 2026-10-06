@@ -31,6 +31,8 @@ export interface AppConfig {
     noShowMinutesAfter?: number
     /** Cancelling at least this many hours before the slot is refundable. Absent on an older backend. */
     freeCancellationHours?: number
+    /** Late-join warning: a Join card waiting past the start turns red this many minutes in. Absent on an older backend. */
+    lateRedMinutes?: number
   }
   /** Interviewer chats: how long before the interview a thread opens, and how long after it turns read-only. */
   chat?: { opensHoursBefore?: number; readOnlyHoursAfter?: number }
@@ -72,6 +74,8 @@ export interface AppConfig {
   interviewer?: {
     joinOpensMinutesBefore?: number
     noShowMinutesAfter?: number
+    /** Late-join warning: the minute a waiting Join card turns red. Omitted when unseeded. */
+    lateRedMinutes?: number
     scorecardWindowHours?: number
     scorecardReminderHoursBefore?: number
     /** A session shorter than this % of its scheduled length is not completed (and not payable). */

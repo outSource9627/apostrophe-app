@@ -129,7 +129,8 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   counterNumber: {
-    fontFamily: fontFamilyNative.mono,
+    fontFamily: fontFamilyNative.body,
+    fontVariant: ['tabular-nums'],
     fontSize: 28,
     fontWeight: '600',
     color: color.text,

@@ -21,7 +21,7 @@ import {
 } from '../lib/api/uploads'
 import { ApiClientError } from '../lib/api/types'
 import { clock } from '../lib/employer/candidateFormat'
-import { color, fontFamilyNative as FF, height, opacity, radius, space, spaceHalf } from '../theme'
+import { color, fontFamilyNative as FF, fontSize, height, opacity, radius, space, spaceHalf } from '../theme'
 import { Btn, DetailHeader, GroupLabel, Panel, Skel, StateBlock } from '../components/tab/kit'
 import {
   Banner,
@@ -40,6 +40,7 @@ import {
   text,
 } from '../components/ui'
 import { Icon } from '../components/ui/Icon'
+import { FeedVisibilitySheet } from './profile/FeedVisibilitySheet'
 import type { Tone } from '../components/ui'
 
 interface Profile { hiddenFromFeed: boolean }
@@ -141,10 +142,11 @@ export function VideosScreen({ onBack }: { onBack?: () => void }) {
   const config = useQuery({ queryKey: ['config'], queryFn: () => api.get<Config>('/config') })
   const film = useQuery({ queryKey: ['video-resume'], queryFn: () => getVideoResume().catch(() => null) })
 
+  const [askHide, setAskHide] = useState<boolean | null>(null)
   const setVisibility = useMutation({
     mutationFn: (hiddenFromFeed: boolean) =>
       api.patch('/students/me/profile', { hiddenFromFeed }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['profile'] }),
+    onSuccess: () => { setAskHide(null); return qc.invalidateQueries({ queryKey: ['profile'] }) },
   })
   const remove = useMutation({
     mutationFn: (id: string) => deleteSelfVideo(id),
@@ -275,7 +277,7 @@ export function VideosScreen({ onBack }: { onBack?: () => void }) {
         <Text style={styles.rowTitle}>Appear in employer searches</Text>
         <Text style={styles.xs}>Nothing is deleted when this is off.</Text>
       </View>
-      <Toggle on={visible} tone="success" onChange={(next) => setVisibility.mutate(!next)} label="Appear in employer searches" />
+      <Toggle on={visible} tone="success" onChange={setVisibility.isPending ? undefined : (next) => { setVisibility.reset(); setAskHide(!next) }} label="Appear in employer searches" />
     </Panel>
   )
 
@@ -346,7 +348,7 @@ export function VideosScreen({ onBack }: { onBack?: () => void }) {
         ) : (
           <>
             <View style={styles.head}>
-              <Text style={styles.eyebrow}>YOUR OWN RECORDINGS · {list.length} OF {max}</Text>
+              <Text style={styles.eyebrow}>Your own recordings · {list.length} of {max}</Text>
               <Text style={styles.h1}>Say a bit more.</Text>
               <Text style={styles.sub}>{intro}</Text>
             </View>
@@ -418,6 +420,14 @@ export function VideosScreen({ onBack }: { onBack?: () => void }) {
         error={edit.isError ? errorText(edit.error, 'The video could not be saved. Try again.') : null}
         onClose={() => setEditing(null)}
         onSave={(title, nextKind) => editing && edit.mutate({ id: editing.id, title, kind: nextKind })}
+      />
+
+      <FeedVisibilitySheet
+        hide={askHide}
+        busy={setVisibility.isPending}
+        error={setVisibility.isError ? 'Could not change your visibility. Nothing was changed. Try again.' : null}
+        onConfirm={(hide) => setVisibility.mutate(hide)}
+        onClose={() => setAskHide(null)}
       />
 
       <Sheet open={!!removing} onClose={() => setRemoving(null)} title="Remove this video?">
@@ -615,7 +625,7 @@ function SelfVideoPlayer({
         <View style={styles.stageHead}>
           <View style={styles.stageTitle}>
             <Text style={[text.uiLeadSemi, styles.onInk]} numberOfLines={1}>{video ? nameOf(video) : ''}</Text>
-            <Text style={[text.metaSm, styles.onInkMuted]}>SELF-RECORDED · NOT VERIFIED</Text>
+            <Text style={[text.metaSm, styles.onInkMuted]}>Self-recorded · not verified</Text>
           </View>
           <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={onClose} style={({ pressed }) => [styles.close, pressed && { opacity: opacity.pressed }]}>
             <Icon name="x" size={spaceHalf['4.5']} tint={color.textOnInk} weight={2} />
@@ -668,7 +678,7 @@ const styles = StyleSheet.create({
   scroll: { paddingTop: 0 },
   pad: { paddingHorizontal: 20 },
   head: { paddingHorizontal: 24, paddingTop: 8, paddingBottom: 14, gap: 6 },
-  eyebrow: { fontFamily: FF.monoMedium, fontSize: 11, letterSpacing: 1.54, textTransform: 'uppercase', color: color.textMuted },
+  eyebrow: { fontFamily: FF.bodyMedium, fontSize: fontSize['meta-md'], fontVariant: ['tabular-nums'], color: color.textMuted },
   h1: { fontFamily: FF.bodyBold, fontSize: 30, lineHeight: 32, letterSpacing: -1.2, color: color.text },
   sub: { fontFamily: FF.body, fontSize: 14, lineHeight: 20, color: color.textMuted },
   xs: { fontFamily: FF.body, fontSize: 13, lineHeight: 18, color: color.textMuted },
@@ -698,7 +708,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', paddingLeft: 2,
   },
   len: { position: 'absolute', right: 6, bottom: 6, borderRadius: 99, paddingHorizontal: 7, paddingVertical: 3, backgroundColor: 'rgba(11,15,26,0.7)' },
-  lenText: { fontFamily: FF.monoMedium, fontSize: 10, color: color.textInverse },
+  lenText: { fontFamily: FF.bodyMedium, fontSize: 10, fontVariant: ['tabular-nums'], color: color.textInverse },
   tileText: { gap: 5, alignItems: 'flex-start' },
   tileName: { fontFamily: FF.bodyBold, fontSize: 15.5, lineHeight: 19, letterSpacing: -0.155, color: color.text },
   tileActions: { flexDirection: 'row', gap: 6 },
@@ -712,7 +722,7 @@ const styles = StyleSheet.create({
   },
   addDisc: { width: 44, height: 44, borderRadius: 22, backgroundColor: color.accentSoft, alignItems: 'center', justifyContent: 'center' },
   addTitle: { fontFamily: FF.bodyBold, fontSize: 15, lineHeight: 19, color: color.text, textAlign: 'center' },
-  addPct: { fontFamily: FF.monoMedium, fontSize: 20, color: color.text },
+  addPct: { fontFamily: FF.bodyMedium, fontSize: 20, fontVariant: ['tabular-nums'], color: color.text },
   addBar: { width: '80%' },
   sheetHead: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   sheetTitle: { flex: 1, fontFamily: FF.bodyBold, fontSize: 21, letterSpacing: -0.63, color: color.text },
@@ -723,7 +733,7 @@ const styles = StyleSheet.create({
   kinds: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   progress: { gap: 10 },
   progressHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  pct: { fontFamily: FF.monoMedium, fontSize: 11, letterSpacing: 1.54, color: color.text },
+  pct: { fontFamily: FF.bodyMedium, fontSize: 11, fontVariant: ['tabular-nums'], color: color.text },
   cancel: { alignSelf: 'flex-start', height: 40, borderRadius: 12, paddingHorizontal: 14 },
   pick: { height: 52 },
   rule: { fontFamily: FF.body, fontSize: 13, lineHeight: 18, color: color.textSubtle },

@@ -204,7 +204,7 @@ export function InterviewerAccountScreen() {
           </React.Fragment>
         ))}
 
-        <AcPill tone="outline" icon="out" label="Sign out" busy={signingOut} busyLabel="Signing out…" onPress={signOut} />
+        <AcPill tone="danger" icon="out" label="Sign out" busy={signingOut} busyLabel="Signing out…" onPress={signOut} />
       </View>
     </InterviewerShell>
   )
@@ -225,7 +225,7 @@ const st = StyleSheet.create({
   fees: { flexDirection: 'row' },
   fee: { flex: 1, minWidth: 0, paddingTop: 11, paddingBottom: 12, paddingHorizontal: 16 },
   feeRule: { borderRightWidth: borderWidth.thin, borderRightColor: color.border },
-  tier: { fontFamily: FF.monoMedium, fontSize: 12, letterSpacing: 0.48, color: color.textMuted },
+  tier: { fontFamily: FF.bodyMedium, fontSize: 12, color: color.textMuted },
   feeValue: { fontFamily: FF.bodyBold, fontSize: 22, lineHeight: 26, letterSpacing: -0.66, color: color.text, marginTop: 3 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   cell: { width: '47.8%', flexGrow: 1, flexBasis: '47%', maxWidth: '48.5%' },

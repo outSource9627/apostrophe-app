@@ -20,6 +20,7 @@ import {
 import { linkableJobs, useEmployerJobRefs } from '../../lib/employer/useLinkableJobs'
 import { useShortlistConfig } from '../../lib/employer/useShortlistConfig'
 import { useEmployer } from '../../lib/employer/useEmployer'
+import { useCandidateDocument } from '../../lib/employer/useCandidateDocument'
 import { SendInterestSheet } from './SendInterestModal'
 import { ShortlistEntrySheet } from './ShortlistEntryModal'
 import type { RootStackParamList } from '../../../App'
@@ -108,6 +109,7 @@ export function EmployerShortlistScreen() {
   const [removing, setRemoving] = useState<ShortlistRow | null>(null)
   const [removeBusy, setRemoveBusy] = useState(false)
   const [now, setNow] = useState(() => new Date())
+  const docs = useCandidateDocument()
 
   /** Reads the list and the Interests; resolves to the error it showed, if any. */
   const load = useCallback(async (): Promise<string | null> => {
@@ -172,6 +174,14 @@ export function EmployerShortlistScreen() {
     } finally {
       setExporting(false)
     }
+  }
+
+  /** ST-35 — the card's CV: the résumé's 15-minute link, opened by the phone. */
+  async function openResume(row: ShortlistRow) {
+    if (!row.resume) return
+    setNotice(null)
+    const failed = await docs.open(row.candidateId, row.resume.id)
+    if (failed) setNotice(failed)
   }
 
   async function confirmRemove() {
@@ -262,6 +272,8 @@ export function EmployerShortlistScreen() {
             onJob={() => item.jobId && setJobFilter(item.jobId)}
             onRemove={() => setRemoving(item)}
             onEntry={() => setEditing(item)}
+            opening={!!item.resume && docs.opening === item.resume.id}
+            onResume={() => { openResume(item) }}
             onInterest={() => setInterestFor(item)}
             onChat={() => {
               const threadId = interests?.get(item.candidateId)?.threadId
@@ -405,9 +417,9 @@ function DropChip({ label: text_, icon, a11y, on, onPress }: { label: string; ic
   )
 }
 
-/** S1's card: who, the saved day, the note, the tags and job, then bin · note · the Interest action. */
+/** S1's card: who, the saved day, the note, the tags and job, then bin · note · CV (when there is a résumé) · the Interest action. */
 function ShortlistCard({
-  row, slot, jobTitle, onPlay, onProfile, onTag, onJob, onRemove, onEntry, onInterest, onChat,
+  row, slot, jobTitle, opening, onPlay, onProfile, onTag, onJob, onRemove, onEntry, onResume, onInterest, onChat,
 }: {
   row: ShortlistRow
   slot: Slot
@@ -418,6 +430,9 @@ function ShortlistCard({
   onJob: () => void
   onRemove: () => void
   onEntry: () => void
+  /** The résumé's link is being fetched. */
+  opening: boolean
+  onResume: () => void
   onInterest: () => void
   onChat: () => void
 }) {
@@ -473,6 +488,19 @@ function ShortlistCard({
         ) : (
           <>
             <IconSquare name="edit" label="Notes, tags and job" onPress={onEntry} />
+            {!!row.resume && (
+              <Button
+                variant="outline"
+                size="sm"
+                icon="download"
+                label="CV"
+                accessibilityLabel={`Download ${row.name}’s résumé`}
+                busy={opening}
+                hitSlop={space.xs}
+                onPress={onResume}
+                style={styles.cv}
+              />
+            )}
             {slot.kind === 'chat' ? (
               <Button variant="primary" size="md" icon="chat" label="Open chat" hitSlop={space.xs} style={styles.cta} onPress={onChat} />
             ) : slot.kind === 'status' ? (
@@ -529,5 +557,6 @@ const styles = StyleSheet.create({
   chips: { flexDirection: 'row', alignItems: 'center', gap: spaceHalf['1.5'], overflow: 'hidden' },
   actions: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   cta: { flex: 1, minWidth: 0, height: height['control-xs'], paddingHorizontal: space.md },
+  cv: { paddingHorizontal: space.md },
   quiet: { flex: 1, minWidth: 0, height: height['control-xs'], borderRadius: radius.pill, backgroundColor: color.surfaceMuted, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.md },
 })

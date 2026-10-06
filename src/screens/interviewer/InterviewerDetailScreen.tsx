@@ -20,6 +20,8 @@ import {
   clock, educationLine, groupOf, hms, interviewClock, istTime, istWeekday, joinState, NON_PAYABLE_TEXT, pastLabel,
 } from '../../lib/interviewer/state'
 import { INTERVIEWER_KEY, useAppConfig, useInterviewerMe } from '../../lib/interviewer/useInterviewer'
+import { LIVE_POLL_MS, interviewerLateInput, isLate, lateClock, lateClockLabel, lateJoin, lateRulesOf } from '../../lib/interviews/late'
+import { LateBand, LateDrain, LatePill, OtherLine, lateCard, lateTint } from '../../lib/interviews/LateJoin'
 import type { RootStackParamList } from '../../../App'
 
 /**
@@ -29,6 +31,10 @@ import type { RootStackParamList } from '../../../App'
  * server has them), the private notes (read from and saved to their own
  * endpoint — the interview payload carries none), and Decline for a booked
  * interview (the server decides whether it is still allowed and says why not).
+ *
+ * While the join window is open and the session has not started, the first card
+ * carries the late-join warning (lib/interviews/late.ts) and the interview is
+ * re-read every few seconds, so "is the student in the room" stays current.
  */
 export function InterviewerDetailScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
@@ -62,6 +68,13 @@ export function InterviewerDetailScreen() {
   useEffect(() => {
     if (focused) load()
   }, [focused, load])
+  // In the join window (the server's `roomReady`), re-read so presence and the session's start stay current.
+  const liveWindow = focused && !!iv && iv.status === 'BOOKED' && iv.roomReady
+  useEffect(() => {
+    if (!liveWindow) return
+    const t = setInterval(() => { load() }, LIVE_POLL_MS)
+    return () => clearInterval(t)
+  }, [liveWindow, load])
   useEffect(() => {
     getQuestionScript(id).then((r) => setScript(r.script)).catch(() => {})
     getPrivateNotes(id).then((r) => { setNotes(r.notes ?? ''); setDraft(r.notes ?? '') }).catch(() => setNotes(null))
@@ -78,6 +91,8 @@ export function InterviewerDetailScreen() {
   const g = groupOf(iv, config, now)
   const j = joinState(iv, config, now)
   const c = interviewClock(iv, config, now)
+  const late = lateJoin(interviewerLateInput(iv), lateRulesOf(config), now)
+  const warn = late.phase !== 'off'
   let badge: { label: string; tone: EmTone }
   if (g === 'live') badge = { label: iv.status === 'IN_PROGRESS' ? 'In progress' : 'Join open', tone: 'green' }
   else if (g === 'upcoming') badge = { label: 'Booked', tone: 'violet' }
@@ -120,21 +135,32 @@ export function InterviewerDetailScreen() {
 
   return (
     <InterviewerShell back={() => navigation.goBack()} title={s.name} sub={`${istWeekday(iv.slotStart)} · ${istTime(iv.slotStart)} · ${iv.durationMin} min`}>
-      <IvCard>
+      <IvCard style={lateCard(late, false)}>
         <View style={styles.top}>
-          <EmBadge label={badge.label} tone={badge.tone} small />
+          {isLate(late) ? <LatePill j={late} /> : <EmBadge label={badge.label} tone={badge.tone} small />}
           <Text style={[text.metaXl, styles.fig]}>{formatPaise(iv.feePaise)}</Text>
         </View>
         <Text style={[text.uiSm, styles.muted]}>{[iv.tier, iv.domain, iv.language].filter(Boolean).join(' · ')}</Text>
+        {warn && (
+          <>
+            <View>
+              <Text style={[text.uiXsMedium, styles.muted]}>{lateClockLabel(late)}</Text>
+              <Text style={[text.metaTile, styles.fig, { color: lateTint(late, false) ?? color.text }]}>{lateClock(late)}</Text>
+            </View>
+            <LateDrain j={late} />
+            <LateBand j={late} />
+            <OtherLine j={late} who={s.name.split(' ')[0] || s.name} />
+          </>
+        )}
         {g === 'live' || g === 'upcoming' ? (
           <IvAction
             label={j.kind === 'open' ? (j.rejoin ? 'Rejoin room' : 'Join room') : j.kind === 'closed' ? 'Join window closed' : j.opensInSec != null ? `Join opens in ${clock(j.opensInSec)}` : 'Join opens before the start'}
-            tone={j.kind === 'open' && !suspended ? 'accent' : 'off'}
+            tone={j.kind === 'open' && !suspended ? (late.phase === 'red' ? 'danger' : 'accent') : 'off'}
             onPress={j.kind === 'open' && !suspended ? () => navigation.navigate('InterviewerRoom', { id }) : undefined}
           />
         ) : g === 'owed' ? (
           <>
-            {(c.status === 'OPEN' || c.status === 'URGENT') && <Text style={[text.metaBase, { color: c.status === 'URGENT' ? color.danger : color.text }]}>{`${hms(c.secondsLeft)} LEFT TO SUBMIT`}</Text>}
+            {(c.status === 'OPEN' || c.status === 'URGENT') && <Text style={[text.metaBase, { color: c.status === 'URGENT' ? color.danger : color.text }]}>{`${hms(c.secondsLeft)} left to submit`}</Text>}
             <IvAction label="Write the scorecard" onPress={() => navigation.navigate('ScorecardDraft', { id })} />
           </>
         ) : iv.scorecard?.submittedAt ? (
@@ -145,7 +171,7 @@ export function InterviewerDetailScreen() {
       </IvCard>
 
       <IvCard>
-        <IvLabel>CANDIDATE</IvLabel>
+        <IvLabel>Candidate</IvLabel>
         <Text style={text.uiLeadSemi}>{s.name}</Text>
         {!!educationLine(s.education) && <Text style={[text.uiSm, styles.secondary]}>{educationLine(s.education)}</Text>}
         {!!s.city && <Text style={[text.uiSm, styles.muted]}>{s.city}</Text>}
@@ -159,7 +185,7 @@ export function InterviewerDetailScreen() {
 
       {areas.length > 0 && (
         <IvCard>
-          <IvLabel>QUESTION SCRIPT</IvLabel>
+          <IvLabel>Question script</IvLabel>
           {!!script?.intro && <Text style={[text.uiSm, styles.muted]}>{`Opening: ${script.intro}`}</Text>}
           {areas.map((a, k) => (
             <View key={k} style={styles.area}>
@@ -173,7 +199,7 @@ export function InterviewerDetailScreen() {
 
       {notes !== null && (
         <IvCard>
-          <IvLabel>PRIVATE NOTES</IvLabel>
+          <IvLabel>Private notes</IvLabel>
           <Input value={draft} onChangeText={setDraft} maxLength={notesMax} multiline textAlignVertical="top" placeholder="Only you see these. They flow into your scorecard." style={styles.notes} />
           <View style={styles.top}>
             <Text style={[text.uiXs, styles.muted]}>{notesMax ? `${draft.length} / ${notesMax}` : ''}</Text>
@@ -202,7 +228,7 @@ export function InterviewerDetailScreen() {
       />
       {!!iv.scorecard?.submittedAt && (
         <IvCard>
-          <IvLabel>SCORECARD SUBMITTED</IvLabel>
+          <IvLabel>Scorecard submitted</IvLabel>
           <Text style={[text.uiSm, styles.muted]}>{Object.entries(iv.scorecard.scores).map(([k, v]) => `${label(k)} ${v}`).join(' · ')}</Text>
         </IvCard>
       )}
@@ -213,7 +239,7 @@ export function InterviewerDetailScreen() {
 const styles = StyleSheet.create({
   muted: { color: color.textMuted },
   secondary: { color: color.textSecondary },
-  fig: { letterSpacing: trackingNative.meta },
+  fig: { letterSpacing: trackingNative.meta, fontVariant: ['tabular-nums'] },
   loading: { paddingVertical: space['3xl'] },
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.sm },
   start: { alignSelf: 'flex-start', paddingHorizontal: space.md },

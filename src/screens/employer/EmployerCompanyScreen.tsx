@@ -98,7 +98,7 @@ function LiveJobs() {
   const n = jobs.data.counts.PUBLISHED ?? jobs.data.total
   return (
     <EmCard>
-      <EmMono>{`LIVE JOBS · ${n}`}</EmMono>
+      <EmMono>{`Live jobs · ${n}`}</EmMono>
       {jobs.data.rows.map((j) => (
         <Pressable
           key={j.id}

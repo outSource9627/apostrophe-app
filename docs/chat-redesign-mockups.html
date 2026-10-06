@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chat Redesign</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FAFAFC; --surface:#fff; --muted:#F1F3F7; --sunken:#E6E8EE; --chatbg:#F4F5F9;
+    --text:#0B0F1A; --text2:#3A4256; --text3:#6B7385; --text4:#8A91A2;
+    --border:#E3E6ED; --border-strong:#C9CED9; --border-soft:#EEF0F4;
+    --accent:#5B3DF5; --accent-text:#4A2FE0; --accent-soft:#EFEBFF; --accent-wash:#F7F6FF; --accent-muted:#C4B8FF; --accent-bright:#7258FF;
+    --ink:#0B0F1A;
+    --ok:#0B7A55; --ok-fill:#0E9F6E; --ok-soft:#E6F7F0; --warn:#935F00; --warn-soft:#FFF5E1; --warn-edge:#F5E2B8;
+    --danger:#C22A30; --danger-fill:#E5484D; --danger-soft:#FDECEC; --info:#4A2FE0; --info-soft:#EFEBFF;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Geist',system-ui,sans-serif;background:#E9EAF2;color:var(--text);padding:36px 24px 90px}
+  button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+  svg.i{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+  .num{font-variant-numeric:tabular-nums}
+  .wrap{max-width:1420px;margin:0 auto}
+  .intro{background:var(--surface);border:1px solid var(--border);border-radius:28px;padding:28px 32px;margin-bottom:16px}
+  .intro h1{font-size:30px;letter-spacing:-.035em;line-height:1.1}
+  .intro p{font-size:16px;color:var(--text3);margin-top:8px;line-height:1.5;max-width:1040px}
+  .bar{position:sticky;top:10px;z-index:50;display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px}
+  .seg{display:flex;flex-wrap:wrap;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:22px;padding:4px;box-shadow:0 8px 24px rgba(11,15,26,.08)}
+  .seg button{padding:8px 13px;border-radius:99px;font-size:14px;font-weight:600;color:var(--text3);white-space:nowrap}
+  .seg button.on{background:var(--accent);color:#fff}
+  .seg .lab{font-size:12.5px;font-weight:500;color:var(--text4);padding:9px 6px 0 10px}
+  .dir{background:var(--surface);border:1px solid var(--border);border-radius:28px;padding:24px 26px;margin-bottom:18px}
+  .dir-h{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+  .dir-h b{width:34px;height:34px;border-radius:10px;background:var(--ink);color:#fff;display:grid;place-items:center;font-size:17px;align-self:center}
+  .dir-h h2{font-size:24px;letter-spacing:-.03em}
+  .dir-h span{font-size:15px;color:var(--text3)}
+  .frames{display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start}
+  .cap{font-size:13px;color:var(--text3);margin:0 0 8px 4px}.cap b{color:var(--text);font-weight:600}
+  .lbl{font-size:12.5px;font-weight:500;color:var(--text3);line-height:1.35}
+  .lbl.sm{font-size:12px}
+
+  /* frames */
+  .phone{width:360px;height:740px;border-radius:40px;border:9px solid #000;overflow:hidden;position:relative;background:var(--bg);display:flex;flex-direction:column}
+  .sbar{height:34px;flex:none;display:flex;justify-content:space-between;align-items:center;padding:0 22px;font-size:13px;font-weight:600}
+  .web{width:960px;height:640px;border-radius:14px;border:1px solid var(--border-strong);overflow:hidden;display:flex;flex-direction:column;background:#fff}
+  .chrome{height:32px;flex:none;background:#F1F3F7;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px;padding:0 12px}
+  .chrome i{width:10px;height:10px;border-radius:99px;background:#D7DAE2}
+  .panes{flex:1;min-height:0;display:flex}
+  .pane-list{width:340px;flex:none;border-right:1px solid var(--border);display:flex;flex-direction:column;min-height:0}
+  .pane-thread{flex:1;min-width:0;display:flex;flex-direction:column;min-height:0}
+  .scroll{flex:1;min-height:0;overflow:auto}
+  .grow{flex:1;min-width:0}
+  .row{display:flex;align-items:center;gap:10px}
+  .ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  /* plates: shape is the meaning — company square, person circle, masked logo, support lifebuoy */
+  .plate{flex:none;display:grid;place-items:center;font-weight:700;letter-spacing:-.01em}
+  .plate.co{border-radius:30%}
+  .plate.pe{border-radius:99px;color:#fff;background:linear-gradient(140deg,#C4B8FF,#5B3DF5)}
+  .plate.mask{border-radius:99px;background:var(--ink);color:#fff;font-size:20px}
+  .plate.sup{border-radius:99px;background:var(--info-soft);color:var(--info)}
+  .plate.dim{filter:grayscale(1);opacity:.55}
+
+  /* bubbles */
+  .msgs{display:flex;flex-direction:column;gap:3px;padding:14px 14px 10px}
+  .b{max-width:78%;padding:9px 12px;font-size:15px;line-height:1.42;position:relative}
+  .mine{align-self:flex-end}.theirs{align-self:flex-start}
+  .runm{margin-top:8px}
+  .meta{font-size:11.5px;font-weight:500;color:var(--text4);margin:3px 4px 0}
+  .mine+.meta,.meta.r{align-self:flex-end}
+  .sys{align-self:center;font-size:12.5px;font-weight:500;color:var(--text3);background:var(--muted);border-radius:99px;padding:5px 12px;margin:10px 0}
+  .day{display:flex;align-items:center;gap:10px;margin:12px 0 6px}
+  .day i{flex:1;height:1px;background:var(--border)}
+  .doc{display:flex;align-items:center;gap:10px;min-width:220px}
+  .doc .ft{width:36px;height:42px;border-radius:8px;background:var(--danger-soft);color:var(--danger);display:grid;place-items:center;font-size:10.5px;font-weight:700}
+  .typing{display:inline-flex;gap:4px;padding:12px 14px}
+  .typing i{width:7px;height:7px;border-radius:99px;background:var(--text4)}
+  .composer{flex:none;display:flex;align-items:flex-end;gap:8px;padding:10px 12px 12px;border-top:1px solid var(--border);background:#fff}
+  .input{flex:1;min-height:44px;border-radius:22px;border:1.5px solid var(--border);display:flex;align-items:center;padding:0 14px;font-size:15px;color:var(--text4);gap:8px}
+  .ib{width:44px;height:44px;border-radius:99px;display:grid;place-items:center;flex:none}
+  .ib.send{background:var(--accent);color:#fff}
+  .ib.att{color:var(--text3);border:1.5px solid var(--border)}
+  .foot{flex:none;border-top:1px solid var(--border);background:#fff;padding:14px 18px 18px}
+  .foot b{font-size:15px;font-weight:600}
+  .foot p{font-size:13.5px;line-height:1.45;color:var(--text3);margin-top:3px}
+  .maskinfo{margin:10px 14px 0;background:var(--info-soft);border-radius:14px;padding:10px 12px;font-size:13px;line-height:1.45;color:var(--info)}
+  .maskinfo b{display:block;font-size:13px;margin-bottom:2px}
+  .closes{text-align:center;font-size:12px;font-weight:500;color:var(--text4);padding:6px 0 0}
+  .head{flex:none;display:flex;align-items:center;gap:10px;padding:8px 10px 10px 8px;border-bottom:1px solid var(--border);background:#fff}
+  .back{width:40px;height:40px;border-radius:99px;display:grid;place-items:center;flex:none}
+  .htitle{font-size:16.5px;font-weight:600;letter-spacing:-.01em}
+  .pill{display:inline-flex;align-items:center;gap:6px;border-radius:99px;padding:3px 9px;font-size:12px;font-weight:600;white-space:nowrap}
+  .pill.rec{background:var(--danger-soft);color:var(--danger)}.pill.rec i{width:7px;height:7px;border-radius:99px;background:var(--danger-fill)}
+  .badge{min-width:22px;height:22px;border-radius:99px;display:inline-grid;place-items:center;padding:0 7px;font-size:12px;font-weight:700}
+  .tabbar{flex:none;height:64px;border-top:1px solid var(--border);display:flex;justify-content:space-around;align-items:center;background:#fff;font-size:10.5px;font-weight:600;color:var(--text4)}
+  .search{display:flex;align-items:center;gap:8px;height:42px;border-radius:14px;background:var(--muted);padding:0 12px;font-size:14.5px;color:var(--text4)}
+  .chips{display:flex;gap:6px;overflow:hidden}
+  .chip{height:32px;border-radius:99px;padding:0 12px;display:inline-flex;align-items:center;font-size:13.5px;font-weight:600;color:var(--text2);background:#fff;border:1px solid var(--border);white-space:nowrap}
+  .chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .ctx{margin:10px 12px 0;border:1px solid var(--border);border-radius:16px;background:#fff;padding:10px 12px;display:flex;gap:10px;align-items:center}
+  .notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-top:20px}
+  .note{background:var(--muted);border-radius:18px;padding:16px 18px}
+  .note h4{font-size:13px;font-weight:700;color:var(--accent-text);margin-bottom:8px}
+  .note ul{padding-left:18px;font-size:13.5px;line-height:1.55;color:var(--text2)}
+  .note li{margin-bottom:5px}
+  .st{display:inline-block;font-size:11.5px;font-weight:600;border-radius:99px;padding:1px 8px;white-space:nowrap;margin-right:4px}
+  .st.real{background:var(--ok-soft);color:var(--ok)}.st.app{background:var(--accent-soft);color:var(--accent-text)}.st.need{background:var(--warn-soft);color:var(--warn)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="intro">
+    <h1>Chat — three directions</h1>
+    <p>Today the app has five different bubble designs, three kinds of list row, four company-tile styles and capital mono labels everywhere. Each direction below puts every persona on <b>one</b> list row, <b>one</b> bubble and <b>one</b> composer, in Geist with normal-case labels. Drawn as the app's chat list and conversation, and the web's two-pane view. Switch persona and conversation in the bar. Only features the API already has are drawn; the notes say which are new on screen.</p>
+  </header>
+  <div class="bar">
+    <div class="seg" id="dirs"></div>
+    <div class="seg" id="persona"></div>
+    <div class="seg" id="thread"></div>
+  </div>
+  <div id="root"></div>
+</div>
+
+<script>
+const I = (d, s=20)=>`<svg class="i" viewBox="0 0 24 24" style="width:${s}px;height:${s}px">${d}</svg>`
+const IC = {
+  back:'<path d="m15 18-6-6 6-6"/>', more:'<circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/>',
+  send:'<path d="M4 12h15"/><path d="m13 6 6 6-6 6"/>', plus:'<path d="M12 5v14M5 12h14"/>', clip:'<path d="M21 11.5 12.5 20a5 5 0 0 1-7-7L14 4.5a3.3 3.3 0 0 1 4.7 4.7L10.2 17.7a1.7 1.7 0 0 1-2.4-2.4L15.5 7.6"/>',
+  search:'<circle cx="11" cy="11" r="6"/><path d="m20 20-4-4"/>', pin:'<path d="M9 4h6M10 4v5l-3 4h10l-3-4V4M12 13v7"/>', check2:'<path d="m2 12 5 5 9-10M12 15l2 2 8-9"/>',
+  file:'<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z"/><path d="M14 3v5h5"/>', life:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.6"/><path d="m5.6 5.6 3.9 3.9M14.5 14.5l3.9 3.9M18.4 5.6l-3.9 3.9M9.5 14.5l-3.9 3.9"/>',
+  lock:'<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>', cal:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>', brief:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5h6v2"/>',
+  home:'<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9v11h14V9"/>', chat:'<path d="M4 5h16v11H9l-5 4z"/>', user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>',
+  img:'<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m4 17 5-4 4 3 3-2 4 3"/>',
+}
+const S = { d:'A', p:'student', t:'live' }
+
+/* ── sample data per persona (real copy from the app; names are samples) ── */
+const DATA = {
+  student:{
+    title:'Chats', unread:2,
+    rows:[
+      { id:'nw', name:'Northwind Traders', kind:'co', tint:['#EFEBFF','#4A2FE0'], ini:'NT', pinned:true, unread:2, time:'10:42 AM', prev:'Can you do Thursday at 4?', ctx:'Their Interest · connected 22 Sep', group:'Employers' },
+      { id:'iv', name:'Your Interviewer', kind:'mask', time:'Yesterday', prev:'See you tomorrow!', ctx:'Interview tomorrow, 10:00 AM', group:'Interviews' },
+      { id:'mf', name:'Meridian Financial', kind:'co', tint:['#E6F7F0','#0B7A55'], ini:'MF', time:'15 Sep', prev:'Thanks for your time.', ctx:'Connection withdrawn 15 Sep', muted:true, group:'Employers' },
+      { id:'su', name:'Apostrophe Support', kind:'sup', time:'2 Oct', prev:'Your refund is on its way.', ctx:'Support · replies within one working day', group:'Support' },
+    ],
+    threads:{
+      live:{ row:'nw', sub:'Their Interest · since 22 Sep', menu:['Report this chat','Block Northwind Traders'],
+        msgs:[['day','Yesterday'],['sys','This chat is open'],['t','Hi Riya, thanks for accepting our Interest. We’d love to set up a short call this week.','6:02 PM'],['m','Thank you! I’m free most evenings.','6:10 PM','Read 6:11 PM'],['day','Today'],['t','Can you do Thursday at 4?','10:42 AM'],['tdoc','Sales-Associate-JD.pdf','PDF · 240 KB','10:42 AM'],['m','Thursday works for me.','10:44 AM','Read 10:44 AM'],['typing']] },
+      iv:{ row:'iv', sub:'Tomorrow, 10:00 AM', mask:true, closes:'Closes Sun 11 Oct, 9:20 AM IST · 48 hours after your interview', menu:['Report this chat','Message support'],
+        msgs:[['day','Today'],['sys','This chat opened for your interview'],['t','Hi! I’ll be your interviewer tomorrow. Please test your camera and mic before you join.','9:24 AM'],['m','Thank you, I will. Should I keep my résumé handy?','9:31 AM','Delivered 9:31 AM']] },
+      ro:{ row:'mf', sub:'Withdrawn 15 Sep', foot:['This connection was withdrawn on 15 Sep.','Neither side can write here again. Everything above stays, and the row stays in your Connections. Blocking is still open to you from the menu.'], menu:['Report this chat','Block Meridian Financial'],
+        msgs:[['day','12 September'],['t','Thanks for your time on the call today.','5:02 PM'],['m','Thank you — it was great to learn about the team.','5:20 PM','Read 5:21 PM'],['sys','This conversation has been archived.']] },
+    },
+  },
+  employer:{
+    title:'Chats', unread:3,
+    rows:[
+      { id:'rs', name:'Riya Sharma', kind:'pe', ini:'RS', pinned:true, unread:2, time:'10:44 AM', prev:'Thursday works for me.', ctx:'Via your Interest · connected 22 Sep', group:'Candidates' },
+      { id:'av', name:'Aman Verma', kind:'pe', ini:'AV', unread:1, time:'9:10 AM', prev:'I’ve attached my portfolio.', ctx:'Applied to your job · connected 23 Sep', group:'Candidates' },
+      { id:'np', name:'Neha Patel', kind:'pe', ini:'NP', time:'15 Sep', prev:'Read-only · connection withdrawn', ctx:'Withdrawn by you · 15 Sep', muted:true, group:'Candidates' },
+      { id:'su', name:'Apostrophe Support', kind:'sup', time:'1 Oct', prev:'Your documents are verified.', ctx:'Support', group:'Support' },
+    ],
+    threads:{
+      live:{ row:'rs', sub:'Via your Interest · connected 22 Sep', cv:true, menu:['View profile','Résumé','Withdraw connection','Report conversation','Block and report'],
+        msgs:[['day','Yesterday'],['sys','This chat is open'],['m','Hi Riya, thanks for accepting our Interest. We’d love to set up a short call this week.','6:02 PM','Read 6:09 PM'],['t','Thank you! I’m free most evenings.','6:10 PM'],['day','Today'],['m','Can you do Thursday at 4?','10:42 AM','Read 10:43 AM'],['mdoc','Sales-Associate-JD.pdf','PDF · 240 KB','10:42 AM'],['t','Thursday works for me.','10:44 AM'],['typing']] },
+      iv:null,
+      ro:{ row:'np', sub:'Withdrawn by you · 15 Sep', foot:['This connection was withdrawn on 15 Sep.','The chat is read-only for both of you. Nothing was deleted.'], menu:['View profile','Report conversation'],
+        msgs:[['day','12 September'],['m','Thanks for your time on the call today.','5:02 PM','Read 5:10 PM'],['t','Thank you — it was great to learn about the team.','5:20 PM'],['sys','This connection was withdrawn.']] },
+    },
+  },
+  interviewer:{
+    title:'Messages', unread:1,
+    rows:[
+      { id:'rs', name:'Riya Sharma', kind:'pe', ini:'RS', unread:1, time:'9:31 AM', prev:'Thank you, I will. Should I keep my résumé handy?', ctx:'Interview tomorrow, 10:00 AM', group:'Interviews' },
+      { id:'av', name:'Aman Verma', kind:'pe', ini:'AV', time:'Opens 11 Oct', prev:'Opens 11 Oct', ctx:'Interview 12 Oct, 11:00 AM', group:'Interviews' },
+      { id:'pk', name:'Priya Kumar', kind:'pe', ini:'PK', time:'2 Oct', prev:'Read-only', ctx:'Interview 30 Sep · read-only', muted:true, group:'Interviews' },
+      { id:'su', name:'Apostrophe Support', kind:'sup', time:'28 Sep', prev:'Your payout is on its way.', ctx:'Support', group:'Support' },
+    ],
+    nopin:true,
+    threads:{
+      live:{ row:'rs', sub:'Interview tomorrow, 10:00 AM', seesMask:true, menu:['View interview','Report this chat'],
+        msgs:[['day','Today'],['sys','This chat opened for your interview'],['m','Hi! I’ll be your interviewer tomorrow. Please test your camera and mic before you join.','9:24 AM','Read 9:30 AM'],['t','Thank you, I will. Should I keep my résumé handy?','9:31 AM']] },
+      iv:null,
+      ro:{ row:'pk', sub:'Interview 30 Sep · read-only', foot:['This chat is now read-only.','Chats close 48 hours after the interview ends. Everything above stays.'], menu:['View interview'],
+        msgs:[['day','30 September'],['t','Thank you for the interview!','11:42 AM'],['m','You did well — your feedback will reach your profile.','11:50 AM','Read 11:52 AM'],['sys','This chat is now read-only.']] },
+    },
+  },
+}
+
+function plate(r, size){
+  const fs = Math.round(size*.36)
+  if (r.kind==='co') return `<span class="plate co${r.muted?' dim':''}" style="width:${size}px;height:${size}px;background:${r.tint[0]};color:${r.tint[1]};font-size:${fs}px">${r.ini}</span>`
+  if (r.kind==='pe') return `<span class="plate pe${r.muted?' dim':''}" style="width:${size}px;height:${size}px;font-size:${fs}px">${r.ini}</span>`
+  if (r.kind==='mask') return `<span class="plate mask" style="width:${size}px;height:${size}px">’</span>`
+  return `<span class="plate sup" style="width:${size}px;height:${size}px">${I(IC.life, Math.round(size*.5))}</span>`
+}
+const data = ()=>DATA[S.p]
+const thread = ()=>{ const d = data(); const t = d.threads[S.t] || d.threads.live; return { t, r: d.rows.find((x)=>x.id===t.row) } }
+
+/* ── A · clean & unified ── */
+const A = {
+  row(r, web, sel){ return `<div class="row" style="align-items:flex-start;gap:12px;padding:12px ${web?'16px':'0'};${web?'':'border-top:1px solid var(--border-soft)'};${sel?'background:var(--accent-wash)':''}">
+    ${plate(r,44)}<div class="grow">
+      <div class="row" style="gap:6px"><span class="ell grow" style="font-size:16px;font-weight:${r.unread?700:600};color:${r.muted?'var(--text3)':'var(--text)'}">${r.name}</span>${r.pinned&&!data().nopin?`<span style="color:var(--text4)">${I(IC.pin,14)}</span>`:''}<span class="lbl sm num" style="color:${r.unread?'var(--accent-text)':'var(--text4)'}">${r.time}</span></div>
+      <div class="row" style="margin-top:2px"><span class="ell grow" style="font-size:14.5px;color:${r.unread?'var(--text)':'var(--text3)'};font-weight:${r.unread?500:400}">${r.prev}</span>${r.unread?`<span class="badge num" style="background:var(--accent);color:#fff">${r.unread}</span>`:''}</div>
+      <div class="lbl sm ell" style="margin-top:3px">${r.ctx}</div></div></div>` },
+  list(web){ const d = data(); const sel = thread().r.id
+    const rows = d.rows.slice().sort((a,b)=>(b.pinned?1:0)-(a.pinned?1:0))
+    if (web) return `<div style="padding:16px 16px 8px" class="row"><span style="font-size:22px;font-weight:700;letter-spacing:-.03em" class="grow">${d.title}</span><span class="lbl">${d.unread} unread</span></div>
+      <div style="padding:0 16px 10px"><div class="search">${I(IC.search,18)}Search people and messages</div></div><div class="scroll">${rows.map((r)=>A.row(r,true,r.id===sel)).join('')}</div>`
+    return `<div style="padding:4px 20px 10px"><div style="font-size:30px;font-weight:700;letter-spacing:-.04em">${d.title}</div></div>
+      <div style="padding:0 20px 10px"><div class="search">${I(IC.search,18)}Search people and messages</div></div>
+      <div class="scroll" style="padding:0 20px">${rows.map((r)=>A.row(r,false)).join('')}<div class="lbl sm" style="text-align:center;padding:16px 0">Long-press a chat to pin it</div></div>` },
+  bubble(m, kind){
+    const mine = kind==='m' || kind==='mdoc'
+    const st = mine ? 'background:var(--accent);color:#fff;border-radius:18px 18px 4px 18px' : 'background:#fff;border:1px solid var(--border);border-radius:18px 18px 18px 4px'
+    if (kind==='tdoc'||kind==='mdoc') return `<div class="b ${mine?'mine':'theirs'}" style="${st}"><div class="doc"><span class="ft">PDF</span><div><div style="font-weight:600;font-size:14px">${m[1]}</div><div style="font-size:12.5px;opacity:.75">${m[2]}</div></div></div></div><div class="meta${mine?' r':''} num">${m[3]}</div>`
+    return `<div class="b ${mine?'mine':'theirs'}" style="${st}">${m[1]}</div><div class="meta${mine?' r':''} num">${m[2]}${mine&&m[3]?` · ${m[3].replace(/^(Read|Delivered) .*/,'$1')}`:''}</div>`
+  },
+  msgs(){ const { t } = thread()
+    return t.msgs.map((m)=> m[0]==='day' ? `<div class="day"><i></i><span class="lbl sm">${m[1]}</span><i></i></div>`
+      : m[0]==='sys' ? `<div class="sys">${m[1]}</div>` : m[0]==='typing' ? `<div class="theirs" style="background:#fff;border:1px solid var(--border);border-radius:18px 18px 18px 4px"><span class="typing"><i></i><i></i><i></i></span></div>`
+      : A.bubble(m, m[0])).join('') },
+  header(web){ const { t, r } = thread()
+    return `<div class="head">${web?'':`<span class="back">${I(IC.back,22)}</span>`}${plate(r,40)}<div class="grow"><div class="htitle ell">${r.name}</div><div class="lbl sm ell">${t.sub}</div></div>
+      ${t.cv?`<span class="back" style="border:1px solid var(--border)">${I(IC.file,18)}</span>`:''}<span class="back">${I(IC.more,22)}</span></div>
+      ${t.mask?`<div class="maskinfo"><b>Assigned anonymously · named when your session starts</b>Every student gets the interviewer they would have got anyway. We don’t send their name or photo before the session, so nobody can pick or avoid one.</div>`:''}
+      ${t.seesMask?`<div class="maskinfo"><b>The student sees “Your Interviewer”</b>Your name and photo stay hidden until the session begins.</div>`:''}` },
+  foot(){ const { t } = thread()
+    if (t.foot) return `<div class="foot"><div class="row" style="gap:8px">${I(IC.lock,16)}<b>${t.foot[0]}</b></div><p>${t.foot[1]}</p></div>`
+    return `${t.closes?`<div class="closes">${t.closes}</div>`:''}<div class="composer">${S.p==='interviewer'?'':`<span class="ib att">${I(IC.plus,20)}</span>`}<div class="input">Message ${thread().r.name.split(' ')[0]==='Your'?'your interviewer':thread().r.name.split(' ')[0]}</div><span class="ib send">${I(IC.send,20)}</span></div>` },
+  bg: 'var(--bg)',
+}
+
+/* ── B · messenger ── */
+const B = {
+  row(r, web, sel){ return `<div class="row" style="gap:12px;padding:10px ${web?'14px':'16px'};${sel?'background:var(--accent-wash)':''}">
+    ${plate(r,52)}<div class="grow" style="border-bottom:1px solid var(--border-soft);padding-bottom:10px">
+      <div class="row" style="gap:6px"><span class="ell grow" style="font-size:16px;font-weight:600;color:${r.muted?'var(--text3)':'var(--text)'}">${r.name}</span><span class="lbl sm num" style="color:${r.unread?'var(--accent-text)':'var(--text4)'};font-weight:${r.unread?600:500}">${r.time}</span></div>
+      <div class="row" style="margin-top:3px"><span class="ell grow" style="font-size:14.5px;color:var(--text3)">${r.prev}</span>${r.pinned&&!data().nopin?`<span style="color:var(--text4)">${I(IC.pin,15)}</span>`:''}${r.unread?`<span class="badge num" style="background:var(--accent);color:#fff;border-radius:99px">${r.unread}</span>`:''}</div></div></div>` },
+  list(web){ const d = data(); const sel = thread().r.id
+    const pinned = d.rows.filter((r)=>r.pinned&&!d.nopin), rest = d.rows.filter((r)=>!(r.pinned&&!d.nopin))
+    const chips = S.p==='student' ? ['All','Unread','Employers','Interviews','Support'] : S.p==='employer' ? ['All','Unread','Candidates','Support'] : ['All','Unread','Interviews','Support']
+    const body = `${pinned.length?`<div class="lbl sm" style="padding:8px ${web?14:16}px 2px">Pinned</div>${pinned.map((r)=>B.row(r,web,r.id===sel)).join('')}<div class="lbl sm" style="padding:10px ${web?14:16}px 2px">All chats</div>`:''}${rest.map((r)=>B.row(r,web,r.id===sel)).join('')}`
+    return `<div style="padding:${web?'14px 14px 8px':'4px 16px 8px'}" class="row"><span style="font-size:${web?22:28}px;font-weight:700;letter-spacing:-.035em" class="grow">${d.title}</span><span class="back" style="width:36px;height:36px;background:var(--muted)">${I(IC.search,18)}</span></div>
+      <div style="padding:0 ${web?14:16}px 8px"><div class="chips">${chips.map((c,i)=>`<span class="chip${i===0?' on':''}">${c}${i===1?` <span class="num" style="margin-left:4px;opacity:.7">${d.unread}</span>`:''}</span>`).join('')}</div></div>
+      <div class="scroll">${body}</div>` },
+  bubble(m, kind){
+    const mine = kind==='m' || kind==='mdoc'
+    const st = mine ? 'background:var(--accent);color:#fff;border-radius:18px 18px 6px 18px' : 'background:#fff;border-radius:18px 18px 18px 6px;box-shadow:0 1px 1px rgba(11,15,26,.06)'
+    const tick = mine ? `<span style="display:inline-flex;margin-left:4px;color:${m[3]&&m[3].startsWith('Read')?'#C4B8FF':'rgba(255,255,255,.7)'}">${I(IC.check2,14)}</span>` : ''
+    const time = `<span class="num" style="float:right;margin:6px 0 -4px 10px;font-size:11px;font-weight:500;opacity:.7;display:inline-flex;align-items:center">${kind.endsWith('doc')?m[3]:m[2]}${tick}</span>`
+    if (kind==='tdoc'||kind==='mdoc') return `<div class="b ${mine?'mine':'theirs'}" style="${st}"><div class="doc"><span class="ft">PDF</span><div><div style="font-weight:600;font-size:14px">${m[1]}</div><div style="font-size:12.5px;opacity:.75">${m[2]}</div></div></div>${time}</div>`
+    return `<div class="b ${mine?'mine':'theirs'}" style="${st}">${m[1]}${time}</div>`
+  },
+  msgs(){ const { t } = thread()
+    return t.msgs.map((m)=> m[0]==='day' ? `<div style="align-self:center;margin:10px 0 6px" class="sys" >${m[1]}</div>`
+      : m[0]==='sys' ? `<div class="lbl sm" style="align-self:center;margin:4px 0 8px">${m[1]}</div>` : m[0]==='typing' ? `<div class="theirs lbl sm" style="margin:6px 4px">${thread().r.name.split(' ')[0]==='Your'?'Your interviewer':thread().r.name.split(' ')[0]} is typing…</div>`
+      : B.bubble(m, m[0])).join('') },
+  header(web){ const { t, r } = thread()
+    return `<div class="head" style="border-bottom:0;box-shadow:0 1px 0 var(--border)">${web?'':`<span class="back">${I(IC.back,22)}</span>`}${plate(r,40)}<div class="grow"><div class="htitle ell">${r.name}</div><div class="lbl sm ell">${t.sub}</div></div>${t.cv?`<span class="back">${I(IC.file,20)}</span>`:''}<span class="back">${I(IC.more,22)}</span></div>
+      ${t.mask?`<div class="maskinfo" style="margin:10px 14px 0;text-align:center">Your interviewer is named when your session starts — nobody can pick or avoid one.</div>`:''}
+      ${t.seesMask?`<div class="maskinfo" style="text-align:center">The student sees “Your Interviewer” until the session begins.</div>`:''}` },
+  foot(){ const { t } = thread()
+    if (t.foot) return `<div class="foot" style="text-align:center;background:var(--chatbg);border-top:0"><div class="row" style="gap:8px;justify-content:center">${I(IC.lock,16)}<b>${t.foot[0]}</b></div><p>${t.foot[1]}</p></div>`
+    return `${t.closes?`<div class="closes" style="background:var(--chatbg)">${t.closes}</div>`:''}<div class="composer" style="background:var(--chatbg);border-top:0"><div class="input" style="background:#fff;border:0;box-shadow:0 1px 2px rgba(11,15,26,.08)">${S.p==='interviewer'?'':`<span style="color:var(--text3)">${I(IC.clip,20)}</span>`}<span class="grow">Message</span></div><span class="ib send">${I(IC.send,20)}</span></div>` },
+  bg: 'var(--chatbg)',
+}
+
+/* ── C · context first ── */
+const C = {
+  row(r, web, sel){ return `<div class="row" style="gap:12px;padding:10px 12px;margin:0 ${web?8:12}px 6px;border-radius:16px;background:${sel?'var(--accent-wash)':'#fff'};border:1px solid ${sel?'var(--accent-muted)':'var(--border)'}">
+    ${plate(r,44)}<div class="grow"><div class="row" style="gap:6px"><span class="ell grow" style="font-size:15.5px;font-weight:600;color:${r.muted?'var(--text3)':'var(--text)'}">${r.name}</span>${r.unread?`<span class="badge num" style="background:var(--accent);color:#fff">${r.unread}</span>`:`<span class="lbl sm num">${r.time}</span>`}</div>
+      <div class="ell" style="font-size:14px;color:var(--text3);margin-top:2px">${r.prev}</div>
+      <div class="row" style="gap:6px;margin-top:6px"><span class="pill" style="background:var(--muted);color:var(--text2);font-weight:500">${r.ctx}</span></div></div></div>` },
+  list(web){ const d = data(); const sel = thread().r.id
+    const groups = []; const pinned = d.rows.filter((r)=>r.pinned&&!d.nopin)
+    if (pinned.length) groups.push(['Pinned', pinned])
+    for (const g of [...new Set(d.rows.map((r)=>r.group))]) groups.push([g, d.rows.filter((r)=>r.group===g && !(r.pinned&&!d.nopin))])
+    return `<div style="padding:${web?'16px 16px 6px':'4px 16px 6px'}"><div style="font-size:${web?22:28}px;font-weight:700;letter-spacing:-.035em">${d.title}</div><div class="lbl" style="margin-top:2px">${d.unread} unread · ${d.rows.length} conversations</div></div>
+      <div style="padding:6px ${web?16:16}px 10px"><div class="search" style="background:#fff;border:1px solid var(--border)">${I(IC.search,18)}Search people and messages</div></div>
+      <div class="scroll">${groups.filter((g)=>g[1].length).map(([g,rows])=>`<div class="lbl" style="padding:8px ${web?16:16}px 6px;font-weight:600;color:var(--text2)">${g}</div>${rows.map((r)=>C.row(r,web,r.id===sel)).join('')}`).join('')}</div>` },
+  bubble(m, kind){
+    const mine = kind==='m' || kind==='mdoc'
+    const st = mine ? 'background:var(--ink);color:#fff;border-radius:16px 16px 4px 16px' : 'background:var(--muted);border-radius:16px 16px 16px 4px'
+    if (kind==='tdoc'||kind==='mdoc') return `<div class="b ${mine?'mine':'theirs'}" style="${st}"><div class="doc"><span class="ft">PDF</span><div class="grow"><div style="font-weight:600;font-size:14px">${m[1]}</div><div style="font-size:12.5px;opacity:.75">${m[2]}</div></div></div></div><div class="meta${mine?' r':''} num">${m[3]}</div>`
+    return `<div class="b ${mine?'mine':'theirs'}" style="${st}">${m[1]}</div><div class="meta${mine?' r':''} num">${m[2]}${mine&&m[3]?` · ${m[3].split(' ')[0]}`:''}</div>`
+  },
+  msgs(){ const { t } = thread()
+    return t.msgs.map((m)=> m[0]==='day' ? `<div class="lbl sm" style="align-self:center;margin:12px 0 6px;font-weight:600">${m[1]}</div>`
+      : m[0]==='sys' ? `<div class="sys" style="background:transparent;border:1px dashed var(--border-strong)">${m[1]}</div>` : m[0]==='typing' ? `<div class="theirs" style="background:var(--muted);border-radius:16px 16px 16px 4px"><span class="typing"><i></i><i></i><i></i></span></div>`
+      : C.bubble(m, m[0])).join('') },
+  header(web){ const { t, r } = thread()
+    const ctxCard = S.p==='student' && S.t==='live' ? `<div class="ctx">${I(IC.brief,20)}<div class="grow"><div style="font-weight:600;font-size:14px">Sales Associate · Pune</div><div class="lbl sm">Their Interest · connected 22 Sep</div></div><span class="pill" style="background:var(--accent-soft);color:var(--accent-text)">View role</span></div>`
+      : S.p==='employer' && S.t==='live' ? `<div class="ctx">${I(IC.user,20)}<div class="grow"><div style="font-weight:600;font-size:14px">B.Com · Pune · 2 yrs</div><div class="lbl sm">Verified interview · 30 Sep</div></div><span class="pill" style="background:var(--accent-soft);color:var(--accent-text)">Profile</span><span class="pill" style="background:var(--muted);color:var(--text2)">CV</span></div>`
+      : (t.mask || t.seesMask) ? `<div class="ctx">${I(IC.cal,20)}<div class="grow"><div style="font-weight:600;font-size:14px">Interview tomorrow, 10:00 AM</div><div class="lbl sm">${t.mask?'Your interviewer is named when the session starts':'The student sees “Your Interviewer” until the session starts'}</div></div><span class="pill" style="background:var(--accent-soft);color:var(--accent-text)">Details</span></div>` : ''
+    return `<div class="head">${web?'':`<span class="back">${I(IC.back,22)}</span>`}${plate(r,36)}<div class="grow"><div class="htitle ell">${r.name}</div><div class="lbl sm ell">${t.sub}</div></div><span class="back">${I(IC.more,22)}</span></div>${ctxCard}` },
+  foot(){ const { t } = thread()
+    if (t.foot) return `<div class="foot" style="margin:0 12px 12px;border:1px solid var(--border);border-radius:16px"><div class="row" style="gap:8px">${I(IC.lock,16)}<b>${t.foot[0]}</b></div><p>${t.foot[1]}</p></div>`
+    return `${t.closes?`<div class="closes">${t.closes}</div>`:''}<div class="composer" style="border-top:0;padding:8px 12px 12px"><div class="input" style="border-radius:16px;min-height:48px;background:var(--muted);border:0">${S.p==='interviewer'?'':`<span style="color:var(--text3)">${I(IC.plus,20)}</span>`}<span class="grow">Write a message…</span></div><span class="ib send" style="background:var(--ink);border-radius:14px">${I(IC.send,20)}</span></div>` },
+  bg: '#fff',
+}
+const DIRS = { A:{ name:'Clean & unified', pitch:'Today’s look, made consistent: one row, one bubble, one composer, labels in normal case.', D:A },
+  B:{ name:'Messenger', pitch:'Feels like the messaging apps people already use: big avatars, filter chips, time and ticks inside the bubble.', D:B },
+  C:{ name:'Context first', pitch:'Chats grouped by type, and each conversation opens with a card saying what it’s about.', D:C } }
+
+const tabbar = ()=>`<div class="tabbar">${[['home','Home'],['cal','Interviews'],['brief','Jobs'],['chat','Chats'],['user','Profile']].map(([i,l])=>`<span style="display:grid;justify-items:center;gap:2px;${l==='Chats'?'color:var(--accent)':''}">${I(IC[i],20)}${l}</span>`).join('')}</div>`
+function render(){
+  const dir = DIRS[S.d], D = dir.D
+  if (!data().threads[S.t]) S.t = 'live'
+  document.getElementById('dirs').innerHTML = `<span class="lab">Direction</span>` + Object.entries(DIRS).map(([k,v])=>`<button class="${S.d===k?'on':''}" data-d="${k}">${k} · ${v.name}</button>`).join('')
+  document.getElementById('persona').innerHTML = `<span class="lab">Persona</span>` + [['student','Student'],['employer','Employer'],['interviewer','Interviewer']].map(([k,l])=>`<button class="${S.p===k?'on':''}" data-p="${k}">${l}</button>`).join('')
+  document.getElementById('thread').innerHTML = `<span class="lab">Conversation</span>` + [['live',S.p==='student'?'Employer chat':S.p==='employer'?'Candidate chat':'Pre-interview chat'],...(S.p==='student'?[['iv','Interviewer (masked)']]:[]),['ro','Read-only']].map(([k,l])=>`<button class="${S.t===k?'on':''}" data-t="${k}">${l}</button>`).join('')
+  const phoneList = `<div class="phone"><div class="sbar"><span>9:41</span><span>●●●</span></div>${D.list(false)}${tabbar()}</div>`
+  const phoneThread = `<div class="phone" style="background:${D.bg}"><div class="sbar" style="background:#fff"><span>9:41</span><span>●●●</span></div>${D.header(false)}<div class="scroll" style="background:${D.bg}"><div class="msgs">${D.msgs()}</div></div>${D.foot()}</div>`
+  const web = `<div class="web"><div class="chrome"><i></i><i></i><i></i></div><div class="panes"><div class="pane-list">${D.list(true)}</div><div class="pane-thread" style="background:${D.bg}">${D.header(true)}<div class="scroll"><div class="msgs" style="padding:16px 22px">${D.msgs()}</div></div>${D.foot()}</div></div></div>`
+  document.getElementById('root').innerHTML = `<section class="dir"><div class="dir-h"><b>${S.d}</b><h2>${dir.name}</h2><span>${dir.pitch}</span></div>
+    <div class="frames"><div><div class="cap"><b>App</b> · chat list</div>${phoneList}</div><div><div class="cap"><b>App</b> · conversation</div>${phoneThread}</div></div>
+    <div class="cap" style="margin-top:22px"><b>Web</b> · list and conversation side by side</div>${web}
+    <div class="notes">
+      <div class="note"><h4>Same in every direction</h4><ul>
+        <li>One list row, one bubble and one composer for student, employer and interviewer (today there are five bubble designs).</li>
+        <li>One rule for avatars: a company is a rounded square, a person a circle, the unnamed interviewer the Apostrophe mark, support a lifebuoy.</li>
+        <li>Every label in Geist, normal case; your own messages show their time too, and “Read” replaces the spinner that today never stops.</li>
+        <li>Report stays reachable during a recorded session (today the Recording pill hides the menu).</li></ul></div>
+      <div class="note"><h4>What becomes visible (the API already has it)</h4><ul>
+        <li><span class="st real">Real</span>Search for students and interviewers (employers have it today).</li>
+        <li><span class="st real">Real</span>Sending a file from the student app (+). The web and the employer app already can.</li>
+        <li><span class="st real">Real</span>Pin on the web, for students and employers (the app has it).</li>
+        <li><span class="st real">Real</span>Filter chips (B) use the server’s chat-type filter; “Unread” is counted on the phone.</li>
+        <li><span class="st real">Real</span>Older messages load when you scroll up (today only the last 50 show).</li></ul></div>
+      <div class="note"><h4>Left as today</h4><ul>
+        <li>Interviewer chats: text only, no pin (you left the interviewer out), no blocking — as the server allows.</li>
+        <li>The context card in C uses what the conversation already knows (the connection or the interview); “View role” opens the job only when the Interest named one.</li>
+        <li>No online status and no voice notes — the product has neither.</li></ul></div>
+    </div></section>`
+}
+document.addEventListener('click', (e)=>{
+  const el = e.target.closest('[data-d],[data-p],[data-t]'); if (!el) return
+  if (el.dataset.d) S.d = el.dataset.d
+  if (el.dataset.p) S.p = el.dataset.p
+  if (el.dataset.t) S.t = el.dataset.t
+  history.replaceState(null,'',`?dir=${S.d}&persona=${S.p}&thread=${S.t}`)
+  render()
+})
+const q = new URLSearchParams(location.search)
+if (q.get('dir')) S.d = q.get('dir').toUpperCase()
+if (q.get('persona')) S.p = q.get('persona')
+if (q.get('thread')) S.t = q.get('thread')
+render()
+</script>
+</body>
+</html>

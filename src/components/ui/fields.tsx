@@ -9,7 +9,7 @@ import { text } from './typography'
  *
  * Two decisions from the spec are enforced here rather than left to each form.
  *
- * The label sits ABOVE the field in mono caps. Not floating inside it: a label
+ * The label sits ABOVE the field, in sentence case. Not floating inside it: a label
  * that lives in the field disappears the moment there is a value, which is
  * exactly when a long form needs it most, and it has nowhere to go when a
  * translation runs long.
@@ -157,7 +157,7 @@ export function OtpInput({
 
 /**
  * An uploaded document. Dashed while it is a drop target, and the constraints
- * are mono fine print beside the size — a person finds out the limit before
+ * are grey fine print beside the size — a person finds out the limit before
  * they pick a 40 MB scan, not after.
  */
 export function FileField({

@@ -6,17 +6,17 @@ import { text } from '../ui'
 
 /**
  * The Interviewer App Android pieces the four drawn screens share. Numbers
- * that change (timers, fees, scores) are always set in Geist Mono, as the
- * design's brief says.
+ * that change (timers, fees, scores) are set with tabular (fixed-width) digits
+ * so they do not wobble as they tick.
  */
 
-/** A mono caps label (10, tracked). */
+/** The small grey label: Geist medium, sentence case. */
 export function IvLabel({ children, tone = 'muted', style }: { children: React.ReactNode; tone?: 'muted' | 'accent' | 'subtle'; style?: object }) {
   const c = { muted: color.textMuted, accent: color.accentText, subtle: color.textSubtle }[tone]
   return <Text style={[text.metaSm, styles.mono, { color: c }, style]}>{children}</Text>
 }
 
-/** M1's small stat tile: the mono key over a mono 22 figure. */
+/** M1's small stat tile: the grey key over a 22 figure. */
 export function IvStat({ k, v, tone = 'ink' }: { k: string; v: string; tone?: 'ink' | 'success' }) {
   return (
     <View style={styles.stat}>
@@ -60,7 +60,7 @@ export function IvAction({
   )
 }
 
-/** M1's owed-scorecard row: the candidate, what submitting releases, and the mono clock. */
+/** M1's owed-scorecard row: the candidate, what submitting releases, and the clock. */
 export function IvOwedRow({
   name, line, clock, urgent, onPress,
 }: { name: string; line: string; clock: string; urgent?: boolean; onPress?: () => void }) {
@@ -85,8 +85,8 @@ const styles = StyleSheet.create({
   pressed: { opacity: opacity.pressed },
   muted: { color: color.textMuted },
   mono: { letterSpacing: trackingNative.eyebrow },
-  figure: { letterSpacing: 0 },
-  clock: { letterSpacing: 0 },
+  figure: { letterSpacing: 0, fontVariant: ['tabular-nums'] },
+  clock: { letterSpacing: 0, fontVariant: ['tabular-nums'] },
   stat: { flex: 1, minWidth: 0, borderRadius: radius.panel, backgroundColor: color.surface, borderWidth: borderWidth.thin, borderColor: color.border, paddingVertical: space.md, paddingHorizontal: spaceHalf['3.5'], gap: space['2xs'] },
   action: { height: height['control-cta'], borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.xl },
   owed: { flexDirection: 'row', alignItems: 'center', gap: space.md, borderRadius: radius.panel, backgroundColor: color.surface, borderWidth: borderWidth.thin, borderColor: color.border, paddingVertical: space.md, paddingHorizontal: spaceHalf['3.5'] },

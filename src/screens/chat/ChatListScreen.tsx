@@ -1,35 +1,44 @@
-import React, { useEffect, useRef, useState } from 'react'
-import { Animated, Pressable, StyleSheet, Text, View } from 'react-native'
+import React, { useState } from 'react'
+import { StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  getConnections, getThreads,
+  getConnections, getThreads, pinThread, searchMessages,
   type ConnectionRow, type ThreadDto,
 } from '../../lib/api/chat'
-import { fmtClock, fmtDayMon, fmtRowStamp, originLabel } from '../../lib/chat/format'
+import { listInterviews } from '../../lib/api/interviews'
+import { fmtClock, fmtDayMon, fmtHours, fmtRelDayInline, fmtRowStamp, originLabel } from '../../lib/chat/format'
 import { useChatSocketEvents } from '../../lib/chat/socket'
-import { borderWidth, color, fontFamilyNative as FF, opacity, radius } from '../../theme'
-import { CompactBar, LargeTitle, SkeletonRows, StateBlock, useCollapsingTitle } from '../../components/tab/kit'
-import { CounterpartyPlate } from './parts'
-
-const OPENS_HOURS_BEFORE = 24
+import { useChatSearch } from '../../lib/chat/search'
+import { useChatConfig } from '../../lib/chat/config'
+import { borderWidth, color, fontFamilyNative as FF, height, space } from '../../theme'
+import { PopoverMenu, type MenuAnchor } from '../../components/ui'
+import { StateBlock } from '../../components/tab/kit'
+import { ChatListFrame, ChatPlate, ChatRow, type ChatListStatus } from '../../components/chat'
 
 /**
- * ST-43 — the three thread kinds in one list, as the signed-off mockup draws it
- * (docs/interviews-profile-chat-final.html), titled the way the server names its
- * counterparty (the COMPANY for an employer, "Your Interviewer" while masked, the
- * real name once revealed, "Apostrophe Support"). A read-only interviewer thread
- * is NOT archived — it stays live. Unread is a mono chip, never a red dot or a
- * coloured row fill. No presence anywhere. The employer context line and the
- * archived reasons live on the Connection, so the list joins the two.
+ * ST-43 — the three thread kinds in one list (docs/chat-redesign-mockups.html,
+ * A), titled the way the server names its counterparty (the COMPANY for an
+ * employer, "Your Interviewer" while masked, the real name once revealed,
+ * "Apostrophe Support"). A read-only interviewer thread is NOT archived — it
+ * stays live, greyed. No presence anywhere. The employer context line and the
+ * archived reasons live on the Connection, and an interview's time on the
+ * interview, so the list joins all three. A long press pins a thread (or
+ * unpins it): pinned threads sit on top, newest pin first, marked with a pin;
+ * the pin is saved on the server, never seen by the other side. The search
+ * filters by name and finds messages by their words.
  */
 export function ChatListScreen({ onOpenThread }: {
   onBack?: () => void; onInterests?: () => void; onOpenThread: (threadId: string) => void
 }) {
   const insets = useSafeAreaInsets()
   const qc = useQueryClient()
-  const [now] = useState(() => Date.now())
-  const title = useCollapsingTitle()
+  const hours = useChatConfig()
+  const [now, setNow] = useState(() => Date.now())
+  const [menu, setMenu] = useState<{ t: ThreadDto; anchor: MenuAnchor } | null>(null)
+  const [pinFailed, setPinFailed] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
+  const search = useChatSearch(searchMessages)
 
   const q = useQuery({
     queryKey: ['threads'],
@@ -40,7 +49,14 @@ export function ChatListScreen({ onOpenThread }: {
       ])
       const conns = new Map<string, ConnectionRow>()
       for (const r of [...ac.rows, ...cl.rows, ...bl.rows]) conns.set(r.id, r)
-      return { live: l.rows, archived: a.rows, conns }
+      // An interviewer thread's line names the interview's time — the interview's own slot, never a guess from opensAt.
+      const slots = new Map<string, string>()
+      if ([...l.rows, ...a.rows].some((t) => t.kind === 'STUDENT_INTERVIEWER' && t.interviewId)) {
+        try {
+          for (const iv of (await listInterviews()).interviews) slots.set(iv.id, iv.slotStart)
+        } catch { /* the line falls back to what the thread knows */ }
+      }
+      return { live: l.rows, archived: a.rows, conns, slots }
     },
   })
 
@@ -49,77 +65,94 @@ export function ChatListScreen({ onOpenThread }: {
     onRead: () => qc.invalidateQueries({ queryKey: ['threads'] }),
   })
 
-  const strip = !connected ? <ReconnectingStrip /> : null
-  const frame = (c: React.ReactNode) => (
-    <View style={[s.page, { paddingTop: insets.top }]}>
-      {strip}
-      <LargeTitle title="Chats" />
-      {c}
-    </View>
-  )
-  if (q.isPending) return frame(<View style={s.pad}><SkeletonRows count={5} /></View>)
-  if (q.isError) return frame(<StateBlock icon="alert" title="Could not load your chats." body="Nothing has changed. Try again in a moment." action="Try again" onAction={() => { void q.refetch() }} />)
+  // Optimistic: the row moves at once, and the refetch settles the order either way.
+  async function togglePin(t: ThreadDto) {
+    const pinned = !t.pinnedAt
+    setPinFailed(false)
+    const flip = (rows: ThreadDto[]) => rows.map((r) => (r.id === t.id ? { ...r, pinnedAt: pinned ? new Date().toISOString() : null } : r))
+    qc.setQueryData<typeof q.data>(['threads'], (d) => (d ? { ...d, live: flip(d.live), archived: flip(d.archived) } : d))
+    try { await pinThread(t.id, pinned) } catch { setPinFailed(true) } finally { qc.invalidateQueries({ queryKey: ['threads'] }) }
+  }
 
-  const { live, archived, conns } = q.data!
-  // One flat list, newest last message first; archived / withdrawn / blocked sit at their natural date.
-  const all = [...live, ...archived].sort((a, b) => (b.lastMessageAt ? +new Date(b.lastMessageAt) : 0) - (a.lastMessageAt ? +new Date(a.lastMessageAt) : 0))
+  async function refresh() {
+    setRefreshing(true)
+    try { await q.refetch() } finally { setNow(Date.now()); setRefreshing(false) }
+  }
+
+  const data = q.data
+  // One flat list: pinned first (newest pin on top), then newest last message; archived / withdrawn / blocked sit at their natural date.
+  const stamp = (iso: string | null) => (iso ? +new Date(iso) : 0)
+  const all = data ? [...data.live, ...data.archived].sort((a, b) => stamp(b.pinnedAt) - stamp(a.pinnedAt) || stamp(b.lastMessageAt) - stamp(a.lastMessageAt)) : []
+  const shown = search.term ? all.filter((t) => t.counterparty.name.toLowerCase().includes(search.term)) : all
+  const status: ChatListStatus = data ? (all.length ? 'ready' : 'empty') : q.isError ? 'error' : 'loading'
+
+  const rows = shown.map((t) => {
+    const muted = t.state.archived || (t.kind === 'STUDENT_INTERVIEWER' && t.state.readOnly && !t.state.open)
+    return (
+      <ChatRow
+        key={t.id}
+        plate={<ChatPlate thread={t} size={height['control-sm']} muted={muted} />}
+        name={t.counterparty.name}
+        pinned={!!t.pinnedAt}
+        time={t.lastMessageAt ? fmtRowStamp(t.lastMessageAt, now) : null}
+        unread={t.unread}
+        preview={t.lastMessagePreview ?? ' '}
+        context={contextLine(t, t.connectionId ? data?.conns.get(t.connectionId) : undefined, t.interviewId ? data?.slots.get(t.interviewId) : undefined, now)}
+        muted={muted}
+        onPress={() => onOpenThread(t.id)}
+        onMenu={(anchor) => setMenu({ t, anchor })}
+        menuLabel={t.pinnedAt ? 'Unpin chat' : 'Pin chat'}
+      />
+    )
+  })
+
+  const opensWhen = hours.opensHoursBefore != null ? `${fmtHours(hours.opensHoursBefore)} before` : 'shortly before'
 
   return (
     <View style={[s.page, { paddingTop: insets.top }]}>
-      <CompactBar title="Chats" opacity={title.barOpacity} />
-      {strip}
-      <Animated.ScrollView onScroll={title.onScroll} scrollEventThrottle={16} showsVerticalScrollIndicator={false} contentContainerStyle={s.body}>
-        <LargeTitle title="Chats" />
-
-        {live.length === 0 && archived.length === 0 ? (
+      <ChatListFrame
+        title="Chats"
+        connected={connected}
+        status={status}
+        errorView={<StateBlock icon="alert" title="Could not load your chats." body="Nothing has changed. Try again in a moment." action="Try again" onAction={() => { q.refetch() }} />}
+        emptyView={(
           <View style={s.pad}>
             <View style={s.emptyCard}>
               <Text style={s.emptyTitle}>No chats yet.</Text>
-              <Text style={s.emptyBody}>A chat opens when you accept an Interest, and one opens with your interviewer the day before your interview. Support is always here.</Text>
-            </View>
-          </View>
-        ) : (
-          <View style={s.pad}>
-            <View style={s.group}>
-              {all.map((t, i) => <ThreadRow key={t.id} t={t} conn={t.connectionId ? conns.get(t.connectionId) : undefined} now={now} first={i === 0} muted={t.state.archived || (t.kind === 'STUDENT_INTERVIEWER' && t.state.readOnly && !t.state.open)} onOpen={() => onOpenThread(t.id)} />)}
+              <Text style={s.emptyBody}>{`A chat opens when you accept an Interest, and one opens with your interviewer ${opensWhen} your interview. Support is always here.`}</Text>
             </View>
           </View>
         )}
-      </Animated.ScrollView>
+        query={search.query}
+        onQuery={search.setQuery}
+        hits={search.hits}
+        nameOf={(id) => all.find((t) => t.id === id)?.counterparty.name ?? 'Conversation'}
+        onOpenHit={onOpenThread}
+        notice={pinFailed ? 'That pin did not save. Try again.' : null}
+        rows={rows}
+        hint="Long-press a chat to pin it"
+        refreshing={refreshing}
+        onRefresh={refresh}
+        bottomPad={height['tab-bar'] + space['4xl']}
+      />
+      <PopoverMenu
+        anchor={menu?.anchor ?? null}
+        onClose={() => setMenu(null)}
+        items={menu ? [{ key: 'pin', label: menu.t.pinnedAt ? 'Unpin chat' : 'Pin chat', icon: 'pushpin', onPress: () => { togglePin(menu.t) } }] : []}
+      />
     </View>
   )
 }
 
-/** Shown above the title while the socket is down: nothing is lost, a sent message goes out on reconnect. */
-function ReconnectingStrip() {
-  const v = useRef(new Animated.Value(1)).current
-  useEffect(() => {
-    const a = Animated.loop(Animated.sequence([
-      Animated.timing(v, { toValue: 0.3, duration: 600, useNativeDriver: true }),
-      Animated.timing(v, { toValue: 1, duration: 600, useNativeDriver: true }),
-    ]))
-    a.start()
-    return () => a.stop()
-  }, [v])
-  return (
-    <View accessibilityRole="alert" style={s.strip}>
-      <Animated.View style={[s.stripDot, { opacity: v }]} />
-      <Text style={s.stripText}>Reconnecting · a sent message will go out when you are back</Text>
-    </View>
-  )
-}
-
-function contextLine(t: ThreadDto, conn: ConnectionRow | undefined, now: number): string {
+/** What the chat is, in a line: the connection, the interview, or support. */
+function contextLine(t: ThreadDto, conn: ConnectionRow | undefined, slotStart: string | undefined, now: number): string {
   if (t.kind === 'USER_ADMIN') return 'Support · replies within one working day'
   if (t.kind === 'STUDENT_INTERVIEWER') {
-    const slotStart = t.opensAt ? +new Date(t.opensAt) + OPENS_HOURS_BEFORE * 3_600_000 : null
-    if (t.readOnlyAt && now >= +new Date(t.readOnlyAt)) return `Interview ${slotStart ? fmtDayMon(new Date(slotStart).toISOString()) : ''} · read-only since ${fmtDayMon(t.readOnlyAt)}`
-    if (t.opensAt && now < +new Date(t.opensAt)) return `Opens ${fmtDayMon(t.opensAt)}`
-    if (slotStart) {
-      const diff = Math.round((slotStart - now) / 86_400_000)
-      const rel = diff <= 0 ? 'today' : diff === 1 ? 'tomorrow' : fmtDayMon(new Date(slotStart).toISOString())
-      return `Interview ${rel}, ${fmtClock(new Date(slotStart).toISOString())}`
+    if (t.readOnlyAt && now >= +new Date(t.readOnlyAt)) {
+      return slotStart ? `Interview ${fmtDayMon(slotStart)} · read-only since ${fmtDayMon(t.readOnlyAt)}` : `Read-only since ${fmtDayMon(t.readOnlyAt)}`
     }
+    if (t.opensAt && now < +new Date(t.opensAt)) return `Opens ${fmtDayMon(t.opensAt)}`
+    if (slotStart) return `Interview ${fmtRelDayInline(slotStart, now)}, ${fmtClock(slotStart)}`
     return 'Your interview'
   }
   if (conn) {
@@ -130,63 +163,10 @@ function contextLine(t: ThreadDto, conn: ConnectionRow | undefined, now: number)
   return 'Connected'
 }
 
-function ThreadRow({ t, conn, now, first, muted, onOpen }: {
-  t: ThreadDto; conn?: ConnectionRow; now: number; first?: boolean; muted?: boolean; onOpen: () => void
-}) {
-  const unread = t.unread > 0
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`${t.counterparty.name}${unread ? `, ${t.unread} unread` : ''}`}
-      onPress={onOpen}
-      style={({ pressed }) => [s.row, first ? null : s.rowBorder, pressed && s.pressed]}
-    >
-      <CounterpartyPlate thread={t} size={44} tinted />
-      <View style={s.rowBody}>
-        <View style={s.rowTop}>
-          <Text style={[s.name, unread && s.nameUnread, muted && s.nameMuted]} numberOfLines={1}>{t.counterparty.name}</Text>
-          {!!t.lastMessageAt && <Text style={s.stamp}>{fmtRowStamp(t.lastMessageAt, now)}</Text>}
-        </View>
-        <View style={s.rowBottom}>
-          <Text style={[s.preview, unread && s.previewUnread]} numberOfLines={1}>{t.lastMessagePreview ?? ' '}</Text>
-          {unread && <View style={s.chip}><Text style={s.chipText}>{String(t.unread)}</Text></View>}
-        </View>
-        <Text style={s.ctx} numberOfLines={2}>{contextLine(t, conn, now).toUpperCase()}</Text>
-      </View>
-    </Pressable>
-  )
-}
-
 const s = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.background },
-  body: { paddingBottom: 130 },
   pad: { paddingHorizontal: 20 },
-  pressed: { opacity: opacity.pressed },
-
-  strip: {
-    flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 9, paddingHorizontal: 20,
-    backgroundColor: color.warningSoft, borderBottomWidth: borderWidth.thin, borderBottomColor: color.warningEdge,
-  },
-  stripDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: color.warningFill },
-  stripText: { flex: 1, fontFamily: FF.monoMedium, fontSize: 11, letterSpacing: 0.66, textTransform: 'uppercase', color: color.warning },
-
   emptyCard: { backgroundColor: color.surface, borderWidth: borderWidth.thin, borderColor: color.border, borderRadius: 18, padding: 16, marginTop: 6 },
   emptyTitle: { fontFamily: FF.bodyBold, fontSize: 20, letterSpacing: -0.4, color: color.text },
   emptyBody: { fontFamily: FF.body, fontSize: 15, lineHeight: 22, color: color.textMuted, marginTop: 8 },
-
-  group: { backgroundColor: color.surface, borderWidth: borderWidth.thin, borderColor: color.border, borderRadius: 18, paddingHorizontal: 14, marginTop: 8 },
-  row: { flexDirection: 'row', alignItems: 'flex-start', gap: 14, paddingVertical: 12, minHeight: 80 },
-  rowBorder: { borderTopWidth: borderWidth.thin, borderTopColor: color.border },
-  rowBody: { flex: 1, minWidth: 0 },
-  rowTop: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 10 },
-  name: { flex: 1, fontFamily: FF.bodySemiBold, fontSize: 17, letterSpacing: -0.17, color: color.text },
-  nameUnread: { fontFamily: FF.bodyBold },
-  nameMuted: { color: color.textMuted },
-  stamp: { fontFamily: FF.monoMedium, fontSize: 11, color: color.textSubtle },
-  ctx: { fontFamily: FF.monoMedium, fontSize: 10.5, lineHeight: 15, letterSpacing: 0.63, color: color.textSubtle, marginTop: 5 },
-  rowBottom: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 3 },
-  preview: { flex: 1, fontFamily: FF.body, fontSize: 14.5, color: color.textMuted },
-  previewUnread: { fontFamily: FF.bodyMedium, color: color.text },
-  chip: { minWidth: 22, height: 22, borderRadius: radius.pill, paddingHorizontal: 7, backgroundColor: color.surfaceSunken, alignItems: 'center', justifyContent: 'center' },
-  chipText: { fontFamily: FF.monoMedium, fontSize: 11, color: color.text },
 })

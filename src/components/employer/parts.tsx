@@ -198,5 +198,5 @@ const styles = StyleSheet.create({
     borderColor: color.border,
     backgroundColor: color.surfaceMuted,
   },
-  monogramText: { fontFamily: fontFamilyNative.monoMedium, color: color.textMuted },
+  monogramText: { fontFamily: fontFamilyNative.bodyMedium, color: color.textMuted },
 })

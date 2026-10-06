@@ -280,3 +280,32 @@ Direction A of `docs/feed-details-mockups.html`, as on the student feed.
   - Everything the old light sheet did still works: the Interest sheet, the clip player and the document download.
 - **Unused now:** `ProfileHead`, `ProfileFacts` and `ProfileSections` in `components/employer/profile.tsx` have no other users. They were left in place.
 - **Not verified on a device:** the emulator is signed in as a student.
+
+## Résumés (ST-35, 2026-10-05)
+
+Built with existing components and tokens only; no new design. Backend already done in apostrophe-admin (`resume` on the profile, applicant, applications, shortlist and active connection rows; the one download route now also answers for applicants and connections).
+
+- **One way to open a document:** `lib/employer/useCandidateDocument.ts` — the signed link from `GET /employers/candidates/:id/documents/:docId`, then `Linking.openURL` (the phone's browser or PDF viewer). It tracks the document being fetched and hands back the server's sentence when refused; each screen shows it where it already shows notices.
+- **Profile page:** a Résumé button beside the name (only when `resume` is sent). The Documents · links section at the bottom is unchanged.
+- **Profile sheet:** the résumé row sits right under the facts, as well as in Documents.
+- **Applicant (EM-21):** Résumé beside Full video, and a DOCUMENTS · LINKS card at the end. It reuses `DocumentRow` and `LinkRow`, now exported from `components/employer/profile.tsx`, which the profile page draws too.
+- **CV on rows:** applicants (J2), shortlist cards (S1) and active connections (EM-24), only when the row carries `resume`. The button is its own press target, so it does not open the row.
+- **Chat (EM-26):** a file icon in the header and a Résumé row in the ⋯ menu, from the connection row the thread already reads.
+- **Portfolio links were never shown:** the API sends `string[]`, but the app typed them `{label, url}[]` and dropped every one. They are now typed `string[]` and drawn on the profile page, the sheet and the applicant screen (host over URL).
+- **Not done:** Interests (I2) reads the same connection row and could carry CV too; it was not in scope.
+- **Not verified:** not run on a device. `tsc` clean; `eslint` has no new findings; `check-raw-design-values` has no new findings; jest `__tests__/profileDocuments.test.tsx` covers the hook and the links.
+
+## APK enhancements (2026-10-05)
+
+- **Pinned chats:** long press a Chats row → Pin chat / Unpin chat in a small popup (`PopoverMenu`). Pinned chats sit above the rest, newest pin first, with a pushpin glyph. Server-side per person (`PUT/DELETE /employers/messages/:id/pin`, `ThreadDto.pinnedAt`); the candidate never sees it.
+- **Confirmations** (`EmDialog`): Close a job (final — no reopen), Pause a job, Delete a saved search (drawn inside the sheet), Pass (✕) on a candidate's full profile (uses `config.passHideDays`; the feed's Pass keeps its Undo toast and stays one tap).
+- **Job editor · minimum salary:** an ⓘ after "Salary range · per year" (`EmField` `onInfo`) explains that the minimum can't be changed once the post is submitted. Once the server says `salaryMinLocked` (submitted for review, or ever live) the "from" field is read-only, a hint says why, and the minimum is left out of the update. The backend refuses a changed minimum on such a post, so the web can't bypass it.
+- **Sign out:** the `destructive` (red outline) Button.
+- **Not verified on a device.**
+
+## UI pass 2026-10-06 — labels, chat A, registration C
+
+- **Labels** in Geist, normal case (see the student doc for the token change). The employer feed's SHORTLIST / PASS stamps stay in capitals by design.
+- **Chat A:** the shared chat pieces; the employer thread gains "Withdraw connection" in ⋯ (its dialog is a copy of the Connections one — exporting `WithdrawDialog` would remove the duplicate); read-only transcripts are no longer dimmed.
+- **Register C:** company first, then you; size chips; confirm password + terms; the error summary/focus order now follow the screen; "usually within N hours" from `/config`; the verify screen's always-disabled Continue is gone.
+- **Not verified on a device.**

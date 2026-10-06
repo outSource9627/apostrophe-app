@@ -1,18 +1,24 @@
-import React, { useState } from 'react'
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import React, { useRef, useState } from 'react'
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import Svg, { Path } from 'react-native-svg'
-import { api, ApiClientError } from '../../lib/api'
-import { color, space, borderWidth, fontFamilyNative as FF } from '../../theme'
+import { api } from '../../lib/api'
+import { color, space, borderWidth, fontFamilyNative as FF, fontSize } from '../../theme'
 import {
-  Banner, Button, FilmThumb, Sheet, StatusPill, UnverifiedMark, VerifiedSeal,
+  Banner, Body, Button, FilmThumb, ProgressBar, Sheet, StatusPill, UnverifiedMark, VerifiedSeal, text,
 } from '../../components/ui'
 import { Btn, DetailHeader, Panel, Skel, TextLink } from '../../components/tab/kit'
 import type { Tone } from '../../components/ui'
 import { getVideoResume, listSelfVideos, type SelfVideo, type VideoResume } from '../../lib/api/student'
 import { fmtDayMonthYear } from '../../lib/chat/format'
 import { clock } from '../../lib/employer/candidateFormat'
+import type { UploadRule } from '../../lib/api/uploads'
+import { label as kindLabel } from '../../lib/profile/labels'
+import {
+  documentsBody, openOwnDocument, ruleSentence, saveErrorText, useProfileUpload, withResume, withoutDocument,
+  type DocEntry, type ProfileDocument,
+} from '../../lib/profile/upload'
 import {
   PersonalStep, EducationStep, ExperienceStep, SkillsStep, PreferencesStep, DocumentsStep,
   type Config, type StepProps,
@@ -25,7 +31,7 @@ interface Profile {
   experience: { id?: string; company?: string; role?: string; from?: string; to?: string; description?: string }[]
   skills: { id?: string; name: string; status: string }[]
   preferences: any | null
-  documents: { kind: string; key: string; name?: string }[]
+  documents: ProfileDocument[]
   portfolioLinks: string[]
   publishedAt: string | null
   completion: { pct: number; canBook: boolean; missing: string[] }
@@ -68,6 +74,10 @@ function draftFor(step: StepKey, p: Profile): Record<string, unknown> {
  * being made, one that failed and one an admin took down, and none of those is
  * "book an interview". Below the verified film sit the student's own videos, in a
  * dashed frame marked Unverified, so the two can never be mistaken for one another.
+ *
+ * Documents (ST-35): the résumé has its own row — View, Replace, Remove — and
+ * each certificate can be opened, so the student can check the file employers
+ * download.
  */
 export function ProfileViewScreen({ onBack, onBook, onVisibility, onVideos, onVideoResume }: {
   onBack: () => void; onBook: () => void; onVisibility: () => void; onVideos: () => void; onVideoResume: () => void
@@ -102,7 +112,7 @@ export function ProfileViewScreen({ onBack, onBook, onVisibility, onVideos, onVi
       <DetailHeader title="Profile" onBack={onBack} right={<TextLink label="Videos" onPress={onVideos} />} />
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
         <View style={styles.titleBlock}>
-          <Text style={styles.eyebrow}>YOUR PROFILE</Text>
+          <Text style={styles.eyebrow}>Your profile</Text>
           <Text style={styles.title}>This is what an employer sees.</Text>
         </View>
 
@@ -189,12 +199,7 @@ export function ProfileViewScreen({ onBack, onBook, onVisibility, onVideos, onVi
         </Section>
 
         <Section title="Documents" onEdit={() => setEditing('documents')}>
-          {p.documents.length === 0 && p.portfolioLinks.length === 0 ? <Text style={styles.empty}>Nothing added yet.</Text> : (
-            <>
-              {p.documents.map((d) => <DocRow key={d.key} name={d.name ?? fileName(d.key)} kind={lbl(d.kind) ?? d.kind} />)}
-              {p.portfolioLinks.map((l) => <Text key={l} style={styles.link}>{l}</Text>)}
-            </>
-          )}
+          <DocumentsBlock profile={p} rules={cfg.uploads} />
         </Section>
 
         <SelfVideosSection query={videosQ} onManage={onVideos} />
@@ -314,7 +319,7 @@ function SelfVideosSection({ query, onManage }: { query: { isPending: boolean; i
   return (
     <View style={styles.selfSection}>
       <View style={styles.sectionHead}>
-        <Text style={styles.eyebrow}>YOUR VIDEOS</Text>
+        <Text style={styles.eyebrow}>Your videos</Text>
         <Pressable accessibilityRole="button" onPress={onManage} style={styles.editBtn} hitSlop={space.sm}>
           <Text style={styles.editText}>Manage videos</Text>
         </Pressable>
@@ -329,7 +334,7 @@ function SelfVideosSection({ query, onManage }: { query: { isPending: boolean; i
         return (
           <View key={v.id} style={[styles.selfRow, i === 0 && styles.selfRowFirst]}>
             <Text style={styles.selfTitle} numberOfLines={1}>{v.title || KIND_LABEL[v.kind]}</Text>
-            <Text style={styles.eyebrow}>{[KIND_LABEL[v.kind], length].filter(Boolean).join(' · ').toUpperCase()}</Text>
+            <Text style={styles.eyebrow}>{[KIND_LABEL[v.kind], length].filter(Boolean).join(' · ')}</Text>
             <View style={styles.selfMarks}>
               <StatusPill tone={st.tone} label={st.label} />
               <UnverifiedMark />
@@ -338,6 +343,139 @@ function SelfVideosSection({ query, onManage }: { query: { isPending: boolean; i
         )
       })}
     </View>
+  )
+}
+
+/**
+ * ST-35 — the Documents section's files. The résumé is one row of its own:
+ * View opens it through the same 15-minute link an employer's download uses;
+ * Replace uploads a new file and swaps it in place (the server keeps one
+ * résumé); Remove asks first. With no résumé the row offers the upload, under
+ * the server's file rule. Each certificate has View. Both save the documents
+ * step's whole body — the other files and the links go back as they are.
+ */
+function DocumentsBlock({ profile, rules }: { profile: Profile; rules?: Record<string, UploadRule> }) {
+  const qc = useQueryClient()
+  const upload = useProfileUpload()
+  const [viewing, setViewing] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [removing, setRemoving] = useState(false)
+  const [removeError, setRemoveError] = useState<string | null>(null)
+  // An upload outlives the render that started it: the swap is made into the profile as it is THEN.
+  const latest = useRef(profile)
+  latest.current = profile
+
+  const documents = profile.documents ?? []
+  const resume = documents.find((d) => d.kind === 'RESUME') ?? null
+  const others = documents.filter((d) => d.kind !== 'RESUME')
+  const rule = rules?.RESUME
+
+  const save = useMutation({
+    mutationFn: (next: DocEntry[]) =>
+      api.patch('/students/me/profile/documents', documentsBody(next, latest.current.portfolioLinks ?? [])),
+    // Held pending until the profile has been read again, so the row never shows the old file as current.
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['profile'] }),
+  })
+  const busy = save.isPending || upload.uploading
+
+  async function view(id: string) {
+    if (viewing) return
+    setError(null)
+    upload.setError(null)
+    setViewing(id)
+    const failed = await openOwnDocument(id)
+    setViewing(null)
+    if (failed) setError(failed)
+  }
+
+  async function replace() {
+    if (busy) return
+    setError(null)
+    const done = await upload.run('RESUME', rule)
+    if (!done) return
+    try {
+      await save.mutateAsync(withResume(latest.current.documents ?? [], { kind: 'RESUME', key: done.key, name: done.name }))
+    } catch (e) {
+      setError(saveErrorText(e))
+    }
+  }
+
+  async function confirmRemove() {
+    const current = latest.current.documents?.find((d) => d.kind === 'RESUME')
+    if (!current) return setRemoving(false)
+    setRemoveError(null)
+    try {
+      await save.mutateAsync(withoutDocument(latest.current.documents ?? [], current.key))
+      setRemoving(false)
+    } catch (e) {
+      setRemoveError(saveErrorText(e))
+    }
+  }
+
+  const resumeName = resume ? resume.name || fileName(resume.key) : ''
+  const failure = error ?? upload.error
+  return (
+    <>
+      {upload.uploading ? (
+        <View style={styles.uploadBlock}>
+          <View style={styles.progressHead}>
+            <Text style={styles.sub} numberOfLines={1}>Uploading…</Text>
+            <Text style={[text.metaMd, styles.pctText]}>{`${Math.round((upload.progress ?? 0) * 100)}%`}</Text>
+          </View>
+          <ProgressBar pct={(upload.progress ?? 0) * 100} tone="accent" thin />
+          <View style={styles.leftBtn}><SmallBtn label="Cancel" onPress={upload.cancel} /></View>
+        </View>
+      ) : resume ? (
+        <View>
+          <DocRow name={resumeName} kind={kindLabel(resume.kind)} />
+          <View style={styles.docActions}>
+            {save.isPending ? <ActivityIndicator color={color.textMuted} /> : (
+              <>
+                {!!resume.id && <DocAction label="View" a11y={`View ${resumeName}`} busy={viewing === resume.id} onPress={() => { if (resume.id) view(resume.id) }} />}
+                <DocAction label="Replace" a11y="Replace your résumé" onPress={() => { replace() }} />
+                <DocAction label="Remove" a11y="Remove your résumé" onPress={() => { setRemoveError(null); setRemoving(true) }} />
+              </>
+            )}
+          </View>
+        </View>
+      ) : (
+        <View style={styles.addResume}>
+          {save.isPending ? <ActivityIndicator color={color.textMuted} /> : <SmallBtn label="Add a résumé" onPress={() => { replace() }} />}
+          <Text style={styles.xs}>{ruleSentence(rule)}</Text>
+        </View>
+      )}
+      {others.map((d) => {
+        const name = d.name || fileName(d.key)
+        return (
+          <DocRow
+            key={d.key}
+            name={name}
+            kind={kindLabel(d.kind)}
+            action={d.id ? <DocAction label="View" a11y={`View ${name}`} busy={viewing === d.id} onPress={() => { if (d.id) view(d.id) }} /> : undefined}
+          />
+        )
+      })}
+      {profile.portfolioLinks.map((l) => <Text key={l} style={styles.link}>{l}</Text>)}
+      {!!failure && <View style={styles.docBanner}><Banner tone="danger">{failure}</Banner></View>}
+
+      <Sheet open={removing} onClose={() => { if (!save.isPending) setRemoving(false) }} title="Remove this résumé?">
+        {!!resumeName && <Body size="sm" weight="medium">{resumeName}</Body>}
+        {!!removeError && <Banner tone="danger">{removeError}</Banner>}
+        <View style={styles.sheetButtons}>
+          <Btn variant="destructive" busy={save.isPending} label="Remove" accessibilityLabel={`Remove ${resumeName}`} onPress={() => { confirmRemove() }} />
+          <Btn variant="quiet" label="Keep it" disabled={save.isPending} onPress={() => setRemoving(false)} />
+        </View>
+      </Sheet>
+    </>
+  )
+}
+
+/** A document's text action, in the section's own Edit style. */
+function DocAction({ label, a11y, busy, onPress }: { label: string; a11y: string; busy?: boolean; onPress: () => void }) {
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel={a11y} accessibilityState={{ busy: !!busy }} disabled={busy} onPress={onPress} style={styles.editBtn} hitSlop={space.sm}>
+      {busy ? <ActivityIndicator color={color.accent} /> : <Text style={styles.editText}>{label}</Text>}
+    </Pressable>
   )
 }
 
@@ -350,7 +488,8 @@ function EditSheet({ step, profile, config, onClose, onSaved, Body: StepBody, in
   const mut = useMutation({
     mutationFn: () => api.patch(`/students/me/profile/${step}`, draft),
     onSuccess: onSaved,
-    onError: (e) => setError(e instanceof ApiClientError ? e.message : 'Could not save. Try again.'),
+    // A refused field says why ("Keep one résumé…"), which the request's own message does not.
+    onError: (e) => setError(saveErrorText(e)),
   })
   const patch = (next: Record<string, unknown>) => setDraft((d) => ({ ...d, ...next }))
   return (
@@ -373,7 +512,7 @@ function Section({ title, onEdit, children }: { title: string; onEdit: () => voi
   return (
     <Panel style={styles.section}>
       <View style={styles.sectionHead}>
-        <Text style={styles.eyebrow}>{title.toUpperCase()}</Text>
+        <Text style={styles.eyebrow}>{title}</Text>
         <Pressable accessibilityRole="button" onPress={onEdit} style={styles.editBtn} hitSlop={space.sm}>
           <Text style={styles.editText}>Edit</Text>
         </Pressable>
@@ -386,19 +525,20 @@ function Section({ title, onEdit, children }: { title: string; onEdit: () => voi
 function KV({ k, v }: { k: string; v?: string }) {
   return (
     <View style={styles.kv}>
-      <Text style={styles.kvKey}>{k.toUpperCase()}</Text>
+      <Text style={styles.kvKey}>{k}</Text>
       <Text style={[styles.kvVal, !v && styles.kvEmpty]}>{v ?? 'Not set yet'}</Text>
     </View>
   )
 }
-function DocRow({ name, kind }: { name: string; kind: string }) {
+function DocRow({ name, kind, action }: { name: string; kind: string; action?: React.ReactNode }) {
   return (
     <View style={styles.doc}>
       <Svg width={18} height={18} viewBox="0 0 24 24" fill="none"><Path d="M14 3v5h5M7 3h8l5 5v11a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z" stroke={color.textMuted} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" /></Svg>
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text style={styles.docName} numberOfLines={1}>{name}</Text>
-        <Text style={styles.docKind}>{kind.toUpperCase()}</Text>
+        <Text style={styles.docKind}>{kind}</Text>
       </View>
+      {action}
     </View>
   )
 }
@@ -423,7 +563,7 @@ function salary(min?: number, max?: number): string | undefined {
   return max == null ? l(min) : `${l(min).replace(' LPA', '')} – ${l(max)}`
 }
 
-const MONO_LABEL = { fontFamily: FF.monoMedium, fontSize: 11, letterSpacing: 0.88 } as const
+const LABEL = { fontFamily: FF.bodyMedium, fontSize: fontSize['meta-md'] } as const
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.background },
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
@@ -432,7 +572,7 @@ const styles = StyleSheet.create({
   body: { paddingHorizontal: 20, paddingTop: 4, paddingBottom: 30, gap: 10 },
   pressed: { opacity: 0.6 },
   titleBlock: { gap: 4, paddingHorizontal: 4, paddingTop: 4, paddingBottom: 6 },
-  eyebrow: { ...MONO_LABEL, color: color.textMuted },
+  eyebrow: { ...LABEL, color: color.textMuted },
   title: { fontFamily: FF.bodySemiBold, fontSize: 26, lineHeight: 30, letterSpacing: -0.78, color: color.text },
   sub: { fontFamily: FF.body, fontSize: 14, lineHeight: 20, color: color.textMuted },
   xs: { fontFamily: FF.body, fontSize: 12, lineHeight: 17, color: color.textSubtle, marginTop: 2 },
@@ -440,7 +580,7 @@ const styles = StyleSheet.create({
   link: { fontFamily: FF.body, fontSize: 14, color: color.accentText, marginTop: 8 },
   completion: { paddingHorizontal: 14, paddingVertical: 14, gap: 10 },
   pctRow: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
-  pct: { fontFamily: FF.monoMedium, fontSize: 28, letterSpacing: -0.84, color: color.successFill },
+  pct: { fontFamily: FF.bodyMedium, fontSize: 28, letterSpacing: -0.84, fontVariant: ['tabular-nums'], color: color.successFill },
   pctNote: { flex: 1, fontFamily: FF.body, fontSize: 13, color: color.textMuted },
   bar: { height: 4, borderRadius: 3, backgroundColor: color.surfaceSunken, overflow: 'hidden' },
   barFill: { height: '100%', borderRadius: 3, backgroundColor: color.successFill },
@@ -466,7 +606,7 @@ const styles = StyleSheet.create({
   editBtn: { minHeight: 32, justifyContent: 'center' },
   editText: { fontFamily: FF.bodySemiBold, fontSize: 14, color: color.accent },
   kv: { gap: 2, marginBottom: 12 },
-  kvKey: { ...MONO_LABEL, color: color.textSubtle },
+  kvKey: { ...LABEL, color: color.textSubtle },
   kvVal: { fontFamily: FF.body, fontSize: 14, lineHeight: 20, color: color.text },
   kvEmpty: { color: color.textSubtle },
   xp: { gap: 3, paddingVertical: 14, borderTopWidth: borderWidth.thin, borderTopColor: color.border },
@@ -479,5 +619,12 @@ const styles = StyleSheet.create({
   skillTextPending: { color: color.textMuted },
   doc: { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 10, backgroundColor: color.surfaceMuted, padding: 12, marginTop: 4 },
   docName: { fontFamily: FF.body, fontSize: 14, color: color.text },
-  docKind: { ...MONO_LABEL, color: color.textSubtle },
+  docKind: { ...LABEL, color: color.textSubtle },
+  docActions: { flexDirection: 'row', alignItems: 'center', gap: space.lg, marginTop: space.xs },
+  addResume: { alignItems: 'flex-start', gap: space.sm },
+  uploadBlock: { gap: space.sm },
+  progressHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: space.sm },
+  pctText: { color: color.text },
+  docBanner: { marginTop: space.sm },
+  sheetButtons: { marginTop: space.sm, gap: space.sm },
 })

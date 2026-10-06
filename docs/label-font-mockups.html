@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Label Font Options</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@500&family=Inter:wght@400;500;600;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Manrope:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FAFAFC; --surface:#fff; --muted:#F1F3F7; --sunken:#E6E8EE;
+    --text:#0B0F1A; --text2:#3A4256; --text3:#6B7385; --text4:#8A91A2;
+    --border:#E3E6ED; --border-strong:#C9CED9;
+    --accent:#5B3DF5; --accent-text:#4A2FE0; --accent-soft:#EFEBFF; --accent-wash:#F7F6FF; --accent-muted:#C4B8FF; --accent-bright:#7258FF;
+    --ink:#0B0F1A; --ink-raised:#151B2B; --on-muted:#C9CED9; --on-body:#A6ACBA; --glass:rgba(11,15,26,.6); --hair:rgba(255,255,255,.1);
+    --ok:#0B7A55; --ok-fill:#0E9F6E; --ok-soft:#E6F7F0; --warn:#935F00; --warn-soft:#FFF5E1; --danger:#C22A30; --danger-fill:#E5484D; --danger-soft:#FDECEC; --danger-on:#FF8A8E;
+    /* set by the picker */
+    --label-font:'Geist'; --num-font:'Geist'; --body-font:'Geist';
+    --label-size:12.5px; --label-weight:500; --label-track:0; --label-case:none;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Geist',system-ui,sans-serif;background:#E9EAF2;color:var(--text);padding:36px 24px 90px}
+  button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+  .wrap{max-width:1360px;margin:0 auto}
+  .intro{background:var(--surface);border:1px solid var(--border);border-radius:28px;padding:28px 32px;margin-bottom:16px}
+  .intro h1{font-size:30px;letter-spacing:-.035em;line-height:1.1}
+  .intro p{font-size:16px;color:var(--text3);margin-top:8px;line-height:1.5;max-width:980px}
+  .bar{position:sticky;top:10px;z-index:50;display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px}
+  .seg{display:flex;flex-wrap:wrap;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:22px;padding:4px;box-shadow:0 8px 24px rgba(11,15,26,.08)}
+  .seg button{padding:8px 13px;border-radius:99px;font-size:14px;font-weight:600;color:var(--text3);white-space:nowrap}
+  .seg button.on{background:var(--accent);color:#fff}
+  .seg .lab{font-size:11px;font-weight:600;color:var(--text4);padding:9px 6px 0 10px;text-transform:uppercase;letter-spacing:.08em}
+
+  /* the compare strip: one line per font, side by side */
+  .compare{background:var(--surface);border:1px solid var(--border);border-radius:28px;padding:22px 26px;margin-bottom:18px;overflow-x:auto}
+  .compare h3{font-size:18px;letter-spacing:-.02em;margin-bottom:4px}
+  .compare .sub{font-size:14px;color:var(--text3);margin-bottom:14px}
+  .compare table{border-collapse:collapse;min-width:1100px;width:100%}
+  .compare th{text-align:left;font-size:12px;font-weight:600;color:var(--text3);padding:0 14px 10px 0;border-bottom:1px solid var(--border-strong);white-space:nowrap}
+  .compare td{padding:12px 14px 12px 0;border-bottom:1px solid var(--border);vertical-align:middle;white-space:nowrap}
+  .compare td:first-child{font-weight:700;font-size:14px}
+  .compare tr.on td{background:var(--accent-wash)}
+  .compare tr{cursor:pointer}
+  .cl{font-size:12.5px;font-weight:500;color:var(--text3)}
+  .cn{font-size:20px;font-weight:500;font-variant-numeric:tabular-nums}
+
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:28px;padding:24px 26px}
+  .panel-h{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+  .panel-h h2{font-size:24px;letter-spacing:-.03em}
+  .panel-h span{font-size:15px;color:var(--text3)}
+  .facts{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:13.5px;color:var(--text2);margin-bottom:18px}
+  .facts b{font-weight:600}
+  .grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}
+  @media (max-width:1200px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  .cap{font-size:13px;color:var(--text3);margin:0 0 8px 4px}.cap b{color:var(--text);font-weight:600}
+
+  /* ── the knobs every snippet reads ── */
+  .ui{font-family:var(--body-font),system-ui,sans-serif}
+  .lbl{font-family:var(--label-font),system-ui,sans-serif;font-size:var(--label-size);font-weight:var(--label-weight);letter-spacing:var(--label-track);text-transform:var(--label-case);color:var(--text3);line-height:1.35}
+  .lbl.sm{font-size:calc(var(--label-size) - 1px)}
+  .lbl.ac{color:var(--accent-text)}.lbl.dk{color:var(--text)}.lbl.ok{color:var(--ok)}.lbl.wn{color:var(--warn)}
+  .lbl.on{color:var(--on-muted)}.lbl.red{color:var(--danger-on)}
+  .num{font-family:var(--num-font),system-ui,sans-serif;font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1;font-weight:500}
+
+  /* snippet cards (phone-width) */
+  .card{background:var(--bg);border:1px solid var(--border);border-radius:26px;overflow:hidden;width:100%}
+  .card.dark{background:#07090F;border-color:#000;color:#fff}
+  .pad{padding:16px}
+  .stack{display:grid;gap:12px;grid-template-columns:minmax(0,1fr)}
+  .stack>*{min-width:0}
+  .row{display:flex;align-items:center;gap:10px}
+  .sp{justify-content:space-between}
+  .grow{flex:1;min-width:0}
+  .title{font-size:24px;font-weight:700;letter-spacing:-.035em;line-height:1.15}
+  .h{font-size:16px;font-weight:600;letter-spacing:-.01em}
+  .p{font-size:14.5px;line-height:1.5;color:var(--text2)}
+  .box{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:14px}
+  .bars{display:flex;gap:4px}.bars i{flex:1;height:4px;border-radius:99px;background:var(--sunken)}.bars i.d{background:var(--ink)}.bars i.o{background:var(--accent)}
+  .btn{height:44px;border-radius:14px;font-weight:700;font-size:15px;display:inline-flex;align-items:center;justify-content:center;padding:0 16px}
+  .btn.ink{background:var(--ink);color:#fff}.btn.out{border:1.5px solid var(--border-strong);background:#fff}
+  .dot{width:8px;height:8px;border-radius:99px;background:var(--ok-fill);flex:none}
+  .logo{width:44px;height:44px;border-radius:12px;background:#E8EEFF;color:#2F4CB5;display:grid;place-items:center;font-weight:700;flex:none}
+  .well{background:var(--muted);border-radius:12px;padding:10px 12px;display:grid;gap:3px}
+  .pill{display:inline-flex;align-items:center;gap:6px;border-radius:99px;padding:4px 10px}
+  .pill.n{background:var(--sunken)}.pill.g{background:var(--ok-soft)}.pill.r{background:var(--danger-soft)}.pill.w{background:var(--warn-soft)}
+  .segc{display:flex;background:var(--muted);border-radius:14px;padding:4px}
+  .segc span{flex:1;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;gap:5px;font-weight:600;font-size:14.5px;color:var(--text3)}
+  .segc span.on{background:#fff;color:var(--accent);border:1px solid var(--border)}
+  .chatrow{display:flex;gap:12px;padding:12px 0;border-top:1px solid var(--border)}
+  .chatrow:first-child{border-top:0}
+  .plate{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-weight:700;color:#fff;flex:none}
+  .chip{min-width:22px;height:22px;border-radius:99px;background:var(--sunken);display:inline-grid;place-items:center;padding:0 7px;font-size:12px}
+  .divider{display:flex;align-items:center;gap:10px}.divider i{flex:1;height:1px;background:var(--border)}
+  .glass{display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 12px;border-radius:99px;background:var(--glass);border:1px solid var(--hair)}
+  .recdot{width:8px;height:8px;border-radius:99px;background:var(--danger-fill)}
+  .ask{background:var(--accent-wash);border:1px solid var(--accent-muted);border-radius:16px;padding:12px 14px;display:grid;gap:6px;color:var(--text)}
+  .stamp{display:inline-block;background:var(--accent-soft);color:var(--accent-text);border-radius:6px;padding:0 6px;margin-right:6px;font-size:13px}
+  .otp{display:flex;gap:6px}.otp span{flex:1;min-width:0;height:50px;border-radius:12px;border:1.5px solid var(--border-strong);background:#fff;display:grid;place-items:center;font-size:24px}
+  .otp span.f{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .cols{display:flex;align-items:flex-end;gap:2px;height:64px;border-bottom:1px solid var(--border)}
+  .cols i{flex:1;background:var(--accent);border-radius:3px 3px 0 0}
+  .web{margin-top:18px;border:1px solid var(--border-strong);border-radius:14px;overflow:hidden;background:#fff}
+  .chrome{height:34px;background:#F1F3F7;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px;padding:0 12px}
+  .chrome i{width:10px;height:10px;border-radius:99px;background:#D7DAE2}
+  .webhead{display:flex;align-items:center;gap:16px;padding:14px 20px;border-bottom:1px solid var(--border)}
+  .prog{height:6px;border-radius:99px;background:var(--sunken);position:relative}.prog i{position:absolute;left:0;top:0;bottom:0;width:58%;background:var(--ink);border-radius:99px}.prog b{position:absolute;left:80%;top:-4px;bottom:-4px;width:2px;background:var(--text)}
+  .timer{display:flex;align-items:center;gap:8px;height:40px;padding:0 14px;border:1px solid var(--border);border-radius:12px}
+  .webrow{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr .8fr;gap:12px;padding:12px 20px;border-top:1px solid var(--border);align-items:center;font-size:14px}
+  .note{margin-top:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+  .note div{background:var(--muted);border-radius:18px;padding:14px 16px;font-size:13.5px;line-height:1.55;color:var(--text2)}
+  .note h4{font-size:12px;font-weight:700;color:var(--accent);margin-bottom:6px;text-transform:uppercase;letter-spacing:.08em}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="intro">
+    <h1>Small labels — font options</h1>
+    <p>Today every small label in the app and the web is set in Geist Mono, in capitals with wide letter spacing (“SAVED · 3:41 PM”, “STEP 3 OF 6”, “IT · 11–50 · PUNE”). Below, the same real screens are drawn in different fonts. Pick a font in the bar; it redraws everything. <b>Numbers</b> (timers, clocks, codes, note stamps) can follow the same font with fixed-width digits, or stay in Geist Mono. <b>Apply to</b> lets you see the font on labels only (the rest stays Geist, as now) or on the whole screen.</p>
+  </header>
+
+  <div class="bar">
+    <div class="seg" id="fonts"></div>
+    <div class="seg" id="nums"></div>
+    <div class="seg" id="scope"></div>
+  </div>
+
+  <section class="compare">
+    <h3>Side by side</h3>
+    <p class="sub">The same five lines in every option. Click a row to open it below.</p>
+    <table id="cmp"></table>
+  </section>
+
+  <section class="panel" id="panel"></section>
+</div>
+
+<script>
+const FONTS = [
+  { id:'T', name:'Today', font:'Geist Mono', caps:true, note:'Geist Mono, capitals, wide spacing — what the app and web draw now.', bundle:'Already in the app', why:'Reads as code; capitals shout; wide spacing makes short labels long.' },
+  { id:'A', name:'Geist', font:'Geist', note:'The app’s own font, normal case, medium weight, grey.', bundle:'Already in the app — no new files', why:'One font for everything; the calmest change.' },
+  { id:'B', name:'Inter', font:'Inter', note:'The most widely used UI font; very clear at small sizes.', bundle:'New font files (OFL, free)', why:'Taller lowercase letters, easy to read small.' },
+  { id:'C', name:'DM Sans', font:'DM Sans', note:'Geometric and friendly, slightly rounder.', bundle:'New font files (OFL, free)', why:'Softer, more “consumer app” feel.' },
+  { id:'D', name:'Manrope', font:'Manrope', note:'Modern geometric with open shapes.', bundle:'New font files (OFL, free)', why:'Distinct, premium look; a bit wider.' },
+  { id:'E', name:'Plus Jakarta Sans', font:'Plus Jakarta Sans', note:'Contemporary, slightly condensed, popular in fintech apps.', bundle:'New font files (OFL, free)', why:'Crisp and modern; pairs well with bold titles.' },
+  { id:'F', name:'IBM Plex Sans', font:'IBM Plex Sans', note:'Neutral, technical, very legible.', bundle:'New font files (OFL, free)', why:'Professional, slightly corporate.' },
+]
+const S = { f:'A', nums:'same', scope:'labels' }
+
+const L = (t, cls='')=>`<span class="lbl ${cls}">${t}</span>`
+const N = (t, extra='')=>`<span class="num" style="${extra}">${t}</span>`
+
+function apply(){
+  const f = FONTS.find((x)=>x.id===S.f), r = document.documentElement.style
+  r.setProperty('--label-font', `'${f.font}'`)
+  r.setProperty('--num-font', S.nums==='mono' || f.caps ? `'Geist Mono'` : `'${f.font}'`)
+  r.setProperty('--body-font', S.scope==='all' && !f.caps ? `'${f.font}'` : `'Geist'`)
+  r.setProperty('--label-size', f.caps ? '10.5px' : '12.5px')
+  r.setProperty('--label-track', f.caps ? '.12em' : '0')
+  r.setProperty('--label-case', f.caps ? 'uppercase' : 'none')
+  r.setProperty('--label-weight', '500')
+}
+
+/* ── the snippets (copy from the app, in sentence case; Today upper-cases it) ── */
+const wizard = ()=>`<div class="card ui"><div class="pad stack">
+  <div class="bars"><i class="d"></i><i class="d"></i><i class="o"></i><i></i><i></i><i></i></div>
+  <div class="row sp">${L('Now 62%')}${L('Book at 80% · 18% to go','dk')}</div>
+  ${L('Step 3 of 6 · Optional')}
+  <div class="title">Experience</div>
+  <p class="p">Internships and part-time work count. This step is optional.</p>
+  <div class="box stack" style="gap:8px">${L('Company')}<div class="p" style="color:var(--text)">Zomato</div>${L('Role')}<div class="p" style="color:var(--text)">Sales intern</div></div>
+  <div style="border-top:1px solid var(--border);padding-top:12px" class="stack">
+    <div class="row"><span class="dot"></span>${L('Saved · 3:41 PM')}</div>
+    <div class="row" style="gap:14px;flex-wrap:wrap">${L('Saving…','sm')}${L('Queued · 2 · will sync','sm')}${L('Saves as you type','sm')}</div>
+    <div class="row"><span class="btn out">Back</span><span class="btn ink grow">Continue</span></div>
+  </div></div></div>`
+
+const interests = ()=>`<div class="card ui"><div class="pad stack">
+  <div class="title" style="font-size:28px">Interests</div>
+  <div class="segc"><span class="on">Interests ${N('2')}</span><span>Connections ${N('3')}</span></div>
+  <div class="box stack">
+    <div class="row"><span class="logo">NT</span><div class="grow"><div class="h">Northwind Traders</div>${L('IT · 11–50 · Pune','sm')}</div></div>
+    <p class="p">“We liked your film — would you talk to us about a sales role?”</p>
+    <div class="well">${L('For this role','sm')}<div class="h" style="font-size:15px">Sales Associate</div><span class="p" style="font-size:13px">Pune · Full-time</span></div>
+    <div class="row sp"><span class="pill w">${I('clock')}${L('3 days left','wn')}</span>${L('until 8 Oct, 6:00 PM','sm')}</div>
+    <div class="row"><span class="btn ink grow">Accept</span><span class="btn out grow">Decline</span></div>
+  </div>
+  <div class="box stack" style="gap:8px">
+    <div class="row"><span class="logo" style="background:#FDEDE4;color:#B4501B">MF</span><div class="grow"><div class="h">Meridian Financial</div><div class="row" style="gap:8px;margin-top:4px"><span class="pill g">${L('Accepted','ok')}</span>${L('Interest · accepted 3 Oct','sm')}</div></div></div>
+  </div>
+  ${L('Sent 2 Oct · an interest lapses 14 days after it is sent','sm')}
+  </div></div>`
+
+const chats = ()=>`<div class="card ui"><div class="pad stack">
+  <div class="title" style="font-size:28px">Chats</div>
+  <div class="box" style="padding:4px 14px">
+    <div class="chatrow"><span class="plate" style="background:#2F4CB5">NT</span><div class="grow"><div class="row sp"><span class="h">Northwind Traders</span>${N('10:42','font-size:12.5px;color:var(--text4)')}</div><div class="row sp"><span class="p" style="color:var(--text)">Can you do Thursday at 4?</span><span class="chip">${N('2')}</span></div>${L('Interest · connected 3 Oct','sm')}</div></div>
+    <div class="chatrow"><span class="plate" style="background:#0B0F1A">’</span><div class="grow"><div class="row sp"><span class="h">Your Interviewer</span>${L('Yesterday','sm')}</div><span class="p">See you tomorrow!</span><div>${L('Interview tomorrow, 4:00 PM','sm')}</div></div></div>
+    <div class="chatrow"><span class="plate" style="background:#5B3DF5">’</span><div class="grow"><div class="row sp"><span class="h">Apostrophe Support</span>${L('2 Oct','sm')}</div><span class="p">Your refund is on its way.</span><div>${L('Support · replies within one working day','sm')}</div></div></div>
+  </div>
+  <div class="divider"><i></i>${L('Today','sm')}<i></i></div>
+  <div class="row" style="justify-content:flex-end"><div style="background:var(--accent);color:#fff;border-radius:18px 18px 4px 18px;padding:9px 13px;font-size:15px">Thursday works for me.</div></div>
+  <div class="row" style="justify-content:flex-end;gap:6px">${L('Read · 10:44 AM','sm')}</div>
+  </div></div>`
+
+const room = ()=>`<div class="card dark ui"><div class="pad stack">
+  <div class="row sp"><span class="glass"><span class="recdot"></span>${L('Rec','red')}</span><span class="glass">${N('12:41','font-size:18px')}</span></div>
+  <div class="row" style="gap:8px;flex-wrap:wrap"><span class="glass" style="height:30px">${L('Not recording yet','on')}</span><span class="glass" style="height:30px;color:#FCC96B">${L('5 min left','wn').replace('lbl wn','lbl" style="color:#FCC96B')}</span></div>
+  <div class="ask">${L('Ask next · Communication','ac')}<div style="font-size:15px;font-weight:500;line-height:1.4">Tell me about a time you convinced someone who disagreed with you.</div></div>
+  <div style="background:#fff;color:var(--text);border-radius:14px;padding:12px;font-size:14px;line-height:1.7"><span class="stamp num">04:12</span>Clear, structured intro.<br><span class="stamp num">11:30</span>Good objection example.</div>
+  <div style="background:#fff;border-radius:14px;padding:12px;display:grid;gap:8px;color:var(--text)">${L('Last 30 days')}<div class="row sp"><span class="h">${N('24')} views</span>${L('Busiest: Mon 5 Oct','sm')}</div><div class="cols">${[2,0,1,3,0,2,4,1,0,2,5,3,1,0,2].map((v)=>`<i style="height:${v?v*20:2}%;${v?'':'background:var(--sunken)'}"></i>`).join('')}</div><div class="row sp">${L('6 Sep','sm')}${L('Today','sm')}</div></div>
+  <div style="background:#fff;border-radius:14px;padding:12px;display:grid;gap:8px;color:var(--text)">${L('Enter the 6-digit code')}<div class="otp">${['4','2','4','2','',''].map((d,i)=>`<span class="num${i===4?' f':''}">${d}</span>`).join('')}</div>${L('Resend in 00:42')}</div>
+  </div></div>`
+
+function I(n){ return {clock:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--warn)"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>'}[n] }
+
+const web = ()=>`<div class="web ui"><div class="chrome"><i></i><i></i><i></i></div>
+  <div class="webhead"><span class="pill r" style="padding:6px 11px"><span class="recdot"></span>${L('Rec','red').replace('lbl red','lbl" style="color:var(--danger)')}</span>
+    <div class="grow"><div class="h" style="font-size:15px">Riya Sharma</div>${L('Tier 2 · Sales · English','sm')}</div>
+    <div style="width:300px;display:grid;gap:6px"><div class="row sp">${L('Session · 58%','sm')}${L('Complete at 24:00','sm')}</div><div class="prog"><i></i><b></b></div></div>
+    <span class="timer">${N('12:41','font-size:21px')}${L('left','sm')}</span></div>
+  <div class="webrow" style="border-top:0">${L('Candidate')}${L('Slot')}${L('Status')}${L('Fee')}${L('Scorecard')}</div>
+  <div class="webrow"><span class="h" style="font-size:14px">Riya Sharma</span>${N('6 Oct, 4:00 PM','font-size:14px')}<span class="pill g" style="width:fit-content">${L('Completed','ok')}</span>${N('₹7,000','font-size:14px')}${L('Due in 22h','wn')}</div>
+  <div class="webrow"><span class="h" style="font-size:14px">Aman Verma</span>${N('7 Oct, 11:00 AM','font-size:14px')}<span class="pill n" style="width:fit-content">${L('Booked','dk')}</span>${N('₹4,000','font-size:14px')}${L('—','sm')}</div>
+</div>`
+
+function render(){
+  apply()
+  const f = FONTS.find((x)=>x.id===S.f)
+  document.getElementById('fonts').innerHTML = `<span class="lab">Font</span>` + FONTS.map((x)=>`<button class="${S.f===x.id?'on':''}" data-f="${x.id}">${x.id==='T'?'Today':`${x.id} · ${x.name}`}</button>`).join('')
+  document.getElementById('nums').innerHTML = `<span class="lab">Numbers</span><button class="${S.nums==='same'?'on':''}" data-n="same">Same font, fixed-width</button><button class="${S.nums==='mono'?'on':''}" data-n="mono">Geist Mono</button>`
+  document.getElementById('scope').innerHTML = `<span class="lab">Apply to</span><button class="${S.scope==='labels'?'on':''}" data-s="labels">Labels only</button><button class="${S.scope==='all'?'on':''}" data-s="all">Whole screen</button>`
+  // the compare table draws each row in its own font, independent of the picker
+  document.getElementById('cmp').innerHTML = `<tr><th>Option</th><th>Save status</th><th>Step</th><th>Company line</th><th>Eyebrow</th><th>Timer · stamp · code</th></tr>` +
+    FONTS.map((x)=>{ const st = `font-family:'${x.font}';${x.caps?'text-transform:uppercase;letter-spacing:.12em;font-size:10.5px':''}`, nf = S.nums==='mono'||x.caps ? 'Geist Mono' : x.font
+      return `<tr class="${S.f===x.id?'on':''}" data-f="${x.id}"><td>${x.id==='T'?'Today':`${x.id} · ${x.name}`}</td>
+        <td><span class="cl" style="${st}">Saved · 3:41 PM</span></td><td><span class="cl" style="${st}">Step 3 of 6 · Optional</span></td>
+        <td><span class="cl" style="${st}">IT · 11–50 · Pune</span></td><td><span class="cl" style="${st};color:var(--accent-text)">Ask next · Communication</span></td>
+        <td><span class="cn" style="font-family:'${nf}'">12:41</span> &nbsp; <span class="cn" style="font-family:'${nf}';font-size:15px">04:12</span> &nbsp; <span class="cn" style="font-family:'${nf}';font-size:15px;letter-spacing:.2em">424242</span></td></tr>` }).join('')
+  document.getElementById('panel').innerHTML = `
+    <div class="panel-h"><h2>${f.id==='T'?'Today':`${f.id} · ${f.name}`}</h2><span>${f.note}</span></div>
+    <div class="facts"><span><b>In the app:</b> ${f.bundle}</span><span><b>Why:</b> ${f.why}</span><span><b>Labels:</b> ${f.caps?'10.5px, capitals, wide spacing':'12.5px, medium, normal case, no extra spacing'}</span><span><b>Numbers:</b> ${S.nums==='mono'||f.caps?'Geist Mono':`${f.name}, fixed-width digits`}</span></div>
+    <div class="grid">
+      <div><div class="cap"><b>Profile wizard</b> · header and save status</div>${wizard()}</div>
+      <div><div class="cap"><b>Interests</b> · card, role, clock, pill</div>${interests()}</div>
+      <div><div class="cap"><b>Chats</b> · list, context lines, divider</div>${chats()}</div>
+      <div><div class="cap"><b>Room, stats, code</b> · timers and numbers</div>${room()}</div>
+    </div>
+    <div class="cap" style="margin-top:22px"><b>Web</b> · interviewer room header and a table</div>${web()}
+    <div class="note">
+      <div><h4>What changes</h4>${f.caps ? 'Nothing — this is the current look, kept here for comparison.' : `Every small label moves from capitals in Geist Mono to normal case in ${f.name}, a little larger (12.5px instead of 10.5px) so lowercase reads at the same weight. Hand-typed capitals in the code (“SAVING…”, “STEP 3 OF 6”) are rewritten in sentence case; nothing else on the screen moves.`}</div>
+      <div><h4>Numbers</h4>A timer that counts must not wobble: “Same font, fixed-width” keeps every digit the same width (tabular figures), so 12:41 → 11:11 stays put. “Geist Mono” keeps today’s typewriter digits for numbers only.</div>
+      <div><h4>Effort</h4>${f.id==='A'||f.id==='T'?'No new font files: the app already ships Geist.':'Adds the font’s files to the app (Android and iOS) and to the web’s font load.'} The change itself is the shared label styles plus the hand-typed capitals screen by screen — the same amount of work for every option.</div>
+    </div>`
+}
+
+document.addEventListener('click', (e)=>{
+  const el = e.target.closest('[data-f],[data-n],[data-s]'); if (!el) return
+  if (el.dataset.f) S.f = el.dataset.f
+  if (el.dataset.n) S.nums = el.dataset.n
+  if (el.dataset.s) S.scope = el.dataset.s
+  history.replaceState(null,'',`?font=${S.f}&nums=${S.nums}&scope=${S.scope}`)
+  render()
+})
+const q = new URLSearchParams(location.search)
+if (q.get('font')) S.f = q.get('font').toUpperCase()
+if (q.get('nums')) S.nums = q.get('nums')
+if (q.get('scope')) S.scope = q.get('scope')
+render()
+</script>
+</body>
+</html>

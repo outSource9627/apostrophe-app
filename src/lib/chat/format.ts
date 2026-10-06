@@ -1,4 +1,5 @@
-import type { ChatRefusal, ConnectionOrigin, MessageAttachment } from '../api/chat'
+import type { ChatRefusal, ConnectionOrigin, MessageAttachment, MessageDto, ThreadKind } from '../api/chat'
+import type { EmployerConnectionRow } from '../api/employerChat'
 
 /**
  * Everything time and copy for the interests / connections / chat flow, in
@@ -74,6 +75,38 @@ export function fmtDayDivider(iso: string, now: number): string {
   return p.y === n.y ? `${p.d} ${MON_LONG[p.mo]}` : `${p.d} ${MON_LONG[p.mo]} ${p.y}`
 }
 
+/**
+ * 'Today' / 'Tomorrow' / 'Yesterday' / '12 Oct' — a day relative to now, by
+ * calendar days, not 24-hour blocks, so an interview at 9 AM tomorrow is
+ * "Tomorrow" at 11 PM tonight. The same reading as the web's fmtRelDay.
+ */
+export function fmtRelDay(iso: string, now: number): string {
+  const p = ist(iso), n = ist(now)
+  const diff = dayNumber(p) - dayNumber(n)
+  if (diff === 0) return 'Today'
+  if (diff === 1) return 'Tomorrow'
+  if (diff === -1) return 'Yesterday'
+  return `${p.d} ${MON[p.mo]}`
+}
+
+/** The same day inside a sentence: 'today' / 'tomorrow' / 'yesterday' / '12 Oct' (a month keeps its capital). */
+export function fmtRelDayInline(iso: string, now: number): string {
+  const d = fmtRelDay(iso, now)
+  return d === 'Today' || d === 'Tomorrow' || d === 'Yesterday' ? d.toLowerCase() : d
+}
+
+/** '48 hours' / '1 hour' — a count of hours the server told us about, said in words. */
+export const fmtHours = (n: number): string => `${n} hour${n === 1 ? '' : 's'}`
+
+/** '5 MB' / '1.5 MB' / '800 KB' — a size limit from `/config`, said the way a person reads it. */
+export function fmtBytes(n: number): string {
+  if (n >= 1024 * 1024) {
+    const mb = Math.round((n / (1024 * 1024)) * 10) / 10
+    return `${mb} MB`
+  }
+  return `${Math.max(1, Math.round(n / 1024))} KB`
+}
+
 /** A delivery/read receipt: 'Read 9:22 AM' / 'Read yesterday 8:02 PM' / 'Read 2 Oct, 5:02 PM'. */
 export function fmtReceipt(verb: string, iso: string, now: number): string {
   const p = ist(iso), n = ist(now)
@@ -124,9 +157,20 @@ export function interestClock(sentAt: string, expiresAt: string, now: number): I
 }
 
 // ── Copy ─────────────────────────────────────────────────────────────────────
-/** Which door this connection came through. Every ST-42 row states it in mono. */
+/** Which door this connection came through. Every ST-42 row states it. */
 export const originLabel = (origin: ConnectionOrigin) =>
   origin === 'INTEREST' ? 'Their Interest' : 'Your application'
+
+/**
+ * The employer's line for a connection — the chat row's context and the
+ * thread's subtitle: "Via your Interest · connected 22 Sep" / "Applied to your
+ * job · connected 23 Sep" / "Withdrawn by you · 15 Sep" / "Blocked · 15 Sep".
+ */
+export function employerConnectionLine(c: Pick<EmployerConnectionRow, 'status' | 'origin' | 'openedAt' | 'closedAt' | 'closedByMe' | 'counterparty'>): string {
+  if (c.status === 'CLOSED') return `Withdrawn by ${c.closedByMe ? 'you' : firstWord(c.counterparty.name) || 'them'}${c.closedAt ? ` · ${fmtDayMon(c.closedAt)}` : ''}`
+  if (c.status === 'BLOCKED') return `Blocked${c.closedAt ? ` · ${fmtDayMon(c.closedAt)}` : ''}`
+  return `${c.origin === 'INTEREST' ? 'Via your Interest' : 'Applied to your job'} · connected ${fmtDayMon(c.openedAt)}`
+}
 
 /** CH-06 refusal copy, lifted verbatim from CHAT_REFUSAL_MESSAGE. */
 export const CHAT_REFUSAL_COPY: Record<ChatRefusal, string> = {
@@ -143,15 +187,65 @@ export const CHAT_REFUSAL_COPY: Record<ChatRefusal, string> = {
   ACCOUNT_INACTIVE: 'This conversation is not available.',
   EMPLOYER_NOT_VERIFIED: 'This conversation is not available.',
 }
-export const refusalCopy = (reason?: ChatRefusal) => (reason ? CHAT_REFUSAL_COPY[reason] : 'This chat is not open.')
+export const refusalCopy = (reason?: ChatRefusal) => (reason && CHAT_REFUSAL_COPY[reason]) || 'This chat is not open.'
+/** True when a send failure's reason is one of CH-06's refusal codes (so its sentence is ours, never the server's prose). */
+export const isChatRefusal = (reason: unknown): reason is ChatRefusal => typeof reason === 'string' && reason in CHAT_REFUSAL_COPY
 
-/** 'PDF · 240 KB' / 'JPG · 1.8 MB' — the mono chip under an attachment. */
+/** 'PDF' / 'DOCX' / 'JPG' — a file's extension, as the acronym it is; null when the name has none worth showing. */
+export function attachmentExt(att: Pick<MessageAttachment, 'fileName'>): string | null {
+  const name = att.fileName ?? ''
+  if (!name.includes('.')) return null
+  const ext = name.split('.').pop()?.toUpperCase()
+  return ext && ext.length <= 4 ? ext : null
+}
+
+/** 'PDF · 240 KB' / 'JPG · 1.8 MB' — the line under an attachment's name. */
 export function attachmentMeta(att: MessageAttachment): string {
-  const ext = att.fileName?.split('.').pop()?.toUpperCase()
-  const kind = ext && ext.length <= 4 ? ext : att.kind === 'IMAGE' ? 'IMAGE' : 'FILE'
+  const kind = attachmentExt(att) ?? (att.kind === 'IMAGE' ? 'Image' : 'File')
   const kb = att.sizeBytes / 1024
   const size = kb >= 1024 ? `${(kb / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(kb))} KB`
   return `${kind} · ${size}`
+}
+
+/** 'Riya' from 'Riya Sharma', 'Northwind' from 'Northwind Traders' — the composer's "Message …". */
+export const firstWord = (name: string | null | undefined): string => (name ?? '').trim().split(/\s+/)[0] ?? ''
+
+/** Whose app is reading a thread — the same transcript says a few lines differently to each. */
+export type ChatViewer = 'student' | 'employer' | 'interviewer'
+
+/**
+ * A system line's words, by its kind — never the stored body set in capitals.
+ * The student's copy is the thread screen's long-standing table; an employer
+ * reads its connection's lines, an interviewer the interview's. An unknown
+ * kind falls back to the stored body, then to a neutral word.
+ */
+export function systemLineText(
+  m: Pick<MessageDto, 'systemKind' | 'body'>,
+  threadKind: ThreadKind,
+  viewer: ChatViewer,
+): string {
+  switch (m.systemKind) {
+    case 'THREAD_OPENED':
+      return threadKind === 'STUDENT_INTERVIEWER' ? 'This chat opened for your interview' : 'This chat is open'
+    case 'THREAD_WITHDRAWN':
+      return viewer === 'employer' ? 'This connection was withdrawn.' : 'This conversation has been archived.'
+    case 'THREAD_BLOCKED':
+      return 'This conversation has been archived.'
+    case 'THREAD_EXPIRED':
+      return 'This chat is now read-only.'
+    case 'IDENTITY_REVEALED':
+      return 'Your session started'
+    default:
+      return m.body?.trim() || 'Update'
+  }
+}
+
+/** The receipt under the last of my bubbles in a run: 'Read' / 'Delivered' / 'Sent' — 'Sending' while it is still on its way. */
+export function receiptLabel(m: Pick<MessageDto, 'readAt' | 'deliveredAt'>, sending?: boolean): string {
+  if (sending) return 'Sending'
+  if (m.readAt) return 'Read'
+  if (m.deliveredAt) return 'Delivered'
+  return 'Sent'
 }
 
 /** A stable two-letter monogram for a company mark (SR, NT, …). */

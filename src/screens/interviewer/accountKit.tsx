@@ -95,7 +95,7 @@ export function AcKV({ icon, label, value, last }: { icon: IconName; label: stri
   )
 }
 
-/** One row of a list card (`.lk`): icon tile, a 15/600 title, a 12.5 line, a chevron (or the external arrow, or a mono value). */
+/** One row of a list card (`.lk`): icon tile, a 15/600 title, a 12.5 line, a chevron (or the external arrow, or a grey value). */
 export function AcRow({
   icon, title, sub, onPress, external, value, right, last,
 }: { icon: IconName; title: string; sub?: string; onPress?: () => void; external?: boolean; value?: string; right?: React.ReactNode; last?: boolean }) {
@@ -122,9 +122,9 @@ export function AcRow({
 /** The 48 pill that closes a card or a page. */
 export function AcPill({
   label, onPress, tone = 'on', icon, busy, busyLabel = 'Saving…', disabled,
-}: { label: string; onPress?: () => void; tone?: 'on' | 'off' | 'outline' | 'ok'; icon?: IconName; busy?: boolean; busyLabel?: string; disabled?: boolean }) {
-  const bg = { on: color.accent, off: color.surfaceSunken, outline: color.surface, ok: color.successSoft }[tone]
-  const fg = { on: color.textInverse, off: color.textMuted, outline: color.text, ok: color.success }[tone]
+}: { label: string; onPress?: () => void; tone?: 'on' | 'off' | 'outline' | 'ok' | 'danger'; icon?: IconName; busy?: boolean; busyLabel?: string; disabled?: boolean }) {
+  const bg = { on: color.accent, off: color.surfaceSunken, outline: color.surface, ok: color.successSoft, danger: color.surface }[tone]
+  const fg = { on: color.textInverse, off: color.textMuted, outline: color.text, ok: color.success, danger: color.danger }[tone]
   const inert = disabled || tone === 'off' || tone === 'ok' || !onPress
   return (
     <Pressable
@@ -132,7 +132,7 @@ export function AcPill({
       accessibilityState={{ disabled: !!inert, busy: !!busy }}
       disabled={inert || busy}
       onPress={onPress}
-      style={({ pressed }) => [k.pill, { backgroundColor: bg }, tone === 'outline' && k.pillOutline, (pressed || busy) && k.pressed]}
+      style={({ pressed }) => [k.pill, { backgroundColor: bg }, tone === 'outline' && k.pillOutline, tone === 'danger' && k.pillDanger, (pressed || busy) && k.pressed]}
     >
       {!!icon && <Icon name={icon} size={18} tint={fg} weight={1.9} />}
       <Text style={[k.pillText, { color: fg }]} numberOfLines={1}>{busy ? busyLabel : label}</Text>
@@ -355,10 +355,11 @@ const k = StyleSheet.create({
   li: { width: 34, height: 34, borderRadius: 11, backgroundColor: color.surfaceMuted, alignItems: 'center', justifyContent: 'center' },
   rowTitle: { fontFamily: FF.bodySemiBold, fontSize: 15, lineHeight: 19, letterSpacing: -0.225, color: color.text },
   rowSub: { fontFamily: FF.body, fontSize: 12.5, lineHeight: 16, color: color.textMuted },
-  rv: { fontFamily: FF.monoMedium, fontSize: 13, color: color.textMuted },
+  rv: { fontFamily: FF.bodyMedium, fontSize: 13, fontVariant: ['tabular-nums'], color: color.textMuted },
 
   pill: { height: 48, borderRadius: 99, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, alignSelf: 'stretch' },
   pillOutline: { borderWidth: borderWidth.thin, borderColor: color.borderStrong },
+  pillDanger: { borderWidth: borderWidth.thin, borderColor: color.dangerBorder },
   pillText: { fontFamily: FF.bodySemiBold, fontSize: 15 },
   small: { height: 36, borderRadius: 11, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: color.surface, borderWidth: borderWidth.thin, borderColor: color.borderStrong },
   smallText: { fontFamily: FF.bodySemiBold, fontSize: 13.5, color: color.text },

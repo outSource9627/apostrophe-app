@@ -264,7 +264,7 @@ const s = StyleSheet.create({
 
   ink: { backgroundColor: color.ink, borderRadius: 24, padding: 16, gap: 12 },
   inkAcc: { fontFamily: FF.bodyMedium, fontSize: 14, color: color.accentMuted },
-  inkAcct: { fontFamily: FF.monoMedium, fontSize: 12.5, color: color.textOnInkBody },
+  inkAcct: { fontFamily: FF.bodyMedium, fontSize: 12.5, fontVariant: ['tabular-nums'], color: color.textOnInkBody },
   inkLbl: { flexShrink: 1, fontFamily: FF.bodyMedium, fontSize: 14, lineHeight: 17, color: color.textOnInkBody },
   inkNote: { fontFamily: FF.body, fontSize: 14, lineHeight: 19.6, color: color.textOnInkMuted },
   availRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
@@ -279,7 +279,7 @@ const s = StyleSheet.create({
   tile: { backgroundColor: color.surface, borderWidth: borderWidth.thin, borderColor: color.border, borderRadius: 18, paddingVertical: 14, paddingHorizontal: 16 },
   note: { fontFamily: FF.body, fontSize: 14, lineHeight: 19.6, color: color.textMuted, paddingHorizontal: 4 },
 
-  stepAmt: { fontFamily: FF.monoMedium, fontSize: 20, color: color.text },
+  stepAmt: { fontFamily: FF.bodyMedium, fontSize: 20, fontVariant: ['tabular-nums'], color: color.text },
   steps: { flexDirection: 'row', gap: 6, marginTop: 4 },
   step: { flex: 1, minWidth: 0, gap: 5 },
   stepBar: { height: 6, borderRadius: 6 },

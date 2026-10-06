@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useRef, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -7,19 +7,21 @@ import {
   type ConnectionRow,
 } from '../../lib/api/chat'
 import { fmtDayMon, fmtDayMonthLong, originLabel } from '../../lib/chat/format'
-import { borderWidth, color, fontFamilyNative as FF } from '../../theme'
-import { StatusPill } from '../../components/ui'
+import { borderWidth, color, fontFamilyNative as FF, fontSize } from '../../theme'
+import { PopoverMenu, StatusPill, measureAnchor, type MenuAnchor } from '../../components/ui'
+import { Icon } from '../../components/ui/Icon'
 import type { Tone } from '../../components/ui/status'
-import { Btn, DetailHeader, GroupLabel, Panel, Skel, StateBlock, TextLink } from '../../components/tab/kit'
+import { Btn, ConfirmSheet, DetailHeader, GroupLabel, Panel, Skel, StateBlock, TextLink } from '../../components/tab/kit'
 import { BlockSheet } from './parts'
 import { LogoTile } from './LogoTile'
 
 /**
- * ST-42 — Connections. Each row states its origin in mono (INTEREST | APPLICATION
+ * ST-42 — Connections. Each row states its origin in a grey label (Interest | application
  * — the only two doors). There is no server state machine: a blocked row offers
  * nothing, a withdrawn row offers only Read the chat and Block (never Withdraw).
- * Block is never one tap — it raises the consequences sheet. Open chat is solid ink — several
- * cards can show it at once.
+ * A live row keeps Withdraw and Block behind its ⋯, in a small popup; neither is
+ * ever one tap — Withdraw asks first, Block raises the consequences sheet. Open
+ * chat is solid ink — several cards can show it at once.
  */
 export function ConnectionsScreen({ onBack, onChats, onOpenThread, onBrowseJobs, onInterests }: {
   onBack: () => void; onChats: () => void; onOpenThread: (threadId: string) => void
@@ -54,10 +56,14 @@ export function ConnectionsBody({ onChats, onOpenThread, onBrowseJobs, onInteres
 }) {
   const qc = useQueryClient()
   const [blocking, setBlocking] = useState<ConnectionRow | null>(null)
+  const [withdrawing, setWithdrawing] = useState<ConnectionRow | null>(null)
+  const [menu, setMenu] = useState<{ row: ConnectionRow; anchor: MenuAnchor } | null>(null)
 
   const q = useConnectionRows()
   const act = useMutation({
     mutationFn: ({ id, action }: { id: string; action: 'WITHDRAW' | 'BLOCK' }) => actOnConnection(id, action),
+    // Block closes either way, as before (the refetch shows the truth); Withdraw stays open on a failure to say so.
+    onSuccess: () => setWithdrawing(null),
     onSettled: () => { setBlocking(null); qc.invalidateQueries({ queryKey: ['connections'] }) },
   })
 
@@ -94,7 +100,7 @@ export function ConnectionsBody({ onChats, onOpenThread, onBrowseJobs, onInteres
         <>
           {active.map((r) => (
             <ActiveCard key={r.id} row={r} busy={busy}
-              onOpen={() => openChat(r.id)} onWithdraw={() => act.mutate({ id: r.id, action: 'WITHDRAW' })} onBlock={() => setBlocking(r)} />
+              onOpen={() => openChat(r.id)} onMore={(anchor) => setMenu({ row: r, anchor })} />
           ))}
           {archived.length > 0 && (
             <GroupLabel style={styles.archHead}>{`Archived · ${archived.length}`}</GroupLabel>
@@ -104,6 +110,26 @@ export function ConnectionsBody({ onChats, onOpenThread, onBrowseJobs, onInteres
           ))}
         </>
       )}
+      <PopoverMenu
+        anchor={menu?.anchor ?? null}
+        onClose={() => setMenu(null)}
+        items={menu ? [
+          { key: 'withdraw', label: 'Withdraw', icon: 'out', onPress: () => { act.reset(); setWithdrawing(menu.row) } },
+          { key: 'block', label: 'Block', icon: 'ban', danger: true, onPress: () => { act.reset(); setBlocking(menu.row) } },
+        ] : []}
+      />
+      <ConfirmSheet
+        open={!!withdrawing}
+        title={`Withdraw from ${withdrawing?.counterparty.name ?? 'this company'}?`}
+        body={`The chat becomes read-only for both of you — neither side can write in it again. Everything already sent stays, and the connection stays on this list to read. ${withdrawing?.counterparty.name ?? 'The company'} sees it as withdrawn.`}
+        confirmLabel="Withdraw"
+        cancelLabel="Keep the connection"
+        destructive
+        busy={busy && !!withdrawing}
+        error={act.isError && withdrawing ? 'Nothing was withdrawn. Try again.' : null}
+        onConfirm={() => withdrawing && act.mutate({ id: withdrawing.id, action: 'WITHDRAW' })}
+        onClose={() => setWithdrawing(null)}
+      />
       <BlockSheet open={!!blocking} name={blocking?.counterparty.name ?? 'this company'} busy={busy}
         onConfirm={() => blocking && act.mutate({ id: blocking.id, action: 'BLOCK' })} onClose={() => setBlocking(null)} />
     </View>
@@ -117,7 +143,7 @@ const PILL: Record<ConnectionRow['status'], { tone: Tone; label: string }> = {
 }
 const originDate = (r: ConnectionRow) => `${originLabel(r.origin)} · ${r.origin === 'INTEREST' ? 'accepted' : 'connected'} ${fmtDayMon(r.openedAt)}`
 
-function Head({ row, muted }: { row: ConnectionRow; muted?: boolean }) {
+function Head({ row, muted, right }: { row: ConnectionRow; muted?: boolean; right?: React.ReactNode }) {
   return (
     <View style={styles.head}>
       <LogoTile name={row.counterparty?.name} size={44} />
@@ -125,30 +151,30 @@ function Head({ row, muted }: { row: ConnectionRow; muted?: boolean }) {
         <Text style={[styles.name, muted && styles.mutedText]} numberOfLines={1}>{row.counterparty.name ?? 'A company'}</Text>
         <View style={styles.pillRow}>
           <StatusPill tone={PILL[row.status].tone} label={PILL[row.status].label} />
-          <Text style={styles.mono}>{originDate(row).toUpperCase()}</Text>
+          <Text style={styles.mono}>{originDate(row)}</Text>
         </View>
       </View>
+      {right}
     </View>
   )
 }
 
-function ActiveCard({ row, busy, onOpen, onWithdraw, onBlock }: {
-  row: ConnectionRow; busy: boolean; onOpen: () => void; onWithdraw: () => void; onBlock: () => void
+function ActiveCard({ row, busy, onOpen, onMore }: {
+  row: ConnectionRow; busy: boolean; onOpen: () => void; onMore: (anchor: MenuAnchor) => void
 }) {
+  const more = useRef<React.ComponentRef<typeof View>>(null)
+  const name = row.counterparty.name ?? 'this company'
   return (
     <Panel style={styles.card}>
-      <Head row={row} />
+      <Head row={row} right={
+        <Pressable ref={more} accessibilityRole="button" accessibilityLabel={`More for ${name}: withdraw or block`} disabled={busy} hitSlop={6}
+          onPress={() => { measureAnchor(more.current).then((a) => a && onMore(a)) }}
+          style={({ pressed }) => [styles.more, pressed && styles.morePressed]}>
+          <Icon name="more" size={20} tint={color.textMuted} weight={2.2} />
+        </Pressable>
+      } />
       {/* Ink, not violet: several cards can show Open chat at once. */}
       <Btn variant="ink" disabled={busy} label="Open chat" onPress={onOpen} />
-      <View style={styles.quiet}>
-        <Pressable accessibilityRole="button" disabled={busy} onPress={onWithdraw} style={styles.quietBtn}>
-          <Text style={[styles.quietText, styles.mutedText]}>Withdraw</Text>
-        </Pressable>
-        <Text style={styles.dotSep}>·</Text>
-        <Pressable accessibilityRole="button" disabled={busy} onPress={onBlock} style={styles.quietBtn}>
-          <Text style={[styles.quietText, styles.dangerText]}>Block</Text>
-        </Pressable>
-      </View>
     </Panel>
   )
 }
@@ -203,15 +229,12 @@ const styles = StyleSheet.create({
   skelText: { flex: 1, gap: 9 },
   name: { fontFamily: FF.bodySemiBold, fontSize: 17, letterSpacing: -0.17, color: color.text },
   pillRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8 },
-  mono: { fontFamily: FF.monoMedium, fontSize: 10.5, letterSpacing: 0.63, color: color.textSubtle },
+  mono: { fontFamily: FF.bodyMedium, fontSize: fontSize['meta-sm'], color: color.textSubtle },
   actions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   archHead: { paddingTop: 14, paddingHorizontal: 4 },
   mutedText: { color: color.textMuted },
-  dangerText: { color: color.danger },
-  quiet: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  quietBtn: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 10 },
-  quietText: { fontFamily: FF.bodySemiBold, fontSize: 14 },
-  dotSep: { fontFamily: FF.body, fontSize: 14, color: color.textSubtle },
+  more: { width: 40, height: 40, marginTop: -6, marginRight: -8, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  morePressed: { backgroundColor: color.surfaceMuted },
   well: { borderRadius: 14, backgroundColor: color.surfaceSunken, padding: 12 },
   wellText: { fontFamily: FF.body, fontSize: 13.5, lineHeight: 19, color: color.text },
   wellMuted: { fontFamily: FF.body, fontSize: 13.5, lineHeight: 19, color: color.textMuted },

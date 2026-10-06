@@ -9,11 +9,9 @@ import { text } from './typography'
  */
 
 /**
- * The mono label above a field, a section, a group of stats.
- *
- * Uppercase is not decoration: it is what keeps a 10pt label legible, and it is
- * why the tracking travels with it. Small uppercase without the extra air
- * closes up and stops being readable at arm's length.
+ * The small grey label above a field, a section, a group of stats: Geist
+ * medium in sentence case, no extra tracking (it was Geist Mono in capitals
+ * until 2026-10-06; see docs/label-font-mockups.html, option A).
  */
 export function Eyebrow({
   tone = 'subtle', style, children, ...rest

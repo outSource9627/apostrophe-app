@@ -10,7 +10,7 @@ import { borderWidth, color, height, opacity, radius, shadow, space, spaceHalf }
 import { Button, text } from '../../components/ui'
 import { Icon } from '../../components/ui/Icon'
 import { EmployerShell } from '../../components/employer'
-import { EmError, EmIconButton } from '../../components/employer/em'
+import { EmDialog, EmError, EmIconButton } from '../../components/employer/em'
 import { Face, FilmStill, GlassPill, StudioState, StudioToast } from '../../components/employer/studio'
 import {
   ClipPlayer, ProfileFactTiles, ProfileResume, ProfileVideoRow, availabilityOf, expectedSalaryOf, experienceShort, personLine,
@@ -74,10 +74,12 @@ function interestSlot(c: CandidateDetail, row: EmployerInterestRow | null, coold
  * open; a tap turns the sound on; "Full" plays the whole interview and spends
  * one of the day's plays), the person, the three facts, every video, then the
  * résumé — experience, education, skills, what they are looking for,
- * documents and links. Once the head scrolls away a compact bar keeps the name
- * in view. The three decisions stay pinned at the foot: Pass (the left swipe),
- * Shortlist (the right swipe; once shortlisted it opens notes, tags and job)
- * and Send Interest (the P3 sheet).
+ * documents and links. When the profile has a résumé file (ST-35) the head
+ * carries a Résumé button beside the name, so the CV does not wait at the
+ * bottom of the page. Once the head scrolls away a compact bar keeps the name
+ * in view. The three decisions stay pinned at the foot: Pass (the left swipe;
+ * it asks first, as this page has no Undo), Shortlist (the right swipe; once
+ * shortlisted it opens notes, tags and job) and Send Interest (the P3 sheet).
  *
  * When the person is one of the feed's loaded cards, the bar counts them
  * ("13 of 40", from the day's card quota) and the chevron opens the next card;
@@ -99,6 +101,8 @@ export function CandidateProfileScreen() {
   const [compact, setCompact] = useState(false)
   const [muted, setMuted] = useState(true)
   const [passing, setPassing] = useState(false)
+  const [confirmPass, setConfirmPass] = useState(false)
+  const [passError, setPassError] = useState<string | null>(null)
   const [shortlisting, setShortlisting] = useState(false)
   const [interestOpen, setInterestOpen] = useState(false)
   const [interest, setInterest] = useState<EmployerInterestRow | null>(null)
@@ -226,12 +230,15 @@ export function CandidateProfileScreen() {
     if (passing || shortlisting) return
     setPassing(true)
     setNotice(null)
+    setPassError(null)
     try {
       await postSwipe(c.id, 'LEFT')
       dropCard(c.id)
+      setConfirmPass(false)
       leave()
     } catch (e) {
-      setNotice(e instanceof ApiClientError ? e.message : 'Not passed. Try again.')
+      // The dialog stays open with the reason.
+      setPassError(e instanceof ApiClientError ? e.message : 'Not passed. Try again.')
     } finally {
       setPassing(false)
     }
@@ -311,7 +318,7 @@ export function CandidateProfileScreen() {
         accessibilityRole="button"
         accessibilityLabel={passDays ? `Pass, hidden for ${passDays} days` : 'Pass'}
         accessibilityState={{ busy: passing }}
-        onPress={() => { pass() }}
+        onPress={() => { setPassError(null); setConfirmPass(true) }}
         style={({ pressed }) => [styles.pass, pressed && styles.pressed]}
       >
         {passing ? <ActivityIndicator color={color.danger} /> : <Icon name="x" size={space.lg + space['2xs']} tint={color.danger} />}
@@ -453,6 +460,18 @@ export function CandidateProfileScreen() {
               <Text style={text.displaySm} numberOfLines={2}>{c.name}</Text>
               {!!personLine(c, c.city) && <Text style={[text.uiSm, styles.muted]}>{personLine(c, c.city)}</Text>}
             </View>
+            {!!c.resume && (
+              <Button
+                variant="outline"
+                size="sm"
+                icon="download"
+                label="Résumé"
+                accessibilityLabel={`Download ${c.name}’s résumé`}
+                busy={openingDoc === c.resume.id}
+                onPress={() => { if (c.resume) openDocument(c.resume.id) }}
+                style={styles.resume}
+              />
+            )}
           </View>
           {!!headline && <Text style={[text.uiMd, styles.secondary, styles.headline]}>{headline}</Text>}
           {shortlistedBy ? (
@@ -502,6 +521,20 @@ export function CandidateProfileScreen() {
         onSaved={() => {}}
       />
       <ClipPlayer url={clip?.url ?? null} title={clip?.title} onClose={() => setClip(null)} />
+      <EmDialog
+        open={confirmPass}
+        onClose={() => !passing && setConfirmPass(false)}
+        title={`Pass on ${c.name}?`}
+        body={`${passDays ? `They’re hidden from your feed for ${passDays} days.` : 'They leave your feed.'} There’s no Undo on this page.`}
+        actions={
+          <>
+            <Button variant="ghost" size="md" label="Cancel" disabled={passing} onPress={() => setConfirmPass(false)} />
+            <Button variant="dangerFill" size="md" label="Pass" busy={passing} disabled={passing} onPress={() => { pass() }} />
+          </>
+        }
+      >
+        {!!passError && <Text style={[text.uiSm, styles.dangerText]}>{passError}</Text>}
+      </EmDialog>
     </EmployerShell>
   )
 }
@@ -513,6 +546,7 @@ const styles = StyleSheet.create({
   muted: { color: color.textMuted },
   secondary: { color: color.textSecondary },
   successText: { color: color.success },
+  dangerText: { color: color.danger },
   loading: { paddingVertical: space['3xl'] },
   gone: { flex: 1, justifyContent: 'center', paddingBottom: space['4xl'] },
 
@@ -541,6 +575,7 @@ const styles = StyleSheet.create({
   // The person (P1).
   who: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingTop: space.lg, paddingHorizontal: space.xl, paddingBottom: space.xs },
   whoText: { flex: 1, minWidth: 0, gap: space['2xs'] },
+  resume: { paddingHorizontal: space.md },
   headline: { paddingTop: spaceHalf['1.5'], paddingHorizontal: space.xl, paddingBottom: space.xs },
   signal: { flexDirection: 'row', alignItems: 'center', gap: spaceHalf['1.5'], paddingTop: space.xs, paddingHorizontal: space.xl, paddingBottom: space.md },
   signalGap: { height: space.md },

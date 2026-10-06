@@ -81,7 +81,7 @@ export function CandidateVideoScreen() {
   const total = time.total || recording?.durationSec || 0
   const pct = total > 0 ? Math.min(1, time.at / total) : 0
   const date = interviewDate(interviewAt)
-  const meta = ['16:9', clock(total), date ? `RECORDED ${date.toUpperCase()}` : null].filter(Boolean).join(' · ')
+  const meta = ['16:9', clock(total), date ? `Recorded ${date}` : null].filter(Boolean).join(' · ')
 
   const seekTo = (fraction: number) => {
     if (!total) return
@@ -185,7 +185,7 @@ export function CandidateVideoScreen() {
 
         <View style={styles.rotate}>
           <Icon name="phone" size={space.md + 2} tint={color.textOnInkSubtle} />
-          <Text style={[text.metaSm, styles.subtle, styles.mono]}>ROTATE FOR FULL SCREEN</Text>
+          <Text style={[text.metaSm, styles.subtle, styles.mono]}>Rotate for full screen</Text>
         </View>
       </>
     )

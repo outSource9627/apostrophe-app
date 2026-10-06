@@ -80,7 +80,7 @@ export function CodeRow({
           <Text style={[text.uiSm, styles.muted]}>{value}</Text>
         </View>
         {!inert && !!onResend && (secondsLeft > 0 ? (
-          <Text accessibilityRole="timer" style={[text.metaSm, styles.timer]}>{`RESEND ${formatCountdown(secondsLeft)}`}</Text>
+          <Text accessibilityRole="timer" style={[text.metaSm, styles.timer]}>{`Resend ${formatCountdown(secondsLeft)}`}</Text>
         ) : (
           <TextAction
             label={resending ? 'Sending…' : 'Resend'}

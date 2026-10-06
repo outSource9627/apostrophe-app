@@ -58,6 +58,7 @@ export function CancelScreen({
   const windowHours = rules.freeCancellationHours
   // Null when the backend does not say the window: the outcome is then the server's to state.
   const refundable = windowHours == null ? null : hoursToSlot > windowHours
+  const inHours = Math.max(1, Math.round(hoursToSlot))
   const windowText = windowHours == null ? 'the free-cancellation window' : hoursPhrase(windowHours)
   const wk = weekdayLong(data.slotStart), t = fmtTime(data.slotStart)
   const err = mut.error instanceof ApiClientError ? mut.error.message : mut.isError ? 'Could not cancel. Nothing has changed — try again.' : null
@@ -69,7 +70,7 @@ export function CancelScreen({
       <>
         <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
           <View style={styles.head}>
-            <Text style={[text.metaMd, styles.eyebrow]}>{`CANCELLED · ${bookingRef(data.id)}`}</Text>
+            <Text style={[text.metaMd, styles.eyebrow]}>{`Cancelled · ${bookingRef(data.id)}`}</Text>
             <Text style={text.displayLead}>{wk} {t} is cancelled.</Text>
           </View>
           <Card style={styles.money}>
@@ -93,14 +94,14 @@ export function CancelScreen({
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <View style={styles.head}>
           <Text style={[text.metaMd, styles.eyebrow]}>
-            {`${fmtShortDate(data.slotStart)} · ${t} · ${refundable === false ? `IN ${Math.max(1, Math.round(hoursToSlot))} HOURS` : data.tier}`.toUpperCase()}
+            {`${fmtShortDate(data.slotStart)} · ${t} · ${refundable === false ? `In ${inHours} ${inHours === 1 ? 'hour' : 'hours'}` : data.tier}`}
           </Text>
           <Text style={text.displayLead}>Cancel this interview.</Text>
         </View>
 
         {refundable === true && (
           <Card style={styles.money}>
-            <Text style={[text.metaSm, styles.eyebrow]}>IF YOU CANCEL NOW</Text>
+            <Text style={[text.metaSm, styles.eyebrow]}>If you cancel now</Text>
             <View style={styles.figureRow}>
               {amount ? <Text style={[text.displayMd, styles.good]}>{amount}</Text> : null}
               <Text style={[text.uiMd, styles.muted]}>owed back in full</Text>
@@ -112,7 +113,7 @@ export function CancelScreen({
         {refundable === false && (
           <>
             <Card style={[styles.money, styles.danger]}>
-              <Text style={[text.metaSm, styles.dangerText]}>IF YOU CANCEL NOW</Text>
+              <Text style={[text.metaSm, styles.dangerText]}>If you cancel now</Text>
               <View style={styles.figureRow}>
                 <Text style={text.displayMd}>₹0</Text>
                 <Text style={[text.uiMd, styles.muted]}>back</Text>
@@ -130,7 +131,7 @@ export function CancelScreen({
 
         {refundable === null && (
           <Card style={styles.money}>
-            <Text style={[text.metaSm, styles.eyebrow]}>IF YOU CANCEL NOW</Text>
+            <Text style={[text.metaSm, styles.eyebrow]}>If you cancel now</Text>
             <Text style={text.uiMd}>{`Cancelling ahead of ${windowText} refunds ${amount ?? 'the fee'} in full; inside it, nothing comes back. We confirm which applies when you cancel.`}</Text>
           </Card>
         )}

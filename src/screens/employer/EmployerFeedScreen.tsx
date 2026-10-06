@@ -571,7 +571,7 @@ function LimitState({ limit, videos, reset }: { limit?: number; videos?: number;
         {!!reset && (
           <View style={styles.resetPill}>
             <Icon name="clock" size={space.md} tint={color.textSecondary} weight={2.2} />
-            <Text style={[text.metaSm, styles.secondary]}>{`RESETS IN ${reset.toUpperCase()}`}</Text>
+            <Text style={[text.metaSm, styles.secondary]}>{`Resets in ${reset}`}</Text>
           </View>
         )}
         <Button variant="secondary" size="pair" label="Open shortlist" onPress={() => navigation.navigate('EmployerShortlist')} />
@@ -624,7 +624,7 @@ function CaughtUp({
         <Pressable accessibilityRole="button" onPress={onSaved} style={({ pressed }) => [styles.savedRow, pressed && styles.pressed]}>
           <Icon name="bookmark" size={space.lg + 2} tint={color.accentText} />
           <Text style={[text.uiMd, styles.grow]}>Try a saved search</Text>
-          <Text style={[text.metaSm, styles.muted]}>{`${count} SAVED`}</Text>
+          <Text style={[text.metaSm, styles.muted]}>{`${count} saved`}</Text>
           <Icon name="chevR" size={space.lg} tint={color.accentText} />
         </Pressable>
       )}

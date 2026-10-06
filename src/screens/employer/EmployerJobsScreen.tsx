@@ -32,13 +32,13 @@ const CHIPS: { key: JobStatus; label: string }[] = [
 /** The API lists at most this many per request; an employer's posts are read in one go and filtered here. */
 const PER_PAGE = 100
 
-/** VIEWS · SAVES · APPS · SHORTL. — the four live counters (the job detail's row). */
+/** Views · Saves · Apps · Shortl. — the four live counters (the job detail's row). */
 export function JobCounters({ job }: { job: Pick<EmployerJobRow, 'counters'> }) {
   const cells: [number, string][] = [
-    [job.counters.views, 'VIEWS'],
-    [job.counters.saves, 'SAVES'],
-    [job.counters.applications, 'APPS'],
-    [job.counters.shortlisted, 'SHORTL.'],
+    [job.counters.views, 'Views'],
+    [job.counters.saves, 'Saves'],
+    [job.counters.applications, 'Apps'],
+    [job.counters.shortlisted, 'Shortl.'],
   ]
   return (
     <View style={styles.counters}>

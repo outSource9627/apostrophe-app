@@ -19,7 +19,9 @@ import { RoomEngine, requestMediaPermissions, type LinkState, type Quality } fro
  *   - polls the interview every 3 s for the server's `sessionStartedAt` / status;
  *   - runs the session clock from the SERVER's start, and the completion
  *     estimate against the server's `thresholdPct` (the server decides);
- *   - logs JOIN / LEAVE / HIGHLIGHT / MUTE / UNMUTE / CAMERA / NETWORK / RECONNECT,
+ *   - logs JOIN / LEAVE / HIGHLIGHT / MUTE / UNMUTE / CAMERA_ON|OFF / NETWORK / RECONNECT;
+ *     a LEAVE names the credentials it is leaving (`issuedAt`), so the server marks the
+ *     interviewer out of the room — and ignores a stale one after a rejoin —
  *     and ends the session (POST …/session END).
  */
 export type RoomState = 'loading' | 'lobby' | 'live' | 'ended' | 'refused'
@@ -38,12 +40,19 @@ export function useInterviewerRoom(interviewId: string) {
   const [endError, setEndError] = useState<string | null>(null)
   const [ended, setEnded] = useState(false)
   const joined = useRef(false)
+  /** The credentials' issue time, sent with LEAVE so a leave from a replaced screen is ignored. */
+  const issuedAt = useRef<string | undefined>(undefined)
+  const leaveEvent = useCallback(
+    () => recordRoomEvent(interviewId, 'LEAVE', issuedAt.current ? { issuedAt: issuedAt.current } : undefined),
+    [interviewId],
+  )
   const finished = useRef(false)
   const engine = useRef<RoomEngine | null>(null)
   const reconnectStart = useRef<number | null>(null)
   const lastQuality = useRef<Quality>('good')
   const [muted, setMuted] = useState(false)
   const [cameraOff, setCameraOff] = useState(false)
+  const [soundOff, setSoundOff] = useState(false)
   const [localReady, setLocalReady] = useState(false)
   const [remoteUid, setRemoteUid] = useState<number | null>(null)
   const [remoteVideoOn, setRemoteVideoOn] = useState(false)
@@ -102,10 +111,15 @@ export function useInterviewerRoom(interviewId: string) {
     setMuted(next); engine.current?.muteMic(next)
     recordRoomEvent(interviewId, next ? 'MUTE' : 'UNMUTE').catch(() => {})
   }, [muted, interviewId])
+  // Silences the candidate on this device only (the web room's "Sound off"); not logged — nothing leaves the phone.
+  const toggleSound = useCallback(() => {
+    const next = !soundOff
+    setSoundOff(next); engine.current?.receiveAudio(!next)
+  }, [soundOff])
   const toggleCamera = useCallback(() => {
     const next = !cameraOff
     setCameraOff(next); engine.current?.publishVideo(!next)
-    recordRoomEvent(interviewId, 'CAMERA', { on: !next }).catch(() => {})
+    recordRoomEvent(interviewId, next ? 'CAMERA_OFF' : 'CAMERA_ON').catch(() => {})
   }, [cameraOff, interviewId])
 
   // Enter the room once.
@@ -115,6 +129,7 @@ export function useInterviewerRoom(interviewId: string) {
       .then((c) => {
         if (!alive) return
         setCredentials(c)
+        issuedAt.current = c.issuedAt
         joined.current = true
         recordRoomEvent(interviewId, 'JOIN').catch(() => {})
         startVideo(c)
@@ -133,9 +148,9 @@ export function useInterviewerRoom(interviewId: string) {
       alive = false
       engine.current?.destroy()
       engine.current = null
-      if (joined.current && !finished.current) recordRoomEvent(interviewId, 'LEAVE').catch(() => {})
+      if (joined.current && !finished.current) leaveEvent().catch(() => {})
     }
-  }, [interviewId, startVideo])
+  }, [interviewId, startVideo, leaveEvent])
 
   // Follow the server.
   useEffect(() => {
@@ -180,7 +195,7 @@ export function useInterviewerRoom(interviewId: string) {
     setEnding(true)
     setEndError(null)
     try {
-      await recordRoomEvent(interviewId, 'LEAVE').catch(() => {})
+      await leaveEvent().catch(() => {})
       const r = await endSession(interviewId)
       finished.current = true
       engine.current?.destroy()
@@ -194,7 +209,7 @@ export function useInterviewerRoom(interviewId: string) {
     } finally {
       setEnding(false)
     }
-  }, [interviewId])
+  }, [interviewId, leaveEvent])
 
   let state: RoomState
   if (refusal && !interview?.sessionStartedAt) state = 'refused'
@@ -206,7 +221,11 @@ export function useInterviewerRoom(interviewId: string) {
     state, interview, credentials, refusal, videoNote,
     elapsedSec, remainingSec, durationMin, thresholdPct, markAtSec, meetsMark,
     ending, endError, markMoment, end,
-    muted, cameraOff, toggleMic, toggleCamera, localReady, remoteUid, remoteVideoOn, quality, link, reconnectSecLeft,
+    muted, cameraOff, soundOff, toggleMic, toggleCamera, toggleSound, localReady, remoteUid, remoteVideoOn, quality, link, reconnectSecLeft,
     warnings: credentials?.warnings ?? [5, 1],
+    // IR-19 — the server's own record of the student stepping out, and the admin's rejoin window.
+    studentLeftAt: interview?.status === 'IN_PROGRESS' ? interview.studentLeftAt ?? null : null,
+    rejoinWindowMinutes: credentials?.rejoinWindowMinutes ?? null,
+    now,
   }
 }

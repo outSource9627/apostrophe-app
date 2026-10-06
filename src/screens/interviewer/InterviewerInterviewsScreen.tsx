@@ -13,6 +13,8 @@ import {
   clock, groupOf, hms, interviewClock, istTime, istWeekday, joinState, owedClock, pastLabel, sessionLine, type InterviewGroup,
 } from '../../lib/interviewer/state'
 import { reasonOf, useAppConfig, useInterviewerInterviews, useInterviewerMe } from '../../lib/interviewer/useInterviewer'
+import { interviewerLateInput, isLate, lateClock, lateJoin, lateRulesOf } from '../../lib/interviews/late'
+import { LateBand, LatePill, OtherLine, lateCard, lateTint } from '../../lib/interviews/LateJoin'
 import type { RootStackParamList } from '../../../App'
 
 type Tab = 'all' | InterviewGroup
@@ -53,17 +55,17 @@ function Pill({ label, tone }: { label: string; tone: Tone }) {
   )
 }
 
-/** The slim 34px action: violet (Join, Rejoin) or outline (Scorecard). */
-function RowBtn({ label, variant, disabled, onPress }: { label: string; variant: 'pri' | 'out'; disabled?: boolean; onPress: () => void }) {
+/** The slim 34px action: violet (Join, Rejoin), red (Join, the student past the red point) or outline (Scorecard). */
+function RowBtn({ label, variant, disabled, onPress }: { label: string; variant: 'pri' | 'red' | 'out'; disabled?: boolean; onPress: () => void }) {
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ disabled: !!disabled }}
       disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => [styles.btn, variant === 'pri' ? styles.btnPri : styles.btnOut, disabled && styles.btnOff, pressed && styles.pressed]}
+      style={({ pressed }) => [styles.btn, variant === 'pri' ? styles.btnPri : variant === 'red' ? styles.btnRed : styles.btnOut, disabled && styles.btnOff, pressed && styles.pressed]}
     >
-      <Text style={[styles.btnText, variant === 'pri' && styles.btnTextOn, disabled && styles.btnTextOff]} numberOfLines={1}>{label}</Text>
+      <Text style={[styles.btnText, variant !== 'out' && styles.btnTextOn, disabled && styles.btnTextOff]} numberOfLines={1}>{label}</Text>
     </Pressable>
   )
 }
@@ -99,6 +101,10 @@ function SkelBox({ w, h, round }: { w: number | `${number}%`; h: number; round?:
  * scorecard is owed), the candidate and fee, the session line, then the status,
  * the join countdown and the one action — Join or Rejoin, Scorecard.
  *
+ * A Live row that is past its start before the session has begun carries the
+ * late-join warning (lib/interviews/late.ts): the clock below zero, amber then
+ * the red fill, and whether the student is in the room.
+ *
  * Statuses and fees are the server's own (each interview's `feePaise`; "Paid"
  * only when the scorecard is in and the interview is payable). While suspended
  * the list is refused by the server, so the page shows the owed scorecards
@@ -125,16 +131,19 @@ export function InterviewerInterviewsScreen() {
 
   const open = (i: InterviewerInterviewDto) => navigation.navigate('InterviewerDetail', { id: i.id })
 
+  const lateRules = lateRulesOf(config)
   const renderRow = ({ i, g }: { i: InterviewerInterviewDto; g: InterviewGroup }, last: boolean) => {
     let badge: { label: string; tone: Tone }
     let opens: string | null = null
+    const late = lateJoin(interviewerLateInput(i), lateRules, now)
+    const warn = g === 'live' && late.phase !== 'off'
     let aside: { text: string; red: boolean } | null = null
     let urgent = false
     let action: React.ReactNode = null
     if (g === 'live') {
       const j = joinState(i, config, now)
       badge = { label: i.status === 'IN_PROGRESS' ? 'In progress' : 'Join open', tone: 'green' }
-      action = <RowBtn variant="pri" label={j.kind === 'open' && j.rejoin ? 'Rejoin' : 'Join'} disabled={!!me && me.status === 'SUSPENDED'} onPress={() => navigation.navigate('InterviewerRoom', { id: i.id })} />
+      action = <RowBtn variant={late.phase === 'red' ? 'red' : 'pri'} label={j.kind === 'open' && j.rejoin ? 'Rejoin' : 'Join'} disabled={!!me && me.status === 'SUSPENDED'} onPress={() => navigation.navigate('InterviewerRoom', { id: i.id })} />
     } else if (g === 'upcoming') {
       const j = joinState(i, config, now)
       badge = { label: 'Booked', tone: 'violet' }
@@ -156,11 +165,11 @@ export function InterviewerInterviewsScreen() {
         accessibilityRole="button"
         accessibilityLabel={g === 'owed' ? `${i.student.name}, scorecard due` : undefined}
         onPress={() => open(i)}
-        style={({ pressed }) => [styles.ir, !last && styles.irRule, pressed && styles.pressed]}
+        style={({ pressed }) => [styles.ir, !last && styles.irRule, warn && lateCard(late, false), pressed && styles.pressed]}
       >
         {urgent && <UrgentWash />}
         <View style={styles.wh}>
-          <Text style={styles.dy} numberOfLines={1}>{istWeekday(i.slotStart).toUpperCase()}</Text>
+          <Text style={styles.dy} numberOfLines={1}>{istWeekday(i.slotStart)}</Text>
           <Text style={styles.whTime} numberOfLines={1}>{istTime(i.slotStart)}</Text>
           {aside && <Text accessibilityLabel="Left to submit" style={[styles.ck, aside.red && { color: color.danger }]} numberOfLines={1}>{aside.text}</Text>}
         </View>
@@ -170,9 +179,18 @@ export function InterviewerInterviewsScreen() {
             <Text style={styles.fe}>{feeShown ? formatPaise(i.feePaise) : '—'}</Text>
           </View>
           <Text style={styles.sub} numberOfLines={1}>{sessionLine({ tier: i.tier, domain: i.domain, languages: i.student.languages, language: i.language })}</Text>
+          {warn && (
+            <View style={styles.lateStack}>
+              <LateBand j={late} />
+              <OtherLine j={late} who={i.student.name.split(' ')[0] || i.student.name} />
+            </View>
+          )}
           <View style={styles.mt}>
-            <Pill label={badge.label} tone={badge.tone} />
-            {!!opens && <Text style={styles.ln} numberOfLines={1}>{opens.toUpperCase()}</Text>}
+            {warn && isLate(late) ? <LatePill j={late} /> : <Pill label={badge.label} tone={badge.tone} />}
+            {warn && late.secondsLate > 0 && (
+              <Text style={[styles.ln, styles.lnClock, { color: lateTint(late, false) ?? color.text }]} numberOfLines={1}>{lateClock(late)}</Text>
+            )}
+            {!!opens && <Text style={styles.ln} numberOfLines={1}>{opens}</Text>}
             {action}
           </View>
         </View>
@@ -305,15 +323,17 @@ const styles = StyleSheet.create({
   wh: { width: 86, gap: 2, paddingTop: 1 },
   skelWh: { gap: 6 },
   skelGrow: { gap: 8 },
-  dy: { fontFamily: FF.monoMedium, fontSize: 11.5, letterSpacing: 0, color: color.textMuted },
+  dy: { fontFamily: FF.bodyMedium, fontSize: 11.5, color: color.textMuted },
   whTime: { fontFamily: FF.bodySemiBold, fontSize: 14.5, letterSpacing: -0.145, color: color.text },
-  ck: { fontFamily: FF.monoMedium, fontSize: 13, marginTop: 1, color: color.accentHover },
+  ck: { fontFamily: FF.bodyMedium, fontSize: 13, marginTop: 1, color: color.accentHover, fontVariant: ['tabular-nums'] },
   nl: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 },
   nmx: { flexShrink: 1, fontFamily: FF.bodySemiBold, fontSize: 16.5, lineHeight: 20.6, letterSpacing: -0.33, color: color.text },
-  fe: { fontFamily: FF.monoMedium, fontSize: 13, color: color.textSecondary },
+  fe: { fontFamily: FF.bodyMedium, fontSize: 13, color: color.textSecondary, fontVariant: ['tabular-nums'] },
   sub: { fontFamily: FF.body, fontSize: 14, lineHeight: 19, color: color.textMuted },
   mt: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 3, minHeight: 26 },
-  ln: { flexShrink: 1, fontFamily: FF.monoMedium, fontSize: 13, letterSpacing: 0.52, color: color.accentHover },
+  ln: { flexShrink: 1, fontFamily: FF.bodyMedium, fontSize: 13, color: color.accentHover, fontVariant: ['tabular-nums'] },
+  lnClock: { fontFamily: FF.bodySemiBold },
+  lateStack: { gap: space.sm, marginTop: space.sm },
 
   bd: { flexDirection: 'row', alignItems: 'center', borderRadius: 99, paddingVertical: 3, paddingHorizontal: 10 },
   bdDot: { width: 6, height: 6, borderRadius: 3, marginRight: 6, backgroundColor: color.successFill },
@@ -321,6 +341,7 @@ const styles = StyleSheet.create({
 
   btn: { marginLeft: 'auto', height: 34, borderRadius: 11, paddingHorizontal: 14, alignItems: 'center', justifyContent: 'center' },
   btnPri: { backgroundColor: color.accent },
+  btnRed: { backgroundColor: color.dangerFill },
   btnOut: { backgroundColor: color.surface, borderWidth: 1.5, borderColor: color.borderStrong },
   btnOff: { backgroundColor: color.surfaceMuted, borderColor: color.surfaceMuted },
   btnText: { fontFamily: FF.bodyBold, fontSize: 14, color: color.text },

@@ -135,5 +135,5 @@ const s = StyleSheet.create({
   notice: { fontFamily: FF.body, fontSize: 14.5, lineHeight: 20, color: color.textSecondary },
   section: { fontFamily: FF.bodyBold, fontSize: 19, letterSpacing: -0.57, color: color.text, paddingTop: 2, paddingHorizontal: 2 },
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  fig: { fontFamily: FF.monoMedium, fontSize: 17, color: color.text },
+  fig: { fontFamily: FF.bodyMedium, fontSize: 17, fontVariant: ['tabular-nums'], color: color.text },
 })

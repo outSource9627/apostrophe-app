@@ -38,7 +38,7 @@ export function HealthScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.page}>
-      <Eyebrow>APOSTROPHE · MOBILE</Eyebrow>
+      <Eyebrow>Apostrophe · mobile</Eyebrow>
       <Display level="md" style={styles.title}>
         Connection check
       </Display>
@@ -55,7 +55,7 @@ export function HealthScreen() {
       {health && (
         <>
           <Card style={styles.statusCard}>
-            <StatusPill tone={ok ? 'success' : 'danger'} label={health.status.toUpperCase()} dot />
+            <StatusPill tone={ok ? 'success' : 'danger'} label={health.status.charAt(0).toUpperCase() + health.status.slice(1)} dot />
             <Meta>{new Date(health.at).toLocaleString('en-IN')}</Meta>
           </Card>
           <Card>
@@ -64,7 +64,7 @@ export function HealthScreen() {
                 key={name}
                 title={name}
                 status={
-                  <StatusPill tone={check.ok ? 'success' : 'danger'} label={check.ok ? 'ok' : check.detail ?? 'failed'} />
+                  <StatusPill tone={check.ok ? 'success' : 'danger'} label={check.ok ? 'OK' : check.detail ?? 'Failed'} />
                 }
                 last={i === all.length - 1}
               />
@@ -75,7 +75,7 @@ export function HealthScreen() {
 
       {config && (
         <View style={styles.section}>
-          <Eyebrow>PRICING, READ FROM THE BACKEND</Eyebrow>
+          <Eyebrow>Pricing, read from the backend</Eyebrow>
           <Body size="sm" tone="muted">
             Nothing below is hard-coded in this app. An admin changes a price and it updates with no release.
           </Body>

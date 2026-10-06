@@ -3,7 +3,7 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { borderWidth, color, radius, space, spaceHalf, trackingNative } from '../../theme'
 import { Button, Input, text } from '../../components/ui'
-import { EmSheet } from '../../components/employer/em'
+import { EmDialog, EmSheet } from '../../components/employer/em'
 import { ApiClientError } from '../../lib/api'
 import {
   deleteSavedSearch, listSavedSearches, saveSearch, type CandidateFilters, type SavedSearch,
@@ -13,7 +13,8 @@ import { filterCount, filterSummary } from '../../lib/employer/feedFilters'
 /**
  * EM-12 · Saved searches, the sheet over the feed. Each row is a named filter
  * set: its name, the filters in one line, how many rows it sets (and IN USE
- * when it is what the feed is showing), Delete and Apply. The foot saves the
+ * when it is what the feed is showing), Delete (which asks first, in a dialog
+ * inside the sheet so it draws over it) and Apply. The foot saves the
  * current filters under a name — a name used before is replaced, as the server
  * does it.
  */
@@ -33,6 +34,8 @@ export function SavedSearchesSheet({
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState<SavedSearch | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     setError(null)
@@ -70,11 +73,14 @@ export function SavedSearchesSheet({
 
   async function remove(id: string) {
     setBusyId(id)
+    setDeleteError(null)
     try {
       await deleteSavedSearch(id)
       setRows((prev) => (prev ?? []).filter((r) => r.id !== id))
-    } catch {
-      /* the row stays; nothing changed */
+      setDeleting(null)
+    } catch (e) {
+      // The row stays; nothing changed. The dialog stays open with the reason.
+      setDeleteError(e instanceof ApiClientError ? e.message : 'Not deleted. Check your connection and try again.')
     } finally {
       setBusyId(null)
     }
@@ -124,16 +130,30 @@ export function SavedSearchesSheet({
             {!!filterSummary(r.filters) && <Text style={[text.uiXs, styles.muted]}>{filterSummary(r.filters)}</Text>}
             <View style={styles.rowFoot}>
               <Text style={[text.metaSm, styles.subtle, styles.mono]}>
-                {`${r.count} ${r.count === 1 ? 'FILTER' : 'FILTERS'}${r.inUse ? ' · IN USE' : ''}`}
+                {`${r.count} ${r.count === 1 ? 'filter' : 'filters'}${r.inUse ? ' · in use' : ''}`}
               </Text>
               <View style={styles.actions}>
-                <Button variant="dangerText" size="sm" label="Delete" busy={busyId === r.id} onPress={() => { remove(r.id) }} />
+                <Button variant="dangerText" size="sm" label="Delete" busy={busyId === r.id} onPress={() => { setDeleteError(null); setDeleting(r) }} />
                 <Button variant="outline" size="sm" label="Apply" onPress={() => onApply(r)} style={styles.slim} />
               </View>
             </View>
           </View>
         ))
       )}
+      <EmDialog
+        open={!!deleting}
+        onClose={() => !busyId && setDeleting(null)}
+        title={deleting ? `Delete “${deleting.name}”?` : ''}
+        body="It leaves your saved searches. The filters the feed is showing now stay as they are. This can’t be undone."
+        actions={
+          <>
+            <Button variant="ghost" size="md" label="Cancel" disabled={!!busyId} onPress={() => setDeleting(null)} />
+            <Button variant="dangerFill" size="md" label="Delete" busy={!!deleting && busyId === deleting.id} disabled={!!busyId} onPress={() => { if (deleting) remove(deleting.id) }} />
+          </>
+        }
+      >
+        {!!deleteError && <Text style={[text.uiSm, styles.danger]}>{deleteError}</Text>}
+      </EmDialog>
     </EmSheet>
   )
 }

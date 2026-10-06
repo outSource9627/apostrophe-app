@@ -6,7 +6,7 @@ import { api, ApiClientError } from '../../lib/api'
 import { applyToJob, type JobDetail } from '../../lib/api/jobs'
 import { getVideoResume } from '../../lib/api/student'
 import { fmtDayMonthYear } from '../../lib/chat/format'
-import { borderWidth, color, fontFamilyNative as FF, opacity } from '../../theme'
+import { borderWidth, color, fontFamilyNative as FF, fontSize, opacity } from '../../theme'
 import { StatusPill, VerifiedSeal } from '../../components/ui'
 import { Icon } from '../../components/ui/Icon'
 import { Btn, Panel, Skel } from '../../components/tab/kit'
@@ -108,7 +108,7 @@ export function ApplyScreen({ id, onBack, onApplications, onBook, onFeed }: {
   )
   if (phase === 'unpublished') return frame(
     <View style={styles.done}>
-      <Text style={styles.eyebrow}>BEFORE YOU CAN APPLY</Text>
+      <Text style={styles.eyebrow}>Before you can apply</Text>
       <Text style={styles.h2}>Your video resume isn&rsquo;t ready yet.</Text>
       <Text style={styles.lead}>Employers see your verified interview with every application — so applying opens once your film is published.</Text>
       <View style={[styles.actions, styles.actionsGap]}><Btn variant="primary" label="Book an interview" onPress={onBook} /></View>
@@ -120,7 +120,7 @@ export function ApplyScreen({ id, onBack, onApplications, onBook, onFeed }: {
     <>
       <View style={styles.applyHead}>
         <View style={styles.grow}>
-          <Text style={[styles.eyebrow, { color: color.accent }]}>APPLYING TO</Text>
+          <Text style={[styles.eyebrow, { color: color.accent }]}>Applying to</Text>
           <Text style={styles.h2}>{job.title}</Text>
           <Text style={styles.co}>{job.company.name}</Text>
         </View>
@@ -129,7 +129,7 @@ export function ApplyScreen({ id, onBack, onApplications, onBook, onFeed }: {
         </Pressable>
       </View>
       <View style={styles.receives}>
-        <Text style={styles.eyebrow}>{`WHAT ${job.company.name} RECEIVES`.toUpperCase()}</Text>
+        <Text style={styles.eyebrow}>{`What ${job.company.name} receives`}</Text>
         <Fact t="Your full profile — education, experience, skills and preferences." />
         <Fact t="Your verified video resume, from your interview." />
       </View>
@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
   sheet: { backgroundColor: color.surface, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingTop: 10, paddingHorizontal: 20 },
   grab: { alignSelf: 'center', width: 40, height: 4, borderRadius: 4, backgroundColor: color.borderStrong, marginBottom: 12 },
   sheetBody: { gap: 16 },
-  eyebrow: { fontFamily: FF.monoMedium, fontSize: 11, letterSpacing: 1.54, color: color.textMuted },
+  eyebrow: { fontFamily: FF.bodyMedium, fontSize: fontSize['meta-md'], color: color.textMuted },
   h2: { fontFamily: FF.bodyBold, fontSize: 22, lineHeight: 25, letterSpacing: -0.66, color: color.text },
   lead: { fontFamily: FF.body, fontSize: 15, lineHeight: 22, color: color.textMuted },
   co: { fontFamily: FF.body, fontSize: 15, color: color.textMuted },
@@ -204,5 +204,5 @@ const styles = StyleSheet.create({
   noteFocus: { borderColor: color.accent },
   noteRow: { flexDirection: 'row', alignItems: 'baseline', gap: 10, marginTop: 6 },
   hint: { fontFamily: FF.body, fontSize: 13, color: color.textSubtle },
-  count: { fontFamily: FF.monoMedium, fontSize: 11, color: color.textSubtle },
+  count: { fontFamily: FF.bodyMedium, fontSize: 11, fontVariant: ['tabular-nums'], color: color.textSubtle },
 })

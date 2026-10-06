@@ -77,7 +77,7 @@ export function RescheduleScreen({
         </View>
         <Card style={styles.booked}>
           <View style={styles.bookedText}>
-            <Text style={[text.metaSm, styles.eyebrowMuted]}>STILL BOOKED</Text>
+            <Text style={[text.metaSm, styles.eyebrowMuted]}>Still booked</Text>
             <Text style={text.uiBaseSemi}>{fmtShortDate(iv.slotStart)} · {fmtTime(iv.slotStart)}</Text>
           </View>
           <StatusPill tone="neutral" label={iv.tier} />

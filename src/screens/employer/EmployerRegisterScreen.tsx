@@ -1,19 +1,17 @@
 import React, { useCallback, useRef, useState } from 'react'
 import {
-  AccessibilityInfo, Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput,
-  View, useWindowDimensions, type TextInputProps,
+  AccessibilityInfo, Keyboard, StyleSheet, Text, TextInput, View, type TextInputProps,
 } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useFocusEffect } from '@react-navigation/native'
-import { useQuery } from '@tanstack/react-query'
-import { borderWidth, color, height, opacity, radius, space, spaceHalf } from '../../theme'
+import { borderWidth, color, fontSize, height, radius, space } from '../../theme'
 import { Banner, Button, ErrorState, Skeleton, text } from '../../components/ui'
 import {
-  A, AButton, AField, AInput, APassword, APhone, ASelect, AuthSub, AuthTitle, AuthTop, BottomBar, CheckRow, Group,
-  Link, Note, StrengthMeter, Swap,
+  AButton, AChips, AField, AInput, APassword, APhone, ASelect, BrandScreen, FieldRow, Link, Section, Swap, TermsCheck,
+  Tip, useFieldFocus,
 } from '../../components/auth/kit'
+import { useAuthConfig, verificationHours } from '../../components/auth/config'
 import { TextAction } from '../../components/employer'
-import { api, ApiClientError, ErrorCode } from '../../lib/api'
+import { ApiClientError, ErrorCode } from '../../lib/api'
 import {
   COMPANY_SIZES, retryAfterSeconds, sendRegisterCodes,
   type CodeChannel, type CompanySize, type EmployerRegistrationDraft, type RegisterOtpResult,
@@ -59,7 +57,11 @@ export type FieldKey =
 
 export type FieldErrors = Partial<Record<FieldKey, string>>
 
-/** Reading order on the screen: the company, then the person. Focus and the summary follow it. */
+/**
+ * Reading order on the screen: the company, then the authorised person, then the
+ * password. The error summary, focus-on-first-error and EM-03's hand-back all
+ * follow it, and EM-02 draws its blocks in exactly this order.
+ */
 export const FIELD_ORDER: readonly FieldKey[] = [
   'companyName', 'industry', 'companySize', 'website', 'officeLocation',
   'name', 'designation', 'email', 'mobile', 'password',
@@ -359,20 +361,27 @@ function draftOf(form: Form): EmployerRegistrationDraft {
   }
 }
 
-type Industry = { name: string; slug: string }
-
 type TextInputRef = React.ComponentRef<typeof TextInput>
 type ViewRef = React.ComponentRef<typeof View>
 
+/** The form's own checks beyond the server's fields: the repeated password and the terms. */
+type ScreenKey = FieldKey | 'confirm' | 'terms'
+
+/** Focus order: the server fields in reading order, then the two form-only checks at the foot. */
+const SCREEN_ORDER: readonly ScreenKey[] = [...FIELD_ORDER, 'confirm', 'terms']
+
 /**
- * EM-02 · Create account. ONE screen, two labelled blocks: the company, then
- * the person. No wizard and no progress dots, because a free product should
- * not read like a credit application.
+ * EM-02 · Create your employer account, drawn as direction C
+ * (docs/registration-mockups.html?dir=C&flow=employer). ONE screen, three
+ * blocks in this order — the company, you (the authorised person), then
+ * securing the account — and FIELD_ORDER, the error summary and
+ * focus-on-first-error all follow that same order. No wizard and no progress
+ * dots, because a free product should not read like a credit application.
  *
- * Create account checks everything the server would refuse — the summary names
- * the fields and focus moves to the first — then sends a code to each channel
- * and opens EM-03. The work email's webmail refusal lands earlier, when the
- * field loses focus, before anything is sent.
+ * Continue checks everything the server would refuse — the summary names the
+ * fields and focus moves to the first — then sends a code to each channel and
+ * opens EM-03. The work email's webmail refusal lands earlier, when the field
+ * loses focus, before anything is sent.
  *
  * Each channel is sent as its own request, as the web does. The rows on EM-03
  * fail on their own, and a send that carried both would come back as one
@@ -382,14 +391,13 @@ type ViewRef = React.ComponentRef<typeof View>
  * straight back must not spend the allowance twice.
  */
 export function EmployerRegisterScreen({ onBack, onSignIn, onCodesSent }: EmployerRegisterScreenProps) {
-  const insets = useSafeAreaInsets()
-  const viewport = useWindowDimensions()
+  const ff = useFieldFocus<ScreenKey>()
 
   const [form, setForm] = useState<Form>(EMPTY_FORM)
   const [errors, setErrors] = useState<FieldErrors>({})
   /** The field whose error carries a Sign in action. */
   const [signIn, setSignIn] = useState<FieldKey | null>(null)
-  /** The summary names what a Create account found. Server refusals are shown on their fields alone. */
+  /** The summary names what a Continue found. Server refusals are shown on their fields alone. */
   const [summaryOn, setSummaryOn] = useState(false)
   const [sending, setSending] = useState(false)
   const [failure, setFailure] = useState<string | null>(null)
@@ -398,18 +406,13 @@ export function EmployerRegisterScreen({ onBack, onSignIn, onCodesSent }: Employ
   const [extra, setExtra] = useState<{ confirm?: string; terms?: string }>({})
   const [passwordShown, setPasswordShown] = useState(false)
 
-  const scrollRef = useRef<React.ComponentRef<typeof ScrollView>>(null)
-  const contentRef = useRef<ViewRef>(null)
   const summaryRef = useRef<ViewRef>(null)
-  const blocks = useRef<Partial<Record<FieldKey, ViewRef | null>>>({})
-  const inputs = useRef<Partial<Record<FieldKey, TextInputRef | null>>>({})
 
   // The list normally arrives before the picker is opened; the sheet asks again if it did not.
-  const config = useQuery({
-    queryKey: ['config'],
-    queryFn: () => api.get<{ masterData: { industries: Industry[] } }>('/config', { anonymous: true }),
-  })
+  const config = useAuthConfig()
   const industries = config.data?.masterData?.industries ?? []
+  const codeLength = config.data?.auth?.otpLength
+  const slaHours = verificationHours(config.data)
 
   const summary = summaryOn ? summarise(errors) : null
 
@@ -418,24 +421,10 @@ export function EmployerRegisterScreen({ onBack, onSignIn, onCodesSent }: Employ
    * and the field sits under it, the summary stays in view too — it is what
    * says why focus moved.
    */
-  const focusField = useCallback((key: FieldKey, withSummary = false) => {
-    const block = blocks.current[key]
-    const content = contentRef.current
-    if (block && content) {
-      block.measureLayout(content, (_x, fieldY) => {
-        const scrollTo = (y: number) =>
-          scrollRef.current?.scrollTo({ y: Math.max(0, y - space.xl), animated: true })
-        const summaryBlock = summaryRef.current
-        if (!withSummary || !summaryBlock) return scrollTo(fieldY)
-        summaryBlock.measureLayout(
-          content,
-          (_sx, summaryY) => scrollTo(fieldY - summaryY < viewport.height / 2 ? summaryY : fieldY),
-          () => scrollTo(fieldY),
-        )
-      })
-    }
-    inputs.current[key]?.focus()
-  }, [viewport.height])
+  const focusField = useCallback(
+    (key: ScreenKey, withSummary = false) => ff.to(key, withSummary ? summaryRef.current : null),
+    [ff],
+  )
 
   // EM-03 coming back: a row's Edit, or the server refusing the form itself.
   useFocusEffect(
@@ -469,19 +458,14 @@ export function EmployerRegisterScreen({ onBack, onSignIn, onCodesSent }: Employ
     setExtra(more)
     setSignIn(null)
     setFailure(null)
-    const first = FIELD_ORDER.find((k) => found[k])
-    if (first || more.confirm || more.terms) {
-      if (!first) {
-        // Only the form-level checks failed: no field summary, just the lines under them.
-        setSummaryOn(false)
-        scrollRef.current?.scrollToEnd({ animated: true })
-        return
-      }
-      setSummaryOn(true)
+    const first = SCREEN_ORDER.find((k) => (k === 'confirm' || k === 'terms' ? more[k] : found[k]))
+    if (first) {
       const s = summarise(found)
+      // The summary names the server fields; the two form-only checks speak for themselves at the foot.
+      setSummaryOn(!!s)
       if (s) AccessibilityInfo.announceForAccessibility(`${s.title}. ${s.body}`)
       // After the summary has rendered, so it can be measured and kept in view.
-      requestAnimationFrame(() => focusField(first, true))
+      requestAnimationFrame(() => focusField(first, !!s))
       return
     }
 
@@ -530,292 +514,265 @@ export function EmployerRegisterScreen({ onBack, onSignIn, onCodesSent }: Employ
       setErrors(refused)
       setFailure(stopped)
       if (firstRefused) requestAnimationFrame(() => focusField(firstRefused))
+      else requestAnimationFrame(() => ff.toEnd())
       return
     }
 
     onCodesSent({ registration: draft, sent })
   }
 
-  const blockRef = (key: FieldKey) => (node: ViewRef | null) => {
-    blocks.current[key] = node
-  }
-  const inputRef = (key: FieldKey) => (node: TextInputRef | null) => {
-    inputs.current[key] = node
-  }
-  const next = (key: FieldKey) => () => inputs.current[key]?.focus()
+  const next = (key: ScreenKey) => () => ff.focusInput(key)
 
   const loginLine = (key: FieldKey) =>
     signIn === key ? <Text style={styles.signInLine}><Link onPress={onSignIn}>Log in instead</Link></Text> : null
 
-  const row = (key: FieldKey, node: React.ReactNode) => (
-    <View ref={blockRef(key)} collapsable={false}>
-      {node}
-    </View>
-  )
-
   return (
-    <KeyboardAvoidingView
-      style={[styles.page, { paddingTop: insets.top }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    <BrandScreen
+      title="Create your employer account"
+      sub="Free, with no plan to pick. We verify your company before you see candidates."
+      onBack={onBack}
+      scrollRef={ff.scroller}
+      contentRef={ff.content}
+      footer={
+        <>
+          <AButton label={sending ? 'Sending your codes…' : 'Continue'} busy={sending} onPress={submit} />
+          <Swap lead="Already have an account?" action="Log in" onPress={onSignIn} />
+        </>
+      }
     >
-      <AuthTop onBack={onBack} />
+      {!!summary && (
+        <View ref={summaryRef} collapsable={false} accessibilityLiveRegion="assertive" style={styles.summary}>
+          <Banner tone="danger" title={summary.title}>
+            {summary.body}
+          </Banner>
+        </View>
+      )}
 
-      <ScrollView
-        ref={scrollRef}
-        style={styles.grow}
-        contentContainerStyle={styles.body}
-        keyboardShouldPersistTaps="handled"
-      >
-        <View ref={contentRef} collapsable={false}>
-          <View style={styles.gap} />
-          <AuthTitle>Create your account</AuthTitle>
-          <AuthSub>Hire from verified video interviews. We verify your company first.</AuthSub>
+      <Section title="The company" first>
+        <AField label="Company name" error={errors.companyName} anchorRef={ff.anchor('companyName')}>
+          <AInput
+            icon="building"
+            inputRef={ff.input('companyName')}
+            value={form.companyName}
+            onChangeText={(v) => change('companyName', { companyName: v })}
+            placeholder="As on your GST certificate or PAN"
+            autoCapitalize="words"
+            autoComplete="organization"
+            textContentType="organizationName"
+            invalid={!!errors.companyName}
+            editable={!sending}
+          />
+        </AField>
+        <AField label="Industry" error={errors.industry} anchorRef={ff.anchor('industry')}>
+          <ASelect
+            title="Industry"
+            placeholder="Choose an industry"
+            value={form.industry}
+            options={industries.map((i) => ({ value: i.name, label: i.name }))}
+            invalid={!!errors.industry}
+            onChange={(v) => change('industry', { industry: v })}
+            onOpen={() => {
+              Keyboard.dismiss()
+              if (!industries.length && !config.isFetching) config.refetch()
+            }}
+            empty={
+              config.isError || (config.isSuccess && !config.isFetching) ? (
+                <ErrorState
+                  title="The list of industries didn’t load."
+                  body="Check your connection, then try again."
+                  action={
+                    <Button variant="outline" size="sm" label="Try again" busy={config.isFetching} onPress={() => config.refetch()} />
+                  }
+                />
+              ) : (
+                <Skeleton lines={6} block={false} />
+              )
+            }
+          />
+        </AField>
+        <AField label="Company size" hint="People on the payroll" error={errors.companySize} anchorRef={ff.anchor('companySize')}>
+          <AChips
+            single
+            options={COMPANY_SIZES.map((size) => ({ value: size, label: COMPANY_SIZE_LABEL[size] }))}
+            selected={form.companySize ? [form.companySize] : []}
+            invalid={!!errors.companySize}
+            onToggle={(v) => change('companySize', { companySize: v as CompanySize })}
+          />
+        </AField>
+        <AField label="Website" optional error={errors.website} anchorRef={ff.anchor('website')}>
+          <AInput
+            icon="link"
+            inputRef={ff.input('website')}
+            value={form.website}
+            onChangeText={(v) => change('website', { website: v })}
+            onBlur={() => {
+              const website = normaliseWebsite(form.website)
+              if (website !== form.website) setForm((f) => ({ ...f, website }))
+            }}
+            placeholder="https://"
+            keyboardType="url"
+            autoCapitalize="none"
+            autoCorrect={false}
+            autoComplete="url"
+            textContentType="URL"
+            returnKeyType="next"
+            onSubmitEditing={next('officeLocation')}
+            submitBehavior="submit"
+            invalid={!!errors.website}
+            editable={!sending}
+          />
+        </AField>
+        <AField label="Office location" error={errors.officeLocation} anchorRef={ff.anchor('officeLocation')}>
+          <AInput
+            icon="pin"
+            inputRef={ff.input('officeLocation')}
+            value={form.officeLocation}
+            onChangeText={(v) => change('officeLocation', { officeLocation: v })}
+            placeholder="City"
+            autoCapitalize="words"
+            textContentType="addressCity"
+            returnKeyType="next"
+            onSubmitEditing={next('name')}
+            submitBehavior="submit"
+            invalid={!!errors.officeLocation}
+            editable={!sending}
+          />
+        </AField>
+      </Section>
 
-          {!!summary && (
-            <View ref={summaryRef} collapsable={false} accessibilityLiveRegion="assertive" style={styles.banner}>
-              <Banner tone="danger" title={summary.title}>
-                {summary.body}
-              </Banner>
-            </View>
-          )}
-
-          <Group>Authorised person</Group>
-          {row('name', (
-            <AField label="Full name" error={errors.name}>
-              <AInput
-                inputRef={inputRef('name')}
-                value={form.name}
-                onChangeText={(v) => change('name', { name: v })}
-                placeholder="As on your ID"
-                autoCapitalize="words"
-                autoComplete="name"
-                textContentType="name"
-                returnKeyType="next"
-                onSubmitEditing={next('designation')}
-                submitBehavior="submit"
-                invalid={!!errors.name}
-                editable={!sending}
-              />
-            </AField>
-          ))}
-          {row('designation', (
-            <AField label="Designation" error={errors.designation}>
-              <AInput
-                inputRef={inputRef('designation')}
-                value={form.designation}
-                onChangeText={(v) => change('designation', { designation: v })}
-                placeholder="e.g. HR Manager"
-                autoCapitalize="words"
-                textContentType="jobTitle"
-                returnKeyType="next"
-                onSubmitEditing={next('mobile')}
-                submitBehavior="submit"
-                invalid={!!errors.designation}
-                editable={!sending}
-              />
-            </AField>
-          ))}
-          {row('mobile', (
-            <AField label="Mobile number" helper="We send a code by SMS." error={errors.mobile}>
-              <APhone
-                inputRef={inputRef('mobile')}
-                value={form.mobile}
-                onChangeText={(v) => change('mobile', { mobile: mobileDigits(v) })}
-                invalid={!!errors.mobile}
-                editable={!sending}
-              />
-              {loginLine('mobile')}
-            </AField>
-          ))}
-          {row('email', (
-            <AField
-              label="Work email"
-              helper="An address on your company’s domain. A reviewer checks it against your website."
-              error={errors.email}
-            >
-              <AInput
-                inputRef={inputRef('email')}
-                value={form.email}
-                onChangeText={(v) => change('email', { email: v })}
-                onBlur={() => {
-                  const refusal = form.email.trim() ? webmailRefusal(form.email, form.website) : null
-                  if (refusal) setErrors((e) => ({ ...e, email: refusal }))
-                }}
-                placeholder="you@yourcompany.in"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                autoComplete="email"
-                textContentType="emailAddress"
-                returnKeyType="next"
-                onSubmitEditing={next('companyName')}
-                submitBehavior="submit"
-                invalid={!!errors.email}
-                editable={!sending}
-              />
-              {loginLine('email')}
-            </AField>
-          ))}
-
-          <Group>Company</Group>
-          {row('companyName', (
-            <AField label="Company name" error={errors.companyName}>
-              <AInput
-                inputRef={inputRef('companyName')}
-                value={form.companyName}
-                onChangeText={(v) => change('companyName', { companyName: v })}
-                placeholder="As on your GST certificate or PAN"
-                autoCapitalize="words"
-                autoComplete="organization"
-                textContentType="organizationName"
-                invalid={!!errors.companyName}
-                editable={!sending}
-              />
-            </AField>
-          ))}
-          {row('industry', (
-            <AField label="Industry" error={errors.industry}>
-              <ASelect
-                title="Industry"
-                placeholder="Select industry"
-                value={form.industry}
-                options={industries.map((i) => ({ value: i.name, label: i.name }))}
-                invalid={!!errors.industry}
-                onChange={(v) => change('industry', { industry: v })}
-                onOpen={() => {
-                  Keyboard.dismiss()
-                  if (!industries.length && !config.isFetching) config.refetch()
-                }}
-                empty={
-                  config.isError || (config.isSuccess && !config.isFetching) ? (
-                    <ErrorState
-                      title="The list of industries didn’t load."
-                      body="Check your connection, then try again."
-                      action={
-                        <Button variant="outline" size="sm" label="Try again" busy={config.isFetching} onPress={() => config.refetch()} />
-                      }
-                    />
-                  ) : (
-                    <Skeleton lines={6} block={false} />
-                  )
-                }
-              />
-            </AField>
-          ))}
-          {row('companySize', (
-            <AField label="Company size" helper="People on the payroll." error={errors.companySize}>
-              <ASelect
-                title="Company size"
-                placeholder="Select size"
-                value={form.companySize}
-                options={COMPANY_SIZES.map((size) => ({ value: size, label: COMPANY_SIZE_LABEL[size] }))}
-                invalid={!!errors.companySize}
-                onChange={(v) => change('companySize', { companySize: v as CompanySize })}
-              />
-            </AField>
-          ))}
-          {row('website', (
-            <AField label="Website" optional error={errors.website}>
-              <AInput
-                inputRef={inputRef('website')}
-                value={form.website}
-                onChangeText={(v) => change('website', { website: v })}
-                onBlur={() => {
-                  const website = normaliseWebsite(form.website)
-                  if (website !== form.website) setForm((f) => ({ ...f, website }))
-                }}
-                placeholder="https://company.com"
-                keyboardType="url"
-                autoCapitalize="none"
-                autoCorrect={false}
-                autoComplete="url"
-                textContentType="URL"
-                returnKeyType="next"
-                onSubmitEditing={next('officeLocation')}
-                submitBehavior="submit"
-                invalid={!!errors.website}
-                editable={!sending}
-              />
-            </AField>
-          ))}
-          {row('officeLocation', (
-            <AField label="Office location" error={errors.officeLocation}>
-              <AInput
-                inputRef={inputRef('officeLocation')}
-                value={form.officeLocation}
-                onChangeText={(v) => change('officeLocation', { officeLocation: v })}
-                placeholder="City, State"
-                autoCapitalize="words"
-                textContentType="addressCity"
-                returnKeyType="next"
-                onSubmitEditing={next('password')}
-                submitBehavior="submit"
-                invalid={!!errors.officeLocation}
-                editable={!sending}
-              />
-            </AField>
-          ))}
-
-          <Group>Secure your account</Group>
-          {row('password', (
-            <AField label="Password" error={errors.password}>
-              <APassword
-                inputRef={inputRef('password')}
-                shown={passwordShown}
-                onToggle={() => setPasswordShown((v) => !v)}
-                value={form.password}
-                onChangeText={(v) => change('password', { password: v })}
-                placeholder="At least 10 characters"
-                autoComplete="password-new"
-                textContentType="newPassword"
-                invalid={!!errors.password}
-                editable={!sending}
-              />
-              <StrengthMeter value={form.password} />
-            </AField>
-          ))}
-          <AField label="Confirm password" error={extra.confirm}>
-            <APassword
-              shown={passwordShown}
-              onToggle={() => setPasswordShown((v) => !v)}
-              value={confirm}
-              onChangeText={(v) => { setConfirm(v); setExtra((e) => ({ ...e, confirm: undefined })) }}
-              placeholder="Re-enter password"
-              textContentType="newPassword"
-              returnKeyType="done"
-              onSubmitEditing={submit}
-              invalid={!!extra.confirm}
+      <Section title="You, the authorised person">
+        <FieldRow>
+          <AField label="Your name" error={errors.name} anchorRef={ff.anchor('name')} style={styles.half}>
+            <AInput
+              inputRef={ff.input('name')}
+              value={form.name}
+              onChangeText={(v) => change('name', { name: v })}
+              placeholder="Full name"
+              autoCapitalize="words"
+              autoComplete="name"
+              textContentType="name"
+              returnKeyType="next"
+              onSubmitEditing={next('designation')}
+              submitBehavior="submit"
+              invalid={!!errors.name}
               editable={!sending}
             />
           </AField>
+          <AField label="Designation" error={errors.designation} anchorRef={ff.anchor('designation')} style={styles.half}>
+            <AInput
+              inputRef={ff.input('designation')}
+              value={form.designation}
+              onChangeText={(v) => change('designation', { designation: v })}
+              placeholder="e.g. HR Manager"
+              autoCapitalize="words"
+              textContentType="jobTitle"
+              returnKeyType="next"
+              onSubmitEditing={next('email')}
+              submitBehavior="submit"
+              invalid={!!errors.designation}
+              editable={!sending}
+            />
+          </AField>
+        </FieldRow>
+        <AField
+          label="Work email"
+          helper="An address on your company’s domain. A reviewer checks it against your website."
+          error={errors.email}
+          anchorRef={ff.anchor('email')}
+        >
+          <AInput
+            icon="mail"
+            inputRef={ff.input('email')}
+            value={form.email}
+            onChangeText={(v) => change('email', { email: v })}
+            onBlur={() => {
+              const refusal = form.email.trim() ? webmailRefusal(form.email, form.website) : null
+              if (refusal) setErrors((e) => ({ ...e, email: refusal }))
+            }}
+            placeholder="you@yourcompany.in"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+            autoComplete="email"
+            textContentType="emailAddress"
+            returnKeyType="next"
+            onSubmitEditing={next('mobile')}
+            submitBehavior="submit"
+            invalid={!!errors.email}
+            editable={!sending}
+          />
+          {loginLine('email')}
+        </AField>
+        <AField label="Mobile number" helper="We send a code by SMS." error={errors.mobile} anchorRef={ff.anchor('mobile')}>
+          <APhone
+            inputRef={ff.input('mobile')}
+            value={form.mobile}
+            onChangeText={(v) => change('mobile', { mobile: mobileDigits(v) })}
+            returnKeyType="next"
+            onSubmitEditing={next('password')}
+            submitBehavior="submit"
+            invalid={!!errors.mobile}
+            editable={!sending}
+          />
+          {loginLine('mobile')}
+        </AField>
+      </Section>
 
-          <CheckRow
-            on={terms}
-            invalid={!!extra.terms}
-            onToggle={() => { setTerms((v) => !v); setExtra((e) => ({ ...e, terms: undefined })) }}
-          >
-            I agree to the <Link>Terms of Service</Link> and <Link>Privacy Policy</Link>
-          </CheckRow>
-          {!!extra.terms && <Text style={styles.termsError}>{extra.terms}</Text>}
+      <Section title="Secure your account">
+        <AField label="Password" error={errors.password} anchorRef={ff.anchor('password')}>
+          <APassword
+            icon="lock"
+            inputRef={ff.input('password')}
+            shown={passwordShown}
+            onToggle={() => setPasswordShown((v) => !v)}
+            value={form.password}
+            onChangeText={(v) => change('password', { password: v })}
+            placeholder="At least 10 characters"
+            autoComplete="password-new"
+            textContentType="newPassword"
+            returnKeyType="next"
+            onSubmitEditing={next('confirm')}
+            submitBehavior="submit"
+            invalid={!!errors.password}
+            editable={!sending}
+          />
+        </AField>
+        <AField label="Confirm password" error={extra.confirm} anchorRef={ff.anchor('confirm')}>
+          <APassword
+            icon="lock"
+            inputRef={ff.input('confirm')}
+            shown={passwordShown}
+            onToggle={() => setPasswordShown((v) => !v)}
+            value={confirm}
+            onChangeText={(v) => { setConfirm(v); setExtra((e) => ({ ...e, confirm: undefined })) }}
+            placeholder="Re-enter password"
+            textContentType="newPassword"
+            returnKeyType="done"
+            onSubmitEditing={submit}
+            invalid={!!extra.confirm}
+            editable={!sending}
+          />
+        </AField>
+        <TermsCheck
+          on={terms}
+          error={extra.terms}
+          anchorRef={ff.anchor('terms')}
+          onToggle={() => { setTerms((v) => !v); setExtra((e) => ({ ...e, terms: undefined })) }}
+        />
+      </Section>
 
-          {!!failure && (
-            <View style={styles.banner}>
-              <Banner tone="danger">{failure}</Banner>
-            </View>
-          )}
-
-          <Note>
-            Next, we send a 6-digit code to your work email and another to your mobile. After that you’ll upload
-            company documents so we can verify your account — usually within 24 hours.
-          </Note>
+      {!!failure && (
+        <View style={styles.banner}>
+          <Banner tone="danger">{failure}</Banner>
         </View>
-      </ScrollView>
+      )}
 
-      <BottomBar insetBottom={insets.bottom + 14}>
-        <AButton label={sending ? 'Sending your codes…' : 'Continue'} busy={sending} onPress={submit} />
-        <Swap lead="Already have an account?" action="Log in" onPress={onSignIn} />
-      </BottomBar>
-    </KeyboardAvoidingView>
+      <Tip>
+        Next, we send {codeLength ? `a ${codeLength}-digit code` : 'a code'} to your work email and another to your
+        mobile. After that you’ll upload company documents so we can verify your account
+        {slaHours ? ` — usually within ${slaHours} hours.` : '.'}
+      </Tip>
+    </BrandScreen>
   )
 }
 
@@ -902,41 +859,12 @@ export function PasswordInput({
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: color.background },
-  grow: { flex: 1 },
-  shrink: { flexShrink: 1 },
-  pressed: { opacity: opacity.pressed },
+  summary: { marginBottom: space.lg },
+  banner: { marginTop: space.lg },
+  signInLine: { fontSize: fontSize['ui-md'] },
+  half: { flex: 1, minWidth: 0 },
 
-  bar: {
-    height: height.header,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: space.xl,
-    backgroundColor: color.surface,
-    borderBottomWidth: borderWidth.thin,
-    borderBottomColor: color.border,
-  },
-  brand: { minHeight: height.tap, justifyContent: 'center' },
-  barAction: { marginRight: -space.sm },
-
-  body: { paddingHorizontal: A.gutter, paddingBottom: 24 },
-  gap: { height: 12 },
-  banner: { marginTop: 16 },
-  signInLine: { marginTop: 6, fontSize: 14 },
-  termsError: { color: A.danger, fontSize: 13, marginTop: 6 },
-  content: { gap: spaceHalf['4.5'] },
-  next: { paddingHorizontal: space['2xl'] },
-  title: { gap: space.sm },
-
-  block: { gap: space.xl },
-  blockHead: { flexDirection: 'row', alignItems: 'center', gap: space.md },
-  rule: { flex: 1, height: borderWidth.thin, backgroundColor: color.border },
-  personHead: { gap: space.xs },
-
-  field: { gap: space.sm },
-  labelRow: { flexDirection: 'row', alignItems: 'baseline', gap: space.sm },
-  inlineAction: { alignSelf: 'flex-start' },
-
+  // PasswordInput / AffixInput — the employer and interviewer sign-in screens' field.
   box: {
     height: height.control,
     flexDirection: 'row',
@@ -950,21 +878,7 @@ const styles = StyleSheet.create({
   boxFocus: { borderColor: color.ink, backgroundColor: color.surface },
   boxInvalid: { borderColor: color.danger, backgroundColor: color.dangerSoft },
   boxOff: { borderColor: color.border, backgroundColor: color.surfaceMuted },
-  placeholder: { color: color.textSubtle },
   prefix: { color: color.textSubtle },
   affixText: { flex: 1, height: '100%', paddingVertical: 0, paddingHorizontal: 0 },
   trailingAction: { marginRight: -space.md },
-
-  chips: { flexDirection: 'row', flexWrap: 'wrap', columnGap: space.sm },
-
-  actions: { gap: space.sm },
-
-  option: {
-    minHeight: height.control,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.md,
-    borderBottomWidth: borderWidth.thin,
-    borderBottomColor: color.border,
-  },
 })

@@ -77,7 +77,7 @@ export function EndedScreen({ id, onBack, onDetail, onRejoin }: {
         </Disc>
         <View style={styles.head}>
           <Eyebrow tone={incomplete ? 'warn' : 'ok'}>
-            {incomplete ? 'INTERVIEW ENDED EARLY' : 'THAT IS A WRAP'}
+            {incomplete ? 'Interview ended early' : 'That is a wrap'}
           </Eyebrow>
           <Lead>{incomplete ? 'Your interview is under review.' : 'Your video is being made.'}</Lead>
           {!incomplete && (
@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
   step: { flexDirection: 'row', gap: 14, paddingVertical: 12 },
   stepRule: { borderBottomWidth: borderWidth.thin, borderBottomColor: color.border },
   stepNum: { width: 28, height: 28, borderRadius: 14, backgroundColor: color.accentSoft, alignItems: 'center', justifyContent: 'center' },
-  stepNumText: { fontFamily: FF.monoMedium, fontSize: 11, color: color.accentText },
+  stepNumText: { fontFamily: FF.bodyMedium, fontSize: 11, fontVariant: ['tabular-nums'], color: color.accentText },
   reveal: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   revealPhoto: { width: 44, height: 44, borderRadius: 22 },
   stepText: { flex: 1, gap: 2 },

@@ -109,9 +109,9 @@ export function EmployerAccountScreen() {
       )}
 
       <View>
-        <Fact k="WORK EMAIL" v={state?.contact.email ?? me?.email ?? '—'} verified={me?.emailVerified} />
-        <Fact k="MOBILE" v={state?.contact.mobile ? mobileLabel(state.contact.mobile) : me?.mobile ? mobileLabel(me.mobile) : '—'} verified={me?.mobileVerified} />
-        {!!company && <Fact k="HOLDER" v={[company.authorisedPerson.name, company.authorisedPerson.designation].filter(Boolean).join(' · ')} />}
+        <Fact k="Work email" v={state?.contact.email ?? me?.email ?? '—'} verified={me?.emailVerified} />
+        <Fact k="Mobile" v={state?.contact.mobile ? mobileLabel(state.contact.mobile) : me?.mobile ? mobileLabel(me.mobile) : '—'} verified={me?.mobileVerified} />
+        {!!company && <Fact k="Holder" v={[company.authorisedPerson.name, company.authorisedPerson.designation].filter(Boolean).join(' · ')} />}
       </View>
 
       <View>
@@ -124,7 +124,7 @@ export function EmployerAccountScreen() {
       </View>
       {!!notice && <Text style={[text.uiSm, styles.danger]}>{notice}</Text>}
 
-      <Button variant="outline" size="cta" icon="out" label="Sign out" busy={signingOut} onPress={() => { signOut() }} />
+      <Button variant="destructive" size="cta" icon="out" label="Sign out" busy={signingOut} onPress={() => { signOut() }} />
     </EmployerShell>
   )
 }
