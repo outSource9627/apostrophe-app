@@ -72,6 +72,26 @@ def enableProguardInReleaseBuilds = false
  */
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
 
+/**
+ * The Play Store upload key. Its four values live OUTSIDE the repo, in
+ * ~/.gradle/gradle.properties (the keystore file itself is gitignored):
+ *
+ *   LENIENT_UPLOAD_STORE_FILE=lenient-upload.keystore   (relative to android/app, or absolute)
+ *   LENIENT_UPLOAD_KEY_ALIAS=lenient-upload
+ *   LENIENT_UPLOAD_STORE_PASSWORD=…
+ *   LENIENT_UPLOAD_KEY_PASSWORD=…
+ *
+ * Without them a release APK still builds, debug-signed, for sideloading; a
+ * release bundle (.aab) refuses to, because Play rejects a debug-signed one.
+ */
+def hasUploadKey = project.hasProperty('LENIENT_UPLOAD_STORE_FILE')
+
+gradle.taskGraph.whenReady { graph ->
+    if (!hasUploadKey && graph.allTasks.any { it.name == 'bundleRelease' }) {
+        throw new GradleException('No upload key: set LENIENT_UPLOAD_* in ~/.gradle/gradle.properties (see android/app/build.gradle).')
+    }
+}
+
 android {
     ndkVersion rootProject.ext.ndkVersion
     buildToolsVersion rootProject.ext.buildToolsVersion
@@ -79,7 +99,9 @@ android {
 
     namespace "com.apostropheapp"
     defaultConfig {
-        applicationId "com.apostropheapp"
+        // The Play Store identity: permanent once published. `namespace` above
+        // is only the Kotlin package and does not have to match.
+        applicationId "com.xenotixlabs.zerovideo"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
@@ -92,15 +114,21 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        if (hasUploadKey) {
+            release {
+                storeFile file(LENIENT_UPLOAD_STORE_FILE)
+                storePassword LENIENT_UPLOAD_STORE_PASSWORD
+                keyAlias LENIENT_UPLOAD_KEY_ALIAS
+                keyPassword LENIENT_UPLOAD_KEY_PASSWORD
+            }
+        }
     }
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            signingConfig hasUploadKey ? signingConfigs.release : signingConfigs.debug
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
         }
