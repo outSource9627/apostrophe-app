@@ -1,0 +1,646 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Feed and Room Mockups</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!--
+  Employer feed polish + interviewer live room (APK), 2026-10-15.
+  Colours and sizes are the app's tokens (src/theme/tokens.ts, red brand).
+  URL: ?feed=A|B&room=A|B&script=inside|button&guides=1|0
+-->
+<style>
+  :root{
+    --accent:#B22222; --accent-bright:#C83333; --accent-muted:#E8B4B4; --accent-soft:#F9EAEA; --accent-wash:#FDF5F5; --accent-text:#951C1C;
+    --ink:#141414; --ink-deep:#0A0A0A; --ink-raised:#1F1F1F; --ink-hover:#2E2E2E;
+    --text:#141414; --text2:#2C2C2C; --muted:#777777; --subtle:#8C8C8C;
+    --surface:#FFFFFF; --surface-muted:#F3F3F3; --bg:#FCFCFC; --border:#E5E5E5; --border-strong:#D0D0D0;
+    --on:#FFFFFF; --on-muted:#D0D0D0; --on-subtle:#9A9A9A; --on-soft:#E5E5E5; --on-body:#AFAFAF;
+    --glass:rgba(20,20,20,.6); --edge:rgba(255,255,255,.2); --outline:rgba(255,255,255,.3); --hair:rgba(255,255,255,.1);
+    --wash:rgba(255,255,255,.06); --ground:rgba(255,255,255,.12); --play:rgba(255,255,255,.16); --level:rgba(255,255,255,.34);
+    --acc-on-ink:rgba(200,51,51,.25);
+    --feed-red:#B22222; --feed-red-pill:rgba(178,34,34,.88); --feed-like:#20D575; --feed-undo:#FFC000;
+    --feed-action:rgba(24,24,24,.9); --feed-pill:rgba(24,24,24,.75);
+    --danger-fill:#E5531A; --danger-on:#FF9A7A; --warn-on:#FCC96B; --ok:#0B7A55; --ok-on:#6EE7B7;
+    --note:#2563EB; --guide:#06B6D4;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  button{font:inherit;border:0;background:none;color:inherit;cursor:pointer}
+  body{font-family:'Geist',system-ui,sans-serif;background:#ECECEC;color:var(--text);padding:32px 24px 100px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:2440px;margin:0 auto}
+  .ic{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;display:block}
+
+  /* ── page chrome ── */
+  .intro,.section{background:#fff;border:1px solid var(--border);border-radius:24px;padding:24px 28px;margin-bottom:16px}
+  .intro h1{font-size:28px;font-weight:700;letter-spacing:-.02em}
+  .intro p,.section .sub{font-size:15px;color:var(--muted);margin-top:6px;line-height:1.5;max-width:1060px}
+  .map{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:8px;margin-top:16px}
+  .map div{background:var(--surface-muted);border-radius:14px;padding:11px 13px;font-size:13.5px;line-height:1.45;color:var(--text2)}
+  .map b{display:block;font-size:14px;color:var(--text);margin-bottom:2px;font-weight:600}
+  .controls{position:sticky;top:10px;z-index:50;display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+  .seg{display:flex;align-items:center;gap:3px;background:#fff;border:1px solid var(--border);border-radius:99px;padding:4px;box-shadow:0 8px 24px rgba(20,20,20,.08)}
+  .seg .lab{font-size:12.5px;font-weight:500;color:var(--subtle);padding:0 6px 0 10px}
+  .seg button{height:32px;padding:0 13px;border-radius:99px;font-size:13.5px;font-weight:600;color:var(--muted);white-space:nowrap}
+  .seg button.on{background:var(--accent);color:#fff}
+  .section h2{font-size:21px;font-weight:700;letter-spacing:-.01em}
+  .section .sub{margin-bottom:20px}
+  .row{display:flex;flex-wrap:wrap;gap:26px;align-items:flex-start}
+  .col{display:grid;gap:10px;width:380px;align-content:start}
+  .cap{font-size:14.5px;font-weight:600;min-height:78px}
+  .cap span{display:block;font-size:13px;font-weight:400;color:var(--muted);margin-top:3px;line-height:1.45}
+  .legend{display:grid;gap:7px;font-size:13px;color:var(--text2);line-height:1.45;padding:2px 2px 0}
+  .legend div{display:flex;gap:8px;align-items:flex-start}
+  .n{flex:none;width:20px;height:20px;border-radius:99px;background:var(--note);color:#fff;font-size:11.5px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;font-style:normal}
+  .spec{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;margin-top:22px}
+  .spec div{border:1px solid var(--border);border-radius:14px;padding:12px 14px;font-size:13.5px;line-height:1.5;color:var(--text2)}
+  .spec b{display:block;color:var(--text);font-size:14px;margin-bottom:2px}
+  .tagp{display:inline-block;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:99px;background:var(--accent-soft);color:var(--accent-text);margin-left:6px;vertical-align:1px}
+  .tagp.api{background:#FFF3D6;color:#7A5200}
+  .tagp.app{background:#E7F6EF;color:var(--ok)}
+
+  /* ── phone ── */
+  .phone{width:380px;height:800px;padding:10px;border-radius:50px;background:#111;box-shadow:0 20px 50px rgba(0,0,0,.16),inset 0 0 0 2px #2b2b2b}
+  .scr{position:relative;width:360px;height:780px;border-radius:40px;overflow:hidden;background:var(--ink-deep);color:#fff}
+  .sb{position:absolute;top:0;left:0;right:0;height:30px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:13px;font-weight:600;z-index:40;color:#fff;pointer-events:none}
+  .sb .r{display:flex;gap:5px;align-items:center}
+  .sb .r i{display:block;background:currentColor;border-radius:2px}
+  .guide{position:absolute;top:30px;bottom:64px;border-left:1px dashed var(--guide);z-index:45;pointer-events:none}
+  .guide b{position:absolute;left:-11px;width:22px;height:16px;border-radius:5px;background:var(--guide);color:#fff;font-size:10.5px;font-weight:700;display:flex;align-items:center;justify-content:center}
+  .ann{position:absolute;z-index:46;width:20px;height:20px;border-radius:99px;background:var(--note);color:#fff;font-size:11.5px;font-weight:700;display:flex;align-items:center;justify-content:center;font-style:normal;box-shadow:0 0 0 2px #fff}
+  .brk{position:absolute;right:4px;width:5px;border-radius:3px;background:var(--note);z-index:46}
+  .brk b{position:absolute;right:9px;top:50%;transform:translateY(-50%);white-space:nowrap;background:var(--note);color:#fff;font-size:11px;font-weight:700;padding:3px 7px;border-radius:6px}
+
+  /* the film placeholder: no real footage in a mockup */
+  .film{position:absolute;inset:0;background:radial-gradient(120% 65% at 50% 30%,#5a4a42 0%,#30292560 45%,#141414 100%),linear-gradient(180deg,#3b3330,#121212)}
+  .sil{position:absolute;left:50%;transform:translateX(-50%);fill:rgba(255,255,255,.08)}
+  .shade{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(10,10,10,.55) 0%,rgba(10,10,10,0) 16%,rgba(10,10,10,0) 40%,rgba(10,10,10,.7) 58%,rgba(10,10,10,.96) 74%,#0A0A0A 84%,#0A0A0A 100%)}
+
+  /* ── employer feed ── */
+  .fhead{position:absolute;top:30px;left:0;right:0;height:54px;display:flex;align-items:center;gap:10px;z-index:5}
+  .fhead h3{font-size:22px;font-weight:700;letter-spacing:-.01em;flex:1;line-height:1.2}
+  .hbtns{display:flex;gap:8px}
+  .tbtn{position:relative;width:38px;height:38px;flex:none;border-radius:99px;background:var(--glass);border:1px solid var(--edge);display:flex;align-items:center;justify-content:center;color:#fff}
+  .tbtn .ic{width:19px;height:19px}
+  .tbtn.back{background:rgba(255,255,255,.1);border-color:var(--outline)}
+  .tbtn.back .ic{width:20px;height:20px;stroke-width:2.4;margin-left:-2px}
+  .badge{position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;padding:0 4px;border-radius:99px;background:var(--feed-red);border:2px solid var(--ink-deep);font-size:10.5px;font-weight:600;display:flex;align-items:center;justify-content:center}
+  .chips{position:absolute;top:84px;left:0;right:0;height:38px;display:flex;align-items:flex-start;gap:6px;white-space:nowrap;overflow:hidden;z-index:5}
+  .mchip{height:28px;padding:0 12px;border-radius:99px;background:var(--ink-raised);display:flex;align-items:center;gap:4px;font-size:13px;flex:none}
+  .mchip b{font-weight:600}.mchip span{color:var(--on-muted)}
+  .fchip{height:28px;padding:0 10px 0 12px;border-radius:99px;background:var(--acc-on-ink);border:1px solid var(--edge);color:var(--accent-muted);display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;flex:none}
+  .fchip .ic{width:12px;height:12px}
+  .clr{height:28px;display:flex;align-items:center;font-size:13px;font-weight:600;color:var(--accent-muted);padding:0 4px;flex:none}
+  .stack{position:absolute;top:122px;bottom:64px}
+  .card{position:absolute;inset:0;overflow:hidden;background:var(--ink-deep)}
+  .card .sil{top:70px;width:270px}
+  .prog{position:absolute;top:10px;height:3px;border-radius:2px;background:var(--level);overflow:hidden;z-index:2}
+  .prog i{position:absolute;top:0;bottom:0;left:0;width:38%;background:#fff}
+  .ctop{position:absolute;top:22px;display:flex;justify-content:space-between;align-items:center;gap:8px;z-index:3}
+  .ctop .l{min-width:0;display:flex}.ctop .r{display:flex;gap:8px;align-items:center;flex:none}
+  .tag{height:28px;padding:0 11px;border-radius:99px;background:var(--glass);display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;white-space:nowrap;min-width:0;max-width:100%}
+  .tag span{overflow:hidden;text-overflow:ellipsis}
+  .tag .dot{width:8px;height:8px;border-radius:99px;background:var(--feed-like);flex:none}
+  .gbtn{width:34px;height:34px;flex:none;border-radius:99px;background:var(--glass);border:1px solid var(--edge);display:flex;align-items:center;justify-content:center}
+  .gbtn .ic{width:18px;height:18px}
+  .gbtn.light{background:var(--edge);border-color:var(--outline)}
+  .gbtn.light .ic{stroke-width:2.6}
+  .watch{height:34px;padding:0 13px 0 5px;border-radius:99px;background:var(--glass);border:1px solid var(--outline);display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;white-space:nowrap;flex:none}
+  .watch .pd{width:24px;height:24px;border-radius:99px;background:var(--feed-red);display:flex;align-items:center;justify-content:center}
+  .watch .pd .ic{width:11px;height:11px;margin-left:1px}
+  /* Watch full interview · 4 designs */
+  .wp{position:relative;width:32px;height:32px;border-radius:99px;background:#fff;color:var(--ink);display:flex;align-items:center;justify-content:center;flex:none;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+  .wp .ic{width:15px;height:15px}
+  .wp.red{color:var(--feed-red);width:30px;height:30px;box-shadow:none}
+  .wp.sm{width:30px;height:30px}
+  .wp.lg{width:36px;height:36px}.wp.lg .ic{width:16px;height:16px}
+  .wp.pulse::after{content:'';position:absolute;inset:-4px;border-radius:99px;border:2px solid rgba(255,255,255,.65);animation:pulse 2.4s ease-out infinite}
+  @keyframes pulse{0%{transform:scale(.88);opacity:.9}70%,100%{transform:scale(1.38);opacity:0}}
+  .wc{cursor:pointer;transition:transform .12s}.wc:active{transform:scale(.96)}
+  .w1{display:flex;align-items:center;gap:10px;padding:5px 14px 5px 5px;border-radius:24px;background:rgba(20,20,20,.55);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.18);white-space:nowrap}
+  .w1 .t1{font-size:13.5px;font-weight:600;line-height:18px}
+  .w1 .t2{display:flex;align-items:center;gap:4px;font-size:11.5px;font-weight:500;line-height:15px;color:var(--on-muted)}
+  .w1 .t2 .ic{width:12px;height:12px;color:var(--feed-like);stroke-width:3}
+  .w2{display:flex;align-items:center;gap:9px;font-size:14px;font-weight:600;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.6);white-space:nowrap;flex:none}
+  .w3{height:38px;padding:0 13px 0 4px;border-radius:99px;background:rgba(255,255,255,.16);backdrop-filter:blur(14px) saturate(140%);-webkit-backdrop-filter:blur(14px) saturate(140%);border:1px solid rgba(255,255,255,.28);display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;white-space:nowrap;flex:none}
+  .w4{height:38px;padding:0 13px 0 4px;border-radius:99px;background:var(--feed-red);box-shadow:0 6px 18px rgba(178,34,34,.45);display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;white-space:nowrap;flex:none}
+  .wrow{display:flex;flex-wrap:wrap;gap:22px;margin-top:8px}
+  .wcol{display:grid;gap:10px;width:440px;align-content:start}
+  .wtile{position:relative;width:360px;height:132px;zoom:1.22;border-radius:20px;overflow:hidden;background:var(--ink-deep);color:#fff;cursor:pointer;outline:3px solid transparent;outline-offset:3px}
+  .wtile.on{outline-color:var(--accent)}
+  .wtile .film{background:radial-gradient(90% 140% at 50% 120%,#5a4a42 0%,#302925 50%,#141414 100%)}
+  .wtile .shade{background:linear-gradient(180deg,rgba(10,10,10,.55) 0%,rgba(10,10,10,0) 60%)}
+  .wtile.bright .film{background:radial-gradient(90% 140% at 60% 40%,#d9cfc4 0%,#a89a8c 50%,#6b5f55 100%)}
+  .cap .tagp{display:inline-block;margin-top:0;font-size:11.5px}
+  .wsub{font-size:13px;color:var(--muted);line-height:1.45}
+  .wsub b{color:var(--text);font-weight:600}
+  .h3{font-size:17px;font-weight:700;margin-top:30px}
+  .hud{position:absolute;bottom:84px;display:flex;flex-direction:column;gap:8px;z-index:3}
+  .mute{align-self:flex-end;width:30px;height:30px;border-radius:99px;background:var(--glass);border:1px solid var(--edge);display:flex;align-items:center;justify-content:center;margin-bottom:2px}
+  .mute .ic{width:15px;height:15px}
+  .who{display:flex;align-items:center;gap:10px}
+  .who .t{flex:1;min-width:0}
+  .av{width:40px;height:40px;border-radius:14px;background:var(--edge);border:1px solid var(--outline);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;flex:none}
+  .nm{font-size:22px;font-weight:700;letter-spacing:-.01em;line-height:1.2;display:flex;align-items:center;gap:6px}
+  .nm .ic{width:18px;height:18px;color:var(--feed-like);stroke-width:2.6}
+  .hl{font-size:12px;color:var(--on-muted);line-height:1.5}
+  .pills{display:flex;flex-wrap:wrap;gap:6px}
+  .pill{padding:4px 12px;border-radius:99px;font-size:12px;font-weight:600;line-height:16px;border:1px solid var(--edge);background:var(--feed-pill)}
+  .pill.red{background:var(--feed-red-pill);border-color:var(--outline)}
+  .meta{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:var(--on-muted);white-space:nowrap;overflow:hidden}
+  .meta span{overflow:hidden;text-overflow:ellipsis}
+  .meta .ic{width:14px;height:14px;flex:none}
+  .acts{position:absolute;left:0;right:0;bottom:12px;display:flex;justify-content:space-around;align-items:center;padding:0 24px;z-index:4}
+  .rd{border-radius:99px;background:var(--feed-action);border:1px solid var(--ground);display:flex;align-items:center;justify-content:center}
+  .rd.sm{width:46px;height:46px}.rd.lg{width:58px;height:58px}
+  .rd.sm .ic{width:20px;height:20px;stroke-width:2.5}.rd.lg .ic{width:24px;height:24px;stroke-width:2.8}
+  .flash{position:absolute;left:50%;top:36%;width:76px;height:76px;margin:-38px 0 0 -38px;border-radius:99px;background:rgba(20,20,20,.62);display:flex;align-items:center;justify-content:center;z-index:3;pointer-events:none}
+  .flash .ic{width:34px;height:34px}
+  .flash.anim{animation:fl .9s ease-out forwards}
+  @keyframes fl{0%{opacity:0;transform:scale(.8)}15%{opacity:1;transform:scale(1)}70%{opacity:1}100%{opacity:0}}
+  .tap{cursor:pointer}
+  .tabbar{position:absolute;left:0;right:0;bottom:0;height:64px;background:var(--ink-deep);display:flex;justify-content:space-around;align-items:flex-start;padding-top:6px;z-index:6}
+  .tb{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11.5px;font-weight:600;color:var(--on-subtle);width:64px}
+  .tb .ind{width:56px;height:28px;border-radius:99px;display:flex;align-items:center;justify-content:center}
+  .tb .ic{width:20px;height:20px}
+  .tb.on{color:var(--accent-muted)}.tb.on .ind{background:var(--acc-on-ink)}
+
+  /* ── interviewer room ── */
+  .rtop{position:absolute;top:38px;left:14px;right:14px;display:flex;justify-content:space-between;align-items:center;z-index:5}
+  .rec{height:30px;padding:0 10px;border-radius:99px;background:var(--glass);border:1px solid var(--hair);display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--danger-on)}
+  .rec i{width:8px;height:8px;border-radius:99px;background:var(--danger-fill)}
+  .timer{height:34px;padding:0 12px;border-radius:99px;background:var(--glass);border:1px solid var(--hair);display:flex;align-items:center;font-size:15px;font-weight:600;font-variant-numeric:tabular-nums}
+  .self{position:absolute;right:14px;top:84px;width:116px;height:65px;border-radius:12px;overflow:hidden;border:1px solid var(--edge);background:linear-gradient(135deg,#3b4048,#1d2026);z-index:5}
+  .self .sil{top:10px;width:60px}
+  .self span{position:absolute;left:6px;bottom:6px;padding:2px 6px;border-radius:6px;background:var(--glass);font-size:12px;font-weight:600}
+  .ntag{position:absolute;left:16px;height:30px;padding:0 10px;border-radius:8px;background:var(--glass);display:flex;align-items:center;font-size:13px;font-weight:600;z-index:5}
+  .rshade{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(10,10,10,.45) 0%,rgba(10,10,10,0) 14%,rgba(10,10,10,0) 58%,rgba(10,10,10,.72) 78%,rgba(10,10,10,.9) 100%)}
+  .dock{display:flex;justify-content:space-around;align-items:flex-start;padding:12px 10px 16px}
+  .dock.float{position:absolute;left:0;right:0;bottom:80px;padding:0 10px;z-index:6}
+  .ctl{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:56px;font-size:12px;font-weight:600;color:var(--on-body)}
+  .disc{width:48px;height:48px;border-radius:99px;background:var(--play);display:flex;align-items:center;justify-content:center;color:#fff}
+  .disc .ic{width:20px;height:20px;stroke-width:1.9}
+  .disc.end{width:58px;background:var(--danger-fill)}
+  .rbtns{position:absolute;left:16px;right:16px;bottom:22px;display:flex;gap:10px;z-index:6}
+  .rbtn{flex:1;height:48px;border-radius:99px;background:rgba(255,255,255,.14);border:1px solid var(--edge);display:flex;align-items:center;justify-content:center;gap:8px;font-size:14.5px;font-weight:600;color:#fff;backdrop-filter:blur(8px)}
+  .rbtn .ic{width:18px;height:18px}
+  .rbtn small{font-size:12px;font-weight:500;color:var(--on-subtle)}
+  .rbtn .okd{width:7px;height:7px;border-radius:99px;background:var(--ok-on)}
+  .sheet{position:absolute;left:0;right:0;background:#fff;color:var(--text);border-radius:24px 24px 0 0;z-index:20;display:flex;flex-direction:column;box-shadow:0 -10px 30px rgba(0,0,0,.35);overflow:hidden}
+  .grab{width:40px;height:5px;border-radius:3px;background:var(--border-strong);margin:8px auto 4px;flex:none}
+  .shead{display:flex;align-items:center;gap:10px;padding:6px 16px 12px;border-bottom:1px solid var(--border);flex:none}
+  .segc{flex:1;display:flex;background:var(--surface-muted);border-radius:99px;padding:3px;gap:2px}
+  .segc button{flex:1;height:32px;border-radius:99px;font-size:13px;font-weight:600;color:var(--muted);display:flex;align-items:center;justify-content:center;gap:5px}
+  .segc button.on{background:#fff;color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+  .segc small{font-size:11.5px;color:var(--subtle);font-weight:500}
+  .x{width:34px;height:34px;border-radius:99px;background:var(--surface-muted);display:flex;align-items:center;justify-content:center;flex:none}
+  .x .ic{width:16px;height:16px;stroke-width:2.2}
+  .sbody{flex:1;overflow:hidden;padding:12px 16px 16px;display:flex;flex-direction:column;gap:10px}
+  .nhead{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .saved{font-size:12.5px;font-weight:500;color:var(--ok)}
+  .stamp{height:28px;padding:0 10px;border-radius:99px;border:1px solid var(--border-strong);font-size:12.5px;font-weight:600;display:flex;align-items:center;font-variant-numeric:tabular-nums}
+  .notes{border:1px solid var(--border);border-radius:14px;padding:12px;font-size:14px;line-height:1.55;color:var(--text);white-space:pre-wrap;flex:1;min-height:0;overflow:hidden}
+  .notes.focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .caret{display:inline-block;width:2px;height:17px;background:var(--accent);vertical-align:-3px;margin-left:1px}
+  .hint{font-size:12.5px;color:var(--subtle);line-height:1.4}
+  .person{display:flex;align-items:center;gap:12px}
+  .pav{width:44px;height:44px;border-radius:99px;background:var(--accent-bright);color:#fff;font-weight:600;font-size:15px;display:flex;align-items:center;justify-content:center;flex:none}
+  .pnm{font-size:17px;font-weight:600}
+  .psub{font-size:13px;color:var(--muted)}
+  .fact{display:grid;gap:3px}
+  .fact b{font-size:12.5px;font-weight:500;color:var(--subtle)}
+  .fact span{font-size:13.5px;color:var(--text)}
+  .skills{display:flex;flex-wrap:wrap;gap:6px}
+  .skills span{padding:4px 10px;border-radius:99px;background:var(--surface-muted);font-size:12px;font-weight:600}
+  .obtn{align-self:flex-start;height:36px;padding:0 14px;border-radius:99px;border:1.5px solid var(--border-strong);display:flex;align-items:center;gap:6px;font-size:13.5px;font-weight:600}
+  .obtn .ic{width:16px;height:16px}
+  .ask{border-radius:16px;background:var(--accent-wash);border:1px solid var(--accent-muted);padding:14px 16px;display:grid;gap:8px}
+  .ask .k{font-size:12.5px;font-weight:500;color:var(--accent-text)}
+  .ask .q{font-size:15px;font-weight:500;line-height:1.45}
+  .ask .b{display:flex;align-items:center;gap:12px}
+  .mk{height:34px;padding:0 14px;border-radius:99px;background:var(--accent);color:#fff;font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px}
+  .mk .ic{width:15px;height:15px;stroke-width:2.6}
+  .sk{font-size:13px;font-weight:600;color:var(--muted)}
+  .gh{display:flex;justify-content:space-between;font-size:12.5px;color:var(--subtle);font-weight:500;padding-top:2px}
+  .q2{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--border);border-radius:12px;font-size:13px;line-height:1.45}
+  .q2 i{flex:none;width:18px;height:18px;border-radius:5px;border:1.5px solid var(--border-strong);margin-top:1px}
+  .pip{position:absolute;right:14px;border-radius:16px;overflow:hidden;z-index:25;background:#222;border:2px solid #fff;box-shadow:0 10px 28px rgba(0,0,0,.35)}
+  .pip .sil{top:16%;width:80%}
+  .pip .pt{position:absolute;left:6px;bottom:6px;display:flex;align-items:center;gap:5px;padding:2px 7px;border-radius:99px;background:var(--glass);font-size:11.5px;font-weight:600;font-variant-numeric:tabular-nums;color:#fff}
+  .pip .pt i{width:6px;height:6px;border-radius:99px;background:var(--danger-fill)}
+  .kbd{position:absolute;left:0;right:0;bottom:0;height:260px;background:#E3E5E8;z-index:30;padding:6px 4px 14px;display:flex;flex-direction:column;gap:9px;color:#202124}
+  .kbd .sug{height:30px;display:flex;justify-content:space-around;align-items:center;font-size:14px;color:#3c4043;border-bottom:1px solid #d0d3d8}
+  .kbd .kr{display:flex;gap:5px;justify-content:center}
+  .kbd .k{flex:1;max-width:32px;height:40px;border-radius:6px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:17px;box-shadow:0 1px 0 #b9bcc2}
+  .kbd .k.w{max-width:52px;flex:1.5;background:#CDD1D6;font-size:13px}
+  .kbd .k.sp{max-width:none;flex:5}
+
+  /* today's room */
+  .rpanel{position:absolute;left:0;right:0;bottom:0;background:#fff;color:var(--text);border-radius:20px 20px 0 0}
+  .rtabs{display:flex;gap:4px;padding:0 12px;border-bottom:1px solid var(--border)}
+  .rtabs span{flex:1;height:40px;display:flex;align-items:center;justify-content:center;gap:6px;font-size:13px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent}
+  .rtabs span.on{color:var(--text);border-color:var(--accent)}
+  .rtabs small{font-size:11.5px;color:var(--subtle);font-weight:500}
+
+  /* ── admin sketch ── */
+  .admin{max-width:760px;border:1px solid var(--border);border-radius:18px;overflow:hidden}
+  .admin .ah{padding:14px 18px;background:var(--surface-muted);font-size:13px;color:var(--muted)}
+  .admin .ah b{color:var(--text);font-weight:600}
+  .arow{display:flex;gap:16px;padding:16px 18px;border-top:1px solid var(--border);align-items:flex-start}
+  .arow .t{flex:1}
+  .arow .t b{display:block;font-size:14.5px;font-weight:600}
+  .arow .t p{font-size:13px;color:var(--muted);line-height:1.45;margin-top:3px}
+  .arow .t code{font-size:12px;background:var(--surface-muted);padding:1px 5px;border-radius:5px;color:var(--text2)}
+  .sw{width:44px;height:26px;border-radius:99px;background:var(--border-strong);position:relative;flex:none;margin-top:2px}
+  .sw i{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:99px;background:#fff;transition:left .15s;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+  .sw.on{background:var(--accent)}.sw.on i{left:21px}
+  .num{width:110px;height:38px;border:1px solid var(--border-strong);border-radius:10px;padding:0 12px;font:inherit;font-size:14px;font-variant-numeric:tabular-nums;color:var(--text);background:#fff}
+  .num:disabled{background:var(--surface-muted);color:var(--subtle)}
+  .two{display:grid;grid-template-columns:minmax(0,760px) minmax(0,1fr);gap:24px;align-items:start}
+  @media (max-width:1100px){.two{grid-template-columns:1fr}}
+  .qs{display:grid;gap:10px;counter-reset:q}
+  .qs > div{border:1px solid var(--border);border-radius:14px;padding:12px 14px;font-size:13.5px;line-height:1.5;color:var(--text2)}
+  .qs > div b{color:var(--text);font-size:14px}
+  .qs ul{margin:6px 0 0 18px}
+  .rec-o{color:var(--accent-text);font-weight:600}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+  <symbol id="i-bookmark" viewBox="0 0 24 24"><path d="M6.5 4h11v16.5l-5.5-4-5.5 4z"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l12.5-7.5z" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-sound" viewBox="0 0 24 24"><path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5z" fill="currentColor"/><path d="M15.5 9a4.5 4.5 0 010 6M18.5 6.5a8 8 0 010 11"/></symbol>
+  <symbol id="i-mute" viewBox="0 0 24 24"><path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5z" fill="currentColor"/><path d="M16 9.5l5 5M21 9.5l-5 5"/></symbol>
+  <symbol id="i-playR" viewBox="0 0 24 24"><path d="M8.5 5.8c0-.9 1-1.5 1.8-1l9 5.9c.7.5.7 1.6 0 2.1l-9 5.9c-.8.5-1.8 0-1.8-1z" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-max" viewBox="0 0 24 24"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></symbol>
+  <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9.5 14.5l-5-5 5-5"/><path d="M4.5 9.5H15a5 5 0 010 10h-3"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-7.5-10.4A4.3 4.3 0 0112 7.4a4.3 4.3 0 017.5 2.7c0 5.8-7.5 10.4-7.5 10.4z" fill="currentColor"/></symbol>
+  <symbol id="i-heartO" viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-7.5-10.4A4.3 4.3 0 0112 7.4a4.3 4.3 0 017.5 2.7c0 5.8-7.5 10.4-7.5 10.4z"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M21 3L10.5 13.5M21 3l-6.5 18-4-7.5-7.5-4z"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-6.5-6.2-6.5-11.2a6.5 6.5 0 0113 0C18.5 14.8 12 21 12 21z"/><circle cx="12" cy="9.8" r="2.3"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-chevU" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11.5" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0013 0M12 18v3"/></symbol>
+  <symbol id="i-video" viewBox="0 0 24 24"><rect x="3" y="6.5" width="12.5" height="11" rx="2.5"/><path d="M15.5 10.5l5-3v9l-5-3z"/></symbol>
+  <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5.5 21V4M5.5 4.5h11l-2.2 4 2.2 4h-11"/></symbol>
+  <symbol id="i-hang" viewBox="0 0 24 24"><path d="M2.6 13.4c5.2-4.6 13.6-4.6 18.8 0 .5.5.5 1.2 0 1.7l-1.9 1.9c-.4.4-1.1.5-1.6.1l-2.2-1.6c-.4-.3-.6-.8-.5-1.3l.3-1.6a12.8 12.8 0 00-7 0l.3 1.6c.1.5-.1 1-.5 1.3l-2.2 1.6c-.5.4-1.2.3-1.6-.1l-1.9-1.9c-.5-.5-.5-1.2 0-1.7z" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-notes" viewBox="0 0 24 24"><path d="M14 3.5H7A1.5 1.5 0 005.5 5v14A1.5 1.5 0 007 20.5h10a1.5 1.5 0 001.5-1.5V8z"/><path d="M14 3.5V8h4.5M9 12.5h6M9 16h4"/></symbol>
+  <symbol id="i-person" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.8"/><path d="M4.5 20.5a7.5 7.5 0 0115 0"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M9.5 6.5h10M9.5 12h10M9.5 17.5h10"/><circle cx="5" cy="6.5" r="1.2" fill="currentColor" stroke="none"/><circle cx="5" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="5" cy="17.5" r="1.2" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-brief" viewBox="0 0 24 24"><rect x="3.5" y="7" width="17" height="12.5" rx="2"/><path d="M9 7V5.5A1.5 1.5 0 0110.5 4h3A1.5 1.5 0 0115 5.5V7M3.5 12.5h17"/></symbol>
+  <symbol id="i-feed" viewBox="0 0 24 24"><rect x="3.5" y="4" width="17" height="16" rx="4"/><path d="M10 9v6l5-3z" fill="currentColor"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.8"/><path d="M4.5 20.5a7.5 7.5 0 0115 0"/></symbol>
+</svg>
+
+<div class="wrap">
+  <div class="intro">
+    <h1>Employer feed + interviewer live room</h1>
+    <p>Mockups for the APK only. Colours, fonts and sizes come from the app's current tokens (red brand, Geist). Names and numbers on the cards are <b>sample data</b>; every field shown is one the API already sends. Pick an option with the switches below. The first option in each switch is my recommendation.</p>
+    <div class="map">
+      <div><b>1 · Margin line</b>Today the left edges sit at 5 different distances (10 · 16 · 20 · 24 · 26 px). New: one line for everything.</div>
+      <div><b>2 · Back button</b>Round ‹ at the top-left of the feed. It goes back, or to employer Home when there is nothing to go back to.</div>
+      <div><b>3 · Watch full interview</b>The icon-only ⤢ at top-right becomes a ▶ "Watch full interview" pill. It opens the full-interview player the app already has.</div>
+      <div><b>4 · Mute / unmute</b>Instagram style: tap the video to toggle sound. A big icon flashes in the middle, and a small badge stays above the name.</div>
+      <div><b>5 · Remove 2 / 200</b>The counter is gone. The daily limit becomes an on/off switch in the admin panel, set to Off for now (section 2).</div>
+      <div><b>6 · Interview room</b>The candidate fills the whole screen. Notes and Profile become two buttons at the bottom that open a sheet.</div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="seg" data-key="feed"><span class="lab">Feed</span><button data-v="A">A · Full-bleed</button><button data-v="B">B · Inset card</button></div>
+    <div class="seg" data-key="watch"><span class="lab">Watch</span><button data-v="1">1 · Merged with Verified</button><button data-v="2">2 · Circle + label</button><button data-v="3">3 · Frosted pill</button><button data-v="4">4 · Red pill</button></div>
+    <div class="seg" data-key="room"><span class="lab">Room sheet</span><button data-v="A">A · Half sheet</button><button data-v="B">B · Full sheet + floating candidate</button></div>
+    <div class="seg" data-key="script"><span class="lab">Script</span><button data-v="inside">Inside the sheet (2 buttons)</button><button data-v="button">Own button (3 buttons)</button></div>
+    <div class="seg" data-key="guides"><span class="lab">Edge guides</span><button data-v="1">On</button><button data-v="0">Off</button></div>
+  </div>
+
+  <!-- 1 · FEED -->
+  <div class="section">
+    <h2>1 · Employer feed</h2>
+    <p class="sub">The left phone is today's screen. The other two are the new design. On the middle phone, tap the video to try the mute toggle. The <span style="color:var(--guide);font-weight:600">cyan dashed lines</span> show where the left edges sit.</p>
+    <div class="row" id="feed-row"></div>
+    <div class="spec" id="feed-spec"></div>
+    <div class="h3">Watch full interview · 4 designs</div>
+    <p class="sub" style="margin-bottom:6px">Close-ups of the top of the card at 1.2×, on a dark and a bright frame, because the button has to read on any video. Click a design (or use the Watch switch) to put it on the phones above. All four use the same new play button: a white disc with a rounded, optically centred triangle. Pressing shrinks it slightly. Design 1 is my recommendation.</p>
+    <div class="wrow" id="watch-row"></div>
+  </div>
+
+  <!-- 2 · ADMIN -->
+  <div class="section">
+    <h2>2 · Admin: daily card limit (replaces the 2 / 200 counter)</h2>
+    <p class="sub">The limit is already an admin setting: <code>employer.rateLimit.cardsPerDay</code> = 200. Setting it to 0 today means "no cards at all", not "no limit". So I propose an on/off switch next to the number and turning it <b>Off</b> now. The number is kept for when you switch it back on. The toggles below are clickable.</p>
+    <div class="two">
+      <div class="admin">
+        <div class="ah">Admin › Settings › <b>Employer</b> &nbsp;·&nbsp; sketch only; the real row uses the admin panel's existing setting controls</div>
+        <div class="arow">
+          <div class="t"><b>Limit candidate cards per day</b><p>Off: employers see as many candidates as the feed has. Nothing is counted and the "That's 200 today" screen never shows. <span class="tagp api">new setting</span> <code>employer.rateLimit.cardsEnabled</code></p></div>
+          <button class="sw" data-sw="cards" aria-label="Limit candidate cards per day"><i></i></button>
+        </div>
+        <div class="arow">
+          <div class="t"><b>Cards per day</b><p>Used only while the switch above is on. <code>employer.rateLimit.cardsPerDay</code> (existing)</p></div>
+          <input class="num" id="num-cards" value="200" disabled>
+        </div>
+        <div class="arow">
+          <div class="t"><b>Limit full video plays per day</b><p>"Watch full interview" counts against this. You didn't ask about it, so it stays <b>On at 100</b> unless you say otherwise. <span class="tagp api">new setting</span> <code>employer.rateLimit.videoPlaysEnabled</code></p></div>
+          <button class="sw on" data-sw="videos" aria-label="Limit full video plays per day"><i></i></button>
+        </div>
+        <div class="arow">
+          <div class="t"><b>Full video plays per day</b><p><code>employer.rateLimit.fullVideoPlaysPerDay</code> (existing)</p></div>
+          <input class="num" id="num-videos" value="100">
+        </div>
+      </div>
+      <div class="spec" style="margin-top:0">
+        <div><b>What the app does with cards Off</b>No counter on the card (removed either way). No "That's 200 today" screen. The feed keeps loading pages until it runs out ("You're caught up").</div>
+        <div><b>Per-employer overrides</b>The employer page can already set a different number for one employer. Proposal: an override still applies when the switch is off, so you can still limit one abusive account.</div>
+        <div><b>Nothing hard-coded</b>The app reads the switch through <code>/config</code>, like it reads the number today. A change in the panel takes effect on the next request, with no deploy.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3 · ROOM -->
+  <div class="section">
+    <h2>3 · Interviewer live room (APK)</h2>
+    <p class="sub">Today the candidate gets the top ~55%, the controls take a band, and Script/Notes/Profile are squeezed into the bottom ~32%. New: the candidate fills the screen. Two buttons at the bottom open <b>Notes</b> or <b>Profile</b> in a sheet, and you switch between them inside the sheet. On the "New · live" phone, tap Notes or Profile to open the sheet, and ✕ to close it.</p>
+    <div class="row" id="room-row"></div>
+    <div class="spec" id="room-spec"></div>
+  </div>
+
+  <!-- 4 · DECISIONS -->
+  <div class="section">
+    <h2>4 · Please confirm before I build</h2>
+    <p class="sub">The first option in each item is my recommendation.</p>
+    <div class="qs">
+      <div><b>Feed layout:</b> <span class="rec-o">A · Full-bleed</span> (video edge to edge, so no side margin line can appear) or B · Inset card (keeps today's Tinder-style card, with the edges lined up).</div>
+      <div><b>Watch full interview:</b> <span class="rec-o">1 · Merged with Verified</span>, 2 · Circle + label (your reference), 3 · Frosted pill or 4 · Red pill.</div>
+      <div><b>"Margin line":</b> I couldn't run the app on a device for this, so I read it as the mismatched left edges (point ① on today's phone). If you meant a different line, send a screenshot.</div>
+      <div><b>Room sheet:</b> <span class="rec-o">A · Half sheet</span> (the candidate stays visible above the sheet) or B · Full sheet with the candidate in a small floating window.</div>
+      <div><b>Script:</b> <span class="rec-o">Inside the sheet</span> (keeps your two buttons; Script is a tab next to Notes and Profile) or its own third button.</div>
+      <div><b>Daily limit:</b> <span class="rec-o">new on/off switch, Off now, number kept</span> or "leave the number empty = no limit". Should the full-video limit (100/day) <span class="rec-o">stay on</span> or also be switched off?</div>
+      <div><b>Student Jobs feed:</b> it uses the same card pieces. <span class="rec-o">Give it the back button, tap-to-mute and aligned edges too</span>, or keep these changes on the employer feed only. ("Watch full interview" and the counter are employer-only either way.)</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const S = { feed: 'A', watch: '1', room: 'A', script: 'inside', guides: '1', feedLive: 'muted', roomLive: 'live' }
+const qs = new URLSearchParams(location.search)
+for (const k of ['feed', 'watch', 'room', 'script', 'guides']) if (qs.get(k)) S[k] = qs.get(k)
+
+const I = (id, style = '') => `<svg class="ic" ${style ? `style="${style}"` : ''}><use href="#i-${id}"/></svg>`
+const SIL = (cls = 'sil', style = '') => `<svg class="${cls}" viewBox="0 0 200 300" style="${style}"><circle cx="100" cy="105" r="46"/><path d="M14 300c0-80 40-118 86-118s86 38 86 118z"/></svg>`
+const statusBar = (light) => `<div class="sb" style="${light ? 'color:var(--text)' : ''}"><span>9:41</span><span class="r"><i style="width:14px;height:9px"></i><i style="width:12px;height:9px;border-radius:50% 50% 2px 2px"></i><i style="width:22px;height:10px;border-radius:3px"></i></span></div>`
+const guide = (list) => S.guides === '1' ? list.map(([x], k) => `<div class="guide" style="left:${x}px"><b style="top:${190 + k * 20}px">${x}</b></div>`).join('') : ''
+const ann = (n, x, y) => `<i class="ann" style="left:${x}px;top:${y}px">${n}</i>`
+const col = (cap, sub, phone, extra = '', id = '') => `<div class="col" ${id ? `id="${id}"` : ''}><div class="cap">${cap}<span>${sub}</span></div><div class="phone"><div class="scr">${phone}</div></div>${extra}</div>`
+
+// ── 1 · feed ──────────────────────────────────────────────────────────────
+// head-left, head-right, chips, card side inset, card radius, inside (top row), inside (facts)
+const G = {
+  today: { l: 20, r: 14, chips: 16, side: 10, rad: 26, inT: 14, inH: 16, guides: [[10], [16], [20], [24], [26]] },
+  A: { l: 16, r: 16, chips: 16, side: 0, rad: 20, inT: 16, inH: 16, guides: [[16]] },
+  B: { l: 12, r: 12, chips: 12, side: 12, rad: 22, inT: 12, inH: 12, guides: [[12], [24]] },
+}
+const tbtn = (icon, badge, cls = '') => `<div class="tbtn ${cls}">${I(icon)}${badge ? `<span class="badge">${badge}</span>` : ''}</div>`
+
+const WATCH = {
+  1: { name: '1 · Merged with Verified', rec: true, note: 'One chip at the top-left replaces both the Verified tag and the button: play disc with a soft pulse ring, <b>Watch full interview</b>, and the verified date under it. The full date stays (no copy change) and the top-right is free.' },
+  2: { name: '2 · Circle + label', note: 'Your reference, polished: white play disc with a shadow, white label with a text shadow, and no background. The lightest look, but the label relies on the shadow on bright frames.' },
+  3: { name: '3 · Frosted pill', note: 'The same disc inside a frosted-glass pill that blurs the video behind it. It reads on any frame and stays calm next to the red pills below.' },
+  4: { name: '4 · Red pill', note: 'Solid brand-red pill with a white disc and a red triangle. The loudest option: it pulls the eye to the full interview, but it competes with the red salary pills and the ✕ button.' },
+}
+const TAG_SHORT = `<div class="tag"><i class="dot"></i><span>Verified · 12 Oct</span></div>`
+/** The top row of a new card for Watch design `w`: what sits left and right. */
+function watchCtl(w) {
+  const P = (cls = '') => `<span class="wp ${cls}">${I('playR')}</span>`
+  const label = 'Watch full interview'
+  if (w === '1') return { left: `<div class="w1 wc">${P('lg pulse')}<div><div class="t1">${label}</div><div class="t2">${I('check')}Verified · 12 Oct 2026</div></div></div>`, right: '' }
+  if (w === '2') return { left: TAG_SHORT, right: `<div class="w2 wc">${P()}${label}</div>` }
+  if (w === '3') return { left: TAG_SHORT, right: `<div class="w3 wc">${P('sm')}${label}</div>` }
+  return { left: TAG_SHORT, right: `<div class="w4 wc">${P('red')}${label}</div>` }
+}
+function watchTile(w, bright, half) {
+  const c = watchCtl(w)
+  return `<div class="wtile ${bright ? 'bright' : ''} ${S.watch === w ? 'on' : ''}" data-watch="${w}" ${half ? 'style="width:174px"' : ''}>
+    <div class="film"></div><div class="shade"></div>
+    <div class="prog" style="left:16px;right:16px"><i></i></div>
+    <div class="ctop" style="left:16px;right:16px">${half ? `<div class="l">${c.right || c.left}</div>` : `<div class="l">${c.left}</div><div class="r">${c.right}</div>`}</div></div>`
+}
+function renderWatch() {
+  document.getElementById('watch-row').innerHTML = ['1', '2', '3', '4'].map((w) => `<div class="wcol">
+      <div class="cap" style="min-height:0">${WATCH[w].name}${WATCH[w].rec ? ' <span class="tagp">recommended</span>' : ''}</div>
+      ${watchTile(w, false)}
+      ${watchTile(w, true)}
+      <div class="wsub">${WATCH[w].note}</div></div>`).join('')
+}
+
+function feedPhone(v, st, live) {
+  const g = G[v]
+  const today = v === 'today'
+  const head = `<div class="fhead" style="padding:0 ${g.r}px 0 ${g.l}px">${today ? '' : tbtn('back', 0, 'back')}<h3>Feed</h3><div class="hbtns">${tbtn('bookmark')}${tbtn('sliders', 2)}</div></div>`
+  const chips = `<div class="chips" style="padding-left:${g.chips}px"><div class="mchip"><b>128</b><span>match</span></div><div class="fchip">Pune${I('x', 'stroke-width:2.2')}</div><div class="fchip">0–2 yrs${I('x', 'stroke-width:2.2')}</div><div class="clr">Clear</div></div>`
+  const w = today ? null : watchCtl(S.watch)
+  const left = today ? `<div class="tag"><i class="dot"></i><span>Verified interview · 12 Oct 2026</span></div>` : w.left
+  const right = today
+    ? `<div class="tag" style="flex:none">2 / 200</div><div class="gbtn">${I('max')}</div><div class="gbtn">${I('mute')}</div>`
+    : w.right
+  // muted · flash (just turned on) · mutedFlash (just turned off)
+  const sound = st === 'flash'
+  const flashing = st === 'flash' || st === 'mutedFlash'
+  const hud = `<div class="hud" style="left:${g.side + g.inH}px;right:${g.side + g.inH}px">
+      ${today ? '' : `<div class="mute ${live ? 'tap' : ''}" data-act="mute" title="Tap the video or this badge">${I(sound ? 'sound' : 'mute')}</div>`}
+      <div class="who"><div class="av">RS</div><div class="t"><div class="nm">Riya Sharma${I('check')}</div><div class="hl">Graduate · B.Com</div></div><div class="gbtn light">${I('chevU')}</div></div>
+      <div class="pills"><span class="pill red">₹3–4.5 LPA</span><span class="pill red">Immediate</span><span class="pill">Excel</span><span class="pill">Tally</span><span class="pill">GST</span></div>
+      <div class="meta">${I('pin')}<span>Pune · 1 yr experience · Shortlisted by 3 employers</span></div>
+    </div>`
+  const card = `<div class="stack" style="left:${g.side}px;right:${g.side}px">
+      <div class="card ${live ? 'tap' : ''}" ${live ? 'data-act="mute"' : ''} style="border-radius:${g.rad}px ${g.rad}px 0 0">
+        <div class="film"></div>${SIL()}<div class="shade"></div>
+        <div class="prog" style="left:${g.inT}px;right:${g.inT}px"><i></i></div>
+        <div class="ctop" style="left:${g.inT}px;right:${g.inT}px"><div class="l">${left}</div><div class="r">${right}</div></div>
+        ${flashing ? `<div class="flash ${live ? 'anim' : ''}">${I(sound ? 'sound' : 'mute')}</div>` : ''}
+      </div>
+      <div class="acts">
+        <div class="rd sm" style="color:var(--feed-undo)">${I('undo')}</div>
+        <div class="rd lg" style="color:var(--feed-red)">${I('x')}</div>
+        <div class="rd lg" style="color:var(--feed-like)">${I('heart')}</div>
+        <div class="rd sm" style="color:var(--accent-bright)">${I('send')}</div>
+      </div>
+    </div>`
+  // The facts sit inside the stack in the app; drawn at screen level here so `left` reads as distance from the screen edge.
+  const hudLayer = `<div style="position:absolute;top:122px;bottom:64px;left:0;right:0;pointer-events:none"><div style="pointer-events:auto">${hud}</div></div>`
+  const tabs = `<div class="tabbar">${[['feed', 'Feed', 1], ['bookmark', 'Shortlist'], ['heartO', 'Interests'], ['brief', 'Jobs'], ['user', 'Profile']].map(([ic, l, on]) => `<div class="tb ${on ? 'on' : ''}"><span class="ind">${I(ic)}</span>${l}</div>`).join('')}</div>`
+  const notes = today ? ann(1, 1, 330) + ann(2, 180, 132) + ann(3, 252, 132) + ann(4, 294, 132) + ann(5, 1, 48) : ''
+  return statusBar() + head + chips + card + hudLayer + tabs + guide(g.guides) + notes
+}
+
+const todayLegend = `<div class="legend">
+  <div><i class="n">1</i>Five different left edges: card 10, chips 16, title 20, tag 24, name 26. The card's side edges also show as a line beside the black page.</div>
+  <div><i class="n">2</i>"2 / 200" counter. To be removed.</div>
+  <div><i class="n">3</i>⤢ icon-only "full screen". It isn't clear that it plays the whole interview.</div>
+  <div><i class="n">4</i>Sound toggle sits at the top-right, far from the thumb.</div>
+  <div><i class="n">5</i>No way back.</div>
+  <div>The tag gets cut off ("Verified interview · 1…") because 3 things share its row.</div>
+</div>`
+
+function renderFeed() {
+  const n = S.feed
+  document.getElementById('feed-row').innerHTML =
+    col('Today (as built)', 'EmployerFeedScreen + feed-deck, as the code draws it now.', feedPhone('today', 'muted'), todayLegend) +
+    col(`New ${n} · playing, sound off`, 'Starts muted, as today. Tap the video (or the small badge) to toggle the sound.', feedPhone(n, S.feedLive, true), '', 'feed-live') +
+    col(`New ${n} · right after a tap: sound on`, 'The big icon flashes for about 0.7 s and fades. The small badge shows the current state.', feedPhone(n, 'flash'))
+  const A = n === 'A'
+  document.getElementById('feed-spec').innerHTML = `
+    <div><b>Edges ${A ? '(A)' : '(B)'}</b>${A
+      ? 'One 16 px line for everything: back button, chips, film progress, tag, name, pills, location. The video runs edge to edge with only its top corners rounded (20), so there are no side margins.'
+      : 'Two lines only. Outside things (back button, chips, card edge) sit at 12 px. Inside things (progress, tag, name, pills, location) sit 12 px inside the card, at 24 px. Card top radius 22.'}</div>
+    <div><b>Top bar</b>‹ back (38, glass) · "Feed" 22 bold · Saved searches · Filters (38 each, 8 apart). Bar height 54, chips row 38 with 28 px pills. <span class="tagp app">app only</span></div>
+    <div><b>Watch full interview · design ${S.watch}</b>${S.watch === '1' ? 'Merged chip at the top-left: play disc (36, pulse ring), label, and the verified date under it.' : S.watch === '2' ? 'White play disc (32) and a shadowed label at the top-right, no background.' : S.watch === '3' ? 'Frosted-glass pill (38) at the top-right with a white play disc.' : 'Brand-red pill (38) at the top-right with a white play disc.'} It opens the existing full-video screen with the same rules: hidden when there is no film or the day's full-video plays are spent. <span class="tagp app">app only</span></div>
+    <div><b>Mute (Instagram style)</b>Tap anywhere on the video → sound toggles and a 76 px icon flashes in the middle. A 30 px badge stays above the name and also toggles. Tapping the name still opens the profile, and swipes work as before. <span class="tagp app">app only</span></div>
+    ${S.watch === '1' ? '<div><b>Verified tag</b>Folded into the Watch chip, keeping the full date "Verified · 12 Oct 2026". No copy change. A card without a film shows the plain tag, as today.</div>' : '<div><b>Tag shortened</b>"Verified interview · 12 Oct 2026" → "Verified · 12 Oct" (year only when it isn\'t this year), so the tag and the button fit on one row. Copy change, please confirm.' + (A ? '' : ' In B the tag may still be cut on narrow phones.') + '</div>'}
+    <div><b>Unchanged</b>Swipes (right shortlist, left pass, up skip), the four round buttons, the details sheet, filters, toasts and the dark tab bar.</div>`
+}
+
+// ── 3 · room ──────────────────────────────────────────────────────────────
+const ROOM_SAMPLE = { name: 'Riya Sharma', first: 'Riya', left: '18:42', elapsed: '11:18' }
+
+function notesBody(typing) {
+  return `<div class="nhead"><span class="saved">● Saved · private · flows into the scorecard</span><span class="stamp">+ ${ROOM_SAMPLE.elapsed}</span></div>
+    <div class="notes ${typing ? 'focus' : ''}">[03:12] Explains bank reconciliation step by step, clearly.
+[07:40] Unsure on GST input credit; asked for an example.
+[10:55] Good with Excel lookups.${typing ? '\n[11:18] Asks good questions about the role<span class="caret"></span>' : ''}</div>
+    ${typing ? '' : '<div class="hint">Flag in the dock drops a [mm:ss] stamp here too.</div>'}`
+}
+function profileBody() {
+  return `<div class="person"><div class="pav">RS</div><div><div class="pnm">${ROOM_SAMPLE.name}</div><div class="psub">Pune · Hindi, English</div></div></div>
+    <div class="fact"><b>Interview</b><span>Graduate · Accounts · 30 min</span></div>
+    <div class="fact"><b>Education</b><span>B.Com · 2024</span></div>
+    <div class="fact"><b>Experience</b><span>Accounts intern · 6 months</span></div>
+    <div class="fact"><b>Skills</b><div class="skills"><span>Excel</span><span>Tally</span><span>GST</span><span>Communication</span></div></div>
+    <div class="obtn">${I('notes')}Open their résumé</div>`
+}
+function scriptBody() {
+  return `<div class="ask"><div class="k">Ask next · Accounting basics</div><div class="q">Walk me through how you would match a bank statement with the ledger.</div>
+      <div class="b"><span class="mk">${I('check')}Mark asked</span><span class="sk">Skip for now</span></div></div>
+    <div class="gh"><span>Up next</span><span>3/8 asked</span></div>
+    <div class="q2"><i></i>What is GST input tax credit, and when can't you claim it?</div>
+    <div class="q2"><i></i>Which Excel functions do you use most for reconciliation?</div>`
+}
+function sheet(tab, style, typing, live) {
+  const t = (k, label, count) => `<button class="${tab === k ? 'on' : ''}" ${live ? `data-tab="${k}"` : ''}>${label}${count ? `<small>${count}</small>` : ''}</button>`
+  const body = tab === 'notes' ? notesBody(typing) : tab === 'profile' ? profileBody() : scriptBody()
+  return `<div class="sheet" style="${style}"><div class="grab"></div>
+    <div class="shead"><div class="segc">${t('script', 'Script', '3/8')}${t('notes', 'Notes')}${t('profile', 'Profile')}</div><button class="x" ${live ? 'data-close="1"' : ''} aria-label="Close">${I('x')}</button></div>
+    <div class="sbody" style="${S.room === 'B' && !typing ? 'padding-bottom:210px' : ''}">${body}</div></div>`
+}
+function kbd() {
+  const r = (keys) => `<div class="kr">${keys.map((k) => `<span class="k ${k.length > 1 ? 'w' : ''} ${k === 'space' ? 'sp' : ''}">${k === 'space' ? '' : k}</span>`).join('')}</div>`
+  return `<div class="kbd"><div class="sug"><span>role</span><span>roles</span><span>rolled</span></div>${r([...'qwertyuiop'])}${r([...'asdfghjkl'])}${r(['⇧', ...'zxcvbnm', '⌫'])}${r(['?123', ',', 'space', '.', '↵'])}</div>`
+}
+const roomTop = () => `<div class="rtop"><div class="rec"><i></i>Rec</div><div class="timer">${ROOM_SAMPLE.left}</div></div><div class="self">${SIL()}<span>You</span></div>`
+const dockHtml = (cls) => `<div class="dock ${cls}">
+    <div class="ctl"><span class="disc">${I('mic')}</span>Mute</div>
+    <div class="ctl"><span class="disc">${I('video')}</span>Camera</div>
+    <div class="ctl"><span class="disc">${I('flag')}</span>Flag</div>
+    <div class="ctl"><span class="disc end">${I('hang')}</span>End</div></div>`
+
+function roomToday() {
+  const vh = 433
+  return `<div style="position:absolute;left:0;right:0;top:0;height:${vh}px;overflow:hidden"><div class="film"></div>${SIL('sil', 'top:90px;width:260px')}
+      ${roomTop()}<div class="ntag" style="bottom:14px">${ROOM_SAMPLE.name}</div></div>
+    ${statusBar()}
+    <div style="position:absolute;left:0;right:0;top:${vh}px;background:var(--ink)">${dockHtml('')}</div>
+    <div class="rpanel" style="top:533px"><div class="rtabs"><span class="on">Script <small>3/8</small></span><span>Notes</span><span>Profile</span></div>
+      <div class="sbody" style="padding-top:10px">${scriptBody()}</div></div>
+    <div class="brk" style="top:0;height:433px"><b>Candidate · 55%</b></div>
+    <div class="brk" style="top:537px;height:239px"><b>Panel · 32%</b></div>`
+}
+
+function roomPhone(kind, live) {
+  if (kind === 'today') return roomToday()
+  const A = S.room === 'A'
+  const open = kind !== 'live'
+  const typing = kind === 'typing'
+  const tab = typing ? 'notes' : kind
+  let h = `<div class="film"></div>${SIL('sil', 'top:150px;width:300px')}<div class="rshade"></div>${statusBar()}${roomTop()}`
+  if (!open) {
+    const three = S.script === 'button'
+    h += `<div class="ntag" style="bottom:178px">${ROOM_SAMPLE.name}</div>${dockHtml('float')}
+      <div class="rbtns">
+        ${three ? `<button class="rbtn" ${live ? 'data-open="script"' : ''}>${I('list')}Script <small>3/8</small></button>` : ''}
+        <button class="rbtn" ${live ? 'data-open="notes"' : ''}>${I('notes')}Notes <span class="okd" title="Saved"></span></button>
+        <button class="rbtn" ${live ? 'data-open="profile"' : ''}>${I('person')}Profile</button>
+      </div>`
+  } else if (A) {
+    h += sheet(tab, typing ? 'top:196px;bottom:260px;border-radius:24px 24px 0 0' : 'top:328px;bottom:0', typing, live)
+  } else {
+    h += sheet(tab, typing ? 'top:40px;bottom:260px' : 'top:40px;bottom:0', typing, live)
+    h += `<div class="pip" style="${typing ? 'bottom:272px;width:84px;height:150px' : 'bottom:24px;width:100px;height:178px'}"><div class="film"></div>${SIL()}<span class="pt"><i></i>${ROOM_SAMPLE.left}</span></div>`
+  }
+  if (typing) h += kbd()
+  return h
+}
+
+function renderRoom() {
+  const A = S.room === 'A'
+  const sheetName = A ? 'half sheet' : 'full sheet'
+  const liveCap = { live: 'New · live (tap Notes or Profile)', notes: 'New · live: Notes open', profile: 'New · live: Profile open', script: 'New · live: Script open' }[S.roomLive]
+  document.getElementById('room-row').innerHTML =
+    col('Today (as built)', 'InterviewerRoomScreen: candidate 55%, dock, then the 3-tab panel in what is left.', roomPhone('today')) +
+    col(liveCap, `The candidate fills the screen. The dock floats over the foot of the video, and ${S.script === 'button' ? 'three' : 'two'} buttons sit at the bottom.`, roomPhone(S.roomLive, true), '', 'room-live') +
+    col(`Notes · ${sheetName}`, A ? 'Opens to about 58% of the screen. The candidate, timer and your tile stay visible above it. Drag up for more room, down or ✕ to close.' : 'Rises to just under the status bar. The candidate keeps playing in a small window you can drag to any corner.', roomPhone('notes')) +
+    col(`Profile · ${sheetName}`, 'Same sheet with the Profile tab on. Switch tabs without closing it.', roomPhone('profile')) +
+    col(`Typing notes · ${sheetName}`, A ? 'With the keyboard up, the sheet sits on the keyboard and the candidate shrinks to the band at the top.' : 'With the keyboard up, the floating candidate moves above the keyboard.', roomPhone('typing'))
+  document.getElementById('room-spec').innerHTML = `
+    <div><b>Bottom buttons</b>${S.script === 'button' ? 'Script · Notes · Profile' : 'Notes · Profile'}: 48 tall, glass, 16 px from the edges, 10 apart. A green dot on Notes means saved. ${S.script === 'button' ? '' : 'Script (when the interview has one) is the first tab inside the sheet.'} <span class="tagp app">app only</span></div>
+    <div><b>Controls</b>Mute · Camera · Flag · End stay the same, floating over the foot of the video. While a sheet is open they are under it; ✕ or a swipe down brings them back. Hardware Back closes the sheet first, then asks to end, as today.</div>
+    <div><b>Sheet</b>White sheet, 24 radius, grab handle, Script / Notes / Profile switch and ✕. ${A ? 'No dark scrim, so the candidate stays clear above it.' : 'The candidate keeps playing in a 9:16 window with the timer on it.'} Notes still save as you type, with the same + mm:ss stamp.</div>
+    <div><b>Lobby (before start)</b>Same layout. Your camera preview fills the screen, the waiting card and checks sit above the dock, and Notes and Profile already work.</div>
+    <div><b>No API change</b>The room uses the same data as today (notes, script, profile), only laid out differently. The web room is not changed. You asked for the APK only.</div>`
+}
+
+// ── 2 · admin switches ───────────────────────────────────────────────────
+document.querySelectorAll('[data-sw]').forEach((b) => b.addEventListener('click', () => {
+  b.classList.toggle('on')
+  document.getElementById(`num-${b.dataset.sw}`).disabled = !b.classList.contains('on')
+}))
+
+// ── controls + interactions ─────────────────────────────────────────────
+function syncSeg() {
+  document.querySelectorAll('.seg').forEach((seg) => seg.querySelectorAll('button').forEach((b) => b.classList.toggle('on', S[seg.dataset.key] === b.dataset.v)))
+}
+function render() { syncSeg(); renderFeed(); renderWatch(); renderRoom() }
+document.querySelectorAll('.seg').forEach((seg) => seg.addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return
+  S[seg.dataset.key] = b.dataset.v
+  const p = new URLSearchParams(location.search); p.set(seg.dataset.key, b.dataset.v); history.replaceState(null, '', `?${p}`)
+  render()
+}))
+document.addEventListener('click', (e) => {
+  const tile = e.target.closest('[data-watch]')
+  if (tile) {
+    S.watch = tile.dataset.watch
+    const p = new URLSearchParams(location.search); p.set('watch', S.watch); history.replaceState(null, '', `?${p}`)
+    render(); return
+  }
+  const feedLive = e.target.closest('#feed-live')
+  if (feedLive && e.target.closest('[data-act="mute"]')) {
+    S.feedLive = S.feedLive === 'flash' ? 'mutedFlash' : 'flash'
+    renderFeed(); return
+  }
+  if (!e.target.closest('#room-live')) return
+  const o = e.target.closest('[data-open]'), t = e.target.closest('[data-tab]'), c = e.target.closest('[data-close]')
+  if (o) S.roomLive = o.dataset.open
+  else if (t) S.roomLive = t.dataset.tab
+  else if (c) S.roomLive = 'live'
+  else return
+  renderRoom()
+})
+render()
+</script>
+</body>
+</html>

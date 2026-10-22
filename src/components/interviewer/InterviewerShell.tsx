@@ -77,7 +77,7 @@ export function InterviewerShell({
       <View style={styles.brandBar}>
         <View style={styles.brand}>
           <BrandMark />
-          <Text style={text.uiLeadSemi}>Apostrophe</Text>
+          <Text style={text.uiLeadSemi}>Lenient</Text>
         </View>
         {right ?? (
           <Pressable accessibilityRole="button" accessibilityLabel="Account" onPress={() => navigation.navigate('InterviewerAccount')} hitSlop={space.xs} style={({ pressed }) => [styles.disc, pressed && styles.pressed]}>

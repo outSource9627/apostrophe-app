@@ -93,7 +93,7 @@ export function BlockDialog({
     >
       <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: report }} onPress={() => setReport((r) => !r)} style={styles.check}>
         <View style={[styles.box, report && styles.boxOn]}>{report && <Icon name="check" size={space.md + 1} tint={color.textInverse} weight={3} />}</View>
-        <Text style={text.uiMdMedium}>Also report to Apostrophe</Text>
+        <Text style={text.uiMdMedium}>Also report to Lenient</Text>
       </Pressable>
       {report && (
         <View style={styles.reasons}>

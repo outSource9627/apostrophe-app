@@ -73,6 +73,20 @@ export function interviewDate(iso: string | null | undefined): string | null {
   return `${t.getUTCDate()} ${MONTHS[t.getUTCMonth()]} ${t.getUTCFullYear()}`
 }
 
+/**
+ * '12 Oct' in India time, with the year only when it is not this year ('3 Dec 2025').
+ * The card's Verified tag is short so it fits beside "Watch full interview".
+ */
+export function interviewDateShort(iso: string | null | undefined, now: Date = new Date()): string | null {
+  if (!iso) return null
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return null
+  const ist = (x: Date) => new Date(x.getTime() + 330 * 60 * 1000)
+  const t = ist(d)
+  const day = `${t.getUTCDate()} ${MONTHS[t.getUTCMonth()]}`
+  return t.getUTCFullYear() === ist(now).getUTCFullYear() ? day : `${day} ${t.getUTCFullYear()}`
+}
+
 /** '18:36' from seconds. Null for an unknown or zero length. */
 export function clock(sec: number | null | undefined): string | null {
   if (!sec || sec <= 0) return null

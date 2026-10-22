@@ -2,7 +2,7 @@ import React from 'react'
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, TextInput, View, type PressableProps, type ViewProps } from 'react-native'
 import Svg, { Defs, LinearGradient, Path, RadialGradient, Rect, Stop } from 'react-native-svg'
 import { borderWidth, color, height, opacity, radius, space, spaceHalf } from '../../theme'
-import { LogoMark } from '../Logo'
+import { LogoTile } from '../Logo'
 import { Body } from './Type'
 import { Input } from './fields'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -16,13 +16,9 @@ import { text } from './typography'
  * Nothing here holds a raw value. A re-brand or a re-size is a token change.
  */
 
-/** The violet square carrying the mark — the design's brand tile (M4). */
+/** The brand tile (M4): the app icon itself. */
 export function BrandMark() {
-  return (
-    <View style={styles.brandTile}>
-      <LogoMark size={height['brand-mark'] * 0.5} fill={color.textInverse} />
-    </View>
-  )
+  return <LogoTile size={height['brand-mark']} />
 }
 
 /** The initials disc in the top bar. `onPress` makes it the way into the account menu. */
@@ -58,7 +54,7 @@ export function AppHeader({ children }: { children?: React.ReactNode }) {
     <View style={styles.header}>
       <View style={styles.brand}>
         <BrandMark />
-        <Text style={[text.uiLgSemi, styles.wordmark]}>Apostrophe</Text>
+        <Text style={[text.uiLgSemi, styles.wordmark]}>Lenient</Text>
       </View>
       <View style={styles.headerRight}>{children}</View>
     </View>
@@ -318,14 +314,6 @@ export function Fab({ label, onPress, glyph }: { label: string; onPress: () => v
 }
 
 const styles = StyleSheet.create({
-  brandTile: {
-    width: height['brand-mark'],
-    height: height['brand-mark'],
-    borderRadius: radius.ctl,
-    backgroundColor: color.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   avatar: {
     width: height['avatar-lg'],
     height: height['avatar-lg'],

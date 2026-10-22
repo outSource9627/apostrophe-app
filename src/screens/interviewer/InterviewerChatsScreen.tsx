@@ -123,7 +123,7 @@ export function InterviewerChatsScreen() {
   )
 }
 
-const nameOf = (t: ThreadDto) => (t.kind === 'USER_ADMIN' ? 'Apostrophe Support' : t.counterparty.name || 'Candidate')
+const nameOf = (t: ThreadDto) => (t.kind === 'USER_ADMIN' ? 'Lenient Support' : t.counterparty.name || 'Candidate')
 
 const styles = StyleSheet.create({
   pad: { paddingHorizontal: space.lg, paddingTop: space.xl },

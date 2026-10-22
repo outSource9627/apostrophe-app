@@ -374,7 +374,7 @@ function ApplicantCard({
 }) {
   const c = row.candidate
   const gone = !c || !c.available
-  const name = gone ? 'Candidate left Apostrophe' : c.name
+  const name = gone ? 'Candidate left Lenient' : c.name
   const when = appliedWhen(row.appliedAt)
   const sub = gone
     ? (when ? `applied ${when}` : '')

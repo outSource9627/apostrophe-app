@@ -196,7 +196,7 @@ function InterviewerTile({ name, photoUrl, remoteUid, panel = false }: { name: s
       ) : (
         <View style={styles.plate}>
           {photoUrl ? <Image source={{ uri: photoUrl }} style={styles.photo} accessibilityLabel={name ?? undefined} />
-            : name ? <Text style={styles.initials}>{initials}</Text> : <LogoMark size={20} fill={color.ink} />}
+            : name ? <Text style={styles.initials}>{initials}</Text> : <LogoMark size={20} />}
         </View>
       )}
       <Text style={styles.tileEyebrow}>Your interviewer</Text>

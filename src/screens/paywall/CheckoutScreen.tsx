@@ -45,7 +45,7 @@ export function CheckoutScreen({ onBack, onConfirming }: { onBack: () => void; o
             order_id: order.orderId,
             amount: order.amountPaise,
             currency: 'INR',
-            name: 'Apostrophe',
+            name: 'Lenient',
             description: `${TIER_NAME[order.tier] ?? order.tier} interview`,
             theme: { color: color.accent },
           })

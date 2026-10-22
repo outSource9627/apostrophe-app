@@ -65,6 +65,10 @@ function untilReset(resetAt: string | undefined, now: number) {
  * round buttons sit over its foot; the lock, limit, caught-up and error states
  * keep the light page.
  *
+ * The bar opens with Back (to where the feed was opened from, else Home). There
+ * is no day's-position counter on the card: the daily card limit is an admin
+ * switch, off for now (docs/feed-room-mockups.html · 2).
+ *
  * Gestures (one card, four of them; the axis is chosen once per drag):
  * - swipe right → Shortlist, privately (as before);
  * - swipe left → Pass, hidden for `passHideDays` (as before);
@@ -73,7 +77,7 @@ function untilReset(resetAt: string | undefined, now: number) {
  *   not excluded, so they can come back when the deck restarts; the card was
  *   already counted in the day's allowance when it loaded (the server charges
  *   on delivery), so a skip does not give it back;
- * - tap the name or facts → the profile page; tap the film → sound.
+ * - tap the name or facts → the profile page; tap the film → sound on/off.
  *
  * The deck is shared with Home (lib/employer/feedDeck): Home's “Today’s feed”
  * films are this deck's first cards, so nothing is read — or charged — twice.
@@ -337,8 +341,8 @@ export function EmployerFeedScreen() {
   const pending = known && (!verified || deck.gated)
   const chips = filterChips(filters)
   const quota = deck.quota
-  const seen = quota ? Math.min(quota.limit, Math.max(0, quota.used - Math.max(0, items.length - (i + 1)))) : null
-  const position = quota && current ? `${Math.max(1, seen ?? 0)} / ${quota.limit}` : null
+  // The feed is a tab, so there may be nothing under it: then Back goes to Home.
+  const goBack = () => (navigation.canGoBack() ? navigation.goBack() : navigation.navigate('EmployerHome'))
   const openFull = () =>
     current?.hasVideo &&
     navigation.navigate('CandidateVideo', { id: current.id, name: current.name, photoUrl: current.photoUrl, interviewAt: current.verifiedInterview?.at })
@@ -358,7 +362,13 @@ export function EmployerFeedScreen() {
   } else if (pending) {
     stage = <FeedLockCard />
   } else if (deck.cardLimit) {
-    stage = <LimitState limit={quota?.limit ?? config.feedDailyCardLimit} videos={config.feedDailyVideoPlayLimit} reset={untilReset(quota?.resetAt, now)} />
+    stage = (
+      <LimitState
+        limit={quota?.limit ?? config.feedDailyCardLimit}
+        videos={config.feedDailyVideoPlaysLimited === false ? undefined : config.feedDailyVideoPlayLimit}
+        reset={untilReset(quota?.resetAt, now)}
+      />
+    )
   } else if (deck.error && items.length <= i) {
     stage = (
       <View style={styles.center}>
@@ -386,7 +396,6 @@ export function EmployerFeedScreen() {
               card={current}
               active={focused && !filtersOpen && !savedOpen && !interestOpen && !profileCard}
               muted={muted}
-              position={position}
               onToggleMute={() => setMuted((m) => !m)}
               onOpenFull={openFull}
               onOpenProfile={openProfile}
@@ -444,6 +453,7 @@ export function EmployerFeedScreen() {
         filterCount={filterCount(filters)}
         locked={pending}
         dark={dark}
+        onBack={goBack}
         onSaved={() => {
           setSaveDraft(null)
           setSavedOpen(true)
@@ -459,7 +469,7 @@ export function EmployerFeedScreen() {
         onClear={() => { applyFilters({}) }}
       />
 
-      <View style={styles.stack}>
+      <View style={[styles.stack, !dark && styles.stackInset]}>
         {stage}
         {!!toast && (
           <FeedToast
@@ -637,8 +647,10 @@ const styles = StyleSheet.create({
   pressed: { opacity: opacity.pressed },
   muted: { color: color.textMuted },
   secondary: { color: color.textSecondary },
-  /** The card runs from under the chips straight into the tab bar; its foot fades into the same black. */
-  stack: { flex: 1, marginHorizontal: spaceHalf['2.5'] },
+  /** The card runs edge to edge from under the chips straight into the tab bar; its foot fades into the same black. */
+  stack: { flex: 1 },
+  /** The light states (lock, limit, caught up, error) keep their inset. */
+  stackInset: { marginHorizontal: spaceHalf['2.5'] },
   layer: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   skeleton: { flex: 1, borderRadius: radius.deck, backgroundColor: color.surfaceSunken },
   center: { flex: 1, justifyContent: 'center' },

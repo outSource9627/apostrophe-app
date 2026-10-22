@@ -484,7 +484,7 @@ function ShortlistCard({
       <View style={styles.actions}>
         <IconSquare name="trash" tone="danger" label={`Remove ${row.name}`} onPress={onRemove} />
         {gone ? (
-          <Quiet label="No longer on Apostrophe" />
+          <Quiet label="No longer on Lenient" />
         ) : (
           <>
             <IconSquare name="edit" label="Notes, tags and job" onPress={onEntry} />

@@ -14,7 +14,7 @@ import type { RootStackParamList } from '../../../App'
 /** The web's /join-us steps, word for word — none of them carries a number. */
 const STEPS = [
   { title: 'You apply', body: 'Your background, the domains and languages you interview in, and your CV if you have one to hand. It creates no account.' },
-  { title: 'A person screens it', body: 'Someone on the Apostrophe team reads every application.' },
+  { title: 'A person screens it', body: 'Someone on the Lenient team reads every application.' },
   { title: 'We create your account', body: 'If we go ahead, the team sets up your interviewer account, with the tiers and domains you will interview for.' },
   { title: 'Sign-in details by email', body: 'They go to the address on your application, with a password to use once.' },
   { title: 'You change the password', body: 'The first sign-in asks for a new password before anything else.' },
@@ -58,7 +58,7 @@ export function JoinUsScreen() {
       <View style={styles.bar}>
         <View style={styles.brand}>
           <BrandMark />
-          <Text style={text.uiLeadSemi}>Apostrophe</Text>
+          <Text style={text.uiLeadSemi}>Lenient</Text>
         </View>
         <Pressable accessibilityRole="button" hitSlop={space.sm} onPress={() => navigation.navigate('SignIn')} style={({ pressed }) => pressed && styles.pressed}>
           <Text style={[text.uiMdSemi, styles.muted]}>Sign in</Text>

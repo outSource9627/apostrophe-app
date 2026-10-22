@@ -155,11 +155,11 @@ export function InterviewerEditProfileScreen() {
 
           {managed.length > 0 && (
             <View style={st.managed}>
-              <Text style={st.managedTitle}>Managed by Apostrophe</Text>
+              <Text style={st.managedTitle}>Managed by Lenient</Text>
               {managed.map((m) => <AcReadOnly key={m.label} label={m.label} value={m.value} />)}
               <View style={st.mg}>
                 <Icon name="info" size={15} tint={color.textMuted} weight={1.9} />
-                <Text style={st.mgText}>{'These are set by Apostrophe. To change one, '}<AcLink label="talk to support" onPress={() => setSupport('Profile change request')} />{'.'}</Text>
+                <Text style={st.mgText}>{'These are set by Lenient. To change one, '}<AcLink label="talk to support" onPress={() => setSupport('Profile change request')} />{'.'}</Text>
               </View>
             </View>
           )}

@@ -22,7 +22,7 @@ export function EmployerWelcomeScreen({ onCreate, onSignIn }: { onCreate: () => 
     >
       <View style={styles.brand}>
         <BrandMark />
-        <Text style={text.uiLgSemi}>Apostrophe</Text>
+        <Text style={text.uiLgSemi}>Lenient</Text>
       </View>
 
       <View style={styles.film} accessibilityRole="image" accessibilityLabel="An example of a verified interview film">

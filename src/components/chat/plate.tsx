@@ -109,7 +109,7 @@ export function Plate({ kind, name, photoUrl, size, muted }: {
     case 'company':
       return <CompanyTile name={name} size={size} muted={muted} />
     case 'masked':
-      return <View style={[s.centre, round, s.masked]}><LogoMark size={Math.round(size * GLYPH)} fill={color.textInverse} /></View>
+      return <View style={[s.centre, round, s.masked]}><LogoMark size={Math.round(size * GLYPH)} /></View>
     case 'support':
       return <View style={[s.centre, round, s.support]}><Lifebuoy size={Math.round(size * GLYPH)} stroke={color.info} /></View>
     default:

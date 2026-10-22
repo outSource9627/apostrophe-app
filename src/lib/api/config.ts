@@ -109,6 +109,10 @@ export interface AppConfig {
     jobModerationTargetHours?: number
     feedDailyCardLimit?: number
     feedDailyVideoPlayLimit?: number
+    /** False when the admin switched the daily card limit off (the number above is then not enforced). */
+    feedDailyCardsLimited?: boolean
+    /** False when the admin switched the daily full-video limit off. */
+    feedDailyVideoPlaysLimited?: boolean
     passHideDays?: number
     interestExpiryDays?: number
     interestCooldownDays?: number

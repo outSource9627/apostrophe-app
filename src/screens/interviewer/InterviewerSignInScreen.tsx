@@ -87,7 +87,7 @@ export function InterviewerSignInScreen() {
     <KeyboardAvoidingView style={[styles.page, { paddingTop: insets.top }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <EmBar onBack={() => navigation.goBack()} />
       <ScrollView style={styles.grow} contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-        <EmTitle eyebrow="Interviewer" title="Sign in" sub="The email and password Apostrophe sent you." />
+        <EmTitle eyebrow="Interviewer" title="Sign in" sub="The email and password Lenient sent you." />
 
         {!!refusal && (
           <View accessibilityLiveRegion="polite">

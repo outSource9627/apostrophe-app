@@ -32,7 +32,7 @@ export function PaymentFailedScreen({
           const RazorpayCheckout = require('react-native-razorpay').default
           await RazorpayCheckout.open({
             key: order.keyId, order_id: order.orderId, amount: order.amountPaise,
-            currency: 'INR', name: 'Apostrophe', theme: { color: color.accent },
+            currency: 'INR', name: 'Lenient', theme: { color: color.accent },
           })
           await settleInDev(order.paymentId)
           onConfirming(order.paymentId); return

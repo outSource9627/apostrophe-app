@@ -162,7 +162,7 @@ export function EmployerSignInScreen({ onBack, onRegister, onForgot, onSignedIn 
             {!!onForgot && <TextAction label="Forgot password?" underline={false} onPress={onForgot} />}
           </View>
           <View style={styles.newRow}>
-            <Body size="sm" tone="muted">New to Apostrophe?</Body>
+            <Body size="sm" tone="muted">New to Lenient?</Body>
             <TextAction label="Create an employer account" underline={false} onPress={onRegister} />
           </View>
         </View>

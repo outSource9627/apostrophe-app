@@ -17,7 +17,7 @@ import {
 } from '../../components/employer/profile'
 import { ApiClientError } from '../../lib/api'
 import {
-  fetchCandidateDetail, fetchCandidateDocument, playSelfVideo, postSwipe, type CandidateDetail,
+  fetchCandidateDetail, fetchCandidateDocument, isLimited, playSelfVideo, postSwipe, type CandidateDetail,
 } from '../../lib/api/employerFeed'
 import {
   fetchAllEmployerInterests, interestNextEligibleAt, liveInterestOutcome, type EmployerInterestRow,
@@ -183,7 +183,8 @@ export function CandidateProfileScreen() {
   const at = deck.items.findIndex((x) => x.id === c.id)
   const card = at >= 0 ? deck.items[at] : null
   const next = at >= 0 ? deck.items[at + 1] ?? null : null
-  const quota = deck.quota
+  // No "13 of 40" while the admin has the daily card limit switched off.
+  const quota = isLimited(deck.quota) ? deck.quota : null
   const position = card && quota ? Math.min(quota.limit, Math.max(1, quota.used - (deck.items.length - (at + 1)))) : null
   const counter = position !== null && quota ? `${position} of ${quota.limit}` : null
 
@@ -194,7 +195,7 @@ export function CandidateProfileScreen() {
   const headline = c.headline ?? card?.headline ?? null
   const hasInterview = c.hasVideo ?? card?.hasVideo ?? !!c.verifiedInterview?.verified
   const plays = employer?.limits?.videoPlays ?? null
-  const playsOut = !!plays && plays.remaining <= 0
+  const playsOut = isLimited(plays) && plays.remaining <= 0
   const interviewSec = (c.videos ?? []).find((v) => v.kind === 'INTERVIEW')?.durationSec ?? null
   const interviewLen = clipLength(interviewSec)
   const fullLabel = playsOut ? 'Full · resets at midnight' : interviewLen ? `Full · ${interviewLen}` : 'Full'
