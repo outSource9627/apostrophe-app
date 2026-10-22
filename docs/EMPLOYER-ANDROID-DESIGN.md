@@ -309,3 +309,21 @@ Built with existing components and tokens only; no new design. Backend already d
 - **Chat A:** the shared chat pieces; the employer thread gains "Withdraw connection" in ⋯ (its dialog is a copy of the Connections one — exporting `WithdrawDialog` would remove the duplicate); read-only transcripts are no longer dimmed.
 - **Register C:** company first, then you; size chips; confirm password + terms; the error summary/focus order now follow the screen; "usually within N hours" from `/config`; the verify screen's always-disabled Continue is gone.
 - **Not verified on a device.**
+
+## Feed polish 2026-10-15 — `docs/feed-room-mockups.html` (feed A, Watch 3)
+
+The user's picks: **feed A · full-bleed**, **Watch 3 · frosted pill**, daily limits as **admin on/off switches, both Off for now**.
+
+- **Edges:** the card runs edge to edge, with its top corners at `radius.xl`. The bar, the chips, the film progress, the tag and the facts all start on one 16 px line. The light states (lock, limit, caught up, error) keep their 10 px inset.
+- **Back:** a round ‹ (`FeedTopButton chevL`) opens the bar, in both the dark and the light state. It goes back, or to `EmployerHome` when the feed is the bottom of the stack.
+- **Watch full interview:** `FeedWatchButton` (feed-deck.tsx) replaces the icon-only ⤢. It is a 38 px pill (`onInkPlay` + `onInkOutline`) with a white 30 px disc, the rounded `playR` triangle and the label. It is still hidden when there is no film. **Deviation:** React Native has no backdrop blur here, so the "frost" is the translucent white alone.
+- **Verified tag** is short now: "Verified · 12 Oct". The year shows only when it isn't this year (`interviewDateShort`).
+- **Sound, Instagram style:** a tap anywhere on the film (`FeedTapLayer`, under the tag row and the facts) turns the sound on or off. `FeedSoundFlash` shows the new state in the middle for about 0.85 s. `FeedMuteBadge` (30 px) keeps showing it above the name and toggles too. The top-right sound button is gone. The feed still starts muted.
+- **No counter:** the "2 / 200" day's-position count (`FeedCount`) is removed.
+- **Limits off:** quota DTOs carry `limited` (`isLimited()` in lib/api/employerFeed.ts). When it is false:
+  - Home hides the two meters and is never "spent".
+  - The profile hides "13 of 40".
+  - Full plays are never locked.
+  - The limit screen's copy drops the video part when `/config employer.feedDailyVideoPlaysLimited` is false.
+  - A server that sends no flag is treated as limited.
+- **Not verified on a device.** No emulator was connected.

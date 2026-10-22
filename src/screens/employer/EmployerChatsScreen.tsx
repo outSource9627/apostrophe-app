@@ -183,7 +183,7 @@ export function EmployerChatsScreen() {
   )
 }
 
-const nameOf = (t: ThreadDto) => (t.kind === 'USER_ADMIN' ? 'Apostrophe Support' : t.counterparty.name || 'Candidate')
+const nameOf = (t: ThreadDto) => (t.kind === 'USER_ADMIN' ? 'Lenient Support' : t.counterparty.name || 'Candidate')
 const readOnlyOf = (t: ThreadDto) => t.state.archived || !!t.archivedReason
 
 const styles = StyleSheet.create({

@@ -58,7 +58,7 @@ export function InterviewerThreadScreen() {
     setReportOpen(false)
     try {
       await reportThread(id, reason, note || undefined)
-      setNotice('Reported. Apostrophe’s moderation team will review this conversation.')
+      setNotice('Reported. Lenient’s moderation team will review this conversation.')
     } catch (e) {
       setNotice(e instanceof ApiClientError && e.meta?.reason === 'ALREADY_REPORTED' ? 'You have already reported this conversation.' : e instanceof Error ? e.message : 'Not reported. Try again.')
     }
@@ -78,7 +78,7 @@ export function InterviewerThreadScreen() {
   }
 
   const support = thread.kind === 'USER_ADMIN'
-  const name = support ? 'Apostrophe Support' : thread.counterparty.name || 'Candidate'
+  const name = support ? 'Lenient Support' : thread.counterparty.name || 'Candidate'
   const readOnly = thread.state.readOnly || thread.state.archived
   const canSend = thread.state.open && !readOnly
   const notYet = !thread.state.open && !readOnly

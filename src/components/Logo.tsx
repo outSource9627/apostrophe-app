@@ -1,21 +1,29 @@
 import React from 'react'
-import { Text, View, StyleSheet, Platform } from 'react-native'
-import Svg, { Path } from 'react-native-svg'
-import { color, fontSize, space, fontFamilyNativeWordmark, trackingNative } from '../theme'
+import { Image, Text, View, StyleSheet, Platform } from 'react-native'
+import { brand, color, fontSize, space, fontFamilyNativeWordmark, trackingNative } from '../theme'
+
+// The brand's own artwork, cut from the supplied icon (the same files the web build ships).
+const MARK = require('../assets/brand/lenient-mark.png')
+const ICON = require('../assets/brand/lenient-icon.png')
+/** The cut L's width over its height (244 × 256), so the box can stay square. */
+const MARK_ASPECT = 244 / 256
 
 /**
- * The Apostrophe mark, same path as the web build so the two cannot drift.
- * Drawn rather than shipped as a PNG because it appears from 18px to 120px.
+ * The Lenient mark: the lacquered red italic L on its own, in a square box of
+ * `size`. Its colour is fixed — it reads on white and on ink, never on the brand
+ * red — so a place that used to tint the glyph now just places it.
  */
-export function LogoMark({ size = 24, fill = color.ink }: { size?: number; fill?: string }) {
+export function LogoMark({ size = 24 }: { size?: number }) {
   return (
-    <Svg width={size} height={size} viewBox="0 0 100 100">
-      <Path
-        d="M62.5 8C42.8 8 28 21.6 28 39.2c0 15.4 11.4 26.6 26.4 26.6 4.6 0 8.6-1 11.9-2.9 1.7-1 3.3.9 2.3 2.7C62.2 76.4 51.6 85.6 38.4 92.4l4.9 8.6C67.4 89.4 84 68.6 84 43.5 84 22.6 75.4 8 62.5 8Z"
-        fill={fill}
-      />
-    </Svg>
+    <View style={[styles.box, { width: size, height: size }]}>
+      <Image source={MARK} style={{ width: Math.round(size * MARK_ASPECT), height: size }} resizeMode="contain" />
+    </View>
   )
+}
+
+/** The app icon itself — the white tile with the red L — rounded the way the launcher icon is. */
+export function LogoTile({ size = 30 }: { size?: number }) {
+  return <Image source={ICON} style={{ width: size, height: size, borderRadius: Math.round(size * brand.markRadiusRatio) }} />
 }
 
 /**
@@ -27,13 +35,14 @@ export function LogoMark({ size = 24, fill = color.ink }: { size?: number; fill?
 export function Logo({ size = 20, tint = color.ink }: { size?: number; tint?: string }) {
   return (
     <View style={styles.row}>
-      <LogoMark size={size} fill={tint} />
-      <Text style={[styles.word, { fontSize: size * 1.15, color: tint }]}>Apostrophe</Text>
+      <LogoTile size={size} />
+      <Text style={[styles.word, { fontSize: size * 1.15, color: tint }]}>Lenient</Text>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
+  box: { alignItems: 'center', justifyContent: 'center' },
   row: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   word: {
     fontFamily: Platform.select(fontFamilyNativeWordmark),

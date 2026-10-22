@@ -155,7 +155,7 @@ export function CreateAccountScreen({ onBack, onSignIn, onJoinUs, onOtpSent }: P
   return (
     <BrandScreen
       title="Create your account"
-      sub="Join Apostrophe in a minute."
+      sub="Join Lenient in a minute."
       onBack={onBack}
       scrollRef={ff.scroller}
       contentRef={ff.content}

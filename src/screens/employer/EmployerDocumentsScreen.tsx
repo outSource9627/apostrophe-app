@@ -340,7 +340,7 @@ function Documents({ focus, onBack, onSubmitted, arrived }: EmployerDocumentsScr
 
   return (
     <EmployerShell back={back} title="Verify your company" sub={mode === 'submit' ? 'Step 3 of 3' : undefined} footer={footer}>
-      <Text style={[text.uiMd, styles.muted]}>{`PDF, JPG or PNG, up to ${maxMb} MB each. Seen only by the Apostrophe review team.`}</Text>
+      <Text style={[text.uiMd, styles.muted]}>{`PDF, JPG or PNG, up to ${maxMb} MB each. Seen only by the Lenient review team.`}</Text>
       {!!sub && <Text style={[text.uiMd, styles.muted]}>{sub}</Text>}
 
       {!!asked && <EmWell label="From the reviewer" tone="violet">{asked}</EmWell>}

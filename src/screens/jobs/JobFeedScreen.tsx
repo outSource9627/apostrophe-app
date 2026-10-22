@@ -18,8 +18,8 @@ import {
 import { borderWidth, color, fontFamilyNative as FF, fontSize, height, leadingNative, opacity, radius, space, spaceHalf } from '../../theme'
 import { Button, EmptyState, ErrorState } from '../../components/ui'
 import {
-  FeedActions, FeedCardFrame, FeedCardTop, FeedFilmBar, FeedGlassButton, FeedHud, FeedMeta, FeedPill, FeedPills, FeedShade,
-  FeedSkeleton, FeedStamp, FeedTag, FeedToast, FeedTopButton, feedText,
+  FeedActions, FeedCardFrame, FeedCardTop, FeedFilmBar, FeedGlassButton, FeedHud, FeedMeta, FeedMuteBadge, FeedPill, FeedPills, FeedShade,
+  FeedSkeleton, FeedSoundFlash, FeedStamp, FeedTag, FeedTapLayer, FeedToast, FeedTopButton, feedText,
 } from '../../components/ui/feed-deck'
 import { useLightStatusBar } from '../../lib/useLightStatusBar'
 import { useDarkTabBar } from '../../navigation/tabBarTone'
@@ -29,9 +29,12 @@ import { JobDetailsSheet } from './JobDetailsSheet'
 /**
  * The job feed (docs/tinder-feed-mockups.html · design 1, student mode).
  *
- * One job per card. The card runs from under the tabs to just above the tab
- * bar; its facts sit at the foot and the four round buttons are fixed over it.
+ * One job per card. The card runs edge to edge from under the tabs to just
+ * above the tab bar; its facts sit at the foot and the four round buttons are
+ * fixed over it. The bar opens with Back (docs/feed-room-mockups.html · feed A,
+ * shared with the employer feed).
  *
+ * - tap the film → sound on / off (a flash in the middle, a badge above the facts);
  * - swipe right / ♥ → Save (never applies);
  * - swipe left / ✕ → Not interested (the server hides it; the toast says for how long);
  * - drag up → Skip: nothing is sent or saved, and the toast's Back returns it;
@@ -424,6 +427,7 @@ export function JobFeedScreen({ onBack, onOpen, onSaved, onApplied, onApply, onC
   return (
     <View style={[s.page, { backgroundColor: dark ? color.inkDeep : color.background }]}>
       <View style={[s.bar, { paddingTop: insets.top + spaceHalf['1.5'] }]}>
+        <FeedTopButton icon="chevL" label="Back" dark={dark} onPress={onBack} />
         <View style={[s.tabs, dark ? s.tabsDark : s.tabsLight]}>
           <Tab label="For you" on dark={dark} />
           <Tab label="Saved" dark={dark} onPress={onSaved} />
@@ -435,7 +439,7 @@ export function JobFeedScreen({ onBack, onOpen, onSaved, onApplied, onApply, onC
         </View>
       </View>
 
-      <View style={s.stage}>
+      <View style={[s.stage, !dark && s.stageInset]}>
         {stage}
         {!!toast && (
           <FeedToast
@@ -483,9 +487,15 @@ function JobCardView({
   stamps?: React.ReactNode
 }) {
   const [failed, setFailed] = useState(false)
+  /** Bumped by each sound tap; keys the flash so every tap replays it. */
+  const [flash, setFlash] = useState(0)
   const progress = useRef(new Animated.Value(0)).current
   const url = card.video?.url ?? null
   const hasVideo = !!url && !failed
+  const toggleSound = () => {
+    onToggleMute()
+    setFlash((n) => n + 1)
+  }
   const pay = salaryRange(card.salary)
   const type = employmentLabel(card.employmentType)
   const status = card.applicationStatus ? applicationMark(card.applicationStatus).label : null
@@ -530,15 +540,17 @@ function JobCardView({
       )}
       <FeedShade />
       {hasVideo && <FeedFilmBar progress={progress} />}
+      {hasVideo && <FeedTapLayer muted={muted} onPress={toggleSound} />}
+      {hasVideo && flash > 0 && <FeedSoundFlash key={flash} muted={muted} />}
 
       <FeedCardTop
         left={<FeedTag label={hasVideo ? `Video pitch · ${fmtDuration(card.video!.durationSec)}` : card.category?.trim() || 'Job post'} />}
-        right={hasVideo ? <FeedGlassButton icon={muted ? 'mute' : 'sound'} label={muted ? 'Turn the sound on' : 'Mute'} onPress={onToggleMute} /> : null}
       />
 
       {stamps}
 
       <FeedHud>
+        {hasVideo && <FeedMuteBadge muted={muted} onPress={toggleSound} />}
         <View style={s.company}>
           <View style={s.logo}><Text style={s.logoText}>{initialsOf(card.company?.name)}</Text></View>
           <View style={s.grow}>
@@ -568,7 +580,7 @@ function Tab({ label, on, dark, onPress }: { label: string; on?: boolean; dark: 
       onPress={on ? undefined : onPress}
       style={({ pressed }) => [s.tab, on && (dark ? s.tabOnDark : s.tabOnLight), pressed && s.pressed]}
     >
-      <Text style={[s.tabText, { color: on ? (dark ? color.ink : color.accent) : dark ? color.textOnInkMuted : color.textMuted }]}>{label}</Text>
+      <Text style={[s.tabText, { color: on ? (dark ? color.ink : color.accent) : dark ? color.textOnInkMuted : color.textMuted }]} numberOfLines={1}>{label}</Text>
     </Pressable>
   )
 }
@@ -578,18 +590,21 @@ const s = StyleSheet.create({
   grow: { flex: 1, minWidth: 0 },
   pressed: { opacity: opacity.pressed },
 
-  bar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.sm, paddingHorizontal: space.lg, paddingBottom: space.sm },
+  bar: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingHorizontal: space.lg, paddingBottom: space.sm },
   barRight: { flexDirection: 'row', gap: space.sm },
-  tabs: { flexDirection: 'row', gap: space.xs, borderRadius: radius.pill, padding: space.xs },
+  /** Shares the row with Back, Filters and Chats, so the three tabs split what is left (360 dp phones included). */
+  tabs: { flex: 1, flexDirection: 'row', gap: space.xs, borderRadius: radius.pill, padding: space.xs },
   tabsDark: { backgroundColor: color.inkRaised },
   tabsLight: { backgroundColor: color.surfaceMuted },
-  tab: { paddingVertical: spaceHalf['1.5'], paddingHorizontal: space.md, borderRadius: radius.pill },
+  tab: { flex: 1, alignItems: 'center', paddingVertical: spaceHalf['1.5'], paddingHorizontal: space.xs, borderRadius: radius.pill },
   tabOnDark: { backgroundColor: color.textOnInk },
   tabOnLight: { backgroundColor: color.surface, borderWidth: borderWidth.thin, borderColor: color.border },
   tabText: { fontFamily: FF.bodySemiBold, fontSize: fontSize['ui-sm'], lineHeight: leadingNative['ui-sm'] },
 
-  /** The card runs from under the tabs straight into the tab bar; its foot fades into the same black. */
-  stage: { flex: 1, marginHorizontal: spaceHalf['2.5'] },
+  /** The card runs edge to edge from under the tabs straight into the tab bar; its foot fades into the same black. */
+  stage: { flex: 1 },
+  /** The light states (empty, error) keep their inset. */
+  stageInset: { marginHorizontal: spaceHalf['2.5'] },
   top0: { zIndex: 1 },
   top1: { zIndex: 2 },
   state: { flex: 1, justifyContent: 'center', paddingHorizontal: space.sm },

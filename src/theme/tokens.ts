@@ -974,6 +974,8 @@ export const shadow = {
   modal: '0 30px 80px rgba(20, 20, 20, 0.3)',
   // old: drawer: '-20px 0 50px rgba(11, 15, 26, 0.12)',
   drawer: '-20px 0 50px rgba(20, 20, 20, 0.12)',
+  /** CAND-A: the selected row in a desktop list (jobs list view, interviews), an accent rule down its left edge. */
+  'row-selected': `inset 3px 0 0 ${color.accent}`,
 } as const
 
 /**
@@ -1133,6 +1135,10 @@ export const container = {
   'job-rail': 300,
   /** The applicant's 9:16 video column (EM-21). */
   'applicant-video': 320,
+  // EMP-B · employer desktop: the Interest detail panel, the applicant preview's film, the chat context pane's film.
+  'interest-detail': 380,
+  'applicant-preview-film': 150,
+  'chat-context-film': 120,
   /** The "what you submitted" card beside the verification status (EM-06). */
   'employer-status-rail': 340,
   /** The receipt card on the documents-submitted confirmation (EM-05b). */
@@ -1141,6 +1147,67 @@ export const container = {
   'feed-lock-w': 130,
   /** The candidate profile's sticky 9:16 film (EM-09): 400 across, beside the details. */
   'profile-film': 400,
+  // ── Employer desktop redesign (EMP-A: home, feed, shortlist) ──
+  /** Employer home: the expiring-interests and activity rail beside the main column. */
+  'employer-home-rail': 340,
+  /** Candidate feed: the up-next queue left of the film. */
+  'feed-queue': 260,
+  /** Candidate feed: the 9:16 film in the centre (E-FEED-2), 380 across. */
+  'feed-film': 380,
+
+  // ── Candidate desktop (CAND-A: home, interviews, jobs) ──
+  /** Student home's right rail: applications, interests, chats. */
+  'student-home-rail': 340,
+  /** The job deck's filter rail on a desktop. */
+  'jobs-filter-rail': 248,
+  /** The job deck's always-open post, at its narrowest and widest. */
+  'jobs-post-min': 360,
+  'jobs-post-max': 440,
+  /** Interviews: the month calendar and booking rules column. */
+  'interviews-rail': 280,
+  /** Interviews: the selected interview's pane, at its narrowest and widest. */
+  'interviews-pane-min': 320,
+  'interviews-pane-max': 380,
+
+  // ── Desktop shell (SHELL: sidebar redesign, 2026-10-21) ──
+  /** The desktop sidebar every signed-in persona gets from `lg`: logo, destinations, foot card, account. */
+  sidebar: 236,
+  /** The main column's content cap on very wide screens, centred right of the sidebar. */
+  'shell-content': 1440,
+  /** The top bar's command-palette field. */
+  'top-search': 520,
+
+  // ── Candidate desktop (CAND-B: applications, interests, chat, profile) ──
+  /** Applications: the selected application's pane, at its narrowest and widest. */
+  'applications-pane-min': 320,
+  'applications-pane-max': 380,
+  /** The 320 rail beside interests and the profile. */
+  'student-rail': 320,
+  /** Interests: the grid of pending cards stops widening here, and no card in it is narrower than this. */
+  'interest-grid': 920,
+  'interest-card-min': 360,
+  /** Chat from 1280: the thread list and the context pane either side of the conversation. */
+  'chat-list-desk': 320,
+  'chat-context': 320,
+  /** A chat bubble on a wide conversation pane. */
+  'chat-bubble-wide': 560,
+  /** The verified film playing on the profile's film card. */
+  'profile-own-film': 168,
+  // ── Interviewer desktop (INT-B: scorecard, availability, wallet) ──
+  /** Scorecard: the notes / script / profile column beside the form. */
+  'scorecard-notes': 280,
+  /** Scorecard: the sticky deadline, checklist and submit rail. */
+  'scorecard-rail': 300,
+  /** Availability: the weekly-hours list. */
+  'availability-editor': 360,
+  /** Availability: the date-overrides rail. */
+  'availability-overrides': 272,
+  /** Wallet: the lifetime, withdraw, withdrawals and statement rail. */
+  'wallet-rail': 300,
+  /** Scorecards list: the totals rail. */
+  'scorecards-rail': 320,
+  /** The copy-hours popover on a weekly-hours row. */
+  'copy-hours': 300,
 } as const
 
 /**
@@ -1157,6 +1224,11 @@ export const container = {
 export const height = {
   /** Primary actions, and every field. */
   control: 48,
+  // ── Employer desktop redesign (EMP-A) ──
+  /** The desktop feed's 9:16 film at its full 380 across (E-FEED-2). */
+  'feed-film': 676,
+  /** What the feed keeps clear around the film on a short window — the top bar, the header, the chips and the round actions — so the actions stay in view. */
+  'feed-film-reserve': 320,
   /** The one call to action on a form or a hero — continue, pay, join. */
   'control-lg': 52,
   /** A page-footer action pair. */
@@ -1252,6 +1324,8 @@ export const height = {
   'chart-bars': 72,
   /** One half-hour row of the interviewer's weekly availability grid. */
   'week-cell': 30,
+  /** One hour of the interviews week calendar (INT-A); blocks are placed at this many px per hour. */
+  'week-hour': 48,
   /** A button inside the availability screen's floating publish bar. */
   'dock-action': 36,
   /** A day card in the slot strip (M5: 72 wide). */
@@ -1340,6 +1414,15 @@ export const height = {
   'well-compact': 286,
   /** A video thumbnail in the mobile list, against `container['video-thumb-compact']`. */
   'video-thumb-compact': 84,
+  /** CAND-A: the job deck's always-open post on a desktop, as tall as the card and its actions. */
+  'jobs-post': 700,
+  // ── Interviewer desktop (INT-B) ──
+  /** One slot of the availability page's compact week preview. */
+  'week-cell-dense': 22,
+  /** The wallet's earnings chart: the plot area the bars stand in. */
+  'earnings-chart': 140,
+  /** The availability page's next-14-days strip: the tallest bar. */
+  'days-strip': 44,
 } as const
 
 /**
@@ -1409,6 +1492,19 @@ export const gridTemplate = {
   'session-row': '80px minmax(0, 1fr) auto',
   /** Enhanced interviewer home, top row: the next-session / nothing-booked card, then the wallet card. */
   'interviewer-home-top': 'minmax(0, 1.45fr) minmax(0, 1fr)',
+  /* ── Interviewer desktop redesign (INT-A: home, interviews, prep) ── */
+  /** Desktop home: today's work, then the wallet / week / chats / stats rail. */
+  'interviewer-desk': 'minmax(0, 1.65fr) minmax(300px, 1fr)',
+  /** One row of the home's "Today" timeline: the time, then the session or the open gap. */
+  'timeline-row': '72px minmax(0, 1fr)',
+  /** Interviewer interviews: the week calendar or the list, then the 340 preview of the selected interview. */
+  'interviewer-interviews': 'minmax(0, 1fr) 340px',
+  /** The week calendar: the hour labels, then Monday to Sunday. */
+  'week-calendar': '52px repeat(7, minmax(0, 1fr))',
+  /** Interview prep: the tabs' content, then the sticky specs rail. */
+  'prep-desk': 'minmax(0, 1fr) 330px',
+  /** The prep script: the list of areas, then the chosen area's prompts. */
+  'prep-script': '240px minmax(0, 1fr)',
   /** One recent-interview row: avatar, who and what, when, fee, status. */
   'recent-row': '36px minmax(0, 1fr) 200px 90px 80px',
   /** The interviewer sign-in panel's step: its number, then the words. */
@@ -1450,6 +1546,15 @@ export const gridTemplate = {
   'job-detail': `minmax(0, 1fr) ${container['job-rail']}px`,
   /** Applicant detail: the 9:16 video, then the person and the pipeline (EM-21). */
   applicant: `${container['applicant-video']}px minmax(0, 1fr)`,
+  // EMP-B · employer desktop.
+  /** Interests: the list, then the selected Interest's detail. */
+  'employer-interests': `minmax(0, 1fr) ${container['interest-detail']}px`,
+  /** Applicants: the list, then the selected applicant's preview, a tenth wider. */
+  'applicants-split': 'minmax(0, 1fr) minmax(0, 1.1fr)',
+  /** An applicant's preview: the film, then the facts. */
+  'applicant-preview': `${container['applicant-preview-film']}px minmax(0, 1fr)`,
+  /** The chat context pane's film beside its words. */
+  'chat-context-film': `${container['chat-context-film']}px minmax(0, 1fr)`,
   /** A working page: the main column, then a 320 rail (EM-05, EM-07). */
   'employer-rail': `minmax(0, 1fr) ${container['employer-rail']}px`,
   /** The interviewer's weekly availability matrix: the time labels, then seven day columns. */
@@ -1459,6 +1564,47 @@ export const gridTemplate = {
   'employer-status': `minmax(0, 1fr) ${container['employer-status-rail']}px`,
   /** The candidate profile: the sticky film, then the details (EM-09). */
   'employer-profile': `${container['profile-film']}px minmax(0, 1fr)`,
+  // ── Employer desktop redesign (EMP-A) ──
+  /** Employer home on a desktop: the main column, then the expiring-interests and activity rail. */
+  'employer-home-desk': `minmax(0, 1fr) ${container['employer-home-rail']}px`,
+  /** Candidate feed on a desktop: the up-next queue, the film and its buttons, then the profile panel. */
+  'employer-feed-desk': `${container['feed-queue']}px auto minmax(0, 1fr)`,
+
+  // ── Candidate desktop (CAND-A: home, interviews, jobs) ──
+  /** Student home: the main column, then the 340 rail. */
+  'student-home': `minmax(0, 1fr) ${container['student-home-rail']}px`,
+  /** The job deck on a desktop: filters, the deck, the open post. */
+  'jobs-desk': `${container['jobs-filter-rail']}px minmax(0, 1fr) minmax(${container['jobs-post-min']}px, ${container['jobs-post-max']}px)`,
+  /** Interviews on a desktop: the calendar column, the list, the selected interview. */
+  'interviews-desk': `${container['interviews-rail']}px minmax(0, 1fr) minmax(${container['interviews-pane-min']}px, ${container['interviews-pane-max']}px)`,
+
+  // ── Candidate desktop (CAND-B: applications, interests, chat, profile) ──
+  /** Applications on a desktop: the table, then the selected application. */
+  'applications-desk': `minmax(0, 1fr) minmax(${container['applications-pane-min']}px, ${container['applications-pane-max']}px)`,
+  /** Interests and the profile on a desktop: the main column, then the 320 rail. */
+  'student-rail': `minmax(0, 1fr) ${container['student-rail']}px`,
+  /** The pending interests: as many columns as fit, none narrower than the card's floor. */
+  'interest-cards': `repeat(auto-fill, minmax(${container['interest-card-min']}px, 1fr))`,
+  /** Chat from 1280: the list, the conversation, the context pane. */
+  'chat-desk': `${container['chat-list-desk']}px minmax(0, 1fr) ${container['chat-context']}px`,
+  /** The profile's film card: the playing film, then what goes with it. */
+  'profile-film-card': `${container['profile-own-film']}px minmax(0, 1fr)`,
+
+  // ── Interviewer desktop (INT-B: scorecard, availability, wallet) ──
+  /** Scorecard: notes and script, the form, the sticky submit rail. */
+  'scorecard-desk': `${container['scorecard-notes']}px minmax(0, 1fr) ${container['scorecard-rail']}px`,
+  /** Availability: the weekly-hours list, the week preview, the overrides rail. */
+  'availability-desk': `${container['availability-editor']}px minmax(0, 1fr) ${container['availability-overrides']}px`,
+  /** One weekly-hours row: the switch, the day, its blocks, the add and copy buttons. */
+  'hours-row': '40px 44px minmax(0, 1fr) auto',
+  /** Wallet: the money and the ledger, then the rail. */
+  'wallet-desk': `minmax(0, 1fr) ${container['wallet-rail']}px`,
+  /** Wallet: Pending, Locked and Available, an arrow between each. */
+  'wallet-flow': 'minmax(0, 1fr) 20px minmax(0, 1fr) 20px minmax(0, 1fr)',
+  /** Wallet chart: the amount axis, then the bars. */
+  'earnings-chart': '52px minmax(0, 1fr)',
+  /** Scorecards list: the lists, then the totals rail. */
+  'scorecards-desk': `minmax(0, 1fr) ${container['scorecards-rail']}px`,
 } as const
 
 /**
@@ -1497,10 +1643,8 @@ export const brand = {
   wordmarkRatio: 0.6,
   /** The wordmark never sets smaller than this, whatever the badge size. */
   wordmarkMin: 14,
-  /** The ’ glyph as a fraction of the badge: 26 / 28. */
-  markGlyphRatio: 0.93,
-  /** How far the glyph is nudged down inside the badge: 10 / 28. */
-  markGlyphOffset: 0.36,
+  /** The badge's corner radius as a fraction of its size — the app icon's own rounding (22.37%, the iOS squircle's). */
+  markRadiusRatio: 0.2237,
   /** The badge's size inside an app bar, mobile and desktop. */
   markInBar: 28,
   markInBarLg: 28,

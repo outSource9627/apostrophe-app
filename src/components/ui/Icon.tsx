@@ -79,6 +79,10 @@ const ICONS = {
   // Employer Studio (docs/employer-app-studio.html): skip, education, links, sort.
   arrowU: [P('M12 19V5M6 11l6-6 6 6')],
   chevU: [P('M6 15l6-6 6 6')],
+  chevL: [P('M15 5l-7 7 7 7')],
+  /** The rounded, optically centred play triangle of the feed's Watch button and play discs. Draw it with `fill`. */
+  playR: [P('M8.5 5.8c0-.9 1-1.5 1.8-1l9 5.9c.7.5.7 1.6 0 2.1l-9 5.9c-.8.5-1.8 0-1.8-1z')],
+  list: [P('M9.5 6.5h10M9.5 12h10M9.5 17.5h10'), C(5, 6.5, 1.2), C(5, 12, 1.2), C(5, 17.5, 1.2)],
   grad: [P('M22 10L12 5 2 10l10 5 10-5z'), P('M6 12v5c3 2 9 2 12 0v-5')],
   link: [P('M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7'), P('M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7')],
   sort: [P('M7 4v16M3 16l4 4 4-4M17 20V4M13 8l4-4 4 4')],

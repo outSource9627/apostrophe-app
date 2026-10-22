@@ -176,7 +176,7 @@ export function ApplicantDetailScreen() {
         </View>
       </View>
 
-      {c.removed && <Text style={[text.uiSm, styles.muted]}>This student is no longer on Apostrophe.</Text>}
+      {c.removed && <Text style={[text.uiSm, styles.muted]}>This student is no longer on Lenient.</Text>}
       {!!notice && <Text style={[text.uiSm, styles.danger]}>{notice}</Text>}
 
       <EmCard>

@@ -90,7 +90,7 @@ export function EmployerAccountScreen() {
     { label: 'Verification documents', onPress: () => navigation.navigate('EmployerStatus') },
     { label: 'Notification settings', onPress: () => navigation.navigate('EmployerNotificationSettings') },
     { label: 'Notifications history', onPress: () => navigation.navigate('EmployerNotifications') },
-    { label: 'Message Apostrophe Support', onPress: () => { support() }, busy: supportBusy },
+    { label: 'Message Lenient Support', onPress: () => { support() }, busy: supportBusy },
   ]
 
   return (

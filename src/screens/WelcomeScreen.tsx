@@ -13,7 +13,7 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Body, InkButton, text } from '../components/ui'
 import { Icon } from '../components/ui/Icon'
-import { LogoMark } from '../components/Logo'
+import { LogoTile } from '../components/Logo'
 import { borderWidth, color, height, radius, space } from '../theme'
 
 type Props = {
@@ -91,10 +91,8 @@ export function WelcomeScreen({ onGetStarted, onSignIn }: Props) {
       <View style={styles.orbBottom} />
 
       <View style={[styles.brand, { paddingTop: insets.top + space.lg }]}>
-        <View style={styles.brandTile}>
-          <LogoMark size={height['brand-mark'] * 0.55} fill={color.accent} />
-        </View>
-        <Text style={[text.displaySm, styles.onInk]}>apostrophe</Text>
+        <LogoTile size={height['brand-mark']} />
+        <Text style={[text.displaySm, styles.onInk]}>lenient</Text>
       </View>
 
       <ScrollView
@@ -179,10 +177,6 @@ const styles = StyleSheet.create({
   },
 
   brand: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingHorizontal: space.xl + space.sm },
-  brandTile: {
-    width: height['brand-mark'], height: height['brand-mark'], borderRadius: radius.tile,
-    backgroundColor: color.textInverse, alignItems: 'center', justifyContent: 'center',
-  },
 
   carousel: { flex: 1 },
   slide: { paddingHorizontal: space.xl + space.sm, justifyContent: 'center' },

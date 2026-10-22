@@ -21,9 +21,9 @@ function calendarUrl(iv: StudentInterview, joinOpensMinutesBefore?: number): str
   const stamp = (iso: string) => new Date(iso).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')
   const p = new URLSearchParams({
     action: 'TEMPLATE',
-    text: 'Your Apostrophe interview',
+    text: 'Your Lenient interview',
     dates: `${stamp(iv.slotStart)}/${stamp(iv.slotEnd)}`,
-    details: `A live ${iv.durationMin}-minute interview with an Apostrophe interviewer. The join link opens ${joinOpensMinutesBefore != null ? `${minutesPhrase(joinOpensMinutesBefore)} before` : 'shortly before'}.`,
+    details: `A live ${iv.durationMin}-minute interview with a Lenient interviewer. The join link opens ${joinOpensMinutesBefore != null ? `${minutesPhrase(joinOpensMinutesBefore)} before` : 'shortly before'}.`,
   })
   return `https://calendar.google.com/calendar/render?${p.toString()}`
 }
@@ -38,7 +38,7 @@ function calendarUrl(iv: StudentInterview, joinOpensMinutesBefore?: number): str
 async function shareIcs(id: string) {
   try {
     const ics = await getInterviewIcs(id)
-    await Share.share({ title: 'apostrophe-interview.ics', message: ics })
+    await Share.share({ title: 'lenient-interview.ics', message: ics })
   } catch {
     // Nothing to show: the "Add to calendar" button beside it is the primary path.
   }

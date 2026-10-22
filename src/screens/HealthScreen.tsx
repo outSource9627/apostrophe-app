@@ -38,7 +38,7 @@ export function HealthScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.page}>
-      <Eyebrow>Apostrophe · mobile</Eyebrow>
+      <Eyebrow>Lenient · mobile</Eyebrow>
       <Display level="md" style={styles.title}>
         Connection check
       </Display>

@@ -16,7 +16,7 @@ import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Sheet } from '../ui'
 import { Icon, type IconName } from '../ui/Icon'
-import { LogoMark } from '../Logo'
+import { LogoTile } from '../Logo'
 import { useLightStatusBar } from '../../lib/useLightStatusBar'
 import {
   borderWidth, color, fontFamilyNative, fontSize, height, leadingNative, opacity, radius, space, spaceHalf, trackingNative,
@@ -114,10 +114,8 @@ export function BrandScreen({
                     <Icon name="arrowL" size={space.xl} tint={color.textOnInk} />
                   </Pressable>
                 )}
-                <View style={s.markTile}>
-                  <LogoMark size={height['brand-mark'] * 0.6} fill={color.accent} />
-                </View>
-                <Text style={s.markWord}>apostrophe</Text>
+                <LogoTile size={height['brand-mark']} />
+                <Text style={s.markWord}>lenient</Text>
               </View>
               {!!title && (
                 <View style={s.bandText}>
@@ -264,10 +262,8 @@ export function AuthTop({ onBack, brand = true }: { onBack?: () => void; brand?:
       )}
       {brand && (
         <View style={s.brand}>
-          <View style={s.brandMark}>
-            <LogoMark size={space.lg} fill={color.textInverse} />
-          </View>
-          <Text style={s.brandWord}>apostrophe</Text>
+          <LogoTile size={height['brand-mark']} />
+          <Text style={s.brandWord}>lenient</Text>
         </View>
       )}
     </View>
@@ -864,10 +860,6 @@ const s = StyleSheet.create({
     width: height['header-avatar'], height: height['header-avatar'], borderRadius: radius.pill,
     alignItems: 'center', justifyContent: 'center', backgroundColor: color.onInkGround, marginRight: space.xs,
   },
-  markTile: {
-    width: height['brand-mark'], height: height['brand-mark'], borderRadius: radius.ctl,
-    backgroundColor: color.surface, alignItems: 'center', justifyContent: 'center',
-  },
   markWord: { fontFamily: F.bold, fontSize: fontSize['ui-lg'], letterSpacing: trackingNative['snug-sm'], color: color.textOnInk },
   bandText: { marginTop: spaceHalf['3.5'] },
   bandTitle: {
@@ -937,10 +929,6 @@ const s = StyleSheet.create({
     backgroundColor: color.surface, borderWidth: borderWidth.thin, borderColor: color.border,
   },
   brand: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingRight: spaceHalf['2.5'] },
-  brandMark: {
-    width: height['brand-mark'], height: height['brand-mark'], borderRadius: radius.ctl,
-    backgroundColor: color.accent, alignItems: 'center', justifyContent: 'center',
-  },
   brandWord: { fontFamily: F.bold, fontSize: fontSize['ui-lg'], letterSpacing: trackingNative.snug, color: color.text },
 
   title: {

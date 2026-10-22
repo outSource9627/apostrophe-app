@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lenient Logo Ideas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Instrument+Serif:ital@1&family=Plus+Jakarta+Sans:ital,wght@1,800&family=Fraunces:ital,opsz,wght@1,9..144,600&family=Schibsted+Grotesk:ital,wght@1,800&family=Playfair+Display:ital,wght@1,700;1,900&display=swap" rel="stylesheet">
+<!--
+  Five logo ideas for Lenient (the app's new name; the apostrophe is dropped), 2026-10-16.
+  Brief: an italic mark AND an italic wordmark, and italic letters inside the mark where it has any.
+  Colours are the brand tokens (src/theme/tokens.ts): red #B22222, ink #141414, bg #FCFCFC.
+  Every mark is drawn on a 100×100 grid and slanted 12° (skewX(-12)) so it leans with the type.
+  The wordmarks use real italic cuts from Google Fonts, not a slanted roman.
+  The dot of the i is the accent colour: measured from the font after it loads (placeDots), so it
+  lines up in every face.
+  URL: ?logo=1..5 shows one idea only · ?theme=light|dark sets the page chrome.
+-->
+<style>
+  :root {
+    --page: #F3F3F1; --card: #FFFFFF; --text: #141414; --sub: #5E5E5E; --line: #E5E5E5; --chip: #F1F1EF;
+    --red: #B22222; --ink: #141414; --paper: #FCFCFC;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --page: #0F0F0F; --card: #191919; --text: #F2F2F2; --sub: #A6A6A6; --line: #2B2B2B; --chip: #242424; }
+  }
+  :root[data-theme="dark"] { --page: #0F0F0F; --card: #191919; --text: #F2F2F2; --sub: #A6A6A6; --line: #2B2B2B; --chip: #242424; }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--text); font-family: 'Geist', system-ui, sans-serif; font-size: 15px; line-height: 1.5; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 40px 24px 80px; }
+  h1 { font-size: 30px; line-height: 1.15; margin: 0 0 8px; letter-spacing: -0.02em; font-weight: 600; }
+  .lede { color: var(--sub); margin: 0 0 28px; max-width: 720px; }
+
+  /* Overview strip */
+  .strip { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 36px; }
+  .strip a { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 18px 8px 14px; background: var(--card); border: 1px solid var(--line); border-radius: 18px; color: inherit; text-decoration: none; }
+  .strip a:hover { border-color: var(--red); }
+  .strip .row { display: flex; align-items: flex-end; gap: 10px; }
+  .strip span { font-size: 13px; color: var(--sub); text-align: center; }
+  .strip b { color: var(--text); font-weight: 600; }
+
+  /* One idea */
+  .concept { background: var(--card); border: 1px solid var(--line); border-radius: 22px; padding: 26px; margin-bottom: 28px; scroll-margin-top: 16px; }
+  .c-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; margin-bottom: 18px; }
+  .c-num { font-family: 'Instrument Serif', serif; font-style: italic; font-size: 40px; line-height: 1; color: var(--red); }
+  .c-name { font-size: 22px; font-weight: 600; letter-spacing: -0.01em; }
+  .c-line { color: var(--sub); flex: 1 1 260px; }
+  .chip { font-size: 12.5px; font-weight: 500; color: var(--sub); background: var(--chip); border-radius: 999px; padding: 4px 10px; white-space: nowrap; }
+
+  .g1 { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 12px; }
+  .g2 { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 12px; margin-top: 12px; }
+  .panel { border-radius: 16px; min-height: 230px; display: flex; align-items: center; justify-content: center; padding: 24px 16px; position: relative; overflow: hidden; min-width: 0; }
+  .panel.light { background: var(--paper); border: 1px solid #ECECEC; }
+  .panel.red { background: var(--red); }
+  .panel.ink { background: var(--ink); }
+  .panel .tag { position: absolute; left: 12px; top: 10px; font-size: 12px; font-weight: 500; }
+  .panel.light .tag { color: #8C8C8C; } .panel.red .tag { color: rgba(255,255,255,.7); } .panel.ink .tag { color: rgba(255,255,255,.55); }
+  .panel.sub { background: var(--chip); flex-direction: column; gap: 16px; }
+  .panel.sub .tag { color: var(--sub); }
+
+  .lockup { display: inline-flex; align-items: center; gap: calc(var(--h) * .18); }
+  .lockup.stack { flex-direction: column; gap: calc(var(--h) * .14); }
+  .lockup svg { width: var(--h); height: var(--h); flex: none; overflow: visible; }
+  .word { font-style: italic; line-height: 1; white-space: nowrap; color: var(--wc); }
+  /* The i: its dot takes --dot, its stem the word colour. --split is set per face by placeDots(). */
+  .word .i { display: inline-block; padding: .25em .3em; margin: -.25em -.3em;
+    background: linear-gradient(var(--dot) 0 var(--split, .55em), var(--wc) var(--split, .55em));
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+  .big { --h: clamp(54px, 7.4vw, 92px); }
+  .mid { --h: clamp(40px, 4vw, 52px); }
+
+  .icons { display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap; justify-content: center; }
+  .icon { display: flex; align-items: center; justify-content: center; flex: none; }
+  .icon svg { overflow: visible; }
+  .icon.on-light { box-shadow: inset 0 0 0 1px #E5E5E5; }
+  .tab { display: inline-flex; align-items: center; gap: 8px; background: var(--card); border: 1px solid var(--line); border-radius: 10px 10px 0 0; padding: 7px 14px 7px 10px; font-size: 12.5px; }
+  .tab svg { width: 16px; height: 16px; }
+
+  /* Phones */
+  .phones { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  .phone { width: 150px; height: 290px; border-radius: 24px; border: 5px solid #111; overflow: hidden; position: relative; background: #FCFCFC; flex: none; }
+  .bar { height: 46px; display: flex; align-items: center; justify-content: space-between; padding: 14px 10px 0; border-bottom: 1px solid #EEE; }
+  .bar .lockup { --h: 22px; }
+  .avatar { width: 22px; height: 22px; border-radius: 50%; background: #EDEDED; }
+  .ph-line { height: 8px; border-radius: 4px; background: #EEE; margin: 10px 10px 0; }
+  .ph-card { height: 92px; border-radius: 12px; background: #F1F1F1; margin: 12px 10px 0; }
+  .splash { display: flex; align-items: center; justify-content: center; height: 100%; }
+  .splash .lockup { --h: 26px; gap: 12px; }
+  .splash .lockup svg { width: 58px; height: 58px; }
+  .home { background: linear-gradient(160deg, #3B3B3B, #151515); display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px 6px; align-content: start; padding: 34px 10px 0; }
+  .home .app { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 9.5px; color: #fff; }
+  .home .dummy { width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,.14); }
+
+  .notes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; }
+  .notes div { font-size: 14px; color: var(--sub); }
+  .notes b { display: block; color: var(--text); font-weight: 600; margin-bottom: 2px; font-size: 13px; }
+
+  .foot { color: var(--sub); font-size: 13.5px; margin-top: 8px; }
+  .foot li { margin-bottom: 6px; }
+
+  @media (max-width: 960px) {
+    .g1 { grid-template-columns: 1fr 1fr; }
+    .g2 { grid-template-columns: 1fr 1fr 1fr; }
+    .g1 .panel:first-child, .g2 .panel:first-child { grid-column: 1 / -1; }
+    .strip { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (max-width: 600px) {
+    .wrap { padding: 28px 16px 60px; }
+    .g1, .g2, .notes { grid-template-columns: 1fr; }
+    .strip { grid-template-columns: repeat(2, 1fr); }
+    .concept { padding: 18px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Lenient — 5 logo ideas</h1>
+  <p class="lede">Each idea has an italic mark (slanted 12°, so it leans with the letters) and an italic wordmark. Where a mark has a letter inside, it is italic too. The dot on the <i>i</i> carries the brand colour. Colours are today's red <b>#B22222</b> and ink <b>#141414</b>.</p>
+  <nav class="strip" id="strip"></nav>
+  <main id="concepts"></main>
+  <ul class="foot">
+    <li>Fonts are free Google Fonts with true italic cuts. Before shipping, the chosen wordmark should be converted to SVG paths so the app and web don't need to bundle the font.</li>
+    <li>The marks are drawn shapes on a 100×100 grid, so the picked one can replace <code>LogoMark</code> (src/components/Logo.tsx) and the web logo directly.</li>
+    <li>Link one idea only: <code>?logo=1</code> … <code>?logo=5</code>. Page chrome: <code>?theme=dark</code>.</li>
+  </ul>
+</div>
+
+<script>
+const C = { red: '#B22222', ink: '#141414', paper: '#FCFCFC', white: '#FFFFFF', blush: '#E8B4B4', deep: '#5A1515' };
+const BG = { light: C.paper, red: C.red, ink: C.ink };
+const IT = 'translate(50 50) skewX(-12) translate(-50 -50)';
+const line = (d, col, w, cap = 'round') => `<path d="${d}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="${cap}" stroke-linejoin="round"/>`;
+
+const CONCEPTS = [
+  {
+    n: 1, name: 'Leaning L', line: 'An italic L on a card that leans forward, like a card being swiped.',
+    font: 'Playfair Display Italic', fam: "'Playfair Display', serif", wt: 700, text: 'Lenient', track: '-0.01em', size: .74,
+    iconCtx: 'ink',
+    pal: { light: { main: C.red, second: C.blush, inner: C.white }, red: { main: C.white, second: 'rgba(255,255,255,.35)', inner: C.red }, ink: { main: C.red, second: C.deep, inner: C.white } },
+    mark: p => `
+      <g transform="${IT}">
+        <rect x="25" y="7" width="60" height="78" rx="15" fill="${p.second}"/>
+        <rect x="13" y="13" width="62" height="80" rx="16" fill="${p.main}"/>
+      </g>
+      <text x="43" y="76" text-anchor="middle" font-family="Playfair Display" font-style="italic" font-weight="900" font-size="66" fill="${p.inner}">L</text>`,
+    fit: '"Lenient" starts with "lean" — the card leans forward like a candidate or job card being swiped in the feed. The L inside is Playfair Black Italic.',
+    shines: 'App icon and splash. A clear monogram that works from 108 px down to 16 px.',
+    watch: 'The card behind disappears below 24 px; the front card with the L still reads.',
+  },
+  {
+    n: 2, name: 'Play L', line: 'An L with a play button sitting in its corner.',
+    font: 'Plus Jakarta Sans ExtraBold Italic', fam: "'Plus Jakarta Sans', sans-serif", wt: 800, text: 'lenient', track: '-0.035em', size: .66,
+    iconCtx: 'red',
+    pal: { light: { main: C.red, second: C.ink }, red: { main: C.white, second: C.white }, ink: { main: C.red, second: C.white } },
+    mark: p => `
+      <g transform="${IT}">
+        ${line('M27 14L27 79 83 79', p.main, 17)}
+        <path d="M47 30L47 62 74 46Z" fill="${p.second}" stroke="${p.second}" stroke-width="8" stroke-linejoin="round"/>
+      </g>`,
+    fit: 'Employers watch recorded interviews in the swipe feed. The L holds the play button — "Lenient, where you watch the interview".',
+    shines: 'App icon and the feed — says "video" at once.',
+    watch: 'Play buttons are everywhere; the thick L is what makes it ours, so keep the two parts the same weight.',
+  },
+  {
+    n: 3, name: 'Tick L', line: 'Tip the L back and it becomes a tick.',
+    font: 'Schibsted Grotesk ExtraBold Italic', fam: "'Schibsted Grotesk', sans-serif", wt: 800, text: 'Lenient', track: '-0.03em', size: .64,
+    iconCtx: 'red',
+    pal: { light: { main: C.red }, red: { main: C.white }, ink: { main: C.red } },
+    mark: p => `
+      <g transform="${IT}">
+        ${line('M17 50L38 72 85 25', p.main, 16)}
+      </g>`,
+    fit: 'An L has a right angle; turned 45° it is a tick. Every interview is checked by a real interviewer, and the feed already shows a "Verified interview" tag.',
+    shines: 'Trust: verified badges, scorecards, receipts and offer screens.',
+    watch: 'A tick on its own is a common logo. It leans on the wordmark more than the others.',
+  },
+  {
+    n: 4, name: 'Two Ls', line: 'Two Ls meet and make one frame.',
+    font: 'Fraunces Italic', fam: "'Fraunces', serif", wt: 600, text: 'Lenient', track: '-0.02em', size: .72,
+    iconCtx: 'light',
+    pal: { light: { main: C.red, second: C.ink }, red: { main: C.white, second: C.ink }, ink: { main: C.red, second: C.white } },
+    mark: p => `
+      <g transform="${IT}">
+        ${line('M24 32L24 76 60 76', p.main, 18, 'butt')}
+        ${line('M76 68L76 24 40 24', p.second, 18, 'butt')}
+      </g>`,
+    fit: 'One L is the candidate, the other the interviewer or employer. Together they make a square — the video frame where they meet.',
+    shines: 'Landing page, pitch deck, marketing. Tells the story best.',
+    watch: 'Needs two colours. In one colour the two Ls can read as brackets [ ].',
+  },
+  {
+    n: 5, name: 'Speech L', line: 'Every interview is a conversation.',
+    font: 'Instrument Serif Italic', fam: "'Instrument Serif', serif", wt: 400, text: 'Lenient', track: '0em', size: .92,
+    iconCtx: 'red',
+    pal: { light: { main: C.red, inner: C.white }, red: { main: C.white, inner: C.red }, ink: { main: C.red, inner: C.white } },
+    mark: p => `
+      <g transform="${IT}">
+        <rect x="14" y="12" width="72" height="60" rx="25" fill="${p.main}"/>
+        <path d="M27 60C27 75 22 84 13 91 30 90 43 81 51 67Z" fill="${p.main}"/>
+      </g>
+      <text x="51" y="60" text-anchor="middle" font-family="Instrument Serif" font-style="italic" font-size="54" fill="${p.inner}">L</text>`,
+    fit: 'Interviews, chat and connections are all people talking. The bubble says that; the serif italic L inside makes it ours.',
+    shines: 'Chat, notifications, the app icon.',
+    watch: 'Speech bubbles are common (chat apps). The serif L is what keeps it from looking generic.',
+  },
+];
+
+/* Dot of the i, per background: red on light and dark, ink on red. */
+const DOT = { light: C.red, red: C.ink, ink: C.red };
+
+const svg = (c, ctx, extra = '') => {
+  const p = { ...c.pal[ctx], bg: BG[ctx] };
+  return `<svg viewBox="0 0 100 100" ${extra} aria-hidden="true">${c.mark(p)}</svg>`;
+};
+const word = (c, ctx) => {
+  const k = c.text.indexOf('i');
+  const html = `${c.text.slice(0, k)}<span class="i">i</span>${c.text.slice(k + 1)}`;
+  return `<span class="word" aria-label="${c.text}" style="font-family:${c.fam};font-weight:${c.wt};letter-spacing:${c.track};font-size:calc(var(--h) * ${c.size});--wc:${ctx === 'light' ? C.ink : C.white};--dot:${DOT[ctx]}">${html}</span>`;
+};
+const lockup = (c, ctx, cls = 'big', stack = false) => `
+  <div class="lockup ${cls} ${stack ? 'stack' : ''}">${svg(c, ctx)}${word(c, ctx)}</div>`;
+const icon = (c, size, shape = 'square') => {
+  const ctx = c.iconCtx;
+  const r = shape === 'circle' ? '50%' : `${Math.round(size * .23)}px`;
+  const bg = ctx === 'light' ? C.white : BG[ctx];
+  return `<div class="icon ${ctx === 'light' ? 'on-light' : ''}" style="width:${size}px;height:${size}px;border-radius:${r};background:${bg}">${svg(c, ctx, `width="${Math.round(size * .64)}" height="${Math.round(size * .64)}"`)}</div>`;
+};
+
+const section = c => `
+  <section class="concept" id="c${c.n}">
+    <div class="c-head">
+      <span class="c-num">0${c.n}</span>
+      <span class="c-name">${c.name}</span>
+      <span class="c-line">${c.line}</span>
+      <span class="chip">Wordmark · ${c.font}</span>
+    </div>
+    <div class="g1">
+      <div class="panel light"><span class="tag">Primary</span>${lockup(c, 'light')}</div>
+      <div class="panel red"><span class="tag">On red</span>${lockup(c, 'red', 'mid', true)}</div>
+      <div class="panel ink"><span class="tag">On dark</span>${lockup(c, 'ink', 'mid', true)}</div>
+    </div>
+    <div class="g2">
+      <div class="panel sub"><span class="tag">App icon · 108 / 72 / 48 / 32 · browser tab 16</span>
+        <div class="icons">${icon(c, 108, 'circle')}${icon(c, 72)}${icon(c, 48)}${icon(c, 32)}</div>
+        <div class="tab">${svg(c, 'light')}<span>Lenient</span></div>
+      </div>
+      <div class="panel sub"><span class="tag">App bar</span>
+        <div class="phones">
+          <div class="phone"><div class="bar">${lockup(c, 'light', '')}<span class="avatar"></span></div><div class="ph-line" style="width:60%"></div><div class="ph-card"></div><div class="ph-card"></div></div>
+        </div>
+      </div>
+      <div class="panel sub"><span class="tag">Splash</span>
+        <div class="phones">
+          <div class="phone" style="background:${C.red}"><div class="splash">${lockup(c, 'red', '', true)}</div></div>
+        </div>
+      </div>
+      <div class="panel sub"><span class="tag">Launcher</span>
+        <div class="phones">
+          <div class="phone home">${'<div class="app"><span class="dummy"></span></div>'.repeat(4)}<div class="app">${icon(c, 36, 'circle')}<span>Lenient</span></div>${'<div class="app"><span class="dummy"></span></div>'.repeat(4)}</div>
+        </div>
+      </div>
+    </div>
+    <div class="notes">
+      <div><b>Why it fits the app</b>${c.fit}</div>
+      <div><b>Where it shines</b>${c.shines}</div>
+      <div><b>Watch out</b>${c.watch}</div>
+    </div>
+  </section>`;
+
+const q = new URLSearchParams(location.search);
+const theme = q.get('theme');
+if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme;
+const only = Number(q.get('logo'));
+const shown = CONCEPTS.filter(c => !only || c.n === only);
+
+document.getElementById('strip').innerHTML = CONCEPTS.map(c => `
+  <a href="${only ? `?logo=${c.n}` : `#c${c.n}`}">
+    <div class="row">${icon(c, 64)}${icon(c, 28)}</div>
+    <span><b>${c.n} · ${c.name}</b></span>
+  </a>`).join('');
+document.getElementById('concepts').innerHTML = shown.map(section).join('');
+
+/*
+ * Where the i's dot ends and its stem begins, per face and size. The span is an
+ * inline-block with line-height 1, so its baseline sits at padTop + (size + ascent - descent) / 2.
+ * The cut goes 30% of the way from the x-height (top of a dotless ı) up to the top of the dot.
+ */
+async function placeDots() {
+  try { await document.fonts.ready; } catch (e) {}
+  const cv = document.createElement('canvas').getContext('2d');
+  document.querySelectorAll('.word .i').forEach(el => {
+    const cs = getComputedStyle(el);
+    const fs = parseFloat(cs.fontSize);
+    cv.font = `italic ${cs.fontWeight} ${fs}px ${cs.fontFamily}`;
+    const full = cv.measureText('i'), stem = cv.measureText('ı');
+    const xh = stem.actualBoundingBoxAscent, top = full.actualBoundingBoxAscent;
+    const baseline = parseFloat(cs.paddingTop) + (fs + full.fontBoundingBoxAscent - full.fontBoundingBoxDescent) / 2;
+    el.style.setProperty('--split', `${baseline - (xh + (top - xh) * .3)}px`);
+  });
+}
+placeDots();
+</script>
+</body>
+</html>

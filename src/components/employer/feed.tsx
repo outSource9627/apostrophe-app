@@ -5,12 +5,12 @@ import { borderWidth, color, fontFamilyNative as FF, fontSize, height, leadingNa
 import { text } from '../ui'
 import { Icon } from '../ui/Icon'
 import {
-  FeedCardFrame, FeedCardTop, FeedCount, FeedFilmBar, FeedGlassButton, FeedHud, FeedMeta, FeedPill, FeedPills, FeedShade, FeedTag,
-  FeedTopButton, feedText,
+  FeedCardFrame, FeedCardTop, FeedFilmBar, FeedGlassButton, FeedHud, FeedMeta, FeedMuteBadge, FeedPill, FeedPills, FeedShade,
+  FeedSoundFlash, FeedTag, FeedTapLayer, FeedTopButton, FeedWatchButton, feedText,
 } from '../ui/feed-deck'
 import type { CandidateCard } from '../../lib/api/employerFeed'
 import {
-  experienceLine, interviewDate, joinsLine, nameInitials, salaryLine, shortlistedLine, tierLine,
+  experienceLine, interviewDateShort, joinsLine, nameInitials, salaryLine, shortlistedLine, tierLine,
 } from '../../lib/employer/candidateFormat'
 import { EmIconButton } from './em'
 
@@ -20,17 +20,20 @@ import { EmIconButton } from './em'
  * the video card. The stamps, the four round buttons, the toast and the
  * loading card are the shared feed pieces (components/ui/feed-deck). The bar
  * and the chips are drawn on ink while a card is up (`dark`) and on the page
- * for the lock, limit, caught-up and error states.
+ * for the lock, limit, caught-up and error states. The bar opens with a back
+ * button, and everything starts on the card's 16 px line
+ * (docs/feed-room-mockups.html · feed A).
  * Tokens only; every fact is the API's, and one it did not send is left off.
  */
 
 // ── the bar ──────────────────────────────────────────────────────────────────
 export function FeedTop({
-  filterCount, locked, dark, onSaved, onFilters,
-}: { filterCount: number; locked?: boolean; dark?: boolean; onSaved: () => void; onFilters: () => void }) {
+  filterCount, locked, dark, onBack, onSaved, onFilters,
+}: { filterCount: number; locked?: boolean; dark?: boolean; onBack: () => void; onSaved: () => void; onFilters: () => void }) {
   if (dark) {
     return (
       <View style={styles.top}>
+        <FeedTopButton icon="chevL" label="Back" dark onPress={onBack} />
         <Text style={[text.displaySm, styles.onInk, styles.grow]} accessibilityRole="header">Feed</Text>
         <View style={styles.topDarkBtns}>
           <FeedTopButton icon="bookmark" label="Saved searches" dark disabled={locked} onPress={onSaved} />
@@ -41,6 +44,7 @@ export function FeedTop({
   }
   return (
     <View style={styles.top}>
+      <FeedTopButton icon="chevL" label="Back" dark={false} onPress={onBack} />
       <Text style={[text.displaySm, styles.grow]} accessibilityRole="header">Feed</Text>
       <View style={locked && styles.dim}>
         <EmIconButton name="bookmark" label="Saved searches" tint={color.textSecondary} onPress={onSaved} disabled={locked} />
@@ -111,21 +115,21 @@ export function FeedChips({
  * One candidate as a video feed card (docs/tinder-feed-mockups.html · design 1,
  * employer mode): the verified-interview film fills the card (muted, looping),
  * the poster stays over it until its first frame is ready, and the film's
- * progress runs across the top. On top: the verified tag, the day's position,
- * Full and the sound toggle. At the foot: the face and name (a tap opens the
- * profile), the headline, Expected / Joins in pink, the skills, and where /
- * how long / how many shortlisted. The four round buttons are the screen's,
- * fixed over the foot. `active` is false for the card waiting behind, which
- * draws its poster and plays nothing.
+ * progress runs across the top. On top: the verified tag and "Watch full
+ * interview" (docs/feed-room-mockups.html · Watch 3). A tap on the film turns the
+ * sound on or off (Instagram style: a flash in the middle, a badge above the
+ * name). At the foot: the face and name (a tap opens the profile), the
+ * headline, Expected / Joins in pink, the skills, and where / how long / how
+ * many shortlisted. The four round buttons are the screen's, fixed over the
+ * foot. `active` is false for the card waiting behind, which draws its poster
+ * and plays nothing.
  */
 export const DeckCard = memo(function DeckCardView({
-  card, active, muted, position, fullBlocked, onToggleMute, onOpenFull, onOpenProfile, onStreamFail, stamps,
+  card, active, muted, fullBlocked, onToggleMute, onOpenFull, onOpenProfile, onStreamFail, stamps,
 }: {
   card: CandidateCard
   active: boolean
   muted: boolean
-  /** “13 / 40” — the day's position. */
-  position?: string | null
   fullBlocked?: boolean
   onToggleMute?: () => void
   onOpenFull?: () => void
@@ -136,15 +140,21 @@ export const DeckCard = memo(function DeckCardView({
 }) {
   const [failed, setFailed] = useState<string | null>(null)
   const [ready, setReady] = useState<string | null>(null)
+  /** Bumped by each sound tap; keys the flash so every tap replays it. */
+  const [flash, setFlash] = useState(0)
   const progress = useRef(new Animated.Value(0)).current
   const playing = active && !!card.streamUrl && failed !== card.streamUrl
   const shown = playing && ready === card.streamUrl
   const poster = card.posterUrl ?? card.photoUrl
-  const date = card.verifiedInterview?.verified ? interviewDate(card.verifiedInterview.at) : null
+  const date = card.verifiedInterview?.verified ? interviewDateShort(card.verifiedInterview.at) : null
   const headline = card.headline || tierLine(card.tier, card.qualification)
   const meta = [card.city, experienceLine(card.experienceYears), shortlistedLine(card.shortlistCount)].filter(Boolean).join(' · ')
   const salary = salaryLine(card.expectedSalary)
   const joins = joinsLine(card.availability)
+  const toggleSound = () => {
+    onToggleMute?.()
+    setFlash((n) => n + 1)
+  }
 
   return (
     <FeedCardFrame>
@@ -175,23 +185,20 @@ export const DeckCard = memo(function DeckCardView({
         : <View style={styles.initialsWrap}><Text style={[text.displayPoster, styles.initials]}>{nameInitials(card.name)}</Text></View>)}
       <FeedShade />
       {playing && <FeedFilmBar progress={progress} />}
+      {playing && <FeedTapLayer muted={muted} onPress={toggleSound} />}
+      {playing && flash > 0 && <FeedSoundFlash key={flash} muted={muted} />}
 
       <FeedCardTop
-        left={<FeedTag label={date ? `Verified interview · ${date}` : card.hasVideo ? 'Interview film' : 'Candidate'} />}
-        right={
-          <>
-            {!!position && <FeedCount label={position} />}
-            {card.hasVideo && !fullBlocked && !!onOpenFull && (
-              <FeedGlassButton icon="max" label={`Watch ${card.name}’s full interview`} onPress={onOpenFull} />
-            )}
-            {playing && <FeedGlassButton icon={muted ? 'mute' : 'sound'} label={muted ? 'Turn the sound on' : 'Mute'} onPress={onToggleMute} />}
-          </>
-        }
+        left={<FeedTag label={date ? `Verified · ${date}` : card.hasVideo ? 'Interview film' : 'Candidate'} />}
+        right={card.hasVideo && !fullBlocked && !!onOpenFull
+          ? <FeedWatchButton label="Watch full interview" a11y={`Watch ${card.name}’s full interview`} onPress={onOpenFull} />
+          : null}
       />
 
       {stamps}
 
       <FeedHud>
+        {playing && <FeedMuteBadge muted={muted} onPress={toggleSound} />}
         <View style={styles.who}>
           <Pressable accessibilityRole="button" accessibilityLabel={`${card.name}, open profile`} onPress={onOpenProfile} style={styles.whoTap}>
             {card.photoUrl ? (
@@ -267,8 +274,8 @@ const styles = StyleSheet.create({
   onInkSubtle: { color: color.textOnInkSubtle },
   onInkAccent: { color: color.accentMuted },
 
-  top: { minHeight: height['screen-header'] - 2, flexDirection: 'row', alignItems: 'center', gap: space.xs, paddingLeft: space.xl, paddingRight: spaceHalf['2.5'] },
-  topDarkBtns: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingRight: space.xs },
+  top: { minHeight: height['screen-header'] - 2, flexDirection: 'row', alignItems: 'center', gap: spaceHalf['2.5'], paddingHorizontal: space.lg },
+  topDarkBtns: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   filterBtn: { width: height['control-xs'] - 2, height: height['control-xs'] - 2, borderRadius: radius.pill, backgroundColor: color.ink, alignItems: 'center', justifyContent: 'center', marginLeft: space.xs },
   filterBadge: {
     position: 'absolute', top: -space.xs, right: -space.xs, minWidth: space.lg + 1, height: space.lg + 1, paddingHorizontal: space.xs,

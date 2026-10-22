@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useRef } from 'react'
 import {
   ActivityIndicator, Animated, Image, Modal, Pressable, ScrollView, StyleSheet, Text, View, type StyleProp, type ViewStyle,
 } from 'react-native'
@@ -13,11 +13,18 @@ import { Icon, type IconName } from './Icon'
  * The video feed, shared by the student job feed and the employer candidate
  * feed (docs/tinder-feed-mockups.html · design 1).
  *
- * One dark card runs from under the top bar to just above the tab bar. The
- * film fills it under a shade; a glass tag and the sound button sit on top;
- * the facts sit at the foot; and the four round buttons — Undo, Pass,
- * Save/Shortlist, Apply/Interest — are fixed over the foot of the card, so
- * they stay put while the card is dragged away and the next one rises.
+ * One dark card runs from under the top bar to just above the tab bar, edge to
+ * edge (docs/feed-room-mockups.html · feed A): nothing sits in a side margin,
+ * and everything on and off the card starts on the same 16 px line. The film
+ * fills it under a shade; the glass tag (and, for a candidate, the Watch full
+ * interview pill) sit on top; the facts sit at the foot; and the four round
+ * buttons — Undo, Pass, Save/Shortlist, Apply/Interest — are fixed over the
+ * foot of the card, so they stay put while the card is dragged away and the
+ * next one rises.
+ *
+ * Sound works as on Instagram: a tap anywhere on the film (`FeedTapLayer`)
+ * turns it on or off, `FeedSoundFlash` shows the new state in the middle for a
+ * moment, and `FeedMuteBadge` keeps showing it just above the facts.
  *
  * The card has no bottom edge: from about halfway down it fades into the same
  * black as the page and the tab bar under it, and the facts and the buttons sit
@@ -99,11 +106,75 @@ export function FeedTag({ label }: { label: string }) {
   )
 }
 
-/** A small glass count over the film ("13 / 40"). */
-export function FeedCount({ label }: { label: string }) {
+/**
+ * "Watch full interview" (docs/feed-room-mockups.html · Watch 3, frosted pill):
+ * a white play disc and the label in a light glass pill at the card's top-right.
+ * React Native has no backdrop blur here, so the "frost" is the translucent
+ * white alone.
+ */
+export function FeedWatchButton({ label, a11y, onPress }: { label: string; a11y?: string; onPress: () => void }) {
   return (
-    <View style={styles.tag}>
-      <Text style={styles.tagText}>{label}</Text>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={a11y ?? label}
+      onPress={onPress}
+      hitSlop={space.xs}
+      style={({ pressed }) => [styles.watch, pressed && styles.nudge]}
+    >
+      <View style={styles.watchDisc}>
+        <Icon name="playR" size={space.md + 2} tint={color.ink} fill={color.ink} weight={1} />
+      </View>
+      <Text style={styles.watchText} numberOfLines={1}>{label}</Text>
+    </Pressable>
+  )
+}
+
+/** The whole film is the sound switch: under the tag row and the facts, so their own taps still win. */
+export function FeedTapLayer({ muted, onPress }: { muted: boolean; onPress: () => void }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={muted ? 'Turn the sound on' : 'Mute'}
+      onPress={onPress}
+      style={styles.tapLayer}
+    />
+  )
+}
+
+/** The small sound mark that stays just above the facts; a tap on it does what a tap on the film does. */
+export function FeedMuteBadge({ muted, onPress }: { muted: boolean; onPress: () => void }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={muted ? 'Turn the sound on' : 'Mute'}
+      onPress={onPress}
+      hitSlop={space.sm}
+      style={({ pressed }) => [styles.muteBadge, pressed && styles.pressed]}
+    >
+      <Icon name={muted ? 'mute' : 'sound'} size={space.lg - 1} tint={color.textOnInk} weight={2} />
+    </Pressable>
+  )
+}
+
+/**
+ * The big sound mark that flashes in the middle of the film after a tap, then
+ * fades. Mount it with a new `key` per tap; `muted` is the state just switched to.
+ */
+export function FeedSoundFlash({ muted }: { muted: boolean }) {
+  const a = useRef(new Animated.Value(0)).current
+  useEffect(() => {
+    Animated.sequence([
+      Animated.timing(a, { toValue: 1, duration: 130, useNativeDriver: true }),
+      Animated.delay(420),
+      Animated.timing(a, { toValue: 0, duration: 300, useNativeDriver: true }),
+    ]).start()
+  }, [a])
+  const scale = a.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1] })
+  return (
+    <View style={styles.flashWrap} pointerEvents="none">
+      <Animated.View style={[styles.flash, { opacity: a, transform: [{ scale }] }]}>
+        <Icon name={muted ? 'mute' : 'sound'} size={height['feed-glass']} tint={color.textOnInk} weight={2} />
+      </Animated.View>
     </View>
   )
 }
@@ -520,17 +591,18 @@ const styles = StyleSheet.create({
   pressed: { opacity: opacity.pressed },
   off: { opacity: opacity.disabled },
   squeeze: { transform: [{ scale: 0.92 }] },
+  nudge: { transform: [{ scale: 0.96 }] },
 
-  card: { flex: 1, borderTopLeftRadius: radius.feed, borderTopRightRadius: radius.feed, overflow: 'hidden', backgroundColor: color.inkDeep },
+  card: { flex: 1, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, overflow: 'hidden', backgroundColor: color.inkDeep },
   skeleton: { alignItems: 'center', justifyContent: 'center' },
 
   filmTrack: {
-    position: 'absolute', top: spaceHalf['2.5'], left: spaceHalf['3.5'], right: spaceHalf['3.5'], zIndex: 2,
+    position: 'absolute', top: spaceHalf['2.5'], left: space.lg, right: space.lg, zIndex: 2,
     height: height['film-progress'], borderRadius: radius.bar, backgroundColor: color.onInkLevel, overflow: 'hidden',
   },
   filmFill: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: color.textOnInk, transformOrigin: 'left' },
 
-  cardTop: { position: 'absolute', top: space.xl, left: spaceHalf['3.5'], right: spaceHalf['3.5'], zIndex: 2, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.sm },
+  cardTop: { position: 'absolute', top: space.xl, left: space.lg, right: space.lg, zIndex: 2, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.sm },
   cardTopLeft: { flexShrink: 1, flexDirection: 'row', alignItems: 'center' },
   cardTopRight: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   tag: {
@@ -540,6 +612,23 @@ const styles = StyleSheet.create({
   },
   tagDot: { width: space.sm, height: space.sm, borderRadius: radius.pill, backgroundColor: color.feedLike },
   tagText: { flexShrink: 1, fontFamily: FF.bodySemiBold, fontSize: fontSize['ui-xs'], lineHeight: leadingNative['ui-xs'], color: color.textOnInk, fontVariant: ['tabular-nums'] },
+
+  watch: {
+    flexDirection: 'row', alignItems: 'center', gap: space.sm, height: height['feed-top'], paddingLeft: space.xs, paddingRight: spaceHalf['3.5'],
+    borderRadius: radius.pill, backgroundColor: color.onInkPlay, borderWidth: borderWidth.thin, borderColor: color.onInkOutline,
+  },
+  watchDisc: { width: height['chip-sm'], height: height['chip-sm'], borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', backgroundColor: color.textOnInk },
+  watchText: { fontFamily: FF.bodySemiBold, fontSize: fontSize['ui-sm'], lineHeight: leadingNative['ui-sm'], color: color.textOnInk },
+  tapLayer: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1 },
+  muteBadge: {
+    alignSelf: 'flex-end', width: height['chip-sm'], height: height['chip-sm'], borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: color.onInkGlass, borderWidth: borderWidth.thin, borderColor: color.onInkEdge, marginBottom: space['2xs'],
+  },
+  flashWrap: { position: 'absolute', top: '36%', left: 0, right: 0, alignItems: 'center', zIndex: 3 },
+  flash: {
+    width: height['feed-action'] + space.lg, height: height['feed-action'] + space.lg, marginTop: -(height['feed-action'] + space.lg) / 2,
+    borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', backgroundColor: color.onInkGlass,
+  },
 
   glass: { width: height['feed-glass'], height: height['feed-glass'], borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', borderWidth: borderWidth.thin },
   glassInk: { backgroundColor: color.onInkGlass, borderColor: color.onInkEdge },
@@ -569,7 +658,7 @@ const styles = StyleSheet.create({
   roundLg: { width: height['feed-action'], height: height['feed-action'] },
 
   toast: {
-    position: 'absolute', top: FEED_TOAST_TOP, left: space.md, right: space.md, zIndex: 5,
+    position: 'absolute', top: FEED_TOAST_TOP, left: space.lg, right: space.lg, zIndex: 5,
     flexDirection: 'row', alignItems: 'center', gap: space.md,
     paddingVertical: spaceHalf['2.5'], paddingLeft: space.lg, paddingRight: space.md,
     borderRadius: radius.panel, backgroundColor: color.inkRaised, borderWidth: borderWidth.thin, borderColor: color.onInkEdge,

@@ -363,3 +363,12 @@ Picked by the product owner from `docs/label-font-mockups.html` (A · Geist), `d
 - **Registration (C):** violet brand band + white form sheet (`src/components/auth/kit.tsx`). Student sign-up asks for a password (email therefore required), city from `/config`, tier prices/lengths only from `/config`, no Google button; the code screen reads length, expiry, resend and limits from `/config`.
 - **Late join:** `src/lib/interviews/late.ts` + `LateJoin.tsx`. On every Join card: "Late · N min", a negative timer, "join closes in", the other side's presence; red fill from the admin's `booking.lateRedMinutes`. The made-up "Your interviewer is in the room, waiting" banner is gone.
 - **Not verified on a device.** tsc clean, eslint 0 errors, jest 86/86 (App.test.tsx vision-camera failure as before).
+
+## Feed polish 2026-10-15 — shared with the employer feed (`docs/feed-room-mockups.html` · feed A)
+
+The user asked for the employer feed changes on the Jobs feed too, through the shared feed-deck pieces:
+- **Edges:** the card runs edge to edge (top corners `radius.xl`), with one 16 px line for the bar, the progress, the tag and the facts. Empty and error states keep their inset.
+- **Back:** a round ‹ opens the bar (`onBack`, i.e. `navigation.goBack()`). The three tabs now share the remaining width (`flex: 1`), so Back, the tabs, Filters and Chats fit on a 360 dp phone.
+- **Sound:** tap the film to toggle it. The flash shows in the middle, and the badge above the facts shows the state; the top-right sound button is gone.
+- The "Watch full interview" pill and the daily-card limit are employer only.
+- **Not verified on a device.**

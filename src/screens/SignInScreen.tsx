@@ -175,7 +175,7 @@ export function SignInScreen({ onSignedIn, onBack, onRegister, onForgot, onJoinU
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         <View style={styles.titleGap} />
         <AuthTitle>Welcome back</AuthTitle>
-        <AuthSub>Log in to your Apostrophe account.</AuthSub>
+        <AuthSub>Log in to your Lenient account.</AuthSub>
 
         <AuthSeg
           options={['Mobile OTP', 'Email & password'] as const}
@@ -197,7 +197,7 @@ export function SignInScreen({ onSignedIn, onBack, onRegister, onForgot, onJoinU
               }
               actionLabel={banner.type === 'SUSPENDED' ? 'Write to support' : undefined}
               onAction={
-                banner.type === 'SUSPENDED' ? () => Linking.openURL('mailto:support@apostrophe.work') : undefined
+                banner.type === 'SUSPENDED' ? () => Linking.openURL('mailto:support@lenient.in') : undefined
               }
             >
               {banner.message}
@@ -278,7 +278,7 @@ export function SignInScreen({ onSignedIn, onBack, onRegister, onForgot, onJoinU
       </ScrollView>
 
       <BottomBar insetBottom={insets.bottom + 14}>
-        <Swap lead="New to Apostrophe?" action="Create account" onPress={onRegister} />
+        <Swap lead="New to Lenient?" action="Create account" onPress={onRegister} />
       </BottomBar>
     </KeyboardAvoidingView>
   )

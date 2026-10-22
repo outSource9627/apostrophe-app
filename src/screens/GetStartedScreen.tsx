@@ -36,7 +36,7 @@ export function GetStartedScreen({ onBack, onContinue, onSignIn, onJoinUs }: Pro
 
       <ScrollView contentContainerStyle={styles.scroll}>
         <View style={styles.gap} />
-        <AuthTitle>How will you{'\n'}use Apostrophe?</AuthTitle>
+        <AuthTitle>How will you{'\n'}use Lenient?</AuthTitle>
         <AuthSub>Pick one. You can log in with another account any time.</AuthSub>
 
         <View style={styles.options}>

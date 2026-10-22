@@ -15,7 +15,7 @@ import {
 import { fetchShortlist } from '../../lib/api/employerShortlist'
 import { fetchEmployerInterests, liveInterestOutcome } from '../../lib/api/employerInterests'
 import { fetchEmployerJobs } from '../../lib/api/employerJobs'
-import { fetchFeedFilters, listSavedSearches } from '../../lib/api/employerFeed'
+import { fetchFeedFilters, isLimited, listSavedSearches } from '../../lib/api/employerFeed'
 import { getEmployerThreads } from '../../lib/api/employerChat'
 import type { NotificationRow } from '../../lib/api/account'
 import { useChatUnread } from '../../lib/employer/useNavCounts'
@@ -262,8 +262,10 @@ function VerifiedHome({ state, onFeed }: { state: EmployerMe; onFeed?: () => voi
   const deck = useFeedDeck()
   const [now] = useState(() => Date.now())
   const approvedAt = state.verification.approvedAt ?? state.verification.reviewedAt
-  const cards = deck.quota ?? state.limits?.cards ?? null
-  const plays = state.limits?.videoPlays ?? null
+  // A limit the admin switched off has nothing to count down: no meter, never "spent".
+  const cardQuota = deck.quota ?? state.limits?.cards ?? null
+  const cards = isLimited(cardQuota) ? cardQuota : null
+  const plays = isLimited(state.limits?.videoPlays) ? state.limits!.videoPlays : null
   const cardsLeft = cards ? cards.remaining : null
 
   // The feed's first cards, read once for Home and the Feed together.

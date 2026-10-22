@@ -68,7 +68,7 @@ export function DataRightsScreen({ onBack }: { onBack: () => void }) {
             <View style={styles.card}>
               <View style={styles.pillRow}><StatusPill tone="info" label="Ready" /></View>
               <View style={styles.fileRow}>
-                <Text style={styles.fileName}>{`apostrophe-export-${fmtISODate(readyExport.readyAt ?? readyExport.requestedAt)}.zip`}</Text>
+                <Text style={styles.fileName}>{`lenient-export-${fmtISODate(readyExport.readyAt ?? readyExport.requestedAt)}.zip`}</Text>
                 <Text style={styles.meta}>{fmtSize(readyExport.sizeBytes)}</Text>
               </View>
               <Pressable

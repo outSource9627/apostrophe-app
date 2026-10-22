@@ -153,3 +153,34 @@ The user compared four room directions (`docs/interviewer-room-mockups.html`) an
 - **Apply C:** brand band, +91 on mobile, CV limit from `/config`, success screen with the three next steps.
 - **Late join:** Home next-session card, Interviews rows, detail and the room lobby show "{name} not in yet · N min late" / your own lateness with a negative timer and the red fill. The room now sends `issuedAt` with LEAVE so a stale leave is ignored.
 - **Not verified on a device.**
+
+## Live room — full-screen + half sheet (2026-10-15)
+
+The owner picked **Room sheet A · Half sheet** and **Script: own button (3 buttons)** in `docs/feed-room-mockups.html` (§3, `?room=A&script=button`). `InterviewerRoomScreen.tsx` was rebuilt to it; the web room is unchanged.
+
+- **Layout:** the candidate fills the whole screen (no more 55.5% band). REC and the clock, your self tile under the clock, the bands and the "has left" scrim are where they were. A soft shade (`color.inkDeep`, the mockup's `.rshade`: 0.45 → 0 over the top 14%, clear to 58%, 0.72 at 78%, 0.9 at the foot) keeps the controls readable on any picture.
+- **Bottom column** (over the video, above `insets.bottom`): the candidate's name tag (live only) → the dock (Mute · Camera · Flag/Sound · End/Leave, same round controls, no background) → three glass buttons, 48 tall, 10 apart, 16 from the edges:
+  - **Script n/m** (`list` icon), only when the interview has prompts.
+  - **Notes** (`note` icon), with a 7 px dot: green (`successOnInk`) once saved, orange-red (`dangerOnInk`) when a save failed, none otherwise.
+  - **Profile** (`user` icon).
+- **Lobby:** your camera preview fills the screen; the waiting card (late-join band, setup checks) sits in the bottom column above the dock. The three buttons work before the start, as Notes and Profile did.
+- **Sheet:** an in-screen view, not a Modal, with no scrim, so the candidate stays clear and live above it. White, 24 top radius, grab handle, then a Script · Notes · Profile switch (Script only with prompts) and a round ✕. Switching tabs keeps it open. It rests at 42% from the top (about 58% of the screen). The body is the old panel: Script (Ask next, Opening, Up next, Asked, Closing), Notes (status line, `+ mm:ss`, the field) and Profile (person, facts, skills, résumé). The logic is unchanged: debounced notes save, asked prompts in AsyncStorage, skip, flag stamps, `notesMaxChars` from `/config`.
+- **Drag:** the handle and the head row drag the sheet (taps on the switch and ✕ still work). Up stretches it to just under REC and the clock. Down goes from full to half, and from half closes it. A drag of 44 or a flick moves to the next stop; anything less springs back.
+- **Keyboard:** the sheet sits on top of the keyboard and its top moves to 25% of the screen, so the candidate keeps a band at the top. The overlap is worked out from the keyboard's `screenY` and the screen's own frame, as `KeyboardAvoidingView` does. That works whether `adjustResize` shrinks the window or not (`edgeToEdgeEnabled=true` usually means it does not). On a short screen the sheet keeps at least about 260 (its head plus a few lines). The Notes field fills the sheet and scrolls inside itself, so the caret stays above the keyboard.
+- **Back:** hardware back closes the sheet first (the system closes the keyboard before that). Then, live, it opens the End sheet as before.
+- **Unchanged:** the End sheet, the refused/ended overlays, `useInterviewerRoom`, the late-join band, Flag, timers and warnings.
+- **Deviations from the mockup:**
+  - The sheet's upward shadow (`0 -10px 30px`) has no token. It uses `shadow.modal`, which falls mostly below the sheet, so hardly any shadow shows over the video.
+  - The buttons use `onInkGround` (0.12) without the mockup's backdrop blur, which RN does not have.
+  - The foot sits `insets.bottom + 20` above the bottom of the screen (the mockup has 22 and no nav bar).
+  - The mockup's hint "Flag in the dock drops a [mm:ss] stamp here too." shows only live, with the keyboard down.
+  - The Notes field shows the mockup's focus ring (accent border + `shadow.focus`).
+  - Pulled up fully, the sheet covers your self tile. The mockup only says REC and the clock stay visible.
+- **Not verified:** not run on a device or emulator (none connected). Untested:
+  - The drag feel and snap thresholds.
+  - The keyboard overlap on a real edge-to-edge Android, including `screenY` from `getWindowVisibleDisplayFrame`.
+  - That the white sheet covers the `zOrderMediaOverlay` self tile.
+  - How the JS-driven `top` animation performs on a low-end phone.
+  - Whether `boxShadow` renders on the sheet and the focus ring.
+
+  On a 360 dp-wide phone, a long count (for example `10/12`) may shorten the Script label to "Scri…". `tsc --noEmit`, eslint and the raw-value check pass for this file.

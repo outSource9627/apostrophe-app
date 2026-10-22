@@ -6,7 +6,15 @@ export interface QuotaView {
   remaining: number
   /** ISO date string of the next IST midnight. */
   resetAt: string
+  /**
+   * False when the admin has switched this daily limit off: nothing is refused,
+   * and `limit` / `remaining` mean nothing to show. Missing from older servers.
+   */
+  limited?: boolean
 }
+
+/** Whether a daily allowance is enforced — a server that sends no flag still enforces it. */
+export const isLimited = (q: QuotaView | null | undefined): q is QuotaView => !!q && q.limited !== false
 
 export interface EmployerLimitsView {
   cards: QuotaView
