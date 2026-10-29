@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import { ActivityIndicator, FlatList, Linking, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, BackHandler, FlatList, Linking, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native'
 import { useIsFocused, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { borderWidth, color, height, opacity, radius, space, spaceHalf } from '../../theme'
@@ -21,7 +21,7 @@ import { linkableJobs, useEmployerJobRefs } from '../../lib/employer/useLinkable
 import { useShortlistConfig } from '../../lib/employer/useShortlistConfig'
 import { useEmployer } from '../../lib/employer/useEmployer'
 import { useCandidateDocument } from '../../lib/employer/useCandidateDocument'
-import { SendInterestSheet } from './SendInterestModal'
+import { SendInterestSheet, type InterestCandidate } from './SendInterestModal'
 import { ShortlistEntrySheet } from './ShortlistEntryModal'
 import type { RootStackParamList } from '../../../App'
 
@@ -58,6 +58,28 @@ function interestSlot(interest: EmployerInterestRow | null, cooldownDays: number
   return next && next.getTime() > now.getTime() ? { kind: 'status', label: INTEREST_OUTCOME_LABEL.NOT_ACCEPTED } : { kind: 'send' }
 }
 
+/**
+ * Why a row can't take an Interest right now — the card's own words — or null
+ * when it can (mass · 2). The server checks again when it sends.
+ */
+function blockedReason(row: ShortlistRow, slot: Slot): string | null {
+  if (!row.available) return 'No longer on Lenient'
+  if (slot.kind === 'chat') return 'Connected · in your chats'
+  if (slot.kind === 'status') return slot.label
+  return null
+}
+
+/** What the Send Interest sheet draws of a shortlist row. */
+const toCandidate = (r: ShortlistRow): InterestCandidate => ({
+  id: r.candidateId,
+  name: r.name,
+  photoUrl: r.photoUrl,
+  tier: r.tier,
+  qualification: r.qualification,
+  city: r.city,
+  verified: r.verifiedInterview.verified,
+})
+
 const time = (iso: string | null) => (iso ? new Date(iso).getTime() || 0 : 0)
 const byAdded = (a: ShortlistRow, b: ShortlistRow) => time(b.savedAt) - time(a.savedAt)
 
@@ -84,6 +106,11 @@ function metaLine(row: ShortlistRow): string {
  * interview), the name and facts, the saved day, the note in its amber well,
  * the tags and the linked job, then remove, notes/tags/job (S2) and the
  * Interest action. S3 is the empty shortlist.
+ *
+ * Select mode (docs/feed-shortlist-forms-mockups.html · mass): "Select" in the
+ * bar, or a long-press on a card, turns the cards into ticked rows; a row that
+ * can't take an Interest now says why and can't be ticked. The band over the
+ * tabs sends one Interest to everyone ticked, with no cap on how many.
  */
 export function EmployerShortlistScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
@@ -110,6 +137,10 @@ export function EmployerShortlistScreen() {
   const [removeBusy, setRemoveBusy] = useState(false)
   const [now, setNow] = useState(() => new Date())
   const docs = useCandidateDocument()
+  // Mass Send Interest: select mode, the ticked rows (shortlist ids), and who the open batch sheet is sending to.
+  const [selecting, setSelecting] = useState(false)
+  const [selected, setSelected] = useState<Set<string>>(() => new Set())
+  const [batchFor, setBatchFor] = useState<InterestCandidate[] | null>(null)
 
   /** Reads the list and the Interests; resolves to the error it showed, if any. */
   const load = useCallback(async (): Promise<string | null> => {
@@ -138,6 +169,17 @@ export function EmployerShortlistScreen() {
     const t = setTimeout(() => setNotice(null), TOAST_MS)
     return () => clearTimeout(t)
   }, [notice])
+
+  // Android back leaves select mode before it leaves the tab.
+  useEffect(() => {
+    if (!selecting || !focused) return
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      setSelecting(false)
+      setSelected(new Set())
+      return true
+    })
+    return () => sub.remove()
+  }, [selecting, focused])
 
   const jobTitle = useCallback((id: string | null) => (id ? allJobs?.find((j) => j.id === id)?.title ?? null : null), [allJobs])
 
@@ -212,8 +254,34 @@ export function EmployerShortlistScreen() {
     })
   }
 
+  const slotOf = (r: ShortlistRow) => interestSlot(interests?.get(r.candidateId) ?? null, cfg.interestCooldownDays, now)
+  // Who in the list can take an Interest now; only they can be ticked, and only they are sent to.
+  const eligible = shown.filter((r) => blockedReason(r, slotOf(r)) === null)
+  const picked = eligible.filter((r) => selected.has(r.id))
+  const blocked = shown.length - eligible.length
+
+  function startSelect(row?: ShortlistRow) {
+    setSelecting(true)
+    if (row && blockedReason(row, slotOf(row)) === null) setSelected(new Set([row.id]))
+  }
+
+  function endSelect() {
+    setSelecting(false)
+    setSelected(new Set())
+  }
+
+  function toggle(row: ShortlistRow) {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(row.id)) next.delete(row.id)
+      else next.add(row.id)
+      return next
+    })
+  }
+
   const total = rows?.length ?? 0
   const empty = rows !== null && total === 0 && !error
+  const inSelect = selecting && !empty
 
   let body: React.ReactNode
   if (rows === null && !error) {
@@ -261,10 +329,13 @@ export function EmployerShortlistScreen() {
             </StudioState>
           </View>
         }
-        renderItem={({ item }) => (
+        extraData={selected}
+        renderItem={({ item }) => inSelect ? (
+          <SelectRow row={item} on={selected.has(item.id)} reason={blockedReason(item, slotOf(item))} onToggle={() => toggle(item)} />
+        ) : (
           <ShortlistCard
             row={item}
-            slot={interestSlot(interests?.get(item.candidateId) ?? null, cfg.interestCooldownDays, now)}
+            slot={slotOf(item)}
             jobTitle={jobTitle(item.jobId)}
             onPlay={() => navigation.navigate('CandidateVideo', { id: item.candidateId, name: item.name, photoUrl: item.photoUrl, interviewAt: item.verifiedInterview.at })}
             onProfile={() => navigation.navigate('CandidateProfile', { id: item.candidateId })}
@@ -275,6 +346,7 @@ export function EmployerShortlistScreen() {
             opening={!!item.resume && docs.opening === item.resume.id}
             onResume={() => { openResume(item) }}
             onInterest={() => setInterestFor(item)}
+            onSelect={() => startSelect(item)}
             onChat={() => {
               const threadId = interests?.get(item.candidateId)?.threadId
               if (threadId) navigation.navigate('EmployerThread', { id: threadId })
@@ -287,15 +359,71 @@ export function EmployerShortlistScreen() {
   }
 
   return (
-    <EmployerShell title="Shortlist" big={false} bar={empty} scroll={false}>
-      {!empty && (
+    <EmployerShell
+      title="Shortlist"
+      big={false}
+      bar={empty}
+      scroll={false}
+      footerStack
+      footer={
+        inSelect ? (
+          // mass · 2: who can't be sent to, then the one action, over the tabs.
+          <>
+            {blocked > 0 && (
+              <Text style={[text.uiXs, styles.muted, styles.center]}>{`${blocked} can’t take an Interest right now`}</Text>
+            )}
+            <Button
+              variant="primary"
+              size="block"
+              full
+              icon="heart"
+              label={`Send Interest to ${picked.length}`}
+              disabled={picked.length === 0}
+              onPress={() => setBatchFor(picked.map(toCandidate))}
+            />
+          </>
+        ) : undefined
+      }
+    >
+      {inSelect && (
+        // mass · 2's bar: leave, how many are ticked, and Select all (everyone who can take one).
+        <View style={[styles.bar, styles.selectBar]}>
+          <View style={styles.leave}>
+            <EmIconButton name="x" label="Leave select mode" size={height['chip-lg']} tint={color.textSecondary} onPress={endSelect} />
+          </View>
+          <Text style={[text.displayXs, styles.grow]} numberOfLines={1} accessibilityRole="header">{`${picked.length} selected`}</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Select everyone who can take an Interest"
+            disabled={eligible.length === 0}
+            onPress={() => setSelected(new Set(eligible.map((r) => r.id)))}
+            hitSlop={space.sm}
+            style={({ pressed }) => [styles.selectAll, pressed && styles.pressed]}
+          >
+            <Text style={[text.uiSmSemi, eligible.length > 0 ? styles.accent : styles.subtle]}>Select all</Text>
+          </Pressable>
+        </View>
+      )}
+
+      {!empty && !inSelect && (
         <>
-          {/* S1's bar: the title with its mono count, then Export and Sort in place of the bell. */}
+          {/* S1's bar: the title with its mono count, then Select, Export and Sort in place of the bell. */}
           <View style={styles.bar}>
             <Text style={[text.displayXs, styles.grow]} numberOfLines={1} accessibilityRole="header">
               Shortlist
               {rows !== null && <Text style={text.metaLg}>{` ${total}`}</Text>}
             </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Select people to send an Interest"
+              disabled={shown.length === 0}
+              onPress={() => startSelect()}
+              hitSlop={(height.tap - height.segment) / 2}
+              style={({ pressed }) => [styles.selectBtn, pressed && styles.pressed, shown.length === 0 && styles.dim]}
+            >
+              <Icon name="select" size={space.lg} tint={color.text} />
+              <Text style={text.uiSmSemi}>Select</Text>
+            </Pressable>
             <EmIconButton
               name="download"
               label="Export the shortlist as CSV"
@@ -379,18 +507,26 @@ export function EmployerShortlistScreen() {
       {interestFor && (
         <SendInterestSheet
           open
-          candidate={{
-            id: interestFor.candidateId,
-            name: interestFor.name,
-            photoUrl: interestFor.photoUrl,
-            tier: interestFor.tier,
-            qualification: interestFor.qualification,
-            city: interestFor.city,
-            verified: interestFor.verifiedInterview.verified,
-          }}
+          candidate={toCandidate(interestFor)}
           jobs={jobs}
           onClose={() => setInterestFor(null)}
           onSent={interestSent}
+        />
+      )}
+
+      {batchFor && (
+        <SendInterestSheet
+          open
+          candidates={batchFor}
+          jobs={jobs}
+          onClose={() => setBatchFor(null)}
+          onBatchSent={() => {
+            // The server has answered: select mode ends under the result (mass · 4) and the Interest pills read again.
+            endSelect()
+            load().then((failed) => {
+              if (failed) setNotice(failed)
+            })
+          }}
         />
       )}
     </EmployerShell>
@@ -419,7 +555,7 @@ function DropChip({ label: text_, icon, a11y, on, onPress }: { label: string; ic
 
 /** S1's card: who, the saved day, the note, the tags and job, then bin · note · CV (when there is a résumé) · the Interest action. */
 function ShortlistCard({
-  row, slot, jobTitle, opening, onPlay, onProfile, onTag, onJob, onRemove, onEntry, onResume, onInterest, onChat,
+  row, slot, jobTitle, opening, onPlay, onProfile, onTag, onJob, onRemove, onEntry, onResume, onInterest, onSelect, onChat,
 }: {
   row: ShortlistRow
   slot: Slot
@@ -434,6 +570,8 @@ function ShortlistCard({
   opening: boolean
   onResume: () => void
   onInterest: () => void
+  /** A long-press starts select mode with this card ticked. */
+  onSelect: () => void
   onChat: () => void
 }) {
   const meta = metaLine(row)
@@ -450,6 +588,7 @@ function ShortlistCard({
           accessibilityHint="Opens the profile"
           disabled={gone}
           onPress={onProfile}
+          onLongPress={onSelect}
           style={({ pressed }) => [styles.body, pressed && styles.pressed]}
         >
           <View style={styles.head}>
@@ -515,6 +654,50 @@ function ShortlistCard({
   )
 }
 
+/**
+ * Select mode's compact row (mass · 2): the box, the face, the name and facts.
+ * Ticked, it wears the accent edge on the wash. A row that can't take an
+ * Interest now dims, its box can't be ticked, and the grey pill says why.
+ */
+function SelectRow({ row, on, reason, onToggle }: { row: ShortlistRow; on: boolean; reason: string | null; onToggle: () => void }) {
+  const meta = metaLine(row)
+  const off = reason !== null
+  const ticked = on && !off
+  return (
+    <Pressable
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked: ticked, disabled: off }}
+      accessibilityLabel={[row.name, meta, reason].filter(Boolean).join(', ')}
+      disabled={off}
+      onPress={onToggle}
+      style={({ pressed }) => (pressed ? styles.pressed : undefined)}
+    >
+      <StudioCard style={ticked ? [styles.card, styles.pickCard, styles.pickOn] : [styles.card, styles.pickCard]}>
+        <View style={styles.pickHead}>
+          <View style={[styles.box, ticked && styles.boxOn, off && styles.boxOff]}>
+            {ticked && <Icon name="check" size={space.md + 1} tint={color.textInverse} weight={3} />}
+          </View>
+          <View style={[styles.pickHead, styles.grow, off && styles.dim]}>
+            <Face name={row.name} photo={row.photoUrl} size={height['control-xs']} />
+            <View style={styles.who}>
+              <View style={styles.nameRow}>
+                <Text style={[text.uiBaseSemi, styles.shrink]} numberOfLines={1}>{row.name}</Text>
+                {row.verifiedInterview.verified && <Icon name="check" size={spaceHalf['3.5']} tint={color.success} weight={2.5} />}
+              </View>
+              {!!meta && <Text style={[text.uiXs, styles.muted]} numberOfLines={1}>{meta}</Text>}
+            </View>
+          </View>
+        </View>
+        {off && (
+          <View style={styles.why}>
+            <Text style={[text.uiXsMedium, styles.muted]} numberOfLines={1}>{reason}</Text>
+          </View>
+        )}
+      </StudioCard>
+    </Pressable>
+  )
+}
+
 /** Where the Interest stands when there is nothing to press: the quiet grey pill. */
 function Quiet({ label: line }: { label: string }) {
   return (
@@ -530,10 +713,28 @@ const styles = StyleSheet.create({
   pressed: { opacity: opacity.pressed },
   dim: { opacity: opacity.disabled },
   muted: { color: color.textMuted },
+  subtle: { color: color.textSubtle },
+  accent: { color: color.accent },
+  center: { textAlign: 'center' },
   pad: { flex: 1, paddingHorizontal: space.lg },
   loading: { paddingVertical: space['3xl'] },
 
   bar: { minHeight: height['screen-header'], flexDirection: 'row', alignItems: 'center', gap: space.xs, paddingLeft: spaceHalf['4.5'], paddingRight: space.sm },
+  selectBtn: {
+    height: height.segment,
+    paddingHorizontal: space.md + 1,
+    borderRadius: radius.pill,
+    borderWidth: borderWidth.thin,
+    borderColor: color.borderStrong,
+    backgroundColor: color.surface,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spaceHalf['1.5'],
+    marginRight: space.xs,
+  },
+  selectBar: { gap: space.sm, paddingLeft: space.md, paddingRight: space.md },
+  leave: { borderRadius: radius.pill, backgroundColor: color.surfaceMuted },
+  selectAll: { minHeight: height.tap, justifyContent: 'center', paddingHorizontal: space.xs },
   filters: { gap: space.sm },
   drops: { flexDirection: 'row', alignItems: 'center', gap: spaceHalf['1.5'], paddingHorizontal: space.lg },
   drop: { height: space['2xl'], flexShrink: 1, paddingHorizontal: space.md, borderRadius: radius.pill, borderWidth: borderWidth.thin, borderColor: color.border, backgroundColor: color.surface, flexDirection: 'row', alignItems: 'center', gap: spaceHalf['1.5'] },
@@ -559,4 +760,13 @@ const styles = StyleSheet.create({
   cta: { flex: 1, minWidth: 0, height: height['control-xs'], paddingHorizontal: space.md },
   cv: { paddingHorizontal: space.md },
   quiet: { flex: 1, minWidth: 0, height: height['control-xs'], borderRadius: radius.pill, backgroundColor: color.surfaceMuted, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.md },
+
+  // mass · 2 — select mode's rows
+  pickCard: { gap: space.sm },
+  pickOn: { borderColor: color.accent, backgroundColor: color.accentWash },
+  pickHead: { flexDirection: 'row', alignItems: 'center', gap: spaceHalf['2.5'] },
+  box: { width: height.radio, height: height.radio, borderRadius: radius.sm, borderWidth: borderWidth.medium, borderColor: color.borderStrong, backgroundColor: color.surface, alignItems: 'center', justifyContent: 'center' },
+  boxOn: { backgroundColor: color.accent, borderColor: color.accent },
+  boxOff: { backgroundColor: color.surfaceMuted, borderColor: color.border },
+  why: { alignSelf: 'flex-start', marginLeft: height.radio + spaceHalf['2.5'], paddingVertical: space['2xs'] + 1, paddingHorizontal: space.sm + 1, borderRadius: radius.pill, backgroundColor: color.surfaceMuted },
 })

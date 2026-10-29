@@ -4,12 +4,13 @@ import { borderWidth, color, opacity, space, spaceHalf, trackingNative } from '.
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Button, Input, text } from '../../components/ui'
 import { Icon } from '../../components/ui/Icon'
+import { SearchSelect, type SearchSelectOption } from '../../components/ui/SearchSelect'
 import { EmSheet } from '../../components/employer/em'
 import { StudioChip } from '../../components/employer/studio'
-import { fetchMatchCount, type CandidateFilters, type CandidateMatchCount } from '../../lib/api/employerFeed'
+import { fetchMatchCount, type CandidateFilterKey, type CandidateFilters, type CandidateMatchCount } from '../../lib/api/employerFeed'
 import { getConfig, type AppConfig } from '../../lib/api/config'
 import {
-  EXPERIENCE_FLOORS, SALARY_BANDS, bandFilters, bandLabel, bandOf, filterCount, filterOptions, normalize, rowLabel,
+  EXPERIENCE_FLOORS, FILTER_ROWS, SALARY_BANDS, bandFilters, bandLabel, bandOf, filterCount, filterOptions, normalize, rowLabel,
 } from '../../lib/employer/feedFilters'
 
 /**
@@ -21,9 +22,11 @@ import {
  * free) for the draft as it stands. Show saves the whole sheet on the server,
  * so the filters stay on until cleared — on this phone and on the web.
  *
- * The long lists (field of study, skills, cities, languages) come from the
- * server's master data: what is chosen shows first, then the first few of the
- * rest, and a search finds any other.
+ * The long lists come from the server's master data. Field of study and
+ * languages are searchable dropdowns (docs/feed-shortlist-forms-mockups.html ·
+ * pickers): empty means any, and past two chips the rest fold into "+n".
+ * Skills and cities show what is chosen first, then the first few of the rest,
+ * and a search finds any other.
  */
 export function FeedFiltersSheet({
   open, applied, onClose, onApply, onSaveAs,
@@ -76,6 +79,12 @@ export function FeedFiltersSheet({
   const toggle = <T extends string | number>(list: T[] | undefined, v: T): T[] =>
     list?.includes(v) ? list.filter((x) => x !== v) : [...(list ?? []), v].slice(0, o.listMax)
   const band = bandOf(n)
+  // Each domain with its broad field, the grey line under it in the picker.
+  const domainOptions = useMemo<SearchSelectOption[]>(
+    () => (config?.masterData?.domains ?? []).map((d) => ({ value: d.name, label: d.name, group: d.group })),
+    [config],
+  )
+  const languageOptions = useMemo<SearchSelectOption[]>(() => o.languages.map((l) => ({ value: l, label: l })), [o])
 
   return (
     <EmSheet
@@ -118,7 +127,7 @@ export function FeedFiltersSheet({
         {o.tiers.map((t) => <Pick key={t.value} label={t.label} on={!!n.tiers?.includes(t.value)} onPress={() => set({ tiers: toggle(n.tiers, t.value) })} />)}
       </Group>
 
-      <ListGroup title={rowLabel('fieldOfStudy')} noun="field" all={o.domains} chosen={n.domains} onChange={(domains) => set({ domains })} />
+      <PickGroup rowKey="fieldOfStudy" noun="field" options={domainOptions} chosen={n.domains} max={o.listMax} onChange={(domains) => set({ domains })} />
       <ListGroup title={rowLabel('skills')} noun="skill" all={o.skills} chosen={n.skills} onChange={(skills) => set({ skills })} />
 
       <ListGroup title={rowLabel('location')} noun="city" all={o.cities} chosen={n.cities} onChange={(cities) => set({ cities })}>
@@ -151,7 +160,7 @@ export function FeedFiltersSheet({
         ))}
       </Group>
 
-      <ListGroup title={rowLabel('languages')} noun="language" all={o.languages} chosen={n.languages} onChange={(languages) => set({ languages })} />
+      <PickGroup rowKey="languages" noun="language" options={languageOptions} chosen={n.languages} max={o.listMax} onChange={(languages) => set({ languages })} />
 
       <Group title={rowLabel('availability')} hint="Joins within">
         {o.availability.map((a) => (
@@ -192,6 +201,29 @@ function Group({ title, hint, children }: { title: string; hint?: string; childr
         {!!hint && <Text style={[text.uiXs, styles.subtle]}>{hint}</Text>}
       </View>
       <View style={styles.chips}>{children}</View>
+    </View>
+  )
+}
+
+/** A master-data row as a searchable dropdown: nothing picked reads as the row's "any". */
+function PickGroup({
+  rowKey, noun, options, chosen = [], max, onChange,
+}: { rowKey: CandidateFilterKey; noun: string; options: SearchSelectOption[]; chosen?: string[]; max: number; onChange: (next: string[]) => void }) {
+  if (options.length === 0 && chosen.length === 0) return null
+  const title = rowLabel(rowKey)
+  return (
+    <View style={styles.group}>
+      <Text style={[text.metaSm, styles.mono, styles.muted]}>{title}</Text>
+      <SearchSelect
+        title={title}
+        noun={noun}
+        options={options}
+        value={chosen}
+        max={max}
+        collapseAfter={2}
+        placeholder={FILTER_ROWS.find((r) => r.key === rowKey)?.any}
+        onChange={onChange}
+      />
     </View>
   )
 }
