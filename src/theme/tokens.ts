@@ -1303,11 +1303,14 @@ export const height = {
   'deck-card': 620,
   /**
    * The app's video feed (ApostropheApp docs/tinder-feed-mockups.html): the
-   * round buttons 58 / 46, a glass button on the card (sound, details) 34, and
-   * a button in the bar above the card 38.
+   * round buttons 66 / 52 (docs/feed-shortlist-forms-mockups.html · feed), a
+   * glass button on the card (sound, details) 34, and a button in the bar above
+   * the card 38.
    */
-  'feed-action': 58,
-  'feed-action-sm': 46,
+  // old: 'feed-action': 58,
+  'feed-action': 66,
+  // old: 'feed-action-sm': 46,
+  'feed-action-sm': 52,
   'feed-glass': 34,
   'feed-top': 38,
   /** The film still in the feed's details sheet (docs/feed-details-mockups.html · A): 54 × 84. */
@@ -1317,6 +1320,8 @@ export const height = {
   'room-tile-w': 116,
   'room-ctl': 60,
   'room-leave-w': 76,
+  /** The interviewer room's end-call disc width (was `feed-action` until that grew to 66 on 27 Oct). */
+  'room-end-w': 58,
   /** The date tile on an interview row (M13: 48 × 52). */
   'date-tile-w': 48,
   'date-tile-h': 52,

@@ -168,6 +168,37 @@ export async function sendCandidateInterest(
   return api.post<SendInterestResult>(`/employers/candidates/${candidateId}/interest`, input)
 }
 
+/**
+ * One person's answer inside a batch send (contracts/feed InterestBatchResult).
+ * The server runs the single send for each of them, so these are its own three
+ * answers: sent, still inside the cooldown (with the date the next may go), or
+ * no longer reachable (gone, hidden, blocked, or a failure on that one send).
+ */
+export type InterestBatchResult =
+  | { candidateId: string; outcome: 'SENT'; interest: { id: string; sentAt: string; expiresAt: string; resend: boolean } }
+  | { candidateId: string; outcome: 'COOLDOWN'; nextEligibleAt: string; cooldownDays: number }
+  | { candidateId: string; outcome: 'UNAVAILABLE' }
+
+export interface SendInterestBatchResult {
+  /** How many of them got one. */
+  sent: number
+  /** One per person, in the order they were sent (duplicates dropped by the server). */
+  results: InterestBatchResult[]
+}
+
+/**
+ * One Interest to each of several candidates, with the same job and message
+ * (Shortlist select mode). There is no cap on how many. A job the employer
+ * cannot link refuses the whole send before anything goes, the same 400 as
+ * the single send; past that, nothing is all-or-nothing.
+ */
+export async function sendCandidateInterestBatch(
+  candidateIds: string[],
+  input: SendInterestInput = {},
+): Promise<SendInterestBatchResult> {
+  return api.post<SendInterestBatchResult>('/employers/interests/batch', { candidateIds, ...input })
+}
+
 export async function fetchEmployerInterests(
   query: InterestListQuery = {},
 ): Promise<EmployerInterestListResponse> {
