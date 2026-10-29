@@ -26,7 +26,8 @@ export interface AuthConfig {
   masterData?: {
     cities?: Named[]
     industries?: Named[]
-    domains?: Named[]
+    /** `group` is the domain's broad field, the grey line under it in the picker. */
+    domains?: (Named & { group?: string })[]
     languages?: Named[]
   }
   employer?: {

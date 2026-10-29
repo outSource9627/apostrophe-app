@@ -89,6 +89,8 @@ const ICONS = {
   arrowUR: [P('M7 17L17 7M8 7h9v9')],
   // Interviewer Home tiles (docs/interviewer-home-final.html).
   checkCircle: [C(12, 12, 9), P('M8 12.5l3 3 5-6')],
+  // The Shortlist's Select button (docs/feed-shortlist-forms-mockups.html · mass).
+  select: [R(3.5, 3.5, 17, 17, 4.5), P('M8 12l3 3 5-6')],
   pie: [P('M12 3a9 9 0 1 0 9 9h-9z'), P('M15 3.5A9 9 0 0 1 20.5 9H15z')],
   rupee: [P('M7 5h10M7 9h10M7 5c5 0 7 1.5 7 4s-2 4-7 4l7 6')],
   wallet: [R(3, 6, 18, 14, 2), P('M3 10h18M16 15h2')],
@@ -99,6 +101,10 @@ const ICONS = {
   micOff: [P('M3 3l18 18'), P('M9 9v3a3 3 0 0 0 5.1 2.1'), P('M15 11V6a3 3 0 0 0-5.7-1.3'), P('M19 11a7 7 0 0 1-1.3 4M5 11a7 7 0 0 0 10.6 6M12 18v3')],
   videoOff: [P('M3 3l18 18'), P('M16 10.5L21 7v10l-3.5-2.1'), P('M16 16v.5a1.5 1.5 0 0 1-1.5 1.5H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h1M10 6h4.5A1.5 1.5 0 0 1 16 7.5V10')],
   hangUp: [P('M3.2 14.6c4.9-4.4 12.7-4.4 17.6 0l-2.1 2.5-3.5-1.4v-2.4a12 12 0 0 0-6.4 0v2.4l-3.5 1.4z')],
+  // The interviewer screening test (docs/screening-test-mockups.html · app): the test, offline, preparing.
+  test: [R(5, 3.5, 14, 17, 2.5), P('M9 3.5h6v3H9zM8.5 11l1.5 1.5 3-3M8.5 16h7')],
+  wifi: [P('M3.5 9a12 12 0 0 1 17 0M6.5 12.5a7.5 7.5 0 0 1 11 0M9.5 16a3 3 0 0 1 5 0'), P('M12 19.5h.01')],
+  spark: [P('M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z'), P('M19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z')],
 } satisfies Record<string, Shape[]>
 
 export type IconName = keyof typeof ICONS

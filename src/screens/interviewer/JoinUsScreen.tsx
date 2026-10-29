@@ -1,7 +1,7 @@
-import React from 'react'
+import React, { useCallback, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { useNavigation } from '@react-navigation/native'
+import { useFocusEffect, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { borderWidth, color, height, opacity, radius, space, spaceHalf } from '../../theme'
 import { BrandMark, Button, text } from '../../components/ui'
@@ -9,6 +9,8 @@ import { IvCard, IvGlow, IvLabel } from '../../components/interviewer/iv'
 import { EmFoot } from '../../components/employer/em'
 import { label } from '../../lib/profile/labels'
 import { useAppConfig } from '../../lib/interviewer/useInterviewer'
+import { Icon } from '../../components/ui/Icon'
+import { isOpen, readScreening, type StoredScreening } from '../../lib/interviewer/screeningStore'
 import type { RootStackParamList } from '../../../App'
 
 /** The web's /join-us steps, word for word — none of them carries a number. */
@@ -38,6 +40,14 @@ export function JoinUsScreen() {
   const iv = config?.interviewer
   const windowHours = iv?.scorecardWindowHours ?? config?.scorecard?.windowHours
 
+  // A screening test from an application on this phone, still open (lib/interviewer/screeningStore).
+  const [test, setTest] = useState<StoredScreening | null>(null)
+  useFocusEffect(useCallback(() => {
+    let live = true
+    readScreening().then((s) => { if (live) setTest(s && isOpen(s, Date.now()) ? s : null) })
+    return () => { live = false }
+  }, []))
+
   const tiers = (config?.tiers ?? [])
     .filter((t) => t.durationMin > 0)
     .map((t) => ({
@@ -66,6 +76,21 @@ export function JoinUsScreen() {
       </View>
 
       <ScrollView style={styles.grow} contentContainerStyle={styles.body}>
+        {!!test && (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => navigation.navigate('InterviewerScreening', { token: test.token })}
+            style={({ pressed }) => [styles.resume, pressed && styles.pressed]}
+          >
+            <View style={styles.resumeIcon}><Icon name="test" size={space.xl} tint={color.accent} /></View>
+            <View style={styles.grow}>
+              <Text style={text.uiMdSemi}>Continue your screening test</Text>
+              <Text style={[text.uiSm, styles.muted]}>{`${test.total} questions · ${test.timeLimitMinutes} minutes`}</Text>
+            </View>
+            <Icon name="chevR" size={space.lg + space['2xs']} tint={color.textSubtle} />
+          </Pressable>
+        )}
+
         <View style={styles.hero}>
           <IvGlow />
           <Text style={[text.metaMd, styles.eyebrow]}>For interviewers</Text>
@@ -147,6 +172,14 @@ const styles = StyleSheet.create({
   brand: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   body: { padding: space.lg, gap: space.md, paddingBottom: space.xl },
   hero: { gap: space.xs, paddingVertical: space.md, overflow: 'hidden' },
+  resume: {
+    flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space.md, paddingHorizontal: spaceHalf['3.5'],
+    borderRadius: radius.panel, backgroundColor: color.accentWash, borderWidth: borderWidth.thin, borderColor: color.accentEdge,
+  },
+  resumeIcon: {
+    width: height['header-avatar'], height: height['header-avatar'], borderRadius: radius.tile,
+    alignItems: 'center', justifyContent: 'center', backgroundColor: color.accentSoft,
+  },
   eyebrow: { color: color.accent, marginBottom: space.xs },
   section: { marginTop: space.sm },
   tier: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: spaceHalf['2.5'], borderBottomWidth: borderWidth.thin, borderBottomColor: color.borderSoft },

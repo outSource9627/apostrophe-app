@@ -134,12 +134,14 @@ export function GlassPill({ label, icon }: { label: string; icon?: IconName }) {
 }
 
 /** A face: the photo, else the initials on the violet disc. `square` gives the 12-corner tile. */
-export function Face({ name, photo, size = height.tap, square }: { name: string; photo?: string | null; size?: number; square?: boolean }) {
+export function Face({
+  name, photo, size = height.tap, square, tint,
+}: { name: string; photo?: string | null; size?: number; square?: boolean; tint?: string }) {
   const r = square ? radius.tile : radius.pill
   return photo ? (
     <Image source={{ uri: photo }} style={{ width: size, height: size, borderRadius: r, backgroundColor: color.surfaceSunken }} />
   ) : (
-    <View style={[styles.faceMono, { width: size, height: size, borderRadius: r }]}>
+    <View style={[styles.faceMono, { width: size, height: size, borderRadius: r }, !!tint && { backgroundColor: tint }]}>
       <Text style={[size >= height.control ? text.uiBaseSemi : text.uiSmSemi, styles.onInk]}>{nameInitials(name)}</Text>
     </View>
   )

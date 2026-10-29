@@ -184,3 +184,42 @@ The owner picked **Room sheet A · Half sheet** and **Script: own button (3 butt
   - Whether `boxShadow` renders on the sheet and the focus ring.
 
   On a 360 dp-wide phone, a long count (for example `10/12`) may shorten the Script label to "Scri…". `tsc --noEmit`, eslint and the raw-value check pass for this file.
+
+## 2026-10-27 round · searchable dropdowns — `docs/feed-shortlist-forms-mockups.html` (pickers)
+
+- **`SearchSelect`** (`src/components/ui/SearchSelect.tsx`) is the shared field, described in STUDENT-ANDROID-DESIGN.md under the same date.
+- **Apply to interview:** Domains and Languages are dropdown fields instead of the 12 + 13 chip walls. Each has "Pick at least one" on the label's right. Each domain shows its broad field (`/config masterData.domains[].group`) as a grey line. Up to 12 each (the contract's cap): at the cap, the unpicked rows dim. The validation messages, the scroll to the first error, the spinner while `/config` loads and "The list didn’t load…" are unchanged.
+- **Edit profile:** "Languages you interview in" is the field. Its options are still the master list plus any language already on the profile. Domains stay read-only.
+- **Deviations and not verified:** the same as the student note. Not run on a device.
+
+## 2026-10-27 round · shared sign-out — `docs/feed-shortlist-forms-mockups.html` (signout)
+
+- Account's sign-out pill and its Android `Alert` are now the shared `SignOutButton` + centre `SignOutDialog` (`src/components/ui/SignOutDialog.tsx`, the same for the student, employer and interviewer; details under the same date in EMPLOYER-ANDROID-DESIGN.md). The forced change-password screen's Back uses the same dialog. Logout → clear token → `forget()` → Welcome is unchanged. Not verified on a device.
+
+## 2026-10-28 · screening test — `docs/screening-test-mockups.html` (app)
+
+Built as drawn, with the owner's later changes: no email at all, the token comes back in the apply response and is kept on this phone, a repeat application gets no token, and the expired copy points to the Join us page.
+
+- **API** (`src/lib/api/screening.ts`): the five public routes (`GET /interviewers/screening/:token`, `POST …/start`, `GET …/attempt`, `PUT …/answers/:index`, `POST …/submit`), all anonymous. The apply response's `screeningTest` is typed (offer · `{ repeat: true }` · null; a missing field reads as null). Refusal reasons are read from `details.reason`, or `meta.reason` where the server's `conflict()` puts them.
+- **Kept on this phone** (`src/lib/interviewer/screeningStore.ts`, AsyncStorage, which the app already has): `{ token, expiresAt, counts, total, timeLimitMinutes, email }`, then the `deadlineAt` once started and any picks the server has not confirmed. One test at a time. It is dropped once the test is submitted, out of time, expired or unknown (404). Writes run in order, so a stale pick is never replayed.
+- **Application received:** with a test, the band, the tick, "Thank you. One more step before our team reads it.", the dark Next step card (chips, white "Start the test"), the hint "You can start now, or later on this device until {d MMM}." and a quiet "Do it later" (back to Join us). With a repeat, today's screen plus the change-3 line. With null, today's screen, unchanged.
+- **Join us:** "Continue your screening test" (`{total} questions · {min} minutes`) at the top while a kept test is open: before the link's date, or before the deadline once started (the phone's clock is good enough for the offer; the server decides on opening).
+- **The test** (`ScreeningTestScreen`, route `InterviewerScreening { token }`, no swipe-back): one route and one state machine. Loading → "Before you start" (`Start · mm:ss`) → "Getting your test ready…" while `start` answers PREPARING (asked again every 10 s) → the test → "Test submitted." (the brand header, three steps, the email line only when kept). Opened again, an attempt in progress resumes at the first unanswered question.
+- **Clock:** `deadlineAt − serverNow` at the fetch, minus what the phone has counted since. Synced again on return to the foreground and on reconnect. It turns amber, with one toast, in the last 5 minutes; at 0 the phone submits and shows Time's up.
+- **Answers:** PUT on tap. "Saved" shows once the server has the pick. A failed pick stays on the phone and goes again on reconnect, every 10 s, and on reopening. DEADLINE_PASSED / SUBMITTED / 404 refusals land on the matching closed state. Submit is held while a pick is unsent ("The connection dropped…" toast).
+- **Closed states:** Time's up (`autoSubmitted`), Already submitted (`submittedAt`), This link has expired (`expiresAt`; without the date for an unknown token), each with Done → Join us. Hardware Back during the test opens "Leave the test?" (the rules' own line: the clock keeps running). After the test, Back goes to Join us like Done. No score anywhere.
+- **New pieces:** `src/components/interviewer/screening.tsx` (the bar, strips, option cards, the question map in `EmSheet`, the centre dialog in the sign-out dialog's shape, the state block) and three icons in `Icon.tsx` (`test`, `wifi`, `spark`, from the mockup).
+- **Deviations:**
+  - On the last question, Next becomes "Submit test", which opens the same dialog as the map.
+  - "Leave the test?" is not drawn; its line is the rules' "If you leave, time still counts…".
+  - The rule texts follow the build spec ("If you leave…", "Open the test again…"), not the mockup's earlier "leave the app" / "open the link".
+  - The edge states are full screens with Done; the mockup draws them as cards.
+  - The strips show `n/m` only on the current section, as drawn.
+  - "General knowledge" is "GK" in its strip only.
+- **Not verified:** not run on a device, and not against a real backend (the routes were being built at the same time). Untested:
+  - Timer accuracy across a long background on a real phone.
+  - NetInfo's reconnect event.
+  - How the eight-column map fits on a 320 dp phone.
+  - How the strip labels shorten on a narrow screen.
+
+  `tsc`, eslint (new/changed files), the raw-value check (no new offenders) and `__tests__/screening*.test.ts(x)` (16 tests) pass.

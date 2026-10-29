@@ -1,7 +1,8 @@
 import React, { useRef, useState } from 'react'
-import { StyleSheet, View } from 'react-native'
-import { space } from '../../theme'
-import { Banner, Body, Chip, Eyebrow, Field, FileField, Input, ProgressBar, StatusPill } from '../../components/ui'
+import { StyleSheet, Text, View } from 'react-native'
+import { color, space } from '../../theme'
+import { Banner, Body, Chip, Eyebrow, Field, FileField, Input, ProgressBar, StatusPill, text } from '../../components/ui'
+import { SearchSelect } from '../../components/ui/SearchSelect'
 import { ConfirmSheet, Panel } from '../../components/tab/kit'
 import type { UploadRule } from '../../lib/api/uploads'
 import { label as kindLabel } from '../../lib/profile/labels'
@@ -34,6 +35,8 @@ export interface Config {
     skills: { name: string }[]
     cities: { name: string }[]
     languages: { name: string }[]
+    /** The DOMAIN list "Field of study" is picked from, each with its broad field. Absent on an older server. */
+    domains?: { name: string; group?: string }[]
   }
 }
 export interface ProfileData {
@@ -53,6 +56,19 @@ const QUAL_LABEL: Record<string, string> = {
   FULL_TIME: 'Full time', PART_TIME: 'Part time', INTERNSHIP: 'Internship', CONTRACT: 'Contract', REMOTE: 'Remote', HYBRID: 'Hybrid',
 }
 const label = (v: string) => QUAL_LABEL[v] ?? v
+
+/** A field whose label carries a note on its right ("Pick one"), as the pickers mockup draws it. */
+function NotedField({ label: title, note, children }: { label: string; note: string; children: React.ReactNode }) {
+  return (
+    <View style={styles.field}>
+      <View style={styles.labelRow}>
+        <Text style={text.uiSmSemi}>{title}</Text>
+        <Text style={[text.uiXs, styles.note]}>{note}</Text>
+      </View>
+      {children}
+    </View>
+  )
+}
 
 /** A removable / addable chip row — the app's TagInput stand-in (no TagInput export). */
 function ChipRow({
@@ -99,12 +115,16 @@ export function PersonalStep({ draft, patch, config }: StepProps) {
           ))}
         </View>
       </Field>
-      <Field label="Languages you speak" helper="Tap a suggestion to add.">
-        <ChipRow
-          values={langs}
-          onRemove={(i) => patch({ languages: langs.filter((_, n) => n !== i) })}
-          suggestions={config.masterData.languages.map((l) => l.name)}
-          onAdd={(v) => patch({ languages: [...langs, v] })}
+      <Field label="Languages you speak">
+        <SearchSelect
+          title="Languages"
+          noun="language"
+          options={config.masterData.languages.map((l) => ({ value: l.name, label: l.name }))}
+          value={langs}
+          placeholder="Pick languages"
+          onChange={(next) => patch({ languages: next })}
+          // The server takes at most 10 (apostrophe-admin profile.ts, stringList(10, 40)); the web caps it the same.
+          max={10}
         />
       </Field>
     </View>
@@ -112,14 +132,31 @@ export function PersonalStep({ draft, patch, config }: StepProps) {
 }
 
 export function EducationStep({ draft, patch, config }: StepProps) {
+  const domains = config.masterData.domains ?? []
   return (
     <View style={styles.stack}>
       <Field label="Institution">
         <Input value={String(draft.institution ?? '')} onChangeText={(v) => patch({ institution: v })} placeholder="College or university" />
       </Field>
-      <Field label="Field of study">
-        <Input value={String(draft.fieldOfStudy ?? '')} onChangeText={(v) => patch({ fieldOfStudy: v })} placeholder="e.g. Commerce" />
-      </Field>
+      {domains.length ? (
+        // One of the domains, so interviewer matching is exact. An older free-text answer stays shown until another is picked.
+        <NotedField label="Field of study" note="Pick one">
+          <SearchSelect
+            single
+            title="Field of study"
+            noun="field"
+            options={domains.map((d) => ({ value: d.name, label: d.name, group: d.group }))}
+            value={draft.fieldOfStudy ? String(draft.fieldOfStudy) : null}
+            placeholder="Pick your field of study"
+            onChange={(v) => patch({ fieldOfStudy: v })}
+          />
+        </NotedField>
+      ) : (
+        // An older server sends no domain list: the field stays free text.
+        <Field label="Field of study">
+          <Input value={String(draft.fieldOfStudy ?? '')} onChangeText={(v) => patch({ fieldOfStudy: v })} placeholder="e.g. Commerce" />
+        </Field>
+      )}
       <View style={styles.pair}>
         <View style={styles.pairItem}>
           <Field label="Year">
@@ -365,6 +402,9 @@ const fileName = (key: string) => key.split('/').pop() ?? key
 
 const styles = StyleSheet.create({
   stack: { gap: space.lg },
+  field: { gap: space.xs },
+  labelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.sm },
+  note: { color: color.textSubtle },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   pair: { flexDirection: 'row', gap: space.md },
   pairItem: { flex: 1 },
