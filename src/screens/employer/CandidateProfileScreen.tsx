@@ -11,7 +11,8 @@ import { Button, text } from '../../components/ui'
 import { Icon } from '../../components/ui/Icon'
 import { EmployerShell } from '../../components/employer'
 import { EmDialog, EmError, EmIconButton } from '../../components/employer/em'
-import { Face, FilmStill, GlassPill, StudioState, StudioToast } from '../../components/employer/studio'
+import { Face, FilmStill, StudioState, StudioToast } from '../../components/employer/studio'
+import { FeedTag, FeedWatchButton } from '../../components/ui/feed-deck'
 import {
   ClipPlayer, ProfileFactTiles, ProfileResume, ProfileVideoRow, availabilityOf, expectedSalaryOf, experienceShort, personLine,
 } from '../../components/employer/profile'
@@ -23,7 +24,7 @@ import {
   fetchAllEmployerInterests, interestNextEligibleAt, liveInterestOutcome, type EmployerInterestRow,
 } from '../../lib/api/employerInterests'
 import { fetchAllShortlist, type ShortlistRow } from '../../lib/api/employerShortlist'
-import { clipLength, interviewDate, shortlistedLine } from '../../lib/employer/candidateFormat'
+import { interviewDate, shortlistedLine } from '../../lib/employer/candidateFormat'
 import { dropCard, patchCards, useFeedDeck, refreshDeckMedia } from '../../lib/employer/feedDeck'
 import { formatIstShort } from '../../lib/employer/state'
 import { useEmployer } from '../../lib/employer/useEmployer'
@@ -71,8 +72,10 @@ function interestSlot(c: CandidateDetail, row: EmployerInterestRow | null, coold
 /**
  * EM-09 · the candidate profile — Studio frames P1–P3
  * (docs/employer-app-studio.html · 03). One scrolling page: the film (muted on
- * open; a tap turns the sound on; "Full" plays the whole interview and spends
- * one of the day's plays), the person, the three facts, every video, then the
+ * open; a tap turns the sound on; the feed's "Watch full interview" pill plays
+ * the whole interview and spends one of the day's plays; the verified tick and
+ * date sit top-left, as on the feed card — docs/feed-shortlist-forms-mockups.html
+ * · profile), the person, the three facts, every video, then the
  * résumé — experience, education, skills, what they are looking for,
  * documents and links. When the profile has a résumé file (ST-35) the head
  * carries a Résumé button beside the name, so the CV does not wait at the
@@ -197,8 +200,6 @@ export function CandidateProfileScreen() {
   const plays = employer?.limits?.videoPlays ?? null
   const playsOut = isLimited(plays) && plays.remaining <= 0
   const interviewSec = (c.videos ?? []).find((v) => v.kind === 'INTERVIEW')?.durationSec ?? null
-  const interviewLen = clipLength(interviewSec)
-  const fullLabel = playsOut ? 'Full · resets at midnight' : interviewLen ? `Full · ${interviewLen}` : 'Full'
   const clips = (c.videos ?? []).filter((v) => v.kind !== 'INTERVIEW')
   const shortlistedBy = shortlistedLine(c.shortlistCount)
   const passDays = config.passHideDays
@@ -422,7 +423,7 @@ export function CandidateProfileScreen() {
                   />
                 )}
                 <View style={styles.filmTop} pointerEvents="box-none">
-                  {shortDate ? <GlassPill icon="check" label={`Verified interview · ${shortDate}`} /> : <View />}
+                  {shortDate ? <FeedTag verified label={shortDate} a11y={`Verified interview, ${date}`} /> : <View />}
                   {!!stream && (
                     <Pressable
                       accessibilityRole="button"
@@ -436,19 +437,14 @@ export function CandidateProfileScreen() {
                   )}
                 </View>
                 <View style={styles.filmFoot} pointerEvents="box-none">
-                  {stream && muted ? <Text style={[text.metaMd, styles.filmHint]}>Film · tap for sound</Text> : <View />}
+                  {stream && muted ? <Text style={[text.metaMd, styles.filmHint]} numberOfLines={1}>Film · tap for sound</Text> : <View />}
                   {hasInterview && (
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel={playsOut ? 'Full interview: no plays left today, resets at midnight' : `Play ${c.name}’s full interview`}
-                      accessibilityState={{ disabled: playsOut }}
+                    <FeedWatchButton
+                      label={playsOut ? 'Resets at midnight' : 'Watch full interview'}
+                      a11y={playsOut ? 'Full interview: no plays left today, resets at midnight' : `Watch ${c.name}’s full interview`}
                       disabled={playsOut}
                       onPress={openFull}
-                      hitSlop={{ top: spaceHalf['2.5'], bottom: spaceHalf['2.5'], left: space.xs, right: space.xs }}
-                      style={({ pressed }) => [pressed && styles.pressed, playsOut && styles.off]}
-                    >
-                      <GlassPill icon="max" label={fullLabel} />
-                    </Pressable>
+                    />
                   )}
                 </View>
               </FilmStill>
@@ -543,7 +539,6 @@ export function CandidateProfileScreen() {
 const styles = StyleSheet.create({
   grow: { flex: 1, minWidth: 0 },
   pressed: { opacity: opacity.pressed },
-  off: { opacity: opacity.disabled },
   muted: { color: color.textMuted },
   secondary: { color: color.textSecondary },
   successText: { color: color.success },
@@ -571,7 +566,8 @@ const styles = StyleSheet.create({
   filmTop: { position: 'absolute', top: space.md, left: space.md, right: space.md, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.sm },
   mute: { width: height.avatar, height: height.avatar, borderRadius: radius.pill, backgroundColor: color.onInkGlass, alignItems: 'center', justifyContent: 'center' },
   filmFoot: { position: 'absolute', left: spaceHalf['3.5'], right: spaceHalf['3.5'], bottom: spaceHalf['3.5'], flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.sm },
-  filmHint: { color: color.textOnInkMuted },
+  /** Gives way to the Watch pill on a narrow phone. */
+  filmHint: { flexShrink: 1, color: color.textOnInkMuted },
 
   // The person (P1).
   who: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingTop: space.lg, paddingHorizontal: space.xl, paddingBottom: space.xs },

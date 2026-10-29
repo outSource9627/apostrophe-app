@@ -5,14 +5,21 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { borderWidth, color, fontFamilyNative, fontSize, height, leadingNative, opacity, radius, space, spaceHalf } from '../../theme'
 import { Banner } from '../../components/ui'
 import { Icon } from '../../components/ui/Icon'
+import { SearchSelect, type SearchSelectOption } from '../../components/ui/SearchSelect'
 import {
-  AButton, AChips, AField, AInput, APhone, BrandScreen, DropTile, FieldRow, Section, SheetTitle, Swap, useFieldFocus,
+  AButton, AField, AInput, APhone, BrandScreen, DropTile, FieldRow, Section, SheetTitle, Swap, useFieldFocus,
 } from '../../components/auth/kit'
 import { useAuthConfig } from '../../components/auth/config'
 import { CONNECTION_DROPPED } from '../employer/EmployerRegisterScreen'
 import { ApiClientError, ErrorCode } from '../../lib/api'
 import { getResumeUploadUrl, submitInterviewerApplication, type InterviewerApplicationInput } from '../../lib/api/interviewer'
 import { pickChatDocument, type ChatFile } from '../../lib/chat/upload'
+import { Button } from '../../components/ui/Button'
+import { NextStepCard } from '../../components/interviewer/screening'
+import { isScreeningOffer, type ScreeningOffer } from '../../lib/api/screening'
+import { keepScreening } from '../../lib/interviewer/screeningStore'
+import { fmtDayMon } from '../../lib/chat/format'
+import { SUPPORT_EMAIL } from '../../lib/support'
 import type { RootStackParamList } from '../../../App'
 
 type Key = 'name' | 'email' | 'mobile' | 'city' | 'background' | 'yearsExperience' | 'linkedinUrl' | 'domains' | 'languages' | 'resume'
@@ -26,6 +33,9 @@ const LIMIT = { background: { min: 20, max: 2000 }, years: 60, picks: 12 }
 
 /** The three things that happen after an application, in the order they happen (the mockup's next steps). */
 const NEXT_STEPS = ['A person on our team reads it', 'If we go ahead, we create your account', 'Your sign-in details arrive by email']
+
+/** A repeat application gets no test token — anyone could take someone else's test otherwise (build spec, change 3). */
+const REPEAT_NOTE = `You applied with this email before. Your test link was shown then; if you’ve lost it, write to us at ${SUPPORT_EMAIL}.`
 
 /** PUTs the file to the presigned URL the public résumé route hands out. */
 async function uploadResume(file: ChatFile, onProgress: (f: number) => void): Promise<string> {
@@ -91,18 +101,15 @@ export function InterviewerApplyScreen() {
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState<string | null>(null)
+  /** The screening test the apply response handed back, or a repeat (no token); null when screening is off. */
+  const [test, setTest] = useState<ScreeningOffer | 'repeat' | null>(null)
 
-  const domainOptions = config.data?.masterData?.domains?.map((d) => d.name) ?? []
-  const languageOptions = config.data?.masterData?.languages?.map((l) => l.name) ?? []
+  const domainOptions: SearchSelectOption[] = config.data?.masterData?.domains?.map((d) => ({ value: d.name, label: d.name, group: d.group })) ?? []
+  const languageOptions: SearchSelectOption[] = config.data?.masterData?.languages?.map((l) => ({ value: l.name, label: l.name })) ?? []
   const resumeMaxBytes = config.data?.uploads?.RESUME?.maxBytes
   const resumeRule = resumeMaxBytes ? `PDF or Word · up to ${Math.round(resumeMaxBytes / (1024 * 1024))} MB` : 'PDF or Word'
 
   const clear = (k: Key) => { if (errs[k]) setErrs((x) => ({ ...x, [k]: undefined })) }
-  const toggle = (list: string[], set: (v: string[]) => void, v: string, k: Key) => {
-    if (list.includes(v)) set(list.filter((x) => x !== v))
-    else if (list.length < LIMIT.picks) set([...list, v])
-    clear(k)
-  }
 
   async function chooseResume() {
     setErrs((x) => ({ ...x, resume: undefined }))
@@ -176,6 +183,14 @@ export function InterviewerApplyScreen() {
     }
     try {
       const r = await submitInterviewerApplication(body)
+      const t = r.screeningTest
+      if (isScreeningOffer(t)) {
+        // Kept before the screen changes, so "Do it later" finds it on Join us.
+        await keepScreening(t, body.email)
+        setTest(t)
+      } else if (t && 'repeat' in t && t.repeat) {
+        setTest('repeat')
+      }
       setDone(r.message)
     } catch (err) {
       if (err instanceof ApiClientError && err.code === ErrorCode.VALIDATION && err.fields) {
@@ -196,6 +211,27 @@ export function InterviewerApplyScreen() {
     }
   }
 
+  // Received, with the screening test as the next step (docs/screening-test-mockups.html · app 1, no email).
+  if (done && test && test !== 'repeat') {
+    return (
+      <BrandScreen footer={<Button variant="quiet" size="block" full label="Do it later" onPress={() => navigation.popTo('JoinUs')} />}>
+        <View style={styles.done}>
+          <View style={styles.doneMark}>
+            <Icon name="check" size={spaceHalf['6'] + spaceHalf['1.5']} tint={color.success} weight={2.4} />
+          </View>
+          <SheetTitle>Application received.</SheetTitle>
+          <Text style={styles.doneBody}>Thank you. One more step before our team reads it.</Text>
+          <NextStepCard
+            total={test.total}
+            minutes={test.timeLimitMinutes}
+            onStart={() => navigation.navigate('InterviewerScreening', { token: test.token })}
+          />
+          <Text style={styles.hint}>{`You can start now, or later on this device until ${fmtDayMon(test.expiresAt)}.`}</Text>
+        </View>
+      </BrandScreen>
+    )
+  }
+
   if (done) {
     return (
       <BrandScreen footer={<AButton label="Done" onPress={() => navigation.navigate('JoinUs')} />}>
@@ -205,6 +241,7 @@ export function InterviewerApplyScreen() {
           </View>
           <SheetTitle>Application received.</SheetTitle>
           <Text style={styles.doneBody}>{done}</Text>
+          {test === 'repeat' && <Text style={styles.doneBody}>{REPEAT_NOTE}</Text>}
           <View style={styles.steps}>
             {NEXT_STEPS.map((t, i) => (
               <View key={t} style={styles.step}>
@@ -218,17 +255,23 @@ export function InterviewerApplyScreen() {
     )
   }
 
-  const chips = (options: string[], list: string[], set: (v: string[]) => void, k: Key) =>
+  /** A searchable dropdown of a master list (docs/feed-shortlist-forms-mockups.html · pickers), up to the server's cap. */
+  const picker = (k: 'domains' | 'languages', title: string, noun: string, options: SearchSelectOption[], list: string[], set: (v: string[]) => void) =>
     config.isPending ? (
       <ActivityIndicator color={color.textSubtle} style={styles.start} />
     ) : options.length === 0 ? (
       <Text style={styles.muted}>The list didn’t load. Go back and open this page again.</Text>
     ) : (
-      <AChips
-        options={options.map((o) => ({ value: o, label: o }))}
-        selected={list}
+      <SearchSelect
+        title={title}
+        noun={noun}
+        options={options}
+        value={list}
+        max={LIMIT.picks}
+        placeholder={`Pick ${title.toLowerCase()}`}
         invalid={!!errs[k]}
-        onToggle={(o) => toggle(list, set, o, k)}
+        disabled={busy}
+        onChange={(v) => { set(v); clear(k) }}
       />
     )
 
@@ -397,11 +440,11 @@ export function InterviewerApplyScreen() {
       </Section>
 
       <Section title="What you can interview for" sub={`Choose one or more · up to ${LIMIT.picks} each.`}>
-        <AField label="Domains" error={errs.domains} anchorRef={ff.anchor('domains')}>
-          {chips(domainOptions, domains, setDomains, 'domains')}
+        <AField label="Domains" hint="Pick at least one" error={errs.domains} anchorRef={ff.anchor('domains')}>
+          {picker('domains', 'Domains', 'domain', domainOptions, domains, setDomains)}
         </AField>
-        <AField label="Languages" error={errs.languages} anchorRef={ff.anchor('languages')}>
-          {chips(languageOptions, languages, setLanguages, 'languages')}
+        <AField label="Languages" hint="Pick at least one" error={errs.languages} anchorRef={ff.anchor('languages')}>
+          {picker('languages', 'Languages', 'language', languageOptions, languages, setLanguages)}
         </AField>
       </Section>
     </BrandScreen>
@@ -425,6 +468,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilyNative.body, fontSize: fontSize['ui-base'], lineHeight: leadingNative['ui-base'],
     color: color.textMuted, textAlign: 'center',
   },
+  hint: { fontFamily: fontFamilyNative.body, fontSize: fontSize['meta-md'], lineHeight: leadingNative['ui-xs'], color: color.textMuted, textAlign: 'center' },
   steps: {
     alignSelf: 'stretch', gap: spaceHalf['2.5'], padding: space.lg, marginTop: space.xs,
     backgroundColor: color.surface, borderRadius: radius['card-lg'], borderWidth: borderWidth.thin, borderColor: color.border,

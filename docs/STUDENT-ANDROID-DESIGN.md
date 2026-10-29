@@ -372,3 +372,14 @@ The user asked for the employer feed changes on the Jobs feed too, through the s
 - **Sound:** tap the film to toggle it. The flash shows in the middle, and the badge above the facts shows the state; the top-right sound button is gone.
 - The "Watch full interview" pill and the daily-card limit are employer only.
 - **Not verified on a device.**
+
+## 2026-10-27 round · searchable dropdowns — `docs/feed-shortlist-forms-mockups.html` (pickers)
+
+- **`SearchSelect`** (new, `src/components/ui/SearchSelect.tsx`, imported by path, shared with the interviewer and employer forms). The closed field shows the picks as accent chips with × (which removes one without opening) and a chevron. Tapping it opens a sheet with the title and "{n} picked", a search box, the picked chips, "{k} matches" while searching, and the list: 46 px rows (54 with a group line), with the match in accent semibold and a checkbox. The foot has Clear and "Done · {n}". Search matches any part of the name and ignores case and accents ("maori" finds "Māori"). The rows picked when the sheet opened stay at the top, so a tap never moves a row. There is no free-text entry. An empty search says `No language matches “tulu”.` and "Check the spelling, or try fewer letters." The list is a FlatList, and the sheet sits on the keyboard (worked out from `screenY`, as the interviewer room sheet does).
+- **Profile setup and Edit** (both use the step bodies in `wizardSteps.tsx`): Personal "Languages you speak" is the multi field, replacing the suggestion chips and "Tap a suggestion to add.". Education "Field of study" is a single pick from `/config masterData.domains`, with each domain's broad field under it. It uses radios, closes on the pick, and has "Pick one" on the label's right. A free-text answer that isn't in the list stays shown until another is picked. If the server sends no domain list, the field stays free text.
+- **Deviations:** the sheet is 85 % of the screen (the mockup's starts 56 px from the top, about 93 %). The closed field is 48 tall, the input height token (the mockup has 46). The scrim is the app's `scrim` (ink 40 %; the mockup has 50 %). The checkbox corner is `radius.sm` (6, not 7).
+- **Not verified on a device.** Untested: the keyboard overlap, `String.prototype.normalize` on Hermes for the accent folding (without it, search falls back to plain lower case), and the picker's Modal opening over the profile Edit sheet's Modal.
+
+## 2026-10-27 round · shared sign-out — `docs/feed-shortlist-forms-mockups.html` (signout)
+
+- The Account screen's red sign-out row (and its Android `Alert`) is now the shared `SignOutButton` + centre `SignOutDialog` (`src/components/ui/SignOutDialog.tsx`, the same for the student, employer and interviewer; details under the same date in EMPLOYER-ANDROID-DESIGN.md). Logout → clear token → Welcome is unchanged. Not verified on a device.

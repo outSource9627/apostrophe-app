@@ -10,7 +10,7 @@ import {
 } from '../ui/feed-deck'
 import type { CandidateCard } from '../../lib/api/employerFeed'
 import {
-  experienceLine, interviewDateShort, joinsLine, nameInitials, salaryLine, shortlistedLine, tierLine,
+  experienceLine, interviewDate, interviewDateShort, joinsLine, nameInitials, salaryLine, shortlistedLine, tierLine,
 } from '../../lib/employer/candidateFormat'
 import { EmIconButton } from './em'
 
@@ -115,17 +115,18 @@ export function FeedChips({
  * One candidate as a video feed card (docs/tinder-feed-mockups.html · design 1,
  * employer mode): the verified-interview film fills the card (muted, looping),
  * the poster stays over it until its first frame is ready, and the film's
- * progress runs across the top. On top: the verified tag and "Watch full
- * interview" (docs/feed-room-mockups.html · Watch 3). A tap on the film turns the
- * sound on or off (Instagram style: a flash in the middle, a badge above the
- * name). At the foot: the face and name (a tap opens the profile), the
- * headline, Expected / Joins in pink, the skills, and where / how long / how
- * many shortlisted. The four round buttons are the screen's, fixed over the
- * foot. `active` is false for the card waiting behind, which draws its poster
- * and plays nothing.
+ * progress runs across the top. On top: the verified tick and date, and "Watch
+ * full interview" (docs/feed-room-mockups.html · Watch 3). A tap on the film
+ * turns the sound on or off (Instagram style: a flash in the middle, a badge
+ * above the name). At the foot: the face and name (a tap opens the full profile
+ * page; the ⌃ beside them opens the quick sheet —
+ * docs/feed-shortlist-forms-mockups.html · feed 3), the headline, Expected /
+ * Joins in pink, the skills, and where / how long / how many shortlisted. The
+ * four round buttons are the screen's, fixed over the foot. `active` is false
+ * for the card waiting behind, which draws its poster and plays nothing.
  */
 export const DeckCard = memo(function DeckCardView({
-  card, active, muted, fullBlocked, onToggleMute, onOpenFull, onOpenProfile, onStreamFail, stamps,
+  card, active, muted, fullBlocked, onToggleMute, onOpenFull, onOpenPage, onOpenProfile, onStreamFail, stamps,
 }: {
   card: CandidateCard
   active: boolean
@@ -133,6 +134,9 @@ export const DeckCard = memo(function DeckCardView({
   fullBlocked?: boolean
   onToggleMute?: () => void
   onOpenFull?: () => void
+  /** The photo and name: the full profile page. */
+  onOpenPage?: () => void
+  /** The ⌃: the quick profile sheet over the card. */
   onOpenProfile?: () => void
   onStreamFail?: () => void
   /** Drawn over the film (the swipe stamps). */
@@ -147,6 +151,7 @@ export const DeckCard = memo(function DeckCardView({
   const shown = playing && ready === card.streamUrl
   const poster = card.posterUrl ?? card.photoUrl
   const date = card.verifiedInterview?.verified ? interviewDateShort(card.verifiedInterview.at) : null
+  const longDate = card.verifiedInterview?.verified ? interviewDate(card.verifiedInterview.at) : null
   const headline = card.headline || tierLine(card.tier, card.qualification)
   const meta = [card.city, experienceLine(card.experienceYears), shortlistedLine(card.shortlistCount)].filter(Boolean).join(' · ')
   const salary = salaryLine(card.expectedSalary)
@@ -189,7 +194,9 @@ export const DeckCard = memo(function DeckCardView({
       {playing && flash > 0 && <FeedSoundFlash key={flash} muted={muted} />}
 
       <FeedCardTop
-        left={<FeedTag label={date ? `Verified · ${date}` : card.hasVideo ? 'Interview film' : 'Candidate'} />}
+        left={date
+          ? <FeedTag verified label={date} a11y={`Verified interview, ${longDate ?? date}`} />
+          : <FeedTag label={card.hasVideo ? 'Interview film' : 'Candidate'} />}
         right={card.hasVideo && !fullBlocked && !!onOpenFull
           ? <FeedWatchButton label="Watch full interview" a11y={`Watch ${card.name}’s full interview`} onPress={onOpenFull} />
           : null}
@@ -200,7 +207,7 @@ export const DeckCard = memo(function DeckCardView({
       <FeedHud>
         {playing && <FeedMuteBadge muted={muted} onPress={toggleSound} />}
         <View style={styles.who}>
-          <Pressable accessibilityRole="button" accessibilityLabel={`${card.name}, open profile`} onPress={onOpenProfile} style={styles.whoTap}>
+          <Pressable accessibilityRole="button" accessibilityLabel={`${card.name}, open profile`} onPress={onOpenPage} style={styles.whoTap}>
             {card.photoUrl ? (
               <Image source={{ uri: card.photoUrl }} style={styles.avatar} />
             ) : (
@@ -214,7 +221,7 @@ export const DeckCard = memo(function DeckCardView({
               {!!headline && <Text style={feedText.sub} numberOfLines={1}>{headline}</Text>}
             </View>
           </Pressable>
-          <FeedGlassButton icon="chevU" tone="light" label="Open full profile" onPress={onOpenProfile} />
+          <FeedGlassButton icon="chevU" tone="light" label="Profile details" onPress={onOpenProfile} />
         </View>
         <FeedPills>
           {!!salary && <FeedPill tone="pink" label={salary} />}

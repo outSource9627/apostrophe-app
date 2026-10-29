@@ -100,6 +100,7 @@ import {
   InterviewerHelpScreen,
   InterviewerDataScreen,
 } from './src/screens/interviewer'
+import { ScreeningTestScreen } from './src/screens/interviewer/ScreeningTestScreen'
 import { threadIdForConnection } from './src/lib/api/chat'
 import { getMe, type Me } from './src/lib/api/account'
 import { tokenStore } from './src/lib/api'
@@ -190,6 +191,8 @@ export type RootStackParamList = {
   // ── Interviewer portal & recruitment (IV-01..IV-22) ────────────────────────
   JoinUs: undefined
   InterviewerApply: undefined
+  /** The applicant's screening test, by the token kept on this phone (lib/interviewer/screeningStore). */
+  InterviewerScreening: { token: string }
   InterviewerPassword: { email?: string; forced?: boolean; reset?: boolean } | undefined
   InterviewerDashboard: undefined
   InterviewerAvailability: undefined
@@ -907,6 +910,10 @@ export default function App() {
 
             <Stack.Screen name="InterviewerApply">
               {() => <InterviewerApplyScreen />}
+            </Stack.Screen>
+
+            <Stack.Screen name="InterviewerScreening" options={{ gestureEnabled: false }}>
+              {() => <ScreeningTestScreen />}
             </Stack.Screen>
 
             <Stack.Screen name="InterviewerPassword">

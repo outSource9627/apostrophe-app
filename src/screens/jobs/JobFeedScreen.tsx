@@ -324,13 +324,13 @@ export function JobFeedScreen({ onBack, onOpen, onSaved, onApplied, onApply, onC
   const saveStamp = tx.interpolate({ inputRange: [FLICK_X, COMMIT_X + 20], outputRange: [0, 1], extrapolate: 'clamp' })
   const passStamp = tx.interpolate({ inputRange: [-(COMMIT_X + 20), -FLICK_X], outputRange: [1, 0], extrapolate: 'clamp' })
   const skipStamp = ty.interpolate({ inputRange: [-(COMMIT_Y + 20), -FLICK_Y], outputRange: [1, 0], extrapolate: 'clamp' })
-  // The next card grows into place as the top one leaves, sideways or upward.
+  // The next card brightens as the top one leaves, sideways or upward. It waits full size, so no
+  // edge of it can show past the top card (docs/feed-shortlist-forms-mockups.html · feed 4).
   const grow = Animated.add(
     tx.interpolate({ inputRange: [-160, 0, 160], outputRange: [1, 0, 1], extrapolate: 'clamp' }),
     ty.interpolate({ inputRange: [-200, 0], outputRange: [1, 0], extrapolate: 'clamp' }),
   )
-  const nextScale = grow.interpolate({ inputRange: [0, 1], outputRange: [0.95, 1], extrapolate: 'clamp' })
-  const nextLift = grow.interpolate({ inputRange: [0, 1], outputRange: [space.md, 0], extrapolate: 'clamp' })
+  const nextFade = grow.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1], extrapolate: 'clamp' })
 
   const playing = focused && !sheetOpen && !details
 
@@ -353,7 +353,7 @@ export function JobFeedScreen({ onBack, onOpen, onSaved, onApplied, onApply, onC
                     StyleSheet.absoluteFill,
                     top
                       ? [s.top1, { transform: [{ translateX: tx }, { translateY: ty }, { rotate }] }]
-                      : [s.top0, { transform: [{ translateY: nextLift }, { scale: nextScale }] }],
+                      : [s.top0, { opacity: nextFade }],
                   ]}
                   accessibilityActions={top ? [{ name: 'skip', label: 'Skip this job' }] : undefined}
                   onAccessibilityAction={top ? (ev) => ev.nativeEvent.actionName === 'skip' && skip() : undefined}
@@ -601,8 +601,11 @@ const s = StyleSheet.create({
   tabOnLight: { backgroundColor: color.surface, borderWidth: borderWidth.thin, borderColor: color.border },
   tabText: { fontFamily: FF.bodySemiBold, fontSize: fontSize['ui-sm'], lineHeight: leadingNative['ui-sm'] },
 
-  /** The card runs edge to edge from under the tabs straight into the tab bar; its foot fades into the same black. */
-  stage: { flex: 1 },
+  /**
+   * The card runs edge to edge from under the tabs straight into the tab bar; its foot fades into the same black.
+   * Clipped, so a card on its way out never draws over the tabs or the tab bar.
+   */
+  stage: { flex: 1, overflow: 'hidden' },
   /** The light states (empty, error) keep their inset. */
   stageInset: { marginHorizontal: spaceHalf['2.5'] },
   top0: { zIndex: 1 },
