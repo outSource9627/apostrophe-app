@@ -1,5 +1,6 @@
 import { api, tokenStore } from './index'
 import type { MessageDto, ThreadDto, ThreadPage } from './chat'
+import type { InterviewerApplyResponse } from './screening'
 
 /**
  * The interviewer API, typed from the platform's own routes and contracts
@@ -446,8 +447,9 @@ export interface InterviewerApplicationInput {
   expectedAvailability?: string
   resumeKey?: string
 }
+/** The response carries `screeningTest` — the applicant's test, a repeat, or null (lib/api/screening). */
 export const submitInterviewerApplication = (body: InterviewerApplicationInput) =>
-  api.post<{ received: boolean; message: string }>('/interviewers/apply', body, { anonymous: true })
+  api.post<InterviewerApplyResponse>('/interviewers/apply', body, { anonymous: true })
 
 // ── Profile write (PATCH /interviewers/me/profile) ───────────────────────────
 /** Any subset, at least one. Domains, tiers, fees, load caps and status are admin-only (a 400). */

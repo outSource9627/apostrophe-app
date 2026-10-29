@@ -330,13 +330,13 @@ export function EmployerFeedScreen() {
   const shortOpacity = tx.interpolate({ inputRange: [FLICK_X, COMMIT_X + 20], outputRange: [0, 1], extrapolate: 'clamp' })
   const passOpacity = tx.interpolate({ inputRange: [-(COMMIT_X + 20), -FLICK_X], outputRange: [1, 0], extrapolate: 'clamp' })
   const skipOpacity = ty.interpolate({ inputRange: [-(COMMIT_Y + 20), -FLICK_Y], outputRange: [1, 0], extrapolate: 'clamp' })
-  // The next card grows into place as the top one leaves, sideways or upward.
+  // The next card brightens as the top one leaves, sideways or upward. It waits full size, so no
+  // edge of it can show past the top card (docs/feed-shortlist-forms-mockups.html · feed 4).
   const grow = Animated.add(
     tx.interpolate({ inputRange: [-160, 0, 160], outputRange: [1, 0, 1], extrapolate: 'clamp' }),
     ty.interpolate({ inputRange: [-200, 0], outputRange: [1, 0], extrapolate: 'clamp' }),
   )
-  const nextScale = grow.interpolate({ inputRange: [0, 1], outputRange: [0.95, 1], extrapolate: 'clamp' })
-  const nextLift = grow.interpolate({ inputRange: [0, 1], outputRange: [space.md, 0], extrapolate: 'clamp' })
+  const nextFade = grow.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1], extrapolate: 'clamp' })
 
   const pending = known && (!verified || deck.gated)
   const chips = filterChips(filters)
@@ -346,6 +346,8 @@ export function EmployerFeedScreen() {
   const openFull = () =>
     current?.hasVideo &&
     navigation.navigate('CandidateVideo', { id: current.id, name: current.name, photoUrl: current.photoUrl, interviewAt: current.verifiedInterview?.at })
+  // The name opens the full profile page; the ⌃ keeps the quick sheet.
+  const openPage = () => current && navigation.navigate('CandidateProfile', { id: current.id })
   const openProfile = () => current && setProfileCard(current)
 
   let stage: React.ReactNode
@@ -381,7 +383,7 @@ export function EmployerFeedScreen() {
     stage = (
       <>
         {next && (
-          <Animated.View style={[styles.layer, { transform: [{ translateY: nextLift }, { scale: nextScale }] }]} pointerEvents="none">
+          <Animated.View style={[styles.layer, { opacity: nextFade }]} pointerEvents="none">
             <DeckCard card={next} active={false} muted />
           </Animated.View>
         )}
@@ -398,6 +400,7 @@ export function EmployerFeedScreen() {
               muted={muted}
               onToggleMute={() => setMuted((m) => !m)}
               onOpenFull={openFull}
+              onOpenPage={openPage}
               onOpenProfile={openProfile}
               onStreamFail={refreshStreams}
               stamps={
@@ -647,8 +650,11 @@ const styles = StyleSheet.create({
   pressed: { opacity: opacity.pressed },
   muted: { color: color.textMuted },
   secondary: { color: color.textSecondary },
-  /** The card runs edge to edge from under the chips straight into the tab bar; its foot fades into the same black. */
-  stack: { flex: 1 },
+  /**
+   * The card runs edge to edge from under the chips straight into the tab bar; its foot fades into the same black.
+   * Clipped, so a card on its way out never draws over the chips or the tab bar.
+   */
+  stack: { flex: 1, overflow: 'hidden' },
   /** The light states (lock, limit, caught up, error) keep their inset. */
   stackInset: { marginHorizontal: spaceHalf['2.5'] },
   layer: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },

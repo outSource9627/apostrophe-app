@@ -1,17 +1,18 @@
 import React, { useState } from 'react'
-import { Alert, StyleSheet, Text, View } from 'react-native'
+import { StyleSheet, Text, View } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { Linking } from 'react-native'
 import { borderWidth, color, fontFamilyNative as FF } from '../../theme'
 import { Icon, type IconName } from '../../components/ui/Icon'
+import { SignOutButton, SignOutDialog } from '../../components/ui/SignOutDialog'
 import { InterviewerShell } from '../../components/interviewer/InterviewerShell'
 import { tokenStore } from '../../lib/api'
 import { logout } from '../../lib/api/account'
 import { formatPaise } from '../../lib/format/money'
 import { initialsFrom, mobileLabel, webUrl } from '../../lib/interviewer/profile'
 import { useForgetInterviewer, useInterviewerIdentity, useInterviewerMe, useInterviewerUnread } from '../../lib/interviewer/useInterviewer'
-import { AcBadge, AcCard, AcDisc, AcHeading, AcKV, AcList, AcNotice, AcPill, AcRow, AcSkel, noticeText } from './accountKit'
+import { AcBadge, AcCard, AcDisc, AcHeading, AcKV, AcList, AcNotice, AcRow, AcSkel, noticeText } from './accountKit'
 import pkg from '../../../package.json'
 import type { RootStackParamList } from '../../../App'
 
@@ -29,31 +30,18 @@ export function InterviewerAccountScreen() {
   const identity = useInterviewerIdentity()
   const unread = useInterviewerUnread()
   const forget = useForgetInterviewer()
-  const [signingOut, setSigningOut] = useState(false)
+  const [signOutOpen, setSignOutOpen] = useState(false)
 
-  function signOut() {
-    Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Sign Out',
-          style: 'destructive',
-          onPress: async () => {
-            setSigningOut(true)
-            try {
-              await logout()
-            } catch {
-              /* best-effort; the phone is cleared regardless */
-            }
-            await tokenStore.clear()
-            forget()
-            navigation.reset({ index: 0, routes: [{ name: 'Welcome' }] })
-          },
-        },
-      ]
-    )
+  /** Confirmed in the shared sign-out dialog, which shows "Signing out…" while this runs. */
+  async function signOut() {
+    try {
+      await logout()
+    } catch {
+      /* best-effort; the phone is cleared regardless */
+    }
+    await tokenStore.clear()
+    forget()
+    navigation.reset({ index: 0, routes: [{ name: 'Welcome' }] })
   }
 
   const p = me?.profile
@@ -136,7 +124,7 @@ export function InterviewerAccountScreen() {
 
   return (
     <InterviewerShell title="Account" contentGap="md">
-      <View style={[st.content, signingOut && st.busy]} pointerEvents={signingOut ? 'none' : 'auto'}>
+      <View style={st.content}>
         {!!error && !me && !mustChangePassword && (
           <AcNotice tone="info">
             <Text style={noticeText('info')}>
@@ -204,8 +192,9 @@ export function InterviewerAccountScreen() {
           </React.Fragment>
         ))}
 
-        <AcPill tone="danger" icon="out" label="Sign out" busy={signingOut} busyLabel="Signing out…" onPress={signOut} />
+        <SignOutButton onPress={() => setSignOutOpen(true)} />
       </View>
+      <SignOutDialog open={signOutOpen} onClose={() => setSignOutOpen(false)} onConfirm={signOut} />
     </InterviewerShell>
   )
 }
@@ -213,7 +202,6 @@ export function InterviewerAccountScreen() {
 const st = StyleSheet.create({
   grow: { flex: 1, minWidth: 0 },
   content: { gap: 12 },
-  busy: { opacity: 0.55 },
   bold: { fontFamily: FF.bodyBold },
   retry: { fontFamily: FF.bodyBold, color: color.accent },
   rule: { borderBottomWidth: borderWidth.thin, borderBottomColor: color.border },

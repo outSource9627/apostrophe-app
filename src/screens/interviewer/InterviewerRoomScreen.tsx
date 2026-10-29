@@ -777,7 +777,7 @@ const styles = StyleSheet.create({
   ctl: { alignItems: 'center', gap: spaceHalf['1.5'], minWidth: height.fab },
   disc: { width: height.control, height: height.control, borderRadius: radius.pill, backgroundColor: color.onInkPlay, alignItems: 'center', justifyContent: 'center' },
   discOff: { backgroundColor: color.textOnInk },
-  discEnd: { width: height['feed-action'], backgroundColor: color.dangerFill },
+  discEnd: { width: height['room-end-w'], backgroundColor: color.dangerFill },
   caption: { color: color.textOnInkBody },
   rbtns: { flexDirection: 'row', gap: spaceHalf['2.5'], paddingHorizontal: space.lg },
   rbtn: { flex: 1, minWidth: 0, height: height.control, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.sm, borderRadius: radius.pill, backgroundColor: color.onInkGround, borderWidth: borderWidth.thin, borderColor: color.onInkEdge },

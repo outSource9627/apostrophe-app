@@ -1,0 +1,824 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Screening Test Mockups</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Public+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<!--
+  Interviewer screening test, 2026-10-27. Applicant screens use the app / web
+  tokens (red brand, Geist). Admin screens use the admin panel's own tokens
+  (apostrophe-admin/src/app/globals.css: indigo accent, Space Grotesk / Public
+  Sans / IBM Plex Mono). Numbers marked "setting" are admin settings drawn with
+  example values. Questions are samples, not the generated bank.
+  URL: ?only=<section id>
+-->
+<style>
+  :root{
+    /* app / web (Lenient) */
+    --accent:#B22222; --accent-bright:#C83333; --accent-deep:#6B1414; --accent-soft:#F9EAEA; --accent-wash:#FDF5F5; --accent-text:#951C1C; --accent-edge:#F0D2D2;
+    --ink:#141414; --text:#141414; --text2:#2C2C2C; --muted:#777777; --subtle:#8C8C8C;
+    --surface:#FFFFFF; --surface-muted:#F3F3F3; --sunken:#E8E8E8; --bg:#FCFCFC; --border:#E5E5E5; --border-strong:#D0D0D0; --border-soft:#F3F3F3;
+    --ok:#0B7A55; --ok-fill:#0E9F6E; --ok-soft:#E6F7F0; --warn:#935F00; --warn-fill:#F5A524; --warn-soft:#FFF5E1;
+    --danger:#C2410C; --danger-fill:#E5531A; --danger-soft:#FFEDE5;
+    --note:#2563EB;
+    /* admin */
+    --a-bg:#F7F8FA; --a-surface:#FFFFFF; --a-muted:#FAFBFC; --a-sunken:#EEF0F2; --a-text:#101828; --a-text2:#475467; --a-subtle:#98A2B3;
+    --a-border:#E4E7EC; --a-border-strong:#D0D5DD; --a-accent:#3538CD; --a-accent-soft:#EEF0FF; --a-accent-muted:#A6A8E0;
+    --a-ok:#067647; --a-ok-soft:#ECFDF3; --a-warn:#B54708; --a-warn-soft:#FFFAEB; --a-danger:#B42318; --a-danger-soft:#FEF3F2;
+    --a-shadow:0 1px 2px rgba(15,23,42,.04),0 12px 32px -12px rgba(15,23,42,.12);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Geist',system-ui,sans-serif;background:#ECECEC;color:var(--text);padding:32px 24px 100px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1720px;margin:0 auto}
+  .ic{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;display:block;flex:none}
+  .ic.f{fill:currentColor;stroke-width:1.2}
+
+  /* page chrome */
+  .intro,.section{background:#fff;border:1px solid var(--border);border-radius:24px;padding:24px 28px;margin-bottom:16px}
+  .intro h1{font-size:28px;font-weight:700;letter-spacing:-.02em}
+  .intro p,.section .sub{font-size:15px;color:var(--muted);margin-top:6px;line-height:1.5;max-width:1060px}
+  .flow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:16px}
+  .flow span{background:var(--surface-muted);border-radius:99px;padding:7px 13px;font-size:13.5px;font-weight:500;color:var(--text2)}
+  .flow span.new{background:var(--accent-soft);color:var(--accent-text);font-weight:600}
+  .flow i{color:var(--subtle);font-style:normal}
+  .map{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:8px;margin-top:16px}
+  .map a{display:block;background:var(--surface-muted);border-radius:14px;padding:11px 13px;font-size:13.5px;line-height:1.45;color:var(--text2);text-decoration:none}
+  .map a:hover{background:var(--accent-wash)}
+  .map b{display:block;font-size:14px;color:var(--text);margin-bottom:3px;font-weight:600}
+  .section h2{font-size:21px;font-weight:700;letter-spacing:-.01em;display:flex;align-items:center;gap:10px}
+  .section .sub{margin-bottom:20px}
+  .row{display:flex;flex-wrap:wrap;gap:26px;align-items:flex-start}
+  .col{display:grid;gap:10px;width:380px;align-content:start}
+  .cap{font-size:14.5px;font-weight:600;min-height:64px}
+  .cap span{display:block;font-size:13px;font-weight:400;color:var(--muted);margin-top:3px;line-height:1.45}
+  .legend{display:grid;gap:7px;font-size:13px;color:var(--text2);line-height:1.45}
+  .legend div{display:flex;gap:8px;align-items:flex-start}
+  .n{flex:none;width:20px;height:20px;border-radius:99px;background:var(--note);color:#fff;font-size:11.5px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;font-style:normal}
+  .spec{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px;margin-top:22px}
+  .spec>div{border:1px solid var(--border);border-radius:14px;padding:12px 14px;font-size:13.5px;line-height:1.5;color:var(--text2)}
+  .spec>div>b{display:block;color:var(--text);font-size:14px;margin-bottom:2px}
+  code{font-family:ui-monospace,Menlo,monospace;font-size:12px;background:var(--surface-muted);padding:1px 5px;border-radius:5px}
+  .tagp{display:inline-block;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:99px;background:var(--accent-soft);color:var(--accent-text);white-space:nowrap}
+  .tagp.app{background:#E7F6EF;color:var(--ok)}.tagp.web{background:#E8EEFD;color:#1D4ED8}.tagp.adt{background:var(--a-accent-soft);color:var(--a-accent)}.tagp.set{background:#FFF3D6;color:#7A5200}
+  .h3{font-size:17px;font-weight:700;margin:30px 0 12px}
+  .ann{position:absolute;z-index:46;width:20px;height:20px;border-radius:99px;background:var(--note);color:#fff;font-size:11.5px;font-weight:700;display:flex;align-items:center;justify-content:center;font-style:normal;box-shadow:0 0 0 2px #fff}
+
+  /* phone */
+  .phone{width:380px;height:800px;padding:10px;border-radius:50px;background:#111;box-shadow:0 20px 50px rgba(0,0,0,.16),inset 0 0 0 2px #2b2b2b}
+  .scr{position:relative;width:360px;height:780px;border-radius:40px;overflow:hidden;background:var(--bg);color:var(--text)}
+  .sb{position:absolute;top:0;left:0;right:0;height:30px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:13px;font-weight:600;z-index:40;pointer-events:none}
+  .sb .r{display:flex;gap:5px;align-items:center}.sb .r i{display:block;background:currentColor;border-radius:2px}
+  .brandh{position:absolute;top:0;left:0;right:0;height:150px;background:linear-gradient(150deg,var(--accent-bright),var(--accent) 45%,var(--accent-deep));color:#fff;padding:42px 18px 0;overflow:hidden}
+  .brandh::after{content:'';position:absolute;right:-60px;top:-70px;width:200px;height:200px;border-radius:99px;background:rgba(255,255,255,.08)}
+  .brandh h3{font-size:22px;font-weight:700;margin-top:12px;letter-spacing:-.01em}
+  .brandh p{font-size:13px;color:rgba(255,255,255,.82);margin-top:4px}
+  .body{position:absolute;left:0;right:0;padding:0 16px}
+  .done{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px}
+  .tickd{width:60px;height:60px;border-radius:99px;background:var(--ok-soft);color:var(--ok);display:flex;align-items:center;justify-content:center}
+  .tickd .ic{width:28px;height:28px;stroke-width:2.6}
+  .tickd.am{background:var(--warn-soft);color:var(--warn)}
+  .dt{font-size:22px;font-weight:700;letter-spacing:-.01em}
+  .dp{font-size:14px;color:var(--muted);line-height:1.5}
+  .steps{display:grid;gap:10px;width:100%;border:1px solid var(--border);border-radius:16px;background:#fff;padding:14px;text-align:left}
+  .step{display:flex;gap:10px;align-items:flex-start;font-size:14px}
+  .step i{flex:none;width:24px;height:24px;border-radius:99px;background:var(--accent-soft);color:var(--accent-text);font-style:normal;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
+  .step i.ok{background:var(--ok-soft);color:var(--ok)}
+  .step i.ok .ic{width:13px;height:13px;stroke-width:3}
+  .step small{display:block;font-size:12.5px;color:var(--muted);margin-top:2px}
+  .step.now span{font-weight:600}
+  .startc{width:100%;border-radius:18px;background:var(--ink);color:#fff;padding:16px;text-align:left}
+  .startc .k{font-size:12.5px;color:#D0D0D0;font-weight:500}
+  .startc .t{font-size:18px;font-weight:700;margin-top:4px;letter-spacing:-.01em}
+  .startc .m{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .startc .m span{font-size:12px;font-weight:500;padding:4px 10px;border-radius:99px;background:rgba(255,255,255,.12);color:#fff}
+  .bp{height:50px;border-radius:99px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:600;width:100%}
+  .bp .ic{width:17px;height:17px}
+  .bp.w{background:#fff;color:var(--ink)}
+  .bq{height:48px;border-radius:99px;background:var(--surface-muted);color:var(--text);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;width:100%}
+  .bo{height:48px;border-radius:99px;border:1px solid var(--border-strong);background:#fff;color:var(--text);display:flex;align-items:center;justify-content:center;gap:6px;font-size:14.5px;font-weight:600;padding:0 18px}
+  .bo .ic{width:16px;height:16px}
+  .hint{font-size:12.5px;color:var(--muted);line-height:1.45}
+
+  /* test top bar */
+  .tbar{position:absolute;top:30px;left:0;right:0;height:56px;display:flex;align-items:center;gap:10px;padding:0 16px;background:#fff;border-bottom:1px solid var(--border);z-index:5}
+  .tbar h4{flex:1;font-size:16px;font-weight:700}
+  .tbar h4 small{display:block;font-size:12px;font-weight:500;color:var(--muted);margin-top:1px}
+  .timer{height:34px;padding:0 12px;border-radius:99px;background:var(--surface-muted);display:flex;align-items:center;gap:6px;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
+  .timer .ic{width:15px;height:15px}
+  .timer.low{background:var(--warn-soft);color:var(--warn)}
+  .gridb{width:38px;height:38px;border-radius:99px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--text2)}
+  .gridb .ic{width:18px;height:18px}
+  .segs{position:absolute;top:86px;left:16px;right:16px;display:grid;grid-template-columns:13fr 6fr 5fr 5fr;gap:6px;z-index:5}
+  .seg{display:grid;gap:5px}
+  .seg .bar{height:4px;border-radius:4px;background:var(--sunken);overflow:hidden}
+  .seg .bar i{display:block;height:100%;background:var(--accent);border-radius:4px}
+  .seg span{font-size:11px;font-weight:500;color:var(--subtle);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .seg.on span{color:var(--text);font-weight:600}
+  .qwrap{position:absolute;top:128px;left:16px;right:16px}
+  .qsec{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:var(--accent-text)}
+  .qsec small{color:var(--muted);font-weight:500}
+  .qnum{font-size:13px;color:var(--muted);margin-top:14px;font-variant-numeric:tabular-nums}
+  .qtext{font-size:18px;font-weight:600;line-height:1.45;letter-spacing:-.005em;margin-top:6px;color:var(--text)}
+  .opts{display:grid;gap:10px;margin-top:18px}
+  .opt{display:flex;align-items:center;gap:12px;min-height:54px;padding:12px 14px;border:1.5px solid var(--border);border-radius:14px;background:#fff;font-size:15px;line-height:1.35}
+  .opt b{flex:none;width:28px;height:28px;border-radius:99px;border:1.5px solid var(--border-strong);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:var(--text2)}
+  .opt.on{border-color:var(--accent);background:var(--accent-wash)}
+  .opt.on b{background:var(--accent);border-color:var(--accent);color:#fff}
+  .saved{display:flex;align-items:center;gap:5px;font-size:12.5px;color:var(--ok);font-weight:500;margin-top:14px}
+  .saved .ic{width:14px;height:14px;stroke-width:2.6}
+  .tfoot{position:absolute;left:0;right:0;bottom:0;padding:12px 16px 22px;background:#fff;border-top:1px solid var(--border);display:flex;gap:10px}
+  .tfoot .bo{flex:1}.tfoot .bp{flex:1.4}
+  .scrim{position:absolute;inset:0;background:rgba(10,10,10,.45);z-index:20}
+  .sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:26px 26px 0 0;z-index:21;padding:10px 18px 22px}
+  .hdl{width:40px;height:4px;border-radius:4px;background:var(--border-strong);margin:0 auto 14px}
+  .shead{display:flex;align-items:baseline;justify-content:space-between}
+  .shead b{font-size:19px;font-weight:700;letter-spacing:-.01em}
+  .shead span{font-size:13px;color:var(--muted)}
+  .ngrp{margin-top:14px}
+  .ngrp h6{font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:8px}
+  .ngrid{display:grid;grid-template-columns:repeat(8,1fr);gap:7px}
+  .nb{height:34px;border-radius:10px;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:var(--text2);font-variant-numeric:tabular-nums}
+  .nb.a{background:var(--accent);border-color:var(--accent);color:#fff}
+  .nb.c{border-color:var(--ink);color:var(--ink)}
+  .nkey{display:flex;gap:14px;margin-top:14px;font-size:12px;color:var(--muted)}
+  .nkey span{display:flex;align-items:center;gap:5px}
+  .nkey i{width:12px;height:12px;border-radius:4px;border:1.5px solid var(--border)}
+  .nkey i.a{background:var(--accent);border-color:var(--accent)}
+  .dlg{position:absolute;left:22px;right:22px;top:50%;transform:translateY(-50%);background:#fff;border-radius:22px;padding:24px 20px 16px;z-index:21;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.25)}
+  .dlg .t{font-size:19px;font-weight:700;letter-spacing:-.01em;margin-top:14px}
+  .dlg .p{font-size:14px;color:var(--muted);margin-top:6px;line-height:1.5}
+  .dlg .acts{display:grid;gap:8px;margin-top:20px}
+  .disc{width:52px;height:52px;border-radius:99px;margin:0 auto;display:flex;align-items:center;justify-content:center;background:var(--accent-soft);color:var(--accent)}
+  .disc .ic{width:24px;height:24px}
+  .rules{display:grid;gap:12px;width:100%}
+  .rule{display:flex;gap:12px;align-items:flex-start;font-size:14px;line-height:1.45}
+  .rule .ri{flex:none;width:34px;height:34px;border-radius:10px;background:var(--surface-muted);display:flex;align-items:center;justify-content:center;color:var(--text2)}
+  .rule .ri .ic{width:17px;height:17px}
+  .rule small{display:block;font-size:12.5px;color:var(--muted);margin-top:1px}
+  .secrow{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;width:100%}
+  .secrow div{background:#fff;border:1px solid var(--border);border-radius:12px;padding:9px 8px;text-align:center}
+  .secrow b{display:block;font-size:18px;font-weight:700;font-variant-numeric:tabular-nums}
+  .secrow span{font-size:11.5px;color:var(--muted)}
+  .mini{width:380px;height:220px;border-radius:24px;background:#fff;border:1px solid var(--border);padding:18px;position:relative;overflow:hidden}
+
+  /* desktop (web) */
+  .desk{width:1180px;border-radius:14px;border:1px solid var(--border-strong);background:var(--bg);overflow:hidden;position:relative;box-shadow:0 20px 50px rgba(0,0,0,.1)}
+  .desk .chrome{height:34px;background:#F1F1F1;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px;padding:0 14px}
+  .desk .chrome i{width:11px;height:11px;border-radius:99px;background:#D6D6D6}
+  .desk .chrome span{margin-left:14px;font-size:12px;color:var(--muted);background:#fff;border-radius:7px;padding:3px 12px}
+  .bshell{display:flex;height:640px}
+  .bpanel{width:44%;background:linear-gradient(150deg,var(--accent-bright),var(--accent) 45%,var(--accent-deep));color:#fff;padding:44px 48px;position:relative;overflow:hidden}
+  .bpanel::after{content:'';position:absolute;right:-80px;top:-90px;width:260px;height:260px;border-radius:99px;background:rgba(255,255,255,.08)}
+  .blogo{display:flex;align-items:center;gap:9px;font-size:18px;font-weight:600}
+  .blogo i{width:28px;height:28px;border-radius:8px;background:#fff;color:var(--accent);font-style:normal;font-weight:800;display:flex;align-items:center;justify-content:center}
+  .bpanel h3{font-size:30px;line-height:1.2;font-weight:700;margin-top:52px;letter-spacing:-.02em;max-width:420px}
+  .bpanel p{font-size:15px;color:rgba(255,255,255,.85);margin-top:12px;line-height:1.5;max-width:420px}
+  .bpanel ul{list-style:none;margin-top:24px;display:grid;gap:10px;font-size:14.5px}
+  .bpanel li{display:flex;gap:10px;align-items:center}
+  .bpanel li .ic{width:16px;height:16px;stroke-width:2.6}
+  .bform{flex:1;display:flex;justify-content:center;padding:36px 56px;overflow:hidden}
+  .bform .inner{width:440px}
+  .thead{height:64px;background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:16px;padding:0 28px}
+  .thead .blogo{color:var(--text);font-size:16px}
+  .thead .blogo i{background:var(--accent);color:#fff;width:26px;height:26px}
+  .thead .tt{flex:1;font-size:15px;font-weight:600;color:var(--text2)}
+  .tbody{display:flex;gap:28px;padding:28px 40px;height:576px}
+  .tmain{flex:1;max-width:720px}
+  .tside{width:300px;background:#fff;border:1px solid var(--border);border-radius:18px;padding:18px;align-self:flex-start}
+  .tside .ngrid{grid-template-columns:repeat(5,1fr)}
+  .kbd{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 5px;border-radius:5px;border:1px solid var(--border-strong);font-size:11px;font-weight:600;color:var(--text2);background:#fff}
+  .keys{display:flex;flex-wrap:wrap;gap:14px;margin-top:16px;font-size:12.5px;color:var(--muted)}
+  .keys span{display:flex;gap:6px;align-items:center}
+  .wfoot{display:flex;gap:12px;margin-top:22px}
+  .wfoot .bo{min-width:140px}.wfoot .bp{width:auto;padding:0 26px}
+
+  /* email */
+  .mail{width:560px;background:#fff;border:1px solid var(--border);border-radius:16px;overflow:hidden}
+  .mail .mh{padding:12px 16px;border-bottom:1px solid var(--border);font-size:13px;color:var(--muted);display:grid;gap:3px}
+  .mail .mh b{color:var(--text);font-weight:600}
+  .mail .mb{padding:22px 24px;font-size:14.5px;line-height:1.6;color:var(--text2)}
+  .mail .mb h4{font-size:20px;color:var(--text);margin-bottom:10px}
+  .mail .mb .bp{width:auto;display:inline-flex;padding:0 24px;margin:16px 0}
+
+  /* admin */
+  .adm{width:1240px;height:760px;border-radius:14px;border:1px solid var(--a-border-strong);background:var(--a-bg);overflow:hidden;display:flex;font-family:'Public Sans',system-ui,sans-serif;color:var(--a-text);box-shadow:0 20px 50px rgba(0,0,0,.1)}
+  .adm.tall{height:auto;min-height:760px}
+  .arail{width:262px;background:var(--a-surface);border-right:1px solid var(--a-border);display:flex;flex-direction:column;flex:none}
+  .arail .lg{height:64px;display:flex;align-items:center;gap:9px;padding:0 20px;border-bottom:1px solid var(--a-border);font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:16px}
+  .arail .lg i{width:26px;height:26px;border-radius:8px;background:var(--accent);color:#fff;font-style:normal;font-weight:800;display:flex;align-items:center;justify-content:center;font-size:14px}
+  .arail .grp{padding:14px 18px 4px;font-size:11px;font-weight:600;color:var(--a-subtle);letter-spacing:.02em}
+  .arl{margin:0 8px;min-height:36px;display:flex;align-items:center;gap:10px;padding:0 10px;border-radius:10px;font-size:13.5px;color:var(--a-text2);white-space:nowrap}
+  .arl .ic{width:16px;height:16px}
+  .arl.on{background:var(--a-accent-soft);color:var(--a-accent);font-weight:500}
+  .arl em{margin-left:auto;font-style:normal;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;padding:2px 7px;border-radius:99px;background:var(--a-warn-soft);color:var(--a-warn)}
+  .arl .newb{margin-left:auto;font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:99px;background:#FFF3D6;color:#7A5200}
+  .amain{flex:1;display:flex;flex-direction:column;min-width:0}
+  .ahead{height:56px;background:var(--a-surface);border-bottom:1px solid var(--a-border);display:flex;align-items:center;padding:0 32px;font-size:13.5px;color:var(--a-subtle);gap:6px}
+  .ahead b{color:var(--a-text);font-weight:500}
+  .apage{padding:24px 32px;display:grid;gap:18px;align-content:start;overflow:hidden}
+  .atitle{display:flex;align-items:center;gap:12px}
+  .atitle h3{font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:600;letter-spacing:-.01em}
+  .atitle p{font-size:13.5px;color:var(--a-text2);margin-top:2px}
+  .atitle .sp{flex:1}
+  .apill{display:inline-flex;align-items:center;border-radius:99px;padding:5px 10px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
+  .apill.mu{background:var(--a-sunken);color:var(--a-text2)}.apill.ok{background:var(--a-ok-soft);color:var(--a-ok)}.apill.wa{background:var(--a-warn-soft);color:var(--a-warn)}.apill.da{background:var(--a-danger-soft);color:var(--a-danger)}.apill.ac{background:var(--a-accent-soft);color:var(--a-accent)}
+  .acard{background:var(--a-surface);border:1px solid var(--a-border);border-radius:14px;box-shadow:var(--a-shadow)}
+  .abtn{height:38px;padding:0 14px;border-radius:10px;border:1px solid var(--a-border-strong);background:#fff;font-size:13.5px;font-weight:600;display:inline-flex;align-items:center;gap:7px;color:var(--a-text);white-space:nowrap}
+  .abtn .ic{width:15px;height:15px}
+  .abtn.pri{background:var(--a-accent);border-color:var(--a-accent);color:#fff}
+  .abtn.sm{height:30px;padding:0 10px;font-size:12.5px}
+  .atable{width:100%;border-collapse:collapse;font-size:13.5px}
+  .atable th{text-align:left;font-size:12px;font-weight:600;color:var(--a-text2);padding:11px 14px;background:var(--a-muted);border-bottom:1px solid var(--a-border);white-space:nowrap}
+  .atable td{padding:13px 14px;border-bottom:1px solid var(--a-border);vertical-align:middle}
+  .atable tr:last-child td{border-bottom:0}
+  .who{display:flex;align-items:center;gap:10px}
+  .who i{width:32px;height:32px;border-radius:99px;background:var(--a-accent-soft);color:var(--a-accent);font-style:normal;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex:none}
+  .who b{font-weight:600;display:block}
+  .who span{font-size:12px;color:var(--a-text2)}
+  .mono{font-family:'IBM Plex Mono',monospace;font-size:12.5px}
+  .tsc{display:grid;gap:3px}
+  .tsc b{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600}
+  .tsc span{font-size:11.5px;color:var(--a-text2)}
+  .tsc span.lo{color:var(--a-danger)}
+  .newcol{background:#FFFBEB !important}
+  .astats{display:flex;padding:20px 0}
+  .astats div{padding:0 32px;border-left:1px solid var(--a-border)}
+  .astats div:first-child{border-left:0}
+  .astats b{font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:600;display:block}
+  .astats span{font-size:12.5px;color:var(--a-text2)}
+  .astats .newcol{background:#FFFBEB;border-radius:8px}
+  .acardh{display:flex;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid var(--a-border)}
+  .acardh h4{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600}
+  .acardh .sp{flex:1}
+  .acardb{padding:18px 20px}
+  .bigscore{display:flex;align-items:flex-end;gap:16px}
+  .bigscore b{font-family:'Space Grotesk',sans-serif;font-size:44px;font-weight:600;line-height:1;letter-spacing:-.02em}
+  .bigscore b small{font-size:20px;color:var(--a-subtle)}
+  .bigscore .pct{font-size:15px;font-weight:600;color:var(--a-ok);margin-bottom:6px}
+  .gbar{position:relative;height:10px;border-radius:99px;background:var(--a-sunken);margin-top:16px}
+  .gbar i{position:absolute;left:0;top:0;bottom:0;border-radius:99px;background:var(--a-accent)}
+  .gbar em{position:absolute;top:-6px;bottom:-6px;width:2px;background:var(--a-text);font-style:normal}
+  .gbar em span{position:absolute;top:-20px;left:50%;transform:translateX(-50%);font-size:11px;font-weight:600;white-space:nowrap;color:var(--a-text2)}
+  .secb{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:22px}
+  .secb>div{border:1px solid var(--a-border);border-radius:12px;padding:12px}
+  .secb span{font-size:12px;color:var(--a-text2)}
+  .secb b{display:block;font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:600;margin-top:3px}
+  .secb .bar{height:5px;border-radius:5px;background:var(--a-sunken);margin-top:8px;overflow:hidden}
+  .secb .bar i{display:block;height:100%;background:var(--a-accent)}
+  .meta3{display:flex;gap:28px;margin-top:18px;font-size:13px;color:var(--a-text2)}
+  .meta3 b{color:var(--a-text);font-weight:600}
+  .qrev{border-top:1px solid var(--a-border)}
+  .qr{display:grid;grid-template-columns:34px 1fr 210px;gap:14px;padding:14px 20px;border-bottom:1px solid var(--a-border);font-size:13.5px;align-items:start}
+  .qr:last-child{border-bottom:0}
+  .qr .qn{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--a-subtle);padding-top:2px}
+  .qr .qt{font-weight:500;line-height:1.45}
+  .qr .qt small{display:block;font-size:12px;color:var(--a-text2);font-weight:400;margin-top:4px;line-height:1.45}
+  .qr .qa{display:grid;gap:4px;font-size:12.5px}
+  .qa .ok{color:var(--a-ok);display:flex;gap:5px;align-items:flex-start}
+  .qa .no{color:var(--a-danger);display:flex;gap:5px;align-items:flex-start}
+  .qa .ic{width:14px;height:14px;stroke-width:2.6;margin-top:1px}
+  .qa .lk{color:var(--a-accent);font-weight:600}
+  .filters{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .fch{height:32px;padding:0 12px;border-radius:99px;border:1px solid var(--a-border);background:#fff;font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px;color:var(--a-text2)}
+  .fch.on{background:var(--a-text);border-color:var(--a-text);color:#fff}
+  .fch .ic{width:13px;height:13px}
+  .fch em{font-style:normal;font-family:'IBM Plex Mono',monospace;font-size:11.5px;opacity:.75}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+  .setg{display:grid;gap:12px}
+  .setr{display:flex;align-items:center;justify-content:space-between;font-size:13.5px;gap:12px}
+  .setr span{color:var(--a-text2)}
+  .setr b{font-family:'IBM Plex Mono',monospace;font-size:12.5px;font-weight:600;padding:4px 9px;border-radius:8px;background:var(--a-muted);border:1px solid var(--a-border)}
+  .hist .hr{display:grid;grid-template-columns:1fr auto;gap:4px 10px;padding:12px 20px;border-bottom:1px solid var(--a-border);font-size:13px}
+  .hist .hr:last-child{border-bottom:0}
+  .hist .hr span{color:var(--a-text2);font-size:12px}
+  .gen{position:absolute;inset:0;background:rgba(15,23,42,.35);display:flex;align-items:flex-start;justify-content:center;padding-top:150px}
+  .gmodal{width:440px;background:#fff;border-radius:16px;box-shadow:0 24px 60px rgba(15,23,42,.25);padding:22px}
+  .gmodal h4{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:600}
+  .gmodal p{font-size:13px;color:var(--a-text2);margin-top:4px;line-height:1.5}
+  .gsel{height:40px;border:1px solid var(--a-border-strong);border-radius:10px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;font-size:13.5px;margin-top:14px}
+  .gsel .ic{width:15px;height:15px;color:var(--a-text2)}
+  .gacts{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+  .dec{display:grid;gap:10px}
+  .dec>div{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--border);border-radius:14px;padding:12px 14px;font-size:14px;line-height:1.5;color:var(--text2)}
+  .dec b{color:var(--text)}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+    <symbol id="i-chevL" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+    <symbol id="i-chevR" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+    <symbol id="i-chevD" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/></symbol>
+    <symbol id="i-save" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></symbol>
+    <symbol id="i-redo" viewBox="0 0 24 24"><path d="M4 12a8 8 0 0113.7-5.6L20 9"/><path d="M20 4v5h-5"/><path d="M20 12a8 8 0 01-13.7 5.6L4 15"/></symbol>
+    <symbol id="i-wifi" viewBox="0 0 24 24"><path d="M3.5 9a12 12 0 0117 0M6.5 12.5a7.5 7.5 0 0111 0M9.5 16a3 3 0 015 0"/><path d="M12 19.5h.01"/></symbol>
+    <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4h11l-1.5 4L16 12H5"/></symbol>
+    <symbol id="i-test" viewBox="0 0 24 24"><rect x="5" y="3.5" width="14" height="17" rx="2.5"/><path d="M9 3.5h6v3H9zM8.5 11l1.5 1.5 3-3M8.5 16h7"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 010 6.8M21.5 20c-.5-2.6-1.9-4.3-3.8-5"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 20.5c1.2-3.6 4.2-5.5 7.5-5.5s6.3 1.9 7.5 5.5"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11l8-6.5 8 6.5V20H4z"/></symbol>
+    <symbol id="i-doc" viewBox="0 0 24 24"><path d="M6 3.5h8l4 4V20.5H6z"/><path d="M14 3.5v4h4"/></symbol>
+    <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/></symbol>
+    <symbol id="i-ban" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M6 6l12 12"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="M4 7l8 6 8-6"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17h.01"/></symbol>
+    <symbol id="i-cal" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></symbol>
+  </defs>
+</svg>
+
+<div class="wrap">
+
+<div class="intro">
+  <h1>Interviewer screening test</h1>
+  <p>27 Oct 2026. Applicant screens (app and website) and the admin panels for the screening test you approved. The applicant only ever sees "Submitted", the pass mark is a guide for the admin, and questions come from the Claude question bank (a second blind check drops any question it disagrees with). Numbers marked <span class="tagp set">setting</span> are admin settings drawn with example values; the questions, scores, counts and costs are samples, not real data. Blue numbers mark what is new.</p>
+  <div class="flow">
+    <span>Apply form</span><i>→</i><span class="new">Application received · Start your screening test</span><i>→</i><span class="new">Rules</span><i>→</i><span class="new">30 questions</span><i>→</i><span class="new">Submit</span><i>→</i><span class="new">Submitted</span><i>→</i><span>Admin reviews (with test score)</span><i>→</i><span>Approve / Reject</span>
+  </div>
+  <div class="map">
+    <a href="#app"><b>Applicant · app</b>Received + start, rules, a question, the question map, submit, submitted, and the edge states.</a>
+    <a href="#web"><b>Applicant · website</b>The received page with the start card, and the test on a desktop with the question map beside it.</a>
+    <a href="#email"><b>The email</b>The link, in case they close the page.</a>
+    <a href="#admin-list"><b>Admin · applications list</b>A new Test column.</a>
+    <a href="#admin-detail"><b>Admin · application detail</b>Score, by section, time taken, and every answer.</a>
+    <a href="#admin-bank"><b>Admin · question bank</b>Filter, disable, generate a set, history with cost, settings.</a>
+  </div>
+</div>
+
+<!-- ═══════════ APP ═══════════ -->
+<div class="section" id="app">
+  <h2>Applicant · app <span class="tagp app">APK</span></h2>
+  <p class="sub">The interviewer apply flow keeps its red brand header. The test itself is a calm, focused screen: a slim bar with the time left, a progress strip per section, one question per screen, and answers saved as you go.</p>
+  <div class="row">
+
+    <div class="col">
+      <div class="cap">1 · Application received<span>Today's tick and thank-you, now followed by the test as the next step. The link is also emailed.</span></div>
+      <div class="phone"><div class="scr">
+        <div class="brandh"><svg class="ic" style="width:20px;height:20px"><use href="#i-chevL"/></svg><h3>Apply to interview</h3><p>We read every application and reply by email.</p></div>
+        <div class="sb" style="color:#fff"><span>10:12</span><span class="r"><i style="width:14px;height:9px"></i><i style="width:20px;height:10px"></i></span></div>
+        <div class="body" style="top:172px">
+          <div class="done">
+            <div class="tickd"><svg class="ic"><use href="#i-check"/></svg></div>
+            <div class="dt">Application received.</div>
+            <div class="dp">Thank you. One more step before our team reads it.</div>
+            <div class="startc" style="margin-top:6px">
+              <div class="k">Next step</div>
+              <div class="t">Take your screening test</div>
+              <div class="m"><span>30 questions</span><span>45 minutes</span><span>One attempt</span></div>
+              <div class="bp w" style="margin-top:14px">Start the test<svg class="ic"><use href="#i-chevR"/></svg></div>
+            </div>
+            <div class="hint">We've also emailed you the link. It works until 3 Nov.</div>
+          </div>
+        </div>
+        <div class="body" style="bottom:22px"><div class="bq">Do it later</div></div>
+        <i class="ann" style="left:6px;top:328px">1</i>
+      </div></div>
+    </div>
+
+    <div class="col">
+      <div class="cap">2 · Before you start<span>What's in it and the rules, so nothing surprises them once the timer runs.</span></div>
+      <div class="phone"><div class="scr">
+        <div class="sb"><span>10:12</span><span class="r"><i style="width:14px;height:9px"></i><i style="width:20px;height:10px"></i></span></div>
+        <div class="body" style="top:44px">
+          <svg class="ic" style="width:22px;height:22px;margin-left:-2px"><use href="#i-chevL"/></svg>
+          <div class="dt" style="margin-top:14px">Screening test</div>
+          <div class="dp" style="margin-top:4px">30 questions in 45 minutes. Pick one answer for each.</div>
+          <div class="secrow" style="margin-top:16px">
+            <div><b>15</b><span>Technical</span></div><div><b>5</b><span>Reasoning</span></div><div><b>5</b><span>IQ</span></div><div><b>5</b><span>General knowledge</span></div>
+          </div>
+          <div class="hint" style="margin-top:8px">Technical questions cover the domains you picked: Software Engineering, Data Science.</div>
+          <div class="rules" style="margin-top:18px">
+            <div class="rule"><span class="ri"><svg class="ic"><use href="#i-clock"/></svg></span><div>The clock keeps running<small>If you leave the app, time still counts. At zero, your answers are submitted.</small></div></div>
+            <div class="rule"><span class="ri"><svg class="ic"><use href="#i-save"/></svg></span><div>Answers save as you go<small>Lose your connection? Open the link again and carry on.</small></div></div>
+            <div class="rule"><span class="ri"><svg class="ic"><use href="#i-grid"/></svg></span><div>Move freely<small>Skip, come back, change an answer, until you submit.</small></div></div>
+            <div class="rule"><span class="ri"><svg class="ic"><use href="#i-test"/></svg></span><div>One attempt<small>Once you start, the test can't be restarted.</small></div></div>
+          </div>
+        </div>
+        <div class="body" style="bottom:22px"><div class="bp">Start · 45:00</div></div>
+      </div></div>
+    </div>
+
+    <div class="col">
+      <div class="cap">3 · A question<span>Time left, a progress strip per section, one question, four answers. A tap picks; the tick says it's saved.</span></div>
+      <div class="phone"><div class="scr">
+        <div class="sb"><span>10:19</span><span class="r"><i style="width:14px;height:9px"></i><i style="width:20px;height:10px"></i></span></div>
+        <div class="tbar"><h4>Screening test<small>Question 7 of 30</small></h4><div class="timer"><svg class="ic"><use href="#i-clock"/></svg>38:12</div><div class="gridb"><svg class="ic"><use href="#i-grid"/></svg></div></div>
+        <div class="segs">
+          <div class="seg on"><div class="bar"><i style="width:40%"></i></div><span>Technical 6/15</span></div>
+          <div class="seg"><div class="bar"></div><span>Reasoning</span></div>
+          <div class="seg"><div class="bar"></div><span>IQ</span></div>
+          <div class="seg"><div class="bar"></div><span>GK</span></div>
+        </div>
+        <div class="qwrap">
+          <div class="qsec">Technical <small>· Software Engineering</small></div>
+          <div class="qtext">A client sends a valid login token, but the user lacks permission for the resource. Which HTTP status should the server return?</div>
+          <div class="opts">
+            <div class="opt"><b>A</b>401 Unauthorized</div>
+            <div class="opt on"><b>B</b>403 Forbidden</div>
+            <div class="opt"><b>C</b>404 Not Found</div>
+            <div class="opt"><b>D</b>409 Conflict</div>
+          </div>
+          <div class="saved"><svg class="ic"><use href="#i-save"/></svg>Saved</div>
+        </div>
+        <div class="tfoot"><div class="bo"><svg class="ic"><use href="#i-chevL"/></svg>Previous</div><div class="bp">Next<svg class="ic"><use href="#i-chevR"/></svg></div></div>
+        <i class="ann" style="left:190px;top:46px">2</i><i class="ann" style="left:140px;top:78px">3</i>
+      </div></div>
+      <div class="legend">
+        <div><i class="n">1</i><span>The test is the next step, not a separate place to find: start now, or later from the emailed link.</span></div>
+        <div><i class="n">2</i><span>Time left counts down on the server; the app only shows it. It turns amber in the last 5 minutes.</span></div>
+        <div><i class="n">3</i><span>One strip per section, sized by question count. No question numbers per section are needed beyond "6/15".</span></div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="cap">4 · The question map<span>The grid opens a sheet: every question by section, answered ones filled. Submit lives here.</span></div>
+      <div class="phone"><div class="scr">
+        <div class="sb"><span>10:31</span><span class="r"><i style="width:14px;height:9px"></i><i style="width:20px;height:10px"></i></span></div>
+        <div class="tbar"><h4>Screening test<small>Question 18 of 30</small></h4><div class="timer"><svg class="ic"><use href="#i-clock"/></svg>26:40</div><div class="gridb"><svg class="ic"><use href="#i-grid"/></svg></div></div>
+        <div class="scrim"></div>
+        <div class="sheet">
+          <div class="hdl"></div>
+          <div class="shead"><b>Questions</b><span>17 of 30 answered</span></div>
+          <div class="ngrp"><h6>Technical · 15</h6><div class="ngrid">
+            <div class="nb a">1</div><div class="nb a">2</div><div class="nb a">3</div><div class="nb a">4</div><div class="nb a">5</div><div class="nb a">6</div><div class="nb a">7</div><div class="nb a">8</div>
+            <div class="nb a">9</div><div class="nb">10</div><div class="nb a">11</div><div class="nb a">12</div><div class="nb a">13</div><div class="nb a">14</div><div class="nb a">15</div>
+          </div></div>
+          <div class="ngrp"><h6>Reasoning · 5</h6><div class="ngrid"><div class="nb a">16</div><div class="nb a">17</div><div class="nb c">18</div><div class="nb">19</div><div class="nb">20</div></div></div>
+          <div class="ngrp"><h6>IQ · 5</h6><div class="ngrid"><div class="nb">21</div><div class="nb">22</div><div class="nb">23</div><div class="nb">24</div><div class="nb">25</div></div></div>
+          <div class="ngrp"><h6>General knowledge · 5</h6><div class="ngrid"><div class="nb">26</div><div class="nb">27</div><div class="nb">28</div><div class="nb">29</div><div class="nb">30</div></div></div>
+          <div class="nkey"><span><i class="a"></i>Answered</span><span><i></i>Not yet</span><span><i style="border-color:var(--ink)"></i>You are here</span></div>
+          <div class="bo" style="margin-top:16px;width:100%">Submit test</div>
+        </div>
+      </div></div>
+    </div>
+
+    <div class="col">
+      <div class="cap">5 · Submit<span>Says how many are unanswered, and that answers can't change after.</span></div>
+      <div class="phone"><div class="scr">
+        <div class="sb"><span>10:44</span><span class="r"><i style="width:14px;height:9px"></i><i style="width:20px;height:10px"></i></span></div>
+        <div class="tbar"><h4>Screening test<small>Question 30 of 30</small></h4><div class="timer"><svg class="ic"><use href="#i-clock"/></svg>13:05</div><div class="gridb"><svg class="ic"><use href="#i-grid"/></svg></div></div>
+        <div class="scrim"></div>
+        <div class="dlg">
+          <div class="disc"><svg class="ic"><use href="#i-test"/></svg></div>
+          <div class="t">Submit your test?</div>
+          <div class="p">You've answered 28 of 30. After you submit, you can't change any answer.</div>
+          <div class="acts"><div class="bp">Submit</div><div class="bq">Keep going</div></div>
+        </div>
+      </div></div>
+    </div>
+
+    <div class="col">
+      <div class="cap">6 · Submitted<span>No score, as decided. What happens next, in the same three steps as before.</span></div>
+      <div class="phone"><div class="scr">
+        <div class="brandh"><svg class="ic" style="width:20px;height:20px"><use href="#i-chevL"/></svg><h3>Apply to interview</h3><p>We read every application and reply by email.</p></div>
+        <div class="sb" style="color:#fff"><span>10:45</span><span class="r"><i style="width:14px;height:9px"></i><i style="width:20px;height:10px"></i></span></div>
+        <div class="body" style="top:180px">
+          <div class="done">
+            <div class="tickd"><svg class="ic"><use href="#i-check"/></svg></div>
+            <div class="dt">Test submitted.</div>
+            <div class="dp">Thank you. Your application is now with our team.</div>
+            <div class="steps" style="margin-top:8px">
+              <div class="step"><i class="ok"><svg class="ic"><use href="#i-check"/></svg></i><span>Application and test sent</span></div>
+              <div class="step now"><i>2</i><span>A person on our team reads both</span></div>
+              <div class="step"><i>3</i><span>If we go ahead, we create your account<small>Your sign-in details arrive by email at priya.raman@example.com</small></span></div>
+            </div>
+          </div>
+        </div>
+        <div class="body" style="bottom:22px"><div class="bp">Done</div></div>
+      </div></div>
+    </div>
+  </div>
+
+  <div class="h3">Edge states</div>
+  <div class="row">
+    <div class="mini">
+      <div class="tbar" style="position:relative;top:0;margin:-18px -18px 0;border-radius:0"><h4>Screening test<small>Question 24 of 30</small></h4><div class="timer low"><svg class="ic"><use href="#i-clock"/></svg>04:58</div></div>
+      <div class="hint" style="margin-top:14px"><b style="color:var(--text)">Last 5 minutes.</b> The timer turns amber. A one-line toast says "5 minutes left. Unanswered: 6."</div>
+    </div>
+    <div class="mini" style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;justify-content:center">
+      <div class="tickd am" style="width:48px;height:48px"><svg class="ic" style="width:22px;height:22px"><use href="#i-clock"/></svg></div>
+      <b style="font-size:17px">Time's up</b>
+      <div class="hint">Your answers were submitted for you. 27 of 30 were answered.</div>
+    </div>
+    <div class="mini" style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;justify-content:center">
+      <div class="tickd am" style="width:48px;height:48px;background:var(--surface-muted);color:var(--text2)"><svg class="ic" style="width:22px;height:22px"><use href="#i-cal"/></svg></div>
+      <b style="font-size:17px">This link has expired</b>
+      <div class="hint">It worked until 3 Nov. Write to support from the Join us page and we'll look at your application.</div>
+    </div>
+    <div class="mini" style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;justify-content:center">
+      <div class="tickd" style="width:48px;height:48px"><svg class="ic" style="width:22px;height:22px"><use href="#i-check"/></svg></div>
+      <b style="font-size:17px">Already submitted</b>
+      <div class="hint">You took this test on 27 Oct. Each application gets one attempt.</div>
+    </div>
+    <div class="mini" style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;justify-content:center">
+      <div class="tickd am" style="width:48px;height:48px;background:var(--surface-muted);color:var(--text2)"><svg class="ic" style="width:22px;height:22px"><use href="#i-wifi"/></svg></div>
+      <b style="font-size:17px">You're offline</b>
+      <div class="hint">Your last answer will save when you're back. The clock keeps running.</div>
+    </div>
+    <div class="mini" style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;justify-content:center">
+      <div class="tickd am" style="width:48px;height:48px;background:var(--surface-muted);color:var(--text2)"><svg class="ic" style="width:22px;height:22px"><use href="#i-spark"/></svg></div>
+      <b style="font-size:17px">Getting your test ready…</b>
+      <div class="hint">Only if a domain's bank ran low. Usually under a minute; the clock hasn't started.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ WEB ═══════════ -->
+<div class="section" id="web">
+  <h2>Applicant · website <span class="tagp web">web</span></h2>
+  <p class="sub">The received page keeps the brand panel (today's /join-us/submitted). The test itself drops the brand panel for a full-width, distraction-free page with the question map always beside the question. Keys 1–4 pick, ←/→ move.</p>
+  <div class="row" style="flex-direction:column">
+    <div class="desk">
+      <div class="chrome"><i></i><i></i><i></i><span>lenient.in/join-us/submitted</span></div>
+      <div class="bshell">
+        <div class="bpanel">
+          <div class="blogo"><i>L</i>Lenient</div>
+          <h3>Interview students live, on the hours you set.</h3>
+          <p>You run the interview from a question script, write a scorecard, and are paid a fee for each one.</p>
+          <ul><li><svg class="ic"><use href="#i-check"/></svg>You set your own hours</li><li><svg class="ic"><use href="#i-check"/></svg>A fee per interview, by tier</li><li><svg class="ic"><use href="#i-check"/></svg>Paid to your bank from your wallet</li></ul>
+        </div>
+        <div class="bform"><div class="inner">
+          <div class="done" style="padding-top:20px">
+            <div class="tickd" style="width:64px;height:64px"><svg class="ic"><use href="#i-check"/></svg></div>
+            <div class="dt" style="font-size:28px">Application received.</div>
+            <div class="dp">Thank you. One more step before our team reads it.</div>
+            <div class="startc" style="margin-top:8px;padding:20px">
+              <div class="k">Next step</div>
+              <div class="t" style="font-size:20px">Take your screening test</div>
+              <div class="m"><span>30 questions</span><span>45 minutes</span><span>One attempt</span></div>
+              <div class="bp w" style="margin-top:16px">Start the test<svg class="ic"><use href="#i-chevR"/></svg></div>
+            </div>
+            <div class="hint">We've also emailed the link to priya.raman@example.com. It works until 3 Nov.</div>
+          </div>
+        </div></div>
+      </div>
+    </div>
+
+    <div class="desk">
+      <div class="chrome"><i></i><i></i><i></i><span>lenient.in/join-us/test</span></div>
+      <div class="thead"><div class="blogo"><i>L</i>Lenient</div><div class="tt">Screening test · Question 18 of 30</div><div class="timer" style="height:38px;font-size:15px"><svg class="ic"><use href="#i-clock"/></svg>26:40</div></div>
+      <div class="tbody">
+        <div class="tmain">
+          <div class="segs" style="position:relative;top:0;left:0;right:0">
+            <div class="seg"><div class="bar"><i style="width:93%"></i></div><span>Technical 14/15</span></div>
+            <div class="seg on"><div class="bar"><i style="width:40%"></i></div><span>Reasoning 2/5</span></div>
+            <div class="seg"><div class="bar"></div><span>IQ</span></div>
+            <div class="seg"><div class="bar"></div><span>GK</span></div>
+          </div>
+          <div class="qsec" style="margin-top:28px">Reasoning</div>
+          <div class="qtext" style="font-size:22px;margin-top:8px">All managers in the firm are graduates. Some graduates in the firm are engineers. Which statement must be true?</div>
+          <div class="opts" style="grid-template-columns:1fr 1fr;margin-top:22px">
+            <div class="opt"><b>1</b>Some managers are engineers</div>
+            <div class="opt"><b>2</b>All engineers are graduates</div>
+            <div class="opt on"><b>3</b>No conclusion about managers being engineers follows</div>
+            <div class="opt"><b>4</b>No manager is an engineer</div>
+          </div>
+          <div class="saved"><svg class="ic"><use href="#i-save"/></svg>Saved</div>
+          <div class="wfoot"><div class="bo"><svg class="ic"><use href="#i-chevL"/></svg>Previous</div><div class="bp">Next<svg class="ic"><use href="#i-chevR"/></svg></div></div>
+          <div class="keys"><span><span class="kbd">1</span>–<span class="kbd">4</span> pick</span><span><span class="kbd">←</span><span class="kbd">→</span> move</span></div>
+        </div>
+        <div class="tside">
+          <div class="shead"><b style="font-size:16px">Questions</b><span>17 of 30 answered</span></div>
+          <div class="ngrp"><h6>Technical · 15</h6><div class="ngrid">
+            <div class="nb a">1</div><div class="nb a">2</div><div class="nb a">3</div><div class="nb a">4</div><div class="nb a">5</div><div class="nb a">6</div><div class="nb a">7</div><div class="nb a">8</div><div class="nb a">9</div><div class="nb">10</div><div class="nb a">11</div><div class="nb a">12</div><div class="nb a">13</div><div class="nb a">14</div><div class="nb a">15</div>
+          </div></div>
+          <div class="ngrp"><h6>Reasoning · 5</h6><div class="ngrid"><div class="nb a">16</div><div class="nb a">17</div><div class="nb c">18</div><div class="nb">19</div><div class="nb">20</div></div></div>
+          <div class="ngrp"><h6>IQ · 5</h6><div class="ngrid"><div class="nb">21</div><div class="nb">22</div><div class="nb">23</div><div class="nb">24</div><div class="nb">25</div></div></div>
+          <div class="ngrp"><h6>General knowledge · 5</h6><div class="ngrid"><div class="nb">26</div><div class="nb">27</div><div class="nb">28</div><div class="nb">29</div><div class="nb">30</div></div></div>
+          <div class="bo" style="margin-top:16px;width:100%">Submit test</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="spec">
+    <div><b>Phone widths</b>Below 1024 px the website uses the app's layout: map behind a grid button, Previous / Next at the foot.</div>
+    <div><b>Leaving the page</b>The browser's "Leave site?" prompt shows while the test is open. Coming back with the link resumes at the same question and the same time left.</div>
+    <div><b>No copy of the answers</b>The page never receives correct answers or explanations, only the question and four options in a shuffled order.</div>
+  </div>
+</div>
+
+<!-- ═══════════ EMAIL ═══════════ -->
+<div class="section" id="email">
+  <h2>The email <span class="tagp">email</span></h2>
+  <p class="sub">Sent when the application goes in. One button, the deadline, and what the test is. A reminder goes 24 hours before the link expires if it hasn't been started.</p>
+  <div class="mail">
+    <div class="mh"><span><b>From</b> Lenient &lt;hello@lenient.in&gt;</span><span><b>Subject</b> Your Lenient screening test</span></div>
+    <div class="mb">
+      <h4>Hi Priya, one more step</h4>
+      Thanks for applying to interview with Lenient. Before our team reads your application, please take a short screening test: 30 questions in 45 minutes, one attempt.
+      <br><div class="bp">Start the test</div><br>
+      The link works until <b>3 Nov 2026</b>. You can start any time before then; once you start, the clock runs for 45 minutes.
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ ADMIN LIST ═══════════ -->
+<div class="section" id="admin-list">
+  <h2>Admin · Interviewer Applications <span class="tagp adt">admin</span></h2>
+  <p class="sub">One new column, Test (highlighted). It shows the score and whether it's under the guide, or where the applicant is. Sorting by it puts the strongest first. Everything else is today's table.</p>
+  <div class="adm">
+    <div class="arail">
+      <div class="lg"><i>L</i>Lenient Admin</div>
+      <div class="grp">Operate</div>
+      <div class="arl"><svg class="ic"><use href="#i-home"/></svg>Dashboard</div>
+      <div class="arl"><svg class="ic"><use href="#i-users"/></svg>Leads<em>4</em></div>
+      <div class="arl"><svg class="ic"><use href="#i-user"/></svg>Students</div>
+      <div class="arl on"><svg class="ic"><use href="#i-doc"/></svg>Interviewer Applications<em>3</em></div>
+      <div class="arl"><svg class="ic"><use href="#i-users"/></svg>Interviewers</div>
+      <div class="arl"><svg class="ic"><use href="#i-test"/></svg>Screening Questions<span class="newb">New</span></div>
+      <div class="grp">Deliver</div>
+      <div class="arl"><svg class="ic"><use href="#i-cal"/></svg>Interviews</div>
+      <div class="arl"><svg class="ic"><use href="#i-list"/></svg>Question Scripts</div>
+    </div>
+    <div class="amain">
+      <div class="ahead">Operate <span>/</span> <b>Interviewer Applications</b></div>
+      <div class="apage">
+        <div class="atitle"><div><h3>Interviewer Applications</h3><p>5 open · newest first</p></div></div>
+        <div class="acard" style="overflow:hidden">
+          <table class="atable">
+            <tr><th>Candidate</th><th>Experience</th><th>Domain</th><th class="newcol">Test</th><th>Status</th><th>Submitted</th><th></th></tr>
+            <tr><td><div class="who"><i>PR</i><div><b>Priya Raman</b><span>priya.raman@example.com</span></div></div></td><td class="mono">6 yrs</td><td>Software Engineering, Data Science</td><td class="newcol"><div class="tsc"><b>24 / 30 · 80%</b><span>31 min</span></div></td><td><span class="apill wa">Screening</span></td><td class="mono">27 Oct, 10:12</td><td><span class="abtn sm">Open</span></td></tr>
+            <tr><td><div class="who"><i>AM</i><div><b>Arjun Mehta</b><span>arjun.mehta@example.com</span></div></div></td><td class="mono">9 yrs</td><td>Business &amp; Management</td><td class="newcol"><div class="tsc"><b>15 / 30 · 50%</b><span class="lo">Below the 60% guide</span></div></td><td><span class="apill mu">New</span></td><td class="mono">27 Oct, 09:02</td><td><span class="abtn sm">Open</span></td></tr>
+            <tr><td><div class="who"><i>FS</i><div><b>Fatima Sheikh</b><span>fatima.sheikh@example.com</span></div></div></td><td class="mono">4 yrs</td><td>Humanities, Law</td><td class="newcol"><span class="apill ac">In progress</span></td><td><span class="apill mu">New</span></td><td class="mono">27 Oct, 08:40</td><td><span class="abtn sm">Open</span></td></tr>
+            <tr><td><div class="who"><i>RN</i><div><b>Rohit Nair</b><span>rohit.nair@example.com</span></div></div></td><td class="mono">12 yrs</td><td>Mechanical &amp; Civil</td><td class="newcol"><div class="tsc"><span class="apill mu" style="justify-self:start">Not started</span><span>Link until 1 Nov</span></div></td><td><span class="apill mu">New</span></td><td class="mono">25 Oct, 17:20</td><td><span class="abtn sm">Open</span></td></tr>
+            <tr><td><div class="who"><i>KD</i><div><b>Kavya Desai</b><span>kavya.desai@example.com</span></div></div></td><td class="mono">7 yrs</td><td>Software Engineering</td><td class="newcol"><span class="apill da">Expired</span></td><td><span class="apill mu">New</span></td><td class="mono">18 Oct, 12:05</td><td><span class="abtn sm">Open</span></td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="spec">
+    <div><b>Test column values</b>Not started (with the link's last day), In progress, Expired, or the score with time taken. Under the guide shows "Below the 60% guide" in red. Nothing is decided automatically.</div>
+    <div><b>Filter</b>A Test filter joins today's status filter: Any · Submitted · Below guide · Not started · Expired.</div>
+    <div><b>"Screening Questions"</b>A new item under Operate, next to the applications it serves, for whoever has the Interviewer Applications permission.</div>
+  </div>
+</div>
+
+<!-- ═══════════ ADMIN DETAIL ═══════════ -->
+<div class="section" id="admin-detail">
+  <h2>Admin · application detail <span class="tagp adt">admin</span></h2>
+  <p class="sub">A test score joins the stat strip, and a new "Screening test" card sits above today's application and decision cards: the score against the guide, each section, time taken, and every question with what they picked and the right answer.</p>
+  <div class="adm tall">
+    <div class="arail">
+      <div class="lg"><i>L</i>Lenient Admin</div>
+      <div class="grp">Operate</div>
+      <div class="arl"><svg class="ic"><use href="#i-home"/></svg>Dashboard</div>
+      <div class="arl"><svg class="ic"><use href="#i-users"/></svg>Leads<em>4</em></div>
+      <div class="arl"><svg class="ic"><use href="#i-user"/></svg>Students</div>
+      <div class="arl on"><svg class="ic"><use href="#i-doc"/></svg>Interviewer Applications<em>3</em></div>
+      <div class="arl"><svg class="ic"><use href="#i-users"/></svg>Interviewers</div>
+      <div class="arl"><svg class="ic"><use href="#i-test"/></svg>Screening Questions<span class="newb">New</span></div>
+    </div>
+    <div class="amain">
+      <div class="ahead">Operate <span>/</span> Interviewer Applications <span>/</span> <b>Priya Raman</b></div>
+      <div class="apage">
+        <div class="atitle"><div><h3 style="display:flex;align-items:center;gap:10px">Priya Raman <span class="apill wa">Screening</span></h3><p>Submitted 27 Oct 2026, 10:12 · 2 h ago</p></div></div>
+        <div class="acard astats">
+          <div><b>6</b><span>Years experience</span></div>
+          <div><b>2</b><span>Domains claimed</span></div>
+          <div><b>3</b><span>Languages claimed</span></div>
+          <div class="newcol"><b>24 / 30</b><span>Screening test</span></div>
+          <div><b>0</b><span>Screening notes</span></div>
+        </div>
+        <div class="acard">
+          <div class="acardh"><h4>Screening test</h4><span class="apill ok">Above guide</span><span class="sp"></span><span class="abtn sm"><svg class="ic"><use href="#i-list"/></svg>Wrong answers only</span></div>
+          <div class="acardb">
+            <div class="bigscore"><b>24<small> / 30</small></b><span class="pct">80%</span></div>
+            <div class="gbar"><i style="width:80%"></i><em style="left:60%"><span>Guide 60%</span></em></div>
+            <div class="secb">
+              <div><span>Technical</span><b>12 / 15</b><div class="bar"><i style="width:80%"></i></div></div>
+              <div><span>Reasoning</span><b>4 / 5</b><div class="bar"><i style="width:80%"></i></div></div>
+              <div><span>IQ</span><b>4 / 5</b><div class="bar"><i style="width:80%"></i></div></div>
+              <div><span>General knowledge</span><b>4 / 5</b><div class="bar"><i style="width:80%"></i></div></div>
+            </div>
+            <div class="meta3"><span>Time taken <b>31:42</b> of 45:00</span><span>Started <b>27 Oct, 10:13</b></span><span>Submitted <b>10:45</b> by the applicant</span><span>Unanswered <b>0</b></span></div>
+          </div>
+          <div class="qrev">
+            <div class="qr"><span class="qn">Q7</span><div class="qt">A client sends a valid login token, but the user lacks permission for the resource. Which HTTP status should the server return?<small>Technical · Software Engineering · answered correctly by 71% of applicants</small></div><div class="qa"><span class="ok"><svg class="ic"><use href="#i-check"/></svg>Picked 403 Forbidden (correct)</span></div></div>
+            <div class="qr"><span class="qn">Q10</span><div class="qt">Which metric is least affected by class imbalance when comparing two classifiers?<small>Technical · Data Science · answered correctly by 38% of applicants</small></div><div class="qa"><span class="no"><svg class="ic"><use href="#i-x"/></svg>Picked Accuracy</span><span class="ok"><svg class="ic"><use href="#i-check"/></svg>Correct: Area under the precision–recall curve</span><span class="lk">Why · Disable question</span></div></div>
+            <div class="qr"><span class="qn">Q22</span><div class="qt">What comes next: 2, 6, 12, 20, 30, …?<small>IQ · answered correctly by 84% of applicants</small></div><div class="qa"><span class="ok"><svg class="ic"><use href="#i-check"/></svg>Picked 42 (correct)</span></div></div>
+            <div class="qr"><span class="qn">Q27</span><div class="qt">Which Indian state has the longest mainland coastline?<small>General knowledge · answered correctly by 66% of applicants</small></div><div class="qa"><span class="no"><svg class="ic"><use href="#i-x"/></svg>Picked Andhra Pradesh</span><span class="ok"><svg class="ic"><use href="#i-check"/></svg>Correct: Gujarat</span><span class="lk">Why · Disable question</span></div></div>
+          </div>
+        </div>
+        <div class="acard" style="padding:18px 20px;color:var(--a-text2);font-size:13.5px">Today's application card (background, domains, languages, CV, screening notes) and the Approve / Reject panel follow, unchanged.</div>
+      </div>
+    </div>
+  </div>
+  <div class="spec">
+    <div><b>What is shown</b>The copy of each question exactly as the applicant saw it, so disabling a question later never changes this record.</div>
+    <div><b>All 30, in order</b>Wrong answers in red with the correct one under them; "Wrong answers only" narrows the list. "Why" opens Claude's explanation; "Disable question" takes it out of future tests (the score here doesn't change).</div>
+    <div><b>Not started / expired</b>The card says so with the link's last day, and offers "Send a new link" (one attempt still; a new link only if none was started).</div>
+  </div>
+</div>
+
+<!-- ═══════════ ADMIN BANK ═══════════ -->
+<div class="section" id="admin-bank">
+  <h2>Admin · Screening Questions <span class="tagp adt">admin</span></h2>
+  <p class="sub">The bank: what's in it per section and domain, how each question performs, a switch to take a bad one out, a button to generate a set, every generation with what the answer check dropped and what it cost, and the test's settings.</p>
+  <div class="adm tall" style="position:relative">
+    <div class="arail">
+      <div class="lg"><i>L</i>Lenient Admin</div>
+      <div class="grp">Operate</div>
+      <div class="arl"><svg class="ic"><use href="#i-home"/></svg>Dashboard</div>
+      <div class="arl"><svg class="ic"><use href="#i-users"/></svg>Leads<em>4</em></div>
+      <div class="arl"><svg class="ic"><use href="#i-user"/></svg>Students</div>
+      <div class="arl"><svg class="ic"><use href="#i-doc"/></svg>Interviewer Applications<em>3</em></div>
+      <div class="arl"><svg class="ic"><use href="#i-users"/></svg>Interviewers</div>
+      <div class="arl on"><svg class="ic"><use href="#i-test"/></svg>Screening Questions</div>
+    </div>
+    <div class="amain">
+      <div class="ahead">Operate <span>/</span> <b>Screening Questions</b></div>
+      <div class="apage">
+        <div class="atitle"><div><h3>Screening Questions</h3><p>The bank the screening test draws from. Generated by Claude, checked twice, managed here.</p></div><span class="sp"></span><span class="abtn pri"><svg class="ic"><use href="#i-spark"/></svg>Generate a set</span></div>
+        <div class="acard astats">
+          <div><b>1,140</b><span>Technical, in 12 domains</span></div>
+          <div><b>210</b><span>Reasoning</span></div>
+          <div><b>205</b><span>IQ</span></div>
+          <div><b>198</b><span>General knowledge</span></div>
+          <div><b>14</b><span>Disabled</span></div>
+        </div>
+        <div class="acard" style="overflow:hidden">
+            <div class="acardh" style="flex-wrap:wrap;gap:8px">
+              <div class="filters">
+                <span class="fch on">All <em>1,767</em></span><span class="fch">Technical</span><span class="fch">Reasoning</span><span class="fch">IQ</span><span class="fch">General knowledge</span>
+                <span class="fch">Software Engineering<svg class="ic"><use href="#i-chevD"/></svg></span><span class="fch">Active<svg class="ic"><use href="#i-chevD"/></svg></span>
+              </div>
+              <span class="sp"></span><span class="fch"><svg class="ic"><use href="#i-search"/></svg>Search</span>
+            </div>
+            <table class="atable">
+              <tr><th>Question</th><th>Section</th><th>Served</th><th>Correct</th><th>Status</th><th></th></tr>
+              <tr><td style="max-width:330px">A client sends a valid login token, but the user lacks permission…<div style="font-size:12px;color:var(--a-text2);margin-top:3px">Software Engineering · set #41</div></td><td>Technical</td><td class="mono">58</td><td class="mono">71%</td><td><span class="apill ok">Active</span></td><td><span class="abtn sm"><svg class="ic"><use href="#i-ban"/></svg>Disable</span></td></tr>
+              <tr><td>Which metric is least affected by class imbalance…<div style="font-size:12px;color:var(--a-text2);margin-top:3px">Data Science · set #44</div></td><td>Technical</td><td class="mono">40</td><td class="mono">38%</td><td><span class="apill ok">Active</span></td><td><span class="abtn sm"><svg class="ic"><use href="#i-ban"/></svg>Disable</span></td></tr>
+              <tr><td>What comes next: 2, 6, 12, 20, 30, …?<div style="font-size:12px;color:var(--a-text2);margin-top:3px">set #44</div></td><td>IQ</td><td class="mono">63</td><td class="mono">84%</td><td><span class="apill ok">Active</span></td><td><span class="abtn sm"><svg class="ic"><use href="#i-ban"/></svg>Disable</span></td></tr>
+              <tr><td>Which planet in the solar system has the most moons?<div style="font-size:12px;color:var(--a-text2);margin-top:3px">set #39 · disabled by ops@lenient.in, 22 Oct: "the count keeps changing"</div></td><td>General knowledge</td><td class="mono">22</td><td class="mono">31%</td><td><span class="apill mu">Disabled</span></td><td><span class="abtn sm">Enable</span></td></tr>
+              <tr><td>All managers in the firm are graduates. Some graduates…<div style="font-size:12px;color:var(--a-text2);margin-top:3px">set #44</div></td><td>Reasoning</td><td class="mono">47</td><td class="mono">55%</td><td><span class="apill ok">Active</span></td><td><span class="abtn sm"><svg class="ic"><use href="#i-ban"/></svg>Disable</span></td></tr>
+            </table>
+          </div>
+        <div class="two">
+<div class="acard hist">
+              <div class="acardh"><h4>Generations</h4></div>
+              <div class="hr"><b>#44 · Data Science</b><span class="apill ok">Done</span><span>27 Oct, 09:30 · 30 made, 1 dropped by the check · $0.52</span></div>
+              <div class="hr"><b>#43 · Law</b><span class="apill ok">Done</span><span>26 Oct, 18:02 · automatic refill · 30 made, 0 dropped · $0.48</span></div>
+              <div class="hr"><b>#42 · Humanities</b><span class="apill da">Failed</span><span>26 Oct, 17:55 · didn't pass validation, retried as #43 · $0.21</span></div>
+              <div class="hr"><b>This month</b><span class="mono" style="font-size:12.5px">$9.84</span><span>19 sets, 568 questions kept</span></div>
+            </div>
+            <div class="acard">
+              <div class="acardh"><h4>Settings</h4><span class="sp"></span><span class="abtn sm">Edit</span></div>
+              <div class="acardb setg">
+                <div class="setr"><span>Questions per test</span><b>15 · 5 · 5 · 5</b></div>
+                <div class="setr"><span>Time limit</span><b>45 min</b></div>
+                <div class="setr"><span>Guide shown to admins</span><b>60%</b></div>
+                <div class="setr"><span>Link works for</span><b>7 days</b></div>
+                <div class="setr"><span>Refill a domain below</span><b>60 unused</b></div>
+                <div class="setr"><span>Model</span><b>claude-opus-5-5</b></div>
+              </div>
+            </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row" style="margin-top:22px;align-items:flex-start"><div style="display:grid;gap:10px"><div class="cap" style="min-height:0">"Generate a set"<span>Opens from the button at the top right.</span></div><div class="gmodal">
+        <h4>Generate a set</h4>
+        <p>One call makes 15 technical questions for the domain plus 5 reasoning, 5 IQ and 5 general knowledge. A second call answers each one blind and drops any it disagrees with. Takes about a minute; about $0.50.</p>
+        <div class="gsel">Data Science<svg class="ic"><use href="#i-chevD"/></svg></div>
+        <div style="font-size:12.5px;color:var(--a-text2);margin-top:8px">Data Science has 71 unused technical questions.</div>
+        <div class="gacts"><span class="abtn">Cancel</span><span class="abtn pri"><svg class="ic"><use href="#i-spark"/></svg>Generate</span></div>
+      </div></div></div>
+  <div class="spec">
+    <div><b>No editing of question text</b>Only Disable / Enable, with an optional note. An edited question would no longer be what Claude and the answer check agreed on; a bad one is disabled and replaced by the next refill.</div>
+    <div><b>Cost is the API's own usage</b>Each generation stores the tokens Claude reports; the dollar figure is computed from them. Nothing here is estimated by hand.</div>
+    <div><b>Settings are admin settings</b>Counts, time, guide, link days and refill level are read by the app and website from /config; the model comes from the server's env.</div>
+  </div>
+</div>
+
+<div class="section" id="questions">
+  <h2>Before the build</h2>
+  <p class="sub">The settings above are drawn with example values. These are the defaults I'd seed; say if any should differ.</p>
+  <div class="dec">
+    <div><i class="n">1</i><span><b>Time limit</b> 45 minutes for 30 questions (1.5 min each).</span></div>
+    <div><i class="n">2</i><span><b>Guide</b> 60%, shown to admins only.</span></div>
+    <div><i class="n">3</i><span><b>Link</b> works for 7 days, with a reminder 24 hours before it expires.</span></div>
+    <div><i class="n">4</i><span><b>Moving between questions</b> allowed (skip, go back, change) until submit.</span></div>
+    <div><i class="n">5</i><span><b>Admin "Send a new link"</b> only when the old link expired unstarted; a started test is never reset.</span></div>
+  </div>
+</div>
+
+</div>
+<script>
+(function(){
+  var only=new URLSearchParams(location.search).get('only');
+  if(only&&document.getElementById(only)){
+    document.querySelectorAll('.intro,.section').forEach(function(s){if(s.id!==only)s.style.display='none'});
+  }
+})();
+</script>
+</body>
+</html>

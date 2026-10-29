@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react'
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useQueryClient } from '@tanstack/react-query'
 import { borderWidth, color, height, opacity, radius, space, spaceHalf, trackingNative } from '../../theme'
-import { Button, text } from '../../components/ui'
+import { text } from '../../components/ui'
 import { Icon } from '../../components/ui/Icon'
+import { SignOutButton, SignOutDialog } from '../../components/ui/SignOutDialog'
 import { EmployerShell } from '../../components/employer'
 import { EmBadge, EmCard, initialsOf } from '../../components/employer/em'
 import { tokenStore } from '../../lib/api'
@@ -32,7 +33,7 @@ export function EmployerAccountScreen() {
   const queryClient = useQueryClient()
   const { state } = useEmployer()
   const [me, setMe] = useState<Me | null>(null)
-  const [signingOut, setSigningOut] = useState(false)
+  const [signOutOpen, setSignOutOpen] = useState(false)
   const [supportBusy, setSupportBusy] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
 
@@ -40,29 +41,16 @@ export function EmployerAccountScreen() {
     getMe().then(setMe).catch(() => {})
   }, [])
 
-  function signOut() {
-    Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Sign Out',
-          style: 'destructive',
-          onPress: async () => {
-            setSigningOut(true)
-            try {
-              await logout()
-            } catch {
-              /* best-effort; the session is cleared here regardless */
-            }
-            await tokenStore.clear()
-            queryClient.removeQueries({ queryKey: ['employer'] })
-            navigation.reset({ index: 0, routes: [{ name: 'Welcome' }] })
-          },
-        },
-      ]
-    )
+  /** Confirmed in the shared sign-out dialog, which shows "Signing out…" while this runs. */
+  async function signOut() {
+    try {
+      await logout()
+    } catch {
+      /* best-effort; the session is cleared here regardless */
+    }
+    await tokenStore.clear()
+    queryClient.removeQueries({ queryKey: ['employer'] })
+    navigation.reset({ index: 0, routes: [{ name: 'Welcome' }] })
   }
 
   async function support() {
@@ -124,7 +112,8 @@ export function EmployerAccountScreen() {
       </View>
       {!!notice && <Text style={[text.uiSm, styles.danger]}>{notice}</Text>}
 
-      <Button variant="destructive" size="cta" icon="out" label="Sign out" busy={signingOut} onPress={() => { signOut() }} />
+      <SignOutButton onPress={() => setSignOutOpen(true)} />
+      <SignOutDialog open={signOutOpen} onClose={() => setSignOutOpen(false)} onConfirm={signOut} />
     </EmployerShell>
   )
 }
