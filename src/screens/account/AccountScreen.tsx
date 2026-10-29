@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Alert, Animated, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Animated, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useQuery } from '@tanstack/react-query'
 import { tokenStore } from '../../lib/api'
@@ -7,6 +7,7 @@ import { getMe, logout, resendVerificationEmail } from '../../lib/api/account'
 import { borderWidth, color, fontFamilyNative as FF, opacity } from '../../theme'
 import { StatusPill } from '../../components/ui'
 import { Icon, type IconName } from '../../components/ui/Icon'
+import { SignOutButton, SignOutDialog } from '../../components/ui/SignOutDialog'
 import { ChatButton } from '../../components/tab/ChatButton'
 import { CompactBar, GroupLabel, LargeTitle, Skel, StateBlock, useCollapsingTitle } from '../../components/tab/kit'
 
@@ -35,7 +36,7 @@ export function AccountScreen({
   const insets = useSafeAreaInsets()
   const q = useQuery({ queryKey: ['me'], queryFn: () => getMe() })
   const [verify, setVerify] = useState<'idle' | 'sending' | 'sent'>('idle')
-  const [signingOut, setSigningOut] = useState(false)
+  const [signOutOpen, setSignOutOpen] = useState(false)
   const title = useCollapsingTitle()
 
   const frame = (c: React.ReactNode) => (
@@ -66,24 +67,11 @@ export function AccountScreen({
     try { await resendVerificationEmail(me.email); setVerify('sent') } catch { setVerify('idle') }
   }
 
-  function onSignOut() {
-    Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Sign Out',
-          style: 'destructive',
-          onPress: async () => {
-            setSigningOut(true)
-            try { await logout() } catch { /* best-effort; clear locally regardless */ }
-            await tokenStore.clear()
-            onSignedOut()
-          },
-        },
-      ],
-    )
+  /** Confirmed in the shared sign-out dialog, which shows "Signing out…" while this runs. */
+  async function onSignOut() {
+    try { await logout() } catch { /* best-effort; clear locally regardless */ }
+    await tokenStore.clear()
+    onSignedOut()
   }
 
   const yours: Row[] = [
@@ -161,22 +149,10 @@ export function AccountScreen({
         <View style={s.pad}><Menu rows={more} plain /></View>
 
         <View style={[s.pad, s.signOut]}>
-          <View style={[s.menu, s.menuDanger]}>
-            <Pressable
-              accessibilityRole="button"
-              disabled={signingOut}
-              onPress={onSignOut}
-              style={({ pressed }) => [s.mrow, pressed && s.pressedRow]}
-            >
-              <Icon name="out" size={20} tint={color.danger} weight={1.9} />
-              <View style={s.grow}>
-                <Text style={[s.mTitle, s.mTitleDanger]}>{signingOut ? 'Signing out…' : 'Sign out'}</Text>
-                <Text style={s.mSub}>On this device only</Text>
-              </View>
-            </Pressable>
-          </View>
+          <SignOutButton onPress={() => setSignOutOpen(true)} />
         </View>
       </Animated.ScrollView>
+      <SignOutDialog open={signOutOpen} onClose={() => setSignOutOpen(false)} onConfirm={onSignOut} />
     </View>
   )
 }
@@ -228,8 +204,6 @@ const s = StyleSheet.create({
   icon: { width: 40, height: 40, borderRadius: 12, backgroundColor: color.accentSoft, alignItems: 'center', justifyContent: 'center' },
   iconPlain: { backgroundColor: color.surfaceMuted },
   mTitle: { fontFamily: FF.bodySemiBold, fontSize: 16, letterSpacing: -0.16, color: color.text },
-  mTitleDanger: { color: color.danger },
-  menuDanger: { borderColor: color.dangerBorder },
   mSub: { fontFamily: FF.body, fontSize: 13.5, lineHeight: 18, color: color.textMuted, marginTop: 1 },
   verifyBtn: { height: 38, paddingHorizontal: 14, borderRadius: 12, backgroundColor: color.accent, alignItems: 'center', justifyContent: 'center' },
   verifyText: { fontFamily: FF.bodyBold, fontSize: 14, color: color.textInverse },

@@ -64,8 +64,11 @@ export interface AppConfig {
     languages: { name: string; slug: string }[]
     industries: { name: string; slug: string }[]
     jobCategories: { name: string; slug: string }[]
-    /** EM-11 "Field of study" — the DOMAIN list. Absent on an older server. */
-    domains?: { name: string; slug: string }[]
+    /**
+     * EM-11 "Field of study" — the DOMAIN list. Absent on an older server. `group` is the
+     * domain's ISCED broad field (the grey line under it in a picker), omitted when it has none.
+     */
+    domains?: { name: string; slug: string; group?: string }[]
   }
   /**
    * Interviewer web's admin-controlled numbers. Settings-backed numbers are omitted when the server has

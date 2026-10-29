@@ -1,0 +1,1114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Feed, Shortlist and Forms</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!--
+  APK + website round, 2026-10-27: feed card fixes, Shortlist stamp, profile
+  Watch button, one sign-out dialog for all three users, mass Send Interest
+  from Shortlist, searchable dropdowns for domains and languages.
+  Colours and sizes are the app's tokens (apostrophe-user lib/theme/tokens.ts,
+  red brand). Names are the seeded test candidates from your screenshots.
+  URL: ?stamp=A|B|C&signout=dialog|sheet
+-->
+<style>
+  :root{
+    --accent:#B22222; --accent-bright:#C83333; --accent-muted:#E8B4B4; --accent-soft:#F9EAEA; --accent-wash:#FDF5F5; --accent-text:#951C1C; --accent-edge:#F0D2D2;
+    --ink:#141414; --ink-deep:#0A0A0A; --ink-raised:#1F1F1F;
+    --text:#141414; --text2:#2C2C2C; --muted:#777777; --subtle:#8C8C8C;
+    --surface:#FFFFFF; --surface-muted:#F3F3F3; --sunken:#E8E8E8; --bg:#FCFCFC; --border:#E5E5E5; --border-strong:#D0D0D0; --border-soft:#F3F3F3;
+    --on:#FFFFFF; --on-muted:#D0D0D0; --on-subtle:#9A9A9A; --on-soft:#E5E5E5;
+    --glass:rgba(20,20,20,.6); --edge:rgba(255,255,255,.2); --outline:rgba(255,255,255,.3); --hair:rgba(255,255,255,.1);
+    --wash:rgba(255,255,255,.06); --ground:rgba(255,255,255,.12); --level:rgba(255,255,255,.34); --badge:rgba(255,255,255,.94);
+    --feed-red:#B22222; --feed-red-pill:rgba(178,34,34,.88); --feed-like:#20D575; --feed-undo:#FFC000;
+    --feed-action:rgba(24,24,24,.9); --feed-pill:rgba(24,24,24,.75); --feed-sheet:#121212;
+    --danger:#C2410C; --danger-fill:#E5531A; --danger-soft:#FFEDE5; --danger-border:#F7C1A8;
+    --ok:#0B7A55; --ok-fill:#0E9F6E; --ok-soft:#E6F7F0; --warn:#935F00; --warn-soft:#FFF5E1;
+    --note:#2563EB; --bug:#DC2626;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  button{font:inherit;border:0;background:none;color:inherit;cursor:pointer}
+  body{font-family:'Geist',system-ui,sans-serif;background:#ECECEC;color:var(--text);padding:32px 24px 100px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1720px;margin:0 auto}
+  .ic{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;display:block;flex:none}
+  .ic.f{fill:currentColor;stroke-width:1.2}
+
+  /* ── page chrome ── */
+  .intro,.section{background:#fff;border:1px solid var(--border);border-radius:24px;padding:24px 28px;margin-bottom:16px}
+  .intro h1{font-size:28px;font-weight:700;letter-spacing:-.02em}
+  .intro p,.section .sub{font-size:15px;color:var(--muted);margin-top:6px;line-height:1.5;max-width:1060px}
+  .map{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:8px;margin-top:16px}
+  .map a{display:block;background:var(--surface-muted);border-radius:14px;padding:11px 13px;font-size:13.5px;line-height:1.45;color:var(--text2);text-decoration:none}
+  .map a:hover{background:var(--accent-wash)}
+  .map b{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--text);margin-bottom:3px;font-weight:600}
+  .controls{position:sticky;top:10px;z-index:50;display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+  .seg{display:flex;align-items:center;gap:3px;background:#fff;border:1px solid var(--border);border-radius:99px;padding:4px;box-shadow:0 8px 24px rgba(20,20,20,.08)}
+  .seg .lab{font-size:12.5px;font-weight:500;color:var(--subtle);padding:0 6px 0 10px}
+  .seg button{height:32px;padding:0 13px;border-radius:99px;font-size:13.5px;font-weight:600;color:var(--muted);white-space:nowrap}
+  .seg button.on{background:var(--accent);color:#fff}
+  .section h2{font-size:21px;font-weight:700;letter-spacing:-.01em;display:flex;align-items:center;gap:10px}
+  .section .sub{margin-bottom:20px}
+  .row{display:flex;flex-wrap:wrap;gap:26px;align-items:flex-start}
+  .col{display:grid;gap:10px;width:380px;align-content:start}
+  .cap{font-size:14.5px;font-weight:600;min-height:80px}
+  .cap span{display:block;font-size:13px;font-weight:400;color:var(--muted);margin-top:3px;line-height:1.45}
+  .cap span.tagp{display:inline-block;margin:0 0 0 6px;font-size:11.5px;font-weight:600}
+  .cap span.tagp.rec{color:#fff}
+  .legend{display:grid;gap:7px;font-size:13px;color:var(--text2);line-height:1.45;padding:2px 2px 0}
+  .legend div{display:flex;gap:8px;align-items:flex-start}
+  .n{flex:none;width:20px;height:20px;border-radius:99px;background:var(--note);color:#fff;font-size:11.5px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;font-style:normal}
+  .n.bug{background:var(--bug)}
+  .spec{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px;margin-top:22px}
+  .spec>div{border:1px solid var(--border);border-radius:14px;padding:12px 14px;font-size:13.5px;line-height:1.5;color:var(--text2)}
+  .spec>div>b{display:block;color:var(--text);font-size:14px;margin-bottom:2px}
+  .spec code,.legend code,.sub code,.dec code{font-family:ui-monospace,Menlo,monospace;font-size:12px;background:var(--surface-muted);padding:1px 5px;border-radius:5px}
+  .tagp{display:inline-block;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:99px;background:var(--accent-soft);color:var(--accent-text);vertical-align:1px;white-space:nowrap}
+  .tagp.api{background:#FFF3D6;color:#7A5200}
+  .tagp.app{background:#E7F6EF;color:var(--ok)}
+  .tagp.web{background:#E8EEFD;color:#1D4ED8}
+  .tagp.old{background:var(--surface-muted);color:var(--muted)}
+  .tagp.rec{background:var(--accent);color:#fff}
+  .h3{font-size:17px;font-weight:700;margin:30px 0 12px}
+
+  /* ── phone ── */
+  .phone{width:380px;height:800px;padding:10px;border-radius:50px;background:#111;box-shadow:0 20px 50px rgba(0,0,0,.16),inset 0 0 0 2px #2b2b2b}
+  .scr{position:relative;width:360px;height:780px;border-radius:40px;overflow:hidden;background:var(--ink-deep);color:#fff}
+  .scr.light{background:var(--bg);color:var(--text)}
+  .sb{position:absolute;top:0;left:0;right:0;height:30px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:13px;font-weight:600;z-index:40;pointer-events:none}
+  .sb .r{display:flex;gap:5px;align-items:center}
+  .sb .r i{display:block;background:currentColor;border-radius:2px}
+  .ann{position:absolute;z-index:46;width:20px;height:20px;border-radius:99px;background:var(--note);color:#fff;font-size:11.5px;font-weight:700;display:flex;align-items:center;justify-content:center;font-style:normal;box-shadow:0 0 0 2px #fff}
+  .ann.bug{background:var(--bug)}
+  .hot{position:absolute;z-index:45;border:2px dashed var(--note);border-radius:14px;pointer-events:none}
+  .hot.bug{border-color:var(--bug)}
+
+  /* ── tab bar ── */
+  .tabbar{position:absolute;left:0;right:0;bottom:0;height:64px;display:flex;justify-content:space-around;align-items:flex-start;padding-top:7px;background:#fff;border-top:1px solid var(--border);z-index:30}
+  .tabbar.dark{background:var(--ink-deep);border-top-color:transparent}
+  .ti{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11.5px;color:var(--muted);width:64px;font-weight:500}
+  .ti .pi{width:54px;height:28px;border-radius:99px;display:flex;align-items:center;justify-content:center}
+  .ti .ic{width:20px;height:20px}
+  .ti.on{color:var(--accent);font-weight:600}.ti.on .pi{background:var(--accent-soft)}
+  .tabbar.dark .ti{color:var(--on-subtle)}.tabbar.dark .ti.on{color:#fff}.tabbar.dark .ti.on .pi{background:rgba(178,34,34,.32)}
+
+  /* ── employer feed (dark) ── */
+  .film{position:absolute;inset:0;background:radial-gradient(120% 65% at 50% 30%,#5a4a42 0%,#30292560 45%,#141414 100%),linear-gradient(180deg,#3b3330,#121212)}
+  .film.b{background:radial-gradient(120% 65% at 50% 28%,#8d8a7a 0%,#4a473e80 45%,#141414 100%),linear-gradient(180deg,#56534a,#121212)}
+  .sil{position:absolute;left:50%;top:60px;width:270px;transform:translateX(-50%);fill:rgba(255,255,255,.08)}
+  .shade{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(10,10,10,.55) 0%,rgba(10,10,10,0) 16%,rgba(10,10,10,0) 40%,rgba(10,10,10,.7) 58%,rgba(10,10,10,.96) 74%,#0A0A0A 84%,#0A0A0A 100%)}
+  .fhead{position:absolute;top:30px;left:16px;right:16px;height:54px;display:flex;align-items:center;gap:10px;z-index:5}
+  .fhead h3{font-size:22px;font-weight:700;letter-spacing:-.01em;flex:1;line-height:1.2}
+  .hbtns{display:flex;gap:8px}
+  .tbtn{position:relative;width:38px;height:38px;flex:none;border-radius:99px;background:var(--glass);border:1px solid var(--edge);display:flex;align-items:center;justify-content:center;color:#fff}
+  .tbtn .ic{width:19px;height:19px}
+  .tbtn.back{background:rgba(255,255,255,.1);border-color:var(--outline)}
+  .chips{position:absolute;top:84px;left:16px;right:16px;height:38px;display:flex;align-items:flex-start;gap:8px;white-space:nowrap;overflow:hidden;z-index:5}
+  .mchip{height:28px;padding:0 12px;border-radius:99px;background:var(--ink-raised);display:flex;align-items:center;gap:4px;font-size:13px;flex:none}
+  .mchip b{font-weight:600}.mchip span{color:var(--on-muted)}
+  .nof{height:28px;display:flex;align-items:center;font-size:13px;color:var(--on-subtle)}
+  .stack{position:absolute;top:122px;bottom:64px;left:0;right:0}
+  .stack.clip{overflow:hidden}
+  .card{position:absolute;inset:0;overflow:hidden;background:var(--ink-deep);border-radius:20px 20px 0 0}
+  .prog{position:absolute;top:10px;left:16px;right:16px;height:3px;border-radius:2px;background:var(--level);overflow:hidden;z-index:2}
+  .prog i{position:absolute;top:0;bottom:0;left:0;width:22%;background:#fff}
+  .ctop{position:absolute;top:22px;left:16px;right:16px;display:flex;justify-content:space-between;align-items:center;gap:8px;z-index:3}
+  .tag{height:30px;padding:0 11px;border-radius:99px;background:var(--glass);display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;white-space:nowrap}
+  .tag .dot{width:8px;height:8px;border-radius:99px;background:var(--feed-like)}
+  .tag.tk{padding:0 11px 0 6px;gap:7px;font-size:12.5px}
+  .tick{width:18px;height:18px;border-radius:99px;background:var(--feed-like);color:var(--ink-deep);display:flex;align-items:center;justify-content:center;flex:none}
+  .tick .ic{width:11px;height:11px;stroke-width:3.4}
+  .w3{height:38px;padding:0 13px 0 4px;border-radius:99px;background:rgba(255,255,255,.16);backdrop-filter:blur(14px) saturate(140%);-webkit-backdrop-filter:blur(14px) saturate(140%);border:1px solid rgba(255,255,255,.28);display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;white-space:nowrap;flex:none;color:#fff}
+  .wp{width:30px;height:30px;border-radius:99px;background:#fff;color:var(--ink);display:flex;align-items:center;justify-content:center;flex:none}
+  .wp .ic{width:14px;height:14px;margin-left:2px}
+  .w3.off{opacity:.6}
+  .hud{position:absolute;left:16px;right:16px;bottom:84px;display:flex;flex-direction:column;gap:8px;z-index:3}
+  .hud.new{bottom:92px}
+  .mute{align-self:flex-end;width:30px;height:30px;border-radius:99px;background:var(--glass);border:1px solid var(--edge);display:flex;align-items:center;justify-content:center;margin-bottom:2px}
+  .mute .ic{width:15px;height:15px}
+  .who{display:flex;align-items:center;gap:10px}
+  .whotap{flex:1;min-width:0;display:flex;align-items:center;gap:10px;position:relative}
+  .av{width:40px;height:40px;border-radius:99px;background:rgba(255,255,255,.2);border:1px solid var(--outline);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex:none;color:#fff}
+  .nm{display:flex;align-items:center;gap:6px;font-size:22px;font-weight:700;line-height:1.2;letter-spacing:-.01em;white-space:nowrap;overflow:hidden}
+  .nm .ic{width:18px;height:18px;color:var(--feed-like);stroke-width:2.6}
+  .nm.u{text-decoration:underline;text-decoration-color:rgba(255,255,255,.35);text-underline-offset:4px;text-decoration-thickness:1.5px}
+  .hl{font-size:12px;color:var(--on-muted);line-height:1.5}
+  .gbtn{width:34px;height:34px;flex:none;border-radius:99px;background:var(--edge);border:1px solid var(--outline);display:flex;align-items:center;justify-content:center}
+  .gbtn .ic{width:18px;height:18px;stroke-width:2.6}
+  .pills{display:flex;flex-wrap:wrap;gap:6px}
+  .pill{padding:4px 12px;border-radius:99px;font-size:12px;font-weight:600;line-height:18px;border:1px solid var(--edge);background:var(--feed-pill)}
+  .pill.pk{background:var(--feed-red-pill);border-color:var(--outline)}
+  .meta{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:var(--on-muted);white-space:nowrap;overflow:hidden}
+  .meta .ic{width:14px;height:14px}
+  .acts{position:absolute;left:0;right:0;bottom:12px;display:flex;justify-content:space-around;align-items:center;padding:0 24px;z-index:6;--sm:46px;--lg:58px;--gs:20px;--gl:28px}
+  .acts.big{--sm:52px;--lg:66px;--gs:24px;--gl:34px;padding:0 20px}
+  .rb{border-radius:99px;background:var(--feed-action);border:1px solid var(--ground);display:flex;align-items:center;justify-content:center}
+  .rb.sm{width:var(--sm);height:var(--sm)}.rb.lg{width:var(--lg);height:var(--lg)}
+  .rb.sm .ic{width:var(--gs);height:var(--gs);stroke-width:2.5}.rb.lg .ic{width:var(--gl);height:var(--gl);stroke-width:2.8}
+  .rb .ic.f{stroke-width:1}
+  .c-undo{color:var(--feed-undo)}.c-pass{color:var(--feed-red)}.c-like{color:var(--feed-like)}.c-send{color:var(--accent-bright)}
+  .dimmer{position:absolute;inset:0;background:rgba(10,10,10,.35);z-index:4}
+
+  /* the old "behind" card: 95 % wide, its edge shows as a line over the tab bar */
+  .behind-old{position:absolute;left:9px;right:9px;top:28px;bottom:-14px;border-radius:20px;overflow:hidden;background:#151515;border:1px solid rgba(255,255,255,.16)}
+  .seam{position:absolute;left:9px;right:9px;bottom:62px;height:0;border-top:1.5px dashed rgba(255,255,255,.55);z-index:35}
+
+  /* ── stamps ── */
+  .stw{position:absolute;z-index:5;pointer-events:none}
+  .st{display:inline-flex;align-items:center;gap:8px;padding:5px 16px;border-radius:12px;font-size:24px;font-weight:700;letter-spacing:.12em;line-height:30px;white-space:nowrap}
+  .st .ic{width:22px;height:22px}
+  .st.like{transform:rotate(-15deg)}.st.pass{transform:rotate(15deg)}
+  .st.oldv{background:var(--glass);border:3px solid}
+  .st.oldv.like{border-color:var(--feed-like);color:var(--feed-like);opacity:.75}
+  .st.vA{background:var(--badge);border:3px solid}
+  .st.vA.like{border-color:var(--ok-fill);color:var(--ok)}.st.vA.pass{border-color:var(--feed-red);color:var(--feed-red)}.st.vA.skip{border-color:var(--ink);color:var(--ink)}
+  .st.vB{background:#fff;color:var(--ink);box-shadow:0 8px 24px rgba(0,0,0,.4);padding:6px 16px 6px 12px}
+  .st.vB.like .ic{color:var(--ok-fill)}.st.vB.pass .ic{color:var(--feed-red)}.st.vB.skip .ic{color:var(--ink)}
+  .st.vC{background:rgba(20,20,20,.3);border:3px solid #fff;color:#fff}
+  .st .si{display:none}.st.vB .si{display:block}
+  .stiles{display:flex;flex-wrap:wrap;gap:18px}
+  .stile{width:420px;display:grid;gap:10px;align-content:start;cursor:pointer}
+  .stile .box{position:relative;height:150px;border-radius:20px;overflow:hidden;outline:3px solid transparent;outline-offset:3px;display:flex;align-items:center;justify-content:space-around;padding:0 8px}
+  .stile.on .box{outline-color:var(--accent)}
+  .stile .box .st{position:relative;font-size:17px;line-height:22px;padding:4px 11px;border-width:2.5px;letter-spacing:.1em}
+  .stile .box .st .ic{width:16px;height:16px}
+
+  /* ── light screens ── */
+  .lhead{position:absolute;top:30px;left:16px;right:16px;height:54px;display:flex;align-items:center;gap:8px;z-index:5}
+  .lhead h3{font-size:22px;font-weight:700;letter-spacing:-.01em;flex:1;line-height:1.2;white-space:nowrap}
+  .lhead h3 small{font-size:14px;font-weight:500;color:var(--subtle);margin-left:6px}
+  .ib{width:38px;height:38px;flex:none;border-radius:99px;display:flex;align-items:center;justify-content:center;color:var(--text2)}
+  .ib .ic{width:20px;height:20px}
+  .ib.x{background:var(--surface-muted)}
+  .tbtnl{height:34px;padding:0 13px;border-radius:99px;border:1px solid var(--border-strong);display:flex;align-items:center;gap:6px;font-size:13.5px;font-weight:600;color:var(--text);flex:none;background:#fff}
+  .tbtnl .ic{width:16px;height:16px}
+  .tbtnl.on{background:var(--ink);border-color:var(--ink);color:#fff}
+
+  /* profile */
+  .pfilm{position:absolute;top:80px;left:14px;right:14px;height:242px;border-radius:18px;background:#1F1F1F;overflow:hidden;color:#fff}
+  .pplay{position:absolute;left:50%;top:50%;width:58px;height:58px;margin:-29px 0 0 -29px;border-radius:99px;background:rgba(255,255,255,.94);color:var(--ink);display:flex;align-items:center;justify-content:center}
+  .pplay .ic{width:20px;height:20px;margin-left:3px}
+  .gp{position:absolute;height:28px;padding:0 10px;border-radius:99px;background:var(--glass);font-size:12px;font-weight:500;display:flex;align-items:center;gap:6px;white-space:nowrap}
+  .gp .ic{width:13px;height:13px}
+  .pwho{position:absolute;top:338px;left:16px;right:16px;display:flex;gap:14px;align-items:center}
+  .face{border-radius:99px;display:flex;align-items:center;justify-content:center;font-weight:600;color:#fff;flex:none}
+  .pname{font-size:22px;font-weight:700;letter-spacing:-.01em}
+  .psub{font-size:13px;color:var(--muted);margin-top:2px}
+  .facts{position:absolute;top:410px;left:14px;right:14px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .facts div{background:var(--surface-muted);border-radius:12px;padding:9px 11px}
+  .facts span{display:block;font-size:12px;color:var(--muted)}
+  .facts b{display:block;font-size:15px;font-weight:600;margin-top:2px}
+  .vids{position:absolute;top:478px;left:0;right:0;border-top:1px solid var(--border);padding:14px 16px 0}
+  .vids h5{font-size:13.5px;font-weight:500;color:var(--muted);margin-bottom:10px}
+  .vrow{display:flex;gap:8px}
+  .vt{width:98px}
+  .vth{height:68px;border-radius:10px;background:#1F1F1F;display:flex;align-items:center;justify-content:center}
+  .vth i{width:26px;height:26px;border-radius:99px;background:rgba(255,255,255,.94);display:flex;align-items:center;justify-content:center;color:var(--ink)}
+  .vth .ic{width:10px;height:10px;margin-left:1px}
+  .vt b{display:block;font-size:12.5px;font-weight:600;margin-top:6px}
+  .vchip{display:inline-block;margin-top:4px;font-size:11px;font-weight:500;padding:2px 8px;border-radius:99px}
+  .vchip.ok{background:var(--ok-soft);color:var(--ok)}.vchip.w{background:var(--warn-soft);color:var(--warn)}
+  .pfoot{position:absolute;left:0;right:0;bottom:64px;height:70px;background:#fff;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;padding:0 14px;z-index:6}
+  .rnd{width:44px;height:44px;border-radius:99px;border:1px solid var(--danger-border);color:var(--danger);display:flex;align-items:center;justify-content:center;flex:none}
+  .rnd .ic{width:18px;height:18px}
+  .bo{height:44px;padding:0 16px;border-radius:99px;border:1px solid var(--border-strong);display:flex;align-items:center;gap:7px;font-size:14px;font-weight:600;flex:none}
+  .bo .ic{width:16px;height:16px}
+  .bp{height:44px;flex:1;border-radius:99px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;gap:7px;font-size:14.5px;font-weight:600}
+  .bp .ic{width:17px;height:17px}
+
+  /* sign-out */
+  .skel{position:absolute;top:84px;left:16px;right:16px;display:grid;gap:10px}
+  .skel .pc{height:72px;border-radius:16px;background:#fff;border:1px solid var(--border);display:flex;align-items:center;gap:12px;padding:0 14px}
+  .skel .pc i{width:44px;height:44px;border-radius:99px;background:var(--sunken)}
+  .skel .ln{height:10px;border-radius:5px;background:var(--sunken)}
+  .skel .grp{border-radius:16px;background:#fff;border:1px solid var(--border)}
+  .skel .it{height:50px;display:flex;align-items:center;gap:12px;padding:0 14px;border-bottom:1px solid var(--border-soft)}
+  .skel .it:last-child{border-bottom:0}
+  .skel .it i{width:28px;height:28px;border-radius:8px;background:var(--surface-muted)}
+  .sobtn{position:absolute;left:16px;right:16px;bottom:30px;height:50px;border-radius:99px;background:#fff;border:1px solid var(--danger-border);color:var(--danger);display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:600}
+  .sobtn .ic{width:18px;height:18px}
+  .scrim{position:absolute;inset:0;background:rgba(10,10,10,.5);z-index:20}
+  .dlg{position:absolute;left:22px;right:22px;top:50%;transform:translateY(-50%);background:#fff;border-radius:22px;padding:24px 20px 16px;z-index:21;box-shadow:0 24px 60px rgba(0,0,0,.25);text-align:center}
+  .bsh{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:26px 26px 0 0;padding:10px 20px 26px;z-index:21}
+  .bsh .hdl{width:40px;height:4px;border-radius:4px;background:var(--border-strong);margin:0 auto 18px}
+  .soi{width:52px;height:52px;border-radius:99px;background:var(--danger-soft);color:var(--danger-fill);display:flex;align-items:center;justify-content:center;margin:0 auto}
+  .soi .ic{width:24px;height:24px;stroke-width:2.2}
+  .bsh .soi{margin:0}
+  .so-t{font-size:19px;font-weight:700;letter-spacing:-.01em;margin-top:14px}
+  .so-p{font-size:14px;color:var(--muted);margin-top:6px;line-height:1.5}
+  .so-a{display:grid;gap:8px;margin-top:20px}
+  .bfill{height:50px;border-radius:99px;background:var(--danger-fill);color:#fff;font-weight:600;font-size:15px;display:flex;align-items:center;justify-content:center;gap:8px}
+  .bfill .ic{width:18px;height:18px}
+  .bq{height:48px;border-radius:99px;background:var(--surface-muted);color:var(--text);font-weight:600;font-size:15px;display:flex;align-items:center;justify-content:center}
+  .bsh .so-a{grid-template-columns:1fr 1fr;gap:10px}
+  .bsh .bfill{order:2}.bsh .bq{order:1;height:50px}
+  .spin{width:16px;height:16px;border-radius:99px;border:2px solid rgba(255,255,255,.45);border-top-color:#fff}
+  .so-dialog,.so-sheet{display:none}
+  body[data-so="dialog"] .so-dialog{display:block}
+  body[data-so="sheet"] .so-sheet{display:block}
+  .who-lbl{position:absolute;top:30px;left:16px;right:16px;height:54px;display:flex;align-items:center;font-size:22px;font-weight:700;letter-spacing:-.01em}
+
+  /* shortlist */
+  .sbody{position:absolute;top:84px;left:0;right:0;bottom:64px;overflow:hidden}
+  .frow{display:flex;gap:6px;padding:0 16px 10px;white-space:nowrap}
+  .fc{height:30px;padding:0 12px;border-radius:99px;background:#fff;border:1px solid var(--border);display:flex;align-items:center;gap:5px;font-size:12.5px;font-weight:500;color:var(--text2)}
+  .fc.dk{background:var(--ink);border-color:var(--ink);color:#fff}
+  .fc .ic{width:12px;height:12px}
+  .scard{margin:0 14px 10px;background:#fff;border:1px solid var(--border);border-radius:16px;padding:12px}
+  .shead{display:flex;align-items:center;gap:10px}
+  .sname{display:flex;align-items:center;gap:5px;font-size:15px;font-weight:600;white-space:nowrap}
+  .sname .ic{width:14px;height:14px;color:var(--ok);stroke-width:2.6}
+  .smeta{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sdate{font-size:11.5px;color:var(--subtle);margin-left:auto;flex:none;align-self:flex-start}
+  .sacts{display:flex;align-items:center;gap:8px;margin-top:12px}
+  .sq{width:38px;height:38px;border-radius:12px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--text2);flex:none}
+  .sq.dg{color:var(--danger);border-color:var(--danger-border)}
+  .sq .ic{width:17px;height:17px}
+  .bsec{flex:1;height:38px;border-radius:99px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;gap:6px;font-size:13.5px;font-weight:600}
+  .bsec .ic{width:15px;height:15px}
+  .quiet{flex:1;text-align:right;font-size:12.5px;color:var(--muted);font-weight:500}
+  .cb{width:22px;height:22px;border-radius:7px;border:1.5px solid var(--border-strong);background:#fff;display:flex;align-items:center;justify-content:center;flex:none;color:#fff}
+  .cb .ic{width:13px;height:13px;stroke-width:3.2}
+  .cb.on{background:var(--accent);border-color:var(--accent)}
+  .cb.no{background:var(--surface-muted);border-color:var(--border)}
+  .scard.sel{border-color:var(--accent);background:var(--accent-wash)}
+  .scard.dis .shead>*:not(.cb){opacity:.55}
+  .why{display:inline-flex;margin-top:8px;margin-left:32px;font-size:11.5px;font-weight:500;padding:3px 9px;border-radius:99px;background:var(--surface-muted);color:var(--muted)}
+  .selbar{position:absolute;left:0;right:0;bottom:64px;background:#fff;border-top:1px solid var(--border);padding:10px 14px 12px;z-index:8;box-shadow:0 -10px 24px rgba(20,20,20,.06)}
+  .selbar .bp{height:48px;font-size:15px}
+  .selbar p{font-size:12px;color:var(--muted);text-align:center;margin-bottom:8px}
+  .lsheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:26px 26px 0 0;z-index:21;padding:10px 18px 22px}
+  .lsheet .hdl{width:40px;height:4px;border-radius:4px;background:var(--border-strong);margin:0 auto 14px}
+  .stackf{display:flex}
+  .stackf .face{border:2px solid #fff;margin-left:-6px}.stackf .face:first-child{margin-left:0}
+  .lt{font-size:19px;font-weight:700;letter-spacing:-.01em;margin-top:12px}
+  .ls{font-size:13px;color:var(--muted);margin-top:2px}
+  .flab{font-size:12.5px;font-weight:500;color:var(--muted);margin:16px 0 6px}
+  .radio{display:flex;align-items:center;gap:10px;height:42px;padding:0 12px;border:1px solid var(--border);border-radius:12px;margin-bottom:6px;font-size:14px}
+  .radio i{width:18px;height:18px;border-radius:99px;border:1.5px solid var(--border-strong);flex:none}
+  .radio.on{border-color:var(--accent);background:var(--accent-wash)}
+  .radio.on i{border:5px solid var(--accent)}
+  .radio small{margin-left:auto;font-size:12px;color:var(--subtle)}
+  .ta{height:78px;border:1px solid var(--border-strong);border-radius:12px;padding:10px 12px;font-size:14px;color:var(--subtle);position:relative}
+  .ta em{position:absolute;right:10px;bottom:8px;font-style:normal;font-size:11.5px;color:var(--subtle)}
+  .hint{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.45}
+  .rrow{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border-soft);font-size:14px}
+  .rrow .st2{white-space:nowrap;margin-left:auto;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:4px}
+  .rrow .st2 .ic{width:14px;height:14px;stroke-width:2.6}
+  .okc{color:var(--ok)}.wc{color:var(--warn)}
+  .bigok{width:56px;height:56px;border-radius:99px;background:var(--ok-soft);color:var(--ok);display:flex;align-items:center;justify-content:center}
+  .bigok .ic{width:26px;height:26px;stroke-width:2.6}
+
+  /* pickers */
+  .form{position:absolute;top:84px;left:0;right:0;bottom:0;padding:0 16px;overflow:hidden}
+  .brandh{position:absolute;top:0;left:0;right:0;height:150px;background:linear-gradient(160deg,#6B1414,#B22222);color:#fff;padding:40px 18px 0}
+  .brandh h3{font-size:22px;font-weight:700;margin-top:14px}
+  .brandh p{font-size:13px;color:rgba(255,255,255,.8);margin-top:4px}
+  .fld{margin-bottom:14px}
+  .fld label{display:flex;justify-content:space-between;font-size:13px;font-weight:500;color:var(--text2);margin-bottom:6px}
+  .fld label span{color:var(--subtle);font-weight:400}
+  .inp{min-height:46px;border:1px solid var(--border-strong);border-radius:12px;background:#fff;padding:7px 10px 7px 12px;display:flex;align-items:center;gap:6px;font-size:14px;color:var(--text)}
+  .inp.ph{color:var(--subtle)}
+  .ms{min-height:46px;border:1px solid var(--border-strong);border-radius:12px;background:#fff;padding:7px 40px 7px 8px;display:flex;flex-wrap:wrap;align-items:center;gap:6px;position:relative}
+  .ms.focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .ms>.ic{position:absolute;right:12px;top:50%;margin-top:-9px;width:18px;height:18px;color:var(--muted)}
+  .ms .ph{font-size:14px;color:var(--subtle);padding-left:4px}
+  .ch{height:30px;padding:0 6px 0 11px;border-radius:99px;background:var(--accent-soft);border:1px solid var(--accent-edge);color:var(--accent-text);display:flex;align-items:center;gap:4px;font-size:13px;font-weight:500;white-space:nowrap}
+  .ch .ic{width:13px;height:13px}
+  .ch.more{padding:0 11px;background:var(--surface-muted);border-color:var(--border);color:var(--text2)}
+  .srch{height:46px;border:1px solid var(--accent);box-shadow:0 0 0 3px var(--accent-soft);border-radius:12px;display:flex;align-items:center;gap:8px;padding:0 10px 0 12px;font-size:15px}
+  .srch .ic{width:18px;height:18px;color:var(--muted)}
+  .srch .caret{width:1.5px;height:20px;background:var(--accent);margin-left:-6px}
+  .srch .clr{margin-left:auto;width:24px;height:24px;border-radius:99px;background:var(--surface-muted);display:flex;align-items:center;justify-content:center}
+  .srch .clr .ic{width:12px;height:12px}
+  .opt{display:flex;align-items:center;gap:12px;height:46px;border-bottom:1px solid var(--border-soft);font-size:15px}
+  .opt mark{background:none;color:var(--accent);font-weight:600}
+  .opt .cb{margin-left:auto}
+  .opt small{font-size:12px;color:var(--subtle)}
+  .opt.r i{width:20px;height:20px;border-radius:99px;border:1.5px solid var(--border-strong);margin-left:auto;flex:none}
+  .opt.r.on i{border:6px solid var(--accent)}
+  .grph{font-size:12px;font-weight:500;color:var(--subtle);padding:12px 0 2px}
+  .pfoot2{position:absolute;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--border);padding:12px 18px 22px;display:flex;align-items:center;gap:12px}
+  .pfoot2 .txt{font-size:14px;font-weight:600;color:var(--accent)}
+  .pfoot2 .bp{height:48px}
+  .empty{padding:36px 10px;text-align:center;font-size:14px;color:var(--muted);line-height:1.5}
+  .mini{width:380px;background:#fff;border:1px solid var(--border);border-radius:20px;padding:16px}
+  .mini h6{font-size:13px;font-weight:600;color:var(--muted);margin-bottom:10px}
+
+  /* ── desktop (website) ── */
+  .desk{width:1060px;height:640px;border-radius:14px;border:1px solid var(--border-strong);background:var(--bg);overflow:hidden;position:relative;box-shadow:0 20px 50px rgba(0,0,0,.1);display:flex}
+  .dside{width:220px;background:#fff;border-right:1px solid var(--border);padding:18px 12px;flex:none}
+  .dlogo{display:flex;align-items:center;gap:8px;font-weight:700;font-size:17px;padding:0 8px 18px}
+  .dlogo i{width:26px;height:26px;border-radius:8px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:14px}
+  .dnav{display:flex;align-items:center;gap:10px;height:38px;padding:0 10px;border-radius:10px;font-size:14px;color:var(--text2);font-weight:500}
+  .dnav .ic{width:17px;height:17px;color:var(--muted)}
+  .dnav.on{background:var(--accent-soft);color:var(--accent-text);font-weight:600}.dnav.on .ic{color:var(--accent)}
+  .dmain{flex:1;padding:24px 28px;position:relative;overflow:hidden}
+  .dtitle{display:flex;align-items:center;gap:10px}
+  .dtitle h3{font-size:24px;font-weight:700;letter-spacing:-.01em;flex:1}
+  .dtitle h3 small{font-size:15px;color:var(--subtle);font-weight:500;margin-left:6px}
+  .tbl{margin-top:16px;background:#fff;border:1px solid var(--border);border-radius:16px;overflow:hidden}
+  .tr{display:grid;grid-template-columns:44px 2.2fr 1.4fr 90px 1.6fr;align-items:center;gap:10px;height:62px;padding:0 16px;border-bottom:1px solid var(--border-soft);font-size:14px}
+  .tr.th{height:40px;font-size:12.5px;color:var(--muted);font-weight:500;background:var(--surface-muted)}
+  .tr.sel{background:var(--accent-wash)}
+  .tr.dis{color:var(--subtle)}
+  .tr .nmw{display:flex;align-items:center;gap:10px}
+  .tr .nmw b{font-weight:600;display:flex;align-items:center;gap:5px}
+  .tr .nmw b .ic{width:14px;height:14px;color:var(--ok);stroke-width:2.6}
+  .tr .nmw span{display:block;font-size:12px;color:var(--muted)}
+  .dbar{position:absolute;left:28px;right:28px;bottom:22px;height:60px;border-radius:16px;background:var(--ink);color:#fff;display:flex;align-items:center;gap:14px;padding:0 10px 0 20px;box-shadow:0 16px 40px rgba(20,20,20,.3)}
+  .dbar b{font-size:15px}
+  .dbar span{font-size:13px;color:var(--on-muted);flex:1}
+  .dbar .bp{flex:none;padding:0 20px;height:42px}
+  .dbar .lnk{font-size:14px;font-weight:600;color:var(--on-muted);padding:0 8px}
+  .dform{width:560px;margin:0 auto}
+  .pop{position:absolute;background:#fff;border:1px solid var(--border);border-radius:16px;box-shadow:0 24px 60px rgba(20,20,20,.16);padding:10px;z-index:5}
+  .pop .opt{height:40px;font-size:14px;padding:0 8px;border-bottom:0;border-radius:10px}
+  .pop .opt.hov{background:var(--surface-muted)}
+  .pop .srch{height:40px;font-size:14px;box-shadow:none;border-color:var(--border-strong)}
+  .popf{display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--border-soft);margin-top:6px;padding:10px 8px 2px;font-size:13px;color:var(--muted)}
+  .popf b{color:var(--accent);font-weight:600}
+
+  /* decisions */
+  .dec{display:grid;gap:10px;margin-top:6px}
+  .dec>div{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--border);border-radius:14px;padding:12px 14px;font-size:14px;line-height:1.5;color:var(--text2)}
+  .dec b{color:var(--text)}
+  .dec .n{margin-top:1px}
+</style>
+</head>
+<body data-stamp="A" data-so="dialog">
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+    <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20.3s-7.4-4.5-9.2-9C1.5 7.9 3.7 4.6 7.1 4.6c2 0 3.5 1.1 4.9 2.8 1.4-1.7 2.9-2.8 4.9-2.8 3.4 0 5.6 3.3 4.3 6.7-1.8 4.5-9.2 9-9.2 9z"/></symbol>
+    <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 010 11H11"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="M21 3L10 14"/><path d="M21 3l-6.5 18-4.5-7-7-4.5z"/></symbol>
+    <symbol id="i-chevL" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+    <symbol id="i-chevU" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></symbol>
+    <symbol id="i-chevD" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+    <symbol id="i-chevR" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+    <symbol id="i-arrowU" viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></symbol>
+    <symbol id="i-bookmark" viewBox="0 0 24 24"><path d="M6.5 3.5h11v17L12 16.6l-5.5 3.9z"/></symbol>
+    <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.6v12.8a1 1 0 001.5.86l10-6.4a1 1 0 000-1.72l-10-6.4A1 1 0 008 5.6z"/></symbol>
+    <symbol id="i-max" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></symbol>
+    <symbol id="i-mute" viewBox="0 0 24 24"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M16 9.5l5 5M21 9.5l-5 5"/></symbol>
+    <symbol id="i-out" viewBox="0 0 24 24"><path d="M10 4H5.5v16H10"/><path d="M15 8l4 4-4 4"/><path d="M19 12H9.5"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0113 0c0 5.4-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/></symbol>
+    <symbol id="i-brief" viewBox="0 0 24 24"><rect x="3.5" y="7" width="17" height="12.5" rx="2"/><path d="M9 7V5h6v2"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 20h14"/></symbol>
+    <symbol id="i-sort" viewBox="0 0 24 24"><path d="M7 4v16M3.5 16.5L7 20l3.5-3.5M17 20V4M13.5 7.5L17 4l3.5 3.5"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></symbol>
+    <symbol id="i-select" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="4.5"/><path d="M8 12l3 3 5-6"/></symbol>
+    <symbol id="i-feed" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="3.5"/><path d="M10.2 9.3v5.4l4.5-2.7z"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 20.5c1.2-3.6 4.2-5.5 7.5-5.5s6.3 1.9 7.5 5.5"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11l8-6.5 8 6.5V20H4z"/></symbol>
+  </defs>
+</svg>
+
+<div class="wrap">
+
+<div class="intro">
+  <h1>Feed, profile, sign-out, Shortlist and pickers</h1>
+  <p>27 Oct 2026 · APK and website · one design per item, with a choice only where it's a matter of taste (the stamp colour and dialog vs sheet). Your screenshots are the "Today" frames. Blue numbers mark what changed; red marks a bug. Names are the seeded test candidates from your screenshots, not real people.</p>
+  <div class="map">
+    <a href="#feed"><b><i class="n">1</i>Bigger round buttons</b>Undo, Pass, Shortlist (heart), Interest: buttons and glyphs grow. <span class="tagp app">APK</span></a>
+    <a href="#feed"><b><i class="n">2</i>"Verified" becomes a tick</b>A green tick and the date. <span class="tagp app">APK</span> <span class="tagp web">web</span></a>
+    <a href="#feed"><b><i class="n">3</i>Tapping the name opens the profile page</b>The ⌃ still opens the quick sheet. <span class="tagp app">APK</span> <span class="tagp web">web</span></a>
+    <a href="#feed"><b><i class="n bug">4</i>The line at the bottom edge while scrolling</b>The card behind is 95 % wide, so its edge shows over the tab bar. <span class="tagp app">APK</span></a>
+    <a href="#stamp"><b><i class="n">5</i>SHORTLIST stamp in white</b>Three white styles to choose from. <span class="tagp app">APK</span> <span class="tagp web">web already white</span></a>
+    <a href="#profile"><b><i class="n">6</i>"⛶ Full" becomes the feed's play pill</b>"Watch full interview" on the profile page. <span class="tagp app">APK</span> <span class="tagp web">web already has it</span></a>
+    <a href="#signout"><b><i class="n">7</i>One custom sign-out dialog</b>The same component for student, employer and interviewer; no Android alert. <span class="tagp app">APK</span> <span class="tagp web">web</span></a>
+    <a href="#mass"><b><i class="n">8</i>Mass Send Interest</b>Shortlist → Select → tick people → one sheet → Send. <span class="tagp app">APK</span> <span class="tagp web">web</span> <span class="tagp api">API</span></a>
+    <a href="#pickers"><b><i class="n">9</i>Searchable dropdowns: domains and languages</b>Search and pick several. Used in four forms. More domains, imported into the DB. <span class="tagp app">APK</span> <span class="tagp web">web</span> <span class="tagp api">DB</span></a>
+  </div>
+</div>
+
+<div class="controls">
+  <div class="seg" data-k="stamp"><span class="lab">Stamp</span><button data-v="A">A · White badge</button><button data-v="B">B · Solid white</button><button data-v="C">C · White outline</button></div>
+  <div class="seg" data-k="so"><span class="lab">Sign-out</span><button data-v="dialog">Centre dialog</button><button data-v="sheet">Bottom sheet</button></div>
+</div>
+
+<!-- ═══════════════════════ FEED ═══════════════════════ -->
+<div class="section" id="feed">
+  <h2>Employer feed card <span class="tagp app">APK</span></h2>
+  <p class="sub">Items 1–4. The first two frames are today: at rest (your screenshot 1), then mid-scroll, which shows the line. The last two are the new card. Everything not marked stays exactly as built on 15 Oct.</p>
+  <div class="row">
+
+    <!-- Today · resting -->
+    <div class="col">
+      <div class="cap">Today · at rest<span>"● Verified · 14 Oct", 46/58 buttons with 20/28 glyphs. A tap on the name opens the quick sheet.</span></div>
+      <div class="phone"><div class="scr">
+        <div class="sb"><span>9:37</span><span class="r"><i style="width:14px;height:9px"></i><i style="width:20px;height:10px"></i></span></div>
+        <div class="fhead"><div class="tbtn back"><svg class="ic"><use href="#i-chevL"/></svg></div><h3>Feed</h3><div class="hbtns"><div class="tbtn"><svg class="ic"><use href="#i-bookmark"/></svg></div><div class="tbtn"><svg class="ic"><use href="#i-sliders"/></svg></div></div></div>
+        <div class="chips"><div class="mchip"><b>5</b><span>match</span></div><span class="nof">No filters</span></div>
+        <div class="stack">
+          <div class="card">
+            <div class="film"></div><svg class="sil" viewBox="0 0 270 300"><circle cx="135" cy="95" r="62"/><path d="M15 300c0-72 52-118 120-118s120 46 120 118z"/></svg><div class="shade"></div>
+            <div class="prog"><i></i></div>
+            <div class="ctop"><div class="tag"><span class="dot"></span>Verified · 14 Oct</div><div class="w3"><span class="wp"><svg class="ic f"><use href="#i-play"/></svg></span>Watch full interview</div></div>
+            <div class="hud">
+              <div class="mute"><svg class="ic"><use href="#i-mute"/></svg></div>
+              <div class="who"><div class="whotap"><div class="av">NV</div><div style="min-width:0"><div class="nm">Nikhil Verma <svg class="ic"><use href="#i-check"/></svg></div><div class="hl">Business Analyst</div></div></div><div class="gbtn"><svg class="ic"><use href="#i-chevU"/></svg></div></div>
+              <div class="pills"><span class="pill pk">₹3–6 LPA</span><span class="pill pk">Immediate</span><span class="pill">SQL</span><span class="pill">Communication</span><span class="pill">Data Analysis</span></div>
+              <div class="meta"><svg class="ic"><use href="#i-pin"/></svg>Bengaluru · 0.5 yrs experience · Shortlisted by 1 employer</div>
+            </div>
+          </div>
+          <div class="acts">
+            <div class="rb sm"><svg class="ic c-undo"><use href="#i-undo"/></svg></div>
+            <div class="rb lg"><svg class="ic c-pass"><use href="#i-x"/></svg></div>
+            <div class="rb lg"><svg class="ic f c-like"><use href="#i-heart"/></svg></div>
+            <div class="rb sm"><svg class="ic c-send"><use href="#i-send"/></svg></div>
+          </div>
+        </div>
+        <div class="tabbar dark">
+          <div class="ti on"><span class="pi"><svg class="ic"><use href="#i-feed"/></svg></span>Feed</div>
+          <div class="ti"><span class="pi"><svg class="ic"><use href="#i-bookmark"/></svg></span>Shortlist</div>
+          <div class="ti"><span class="pi"><svg class="ic"><use href="#i-heart"/></svg></span>Interests</div>
+          <div class="ti"><span class="pi"><svg class="ic"><use href="#i-brief"/></svg></span>Jobs</div>
+          <div class="ti"><span class="pi"><svg class="ic"><use href="#i-user"/></svg></span>Profile</div>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- Today · mid-skip (bug) -->
+    <div class="col">
+      <div class="cap">Today · scrolling to skip<span>The card behind is drawn at 95 % and 12 px lower, and the deck isn't clipped. Its edge shows as a line over the tab bar.</span></div>
+      <div class="phone"><div class="scr">
+        <div class="sb"><span>9:37</span><span class="r"><i style="width:14px;height:9px"></i><i style="width:20px;height:10px"></i></span></div>
+        <div class="fhead"><div class="tbtn back"><svg class="ic"><use href="#i-chevL"/></svg></div><h3>Feed</h3><div class="hbtns"><div class="tbtn"><svg class="ic"><use href="#i-bookmark"/></svg></div><div class="tbtn"><svg class="ic"><use href="#i-sliders"/></svg></div></div></div>
+        <div class="chips"><div class="mchip"><b>5</b><span>match</span></div><span class="nof">No filters</span></div>
+        <div class="stack">
+          <div class="behind-old"><div class="film b"></div><div class="shade"></div></div>
+          <div class="card" style="transform:translateY(-170px)">
+            <div class="film"></div><svg class="sil" viewBox="0 0 270 300"><circle cx="135" cy="95" r="62"/><path d="M15 300c0-72 52-118 120-118s120 46 120 118z"/></svg><div class="shade"></div>
+            <div class="hud">
+              <div class="who"><div class="whotap"><div class="av">NV</div><div style="min-width:0"><div class="nm">Nikhil Verma <svg class="ic"><use href="#i-check"/></svg></div><div class="hl">Business Analyst</div></div></div></div>
+              <div class="pills"><span class="pill pk">₹3–6 LPA</span><span class="pill pk">Immediate</span><span class="pill">SQL</span></div>
+            </div>
+          </div>
+          <div class="acts">
+            <div class="rb sm"><svg class="ic c-undo"><use href="#i-undo"/></svg></div>
+            <div class="rb lg"><svg class="ic c-pass"><use href="#i-x"/></svg></div>
+            <div class="rb lg"><svg class="ic f c-like"><use href="#i-heart"/></svg></div>
+            <div class="rb sm"><svg class="ic c-send"><use href="#i-send"/></svg></div>
+          </div>
+        </div>
+        <div class="tabbar dark" style="background:rgba(10,10,10,.82)">
+          <div class="ti on"><span class="pi"><svg class="ic"><use href="#i-feed"/></svg></span>Feed</div>
+          <div class="ti"><span class="pi"><svg class="ic"><use href="#i-bookmark"/></svg></span>Shortlist</div>
+          <div class="ti"><span class="pi"><svg class="ic"><use href="#i-heart"/></svg></span>Interests</div>
+          <div class="ti"><span class="pi"><svg class="ic"><use href="#i-brief"/></svg></span>Jobs</div>
+          <div class="ti"><span class="pi"><svg class="ic"><use href="#i-user"/></svg></span>Profile</div>
+        </div>
+        <div class="seam"></div>
+        <div class="hot bug" style="left:4px;right:4px;bottom:46px;height:30px"></div>
+        <i class="ann bug" style="right:14px;bottom:80px">4</i>
+      </div></div>
+    </div>
+
+    <!-- New · resting -->
+    <div class="col">
+      <div class="cap">New · at rest<span>A tick for "Verified", bigger buttons, and the name links to the full profile page.</span></div>
+      <div class="phone"><div class="scr">
+        <div class="sb"><span>9:37</span><span class="r"><i style="width:14px;height:9px"></i><i style="width:20px;height:10px"></i></span></div>
+        <div class="fhead"><div class="tbtn back"><svg class="ic"><use href="#i-chevL"/></svg></div><h3>Feed</h3><div class="hbtns"><div class="tbtn"><svg class="ic"><use href="#i-bookmark"/></svg></div><div class="tbtn"><svg class="ic"><use href="#i-sliders"/></svg></div></div></div>
+        <div class="chips"><div class="mchip"><b>5</b><span>match</span></div><span class="nof">No filters</span></div>
+        <div class="stack clip">
+          <div class="card">
+            <div class="film"></div><svg class="sil" viewBox="0 0 270 300"><circle cx="135" cy="95" r="62"/><path d="M15 300c0-72 52-118 120-118s120 46 120 118z"/></svg><div class="shade"></div>
+            <div class="prog"><i></i></div>
+            <div class="ctop"><div class="tag tk"><span class="tick"><svg class="ic"><use href="#i-check"/></svg></span>14 Oct</div><div class="w3"><span class="wp"><svg class="ic f"><use href="#i-play"/></svg></span>Watch full interview</div></div>
+            <div class="hud new">
+              <div class="mute"><svg class="ic"><use href="#i-mute"/></svg></div>
+              <div class="who"><div class="whotap"><div class="av">NV</div><div style="min-width:0"><div class="nm">Nikhil Verma <svg class="ic"><use href="#i-check"/></svg></div><div class="hl">Business Analyst</div></div></div><div class="gbtn"><svg class="ic"><use href="#i-chevU"/></svg></div></div>
+              <div class="pills"><span class="pill pk">₹3–6 LPA</span><span class="pill pk">Immediate</span><span class="pill">SQL</span><span class="pill">Communication</span><span class="pill">Data Analysis</span></div>
+              <div class="meta"><svg class="ic"><use href="#i-pin"/></svg>Bengaluru · 0.5 yrs experience · Shortlisted by 1 employer</div>
+            </div>
+          </div>
+          <div class="acts big">
+            <div class="rb sm"><svg class="ic c-undo"><use href="#i-undo"/></svg></div>
+            <div class="rb lg"><svg class="ic c-pass"><use href="#i-x"/></svg></div>
+            <div class="rb lg"><svg class="ic f c-like"><use href="#i-heart"/></svg></div>
+            <div class="rb sm"><svg class="ic c-send"><use href="#i-send"/></svg></div>
+          </div>
+        </div>
+        <div class="tabbar dark">
+          <div class="ti on"><span class="pi"><svg class="ic"><use href="#i-feed"/></svg></span>Feed</div>
+          <div class="ti"><span class="pi"><svg class="ic"><use href="#i-bookmark"/></svg></span>Shortlist</div>
+          <div class="ti"><span class="pi"><svg class="ic"><use href="#i-heart"/></svg></span>Interests</div>
+          <div class="ti"><span class="pi"><svg class="ic"><use href="#i-brief"/></svg></span>Jobs</div>
+          <div class="ti"><span class="pi"><svg class="ic"><use href="#i-user"/></svg></span>Profile</div>
+        </div>
+        <div class="hot" style="left:10px;top:142px;width:96px;height:42px"></div><i class="ann" style="left:100px;top:134px">2</i>
+        <div class="hot" style="left:10px;top:486px;width:262px;height:52px"></div><i class="ann" style="left:262px;top:478px">3</i>
+        <div class="hot" style="left:8px;right:8px;bottom:68px;height:76px"></div><i class="ann" style="right:6px;bottom:136px">1</i>
+      </div></div>
+      <div class="legend">
+        <div><i class="n">1</i><span>Undo / Interest <b>46 → 52</b> (glyph 20 → 24). Pass / Shortlist <b>58 → 66</b> (glyph 28 → 34). The facts move up 8 px to clear them.</span></div>
+        <div><i class="n">2</i><span>The word "Verified" is gone: a green tick disc and the date. Screen readers still hear "Verified interview, 14 October".</span></div>
+        <div><i class="n">3</i><span>A tap on the photo or name <b>opens the full profile page</b>. The ⌃ button still opens the quick sheet, as today.</span></div>
+      </div>
+    </div>
+
+    <!-- New · mid-skip -->
+    <div class="col">
+      <div class="cap">New · scrolling to skip<span>The deck is clipped above the tab bar, and the card behind is full width, so no edge can show. It brightens as the top card leaves.</span></div>
+      <div class="phone"><div class="scr">
+        <div class="sb"><span>9:37</span><span class="r"><i style="width:14px;height:9px"></i><i style="width:20px;height:10px"></i></span></div>
+        <div class="fhead"><div class="tbtn back"><svg class="ic"><use href="#i-chevL"/></svg></div><h3>Feed</h3><div class="hbtns"><div class="tbtn"><svg class="ic"><use href="#i-bookmark"/></svg></div><div class="tbtn"><svg class="ic"><use href="#i-sliders"/></svg></div></div></div>
+        <div class="chips"><div class="mchip"><b>5</b><span>match</span></div><span class="nof">No filters</span></div>
+        <div class="stack clip">
+          <div class="card" style="border-radius:0">
+            <div class="film b"></div><svg class="sil" viewBox="0 0 270 300"><circle cx="135" cy="95" r="62"/><path d="M15 300c0-72 52-118 120-118s120 46 120 118z"/></svg><div class="shade"></div>
+            <div class="hud new">
+              <div class="who"><div class="whotap"><div class="av">MK</div><div style="min-width:0"><div class="nm">Meera Kulkarni <svg class="ic"><use href="#i-check"/></svg></div><div class="hl">Operations Associate</div></div></div><div class="gbtn"><svg class="ic"><use href="#i-chevU"/></svg></div></div>
+              <div class="pills"><span class="pill pk">₹3.5–4.5 LPA</span><span class="pill pk">Immediate</span><span class="pill">Excel</span><span class="pill">SQL</span></div>
+              <div class="meta"><svg class="ic"><use href="#i-pin"/></svg>Indore · 3.2 yrs experience · Shortlisted by 2 employers</div>
+            </div>
+            <div class="dimmer" style="background:rgba(10,10,10,.2)"></div>
+          </div>
+          <div class="card" style="transform:translateY(-230px);box-shadow:0 30px 40px rgba(0,0,0,.6)">
+            <div class="film"></div><svg class="sil" viewBox="0 0 270 300"><circle cx="135" cy="95" r="62"/><path d="M15 300c0-72 52-118 120-118s120 46 120 118z"/></svg><div class="shade"></div>
+            <div class="stw" style="left:0;right:0;top:112px;text-align:center"><span class="st skip dyn"><svg class="ic si"><use href="#i-arrowU"/></svg>SKIP</span></div>
+          </div>
+          <div class="acts big">
+            <div class="rb sm"><svg class="ic c-undo"><use href="#i-undo"/></svg></div>
+            <div class="rb lg"><svg class="ic c-pass"><use href="#i-x"/></svg></div>
+            <div class="rb lg"><svg class="ic f c-like"><use href="#i-heart"/></svg></div>
+            <div class="rb sm"><svg class="ic c-send"><use href="#i-send"/></svg></div>
+          </div>
+        </div>
+        <div class="tabbar dark">
+          <div class="ti on"><span class="pi"><svg class="ic"><use href="#i-feed"/></svg></span>Feed</div>
+          <div class="ti"><span class="pi"><svg class="ic"><use href="#i-bookmark"/></svg></span>Shortlist</div>
+          <div class="ti"><span class="pi"><svg class="ic"><use href="#i-heart"/></svg></span>Interests</div>
+          <div class="ti"><span class="pi"><svg class="ic"><use href="#i-brief"/></svg></span>Jobs</div>
+          <div class="ti"><span class="pi"><svg class="ic"><use href="#i-user"/></svg></span>Profile</div>
+        </div>
+        <div class="hot" style="left:4px;right:4px;bottom:50px;height:26px"></div><i class="ann" style="right:14px;bottom:82px">4</i>
+      </div></div>
+      <div class="legend">
+        <div><i class="n">4</i><span>Fixed in two places: the deck clips at its bottom edge (<code>overflow: hidden</code>), and the waiting card is full size (no 95 % scale or 12 px drop), so its bottom stays flush with the tab bar.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="h3">The four buttons side by side</div>
+  <div class="row">
+    <div style="width:560px;height:110px;border-radius:20px;background:var(--ink-deep);position:relative">
+      <div class="acts" style="bottom:26px"><div class="rb sm"><svg class="ic c-undo"><use href="#i-undo"/></svg></div><div class="rb lg"><svg class="ic c-pass"><use href="#i-x"/></svg></div><div class="rb lg"><svg class="ic f c-like"><use href="#i-heart"/></svg></div><div class="rb sm"><svg class="ic c-send"><use href="#i-send"/></svg></div></div>
+      <span style="position:absolute;left:14px;top:8px;font-size:12px;color:var(--on-subtle)">Today · 46 / 58</span>
+    </div>
+    <div style="width:560px;height:110px;border-radius:20px;background:var(--ink-deep);position:relative">
+      <div class="acts big" style="bottom:20px"><div class="rb sm"><svg class="ic c-undo"><use href="#i-undo"/></svg></div><div class="rb lg"><svg class="ic c-pass"><use href="#i-x"/></svg></div><div class="rb lg"><svg class="ic f c-like"><use href="#i-heart"/></svg></div><div class="rb sm"><svg class="ic c-send"><use href="#i-send"/></svg></div></div>
+      <span style="position:absolute;left:14px;top:8px;font-size:12px;color:var(--on-subtle)">New · 52 / 66</span>
+    </div>
+  </div>
+
+  <div class="spec">
+    <div><b>Tokens <span class="tagp app">APK</span></b><code>height['feed-action']</code> 58 → 66 and <code>height['feed-action-sm']</code> 46 → 52 in tokens.ts, then theme:sync. <code>FEED_FOOT</code> is computed from them, so the facts rise on their own. Glyph sizes are set in <code>FeedActions</code>.</div>
+    <div><b>Tick tag <span class="tagp app">APK</span> <span class="tagp web">web</span></b><code>FeedTag</code> gets a <code>verified</code> form (tick disc + date). Also on the web feed card (CandidateDeck: "✓ Verified interview · date" → "✓ date"). On the profile page see the next sections.</div>
+    <div><b>Name → page <span class="tagp app">APK</span> <span class="tagp web">web</span></b>DeckCard's name area calls <code>navigate('CandidateProfile', {id})</code>; the ⌃ keeps <code>setProfileCard</code>. On the web the name links to <code>/employers/candidates/[id]</code>; the drawer stays on the ⌃ / "i" key.</div>
+    <div><b>Line fix <span class="tagp app">APK</span></b>EmployerFeedScreen: <code>stack</code> gets <code>overflow: 'hidden'</code>; the next card's <code>nextScale</code> / <code>nextLift</code> become an opacity fade (0.6 → 1). The student Jobs feed shares the deck, so it's fixed too.</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ STAMP ═══════════════════════ -->
+<div class="section" id="stamp">
+  <h2>The swipe stamps in white <span class="tagp app">APK</span></h2>
+  <p class="sub">Item 5. Today the stamp is a green outline on dark glass, so it disappears on bright footage (your screenshot 3). All three options put white behind or around the word. PASS and SKIP change the same way so the set matches. The website's stamps are already style A.</p>
+  <div class="stiles">
+    <div class="stile" data-pick="A">
+      <div class="cap" style="min-height:0">A · White badge, coloured word <span class="tagp rec">Recommended</span><span>Same as the website. Readable on any footage, and green still means shortlist.</span></div>
+      <div class="box"><div class="film b"></div><span class="st like vA">SHORTLIST</span><span class="st pass vA">PASS</span><span class="st skip vA">SKIP</span></div>
+    </div>
+    <div class="stile" data-pick="B">
+      <div class="cap" style="min-height:0">B · Solid white, ink word, coloured icon<span>Strongest contrast. The colour sits only in the icon.</span></div>
+      <div class="box"><div class="film b"></div><span class="st like vB"><svg class="ic f si"><use href="#i-heart"/></svg>SHORTLIST</span><span class="st pass vB"><svg class="ic si" style="stroke-width:3"><use href="#i-x"/></svg>PASS</span><span class="st skip vB"><svg class="ic si" style="stroke-width:2.6"><use href="#i-arrowU"/></svg>SKIP</span></div>
+    </div>
+    <div class="stile" data-pick="C">
+      <div class="cap" style="min-height:0">C · White outline, white word<span>The lightest touch. Closest to today, but white instead of green.</span></div>
+      <div class="box"><div class="film b"></div><span class="st like vC">SHORTLIST</span><span class="st pass vC">PASS</span><span class="st skip vC">SKIP</span></div>
+    </div>
+  </div>
+
+  <div class="row" style="margin-top:22px">
+    <div class="col">
+      <div class="cap">Today (your screenshot 3)<span>A green outline on glass, on a bright film.</span></div>
+      <div class="phone"><div class="scr">
+        <div class="sb"><span>9:37</span><span class="r"><i style="width:14px;height:9px"></i><i style="width:20px;height:10px"></i></span></div>
+        <div class="fhead"><div class="tbtn back"><svg class="ic"><use href="#i-chevL"/></svg></div><h3>Feed</h3><div class="hbtns"><div class="tbtn"><svg class="ic"><use href="#i-bookmark"/></svg></div><div class="tbtn"><svg class="ic"><use href="#i-sliders"/></svg></div></div></div>
+        <div class="chips"><div class="mchip"><b>5</b><span>match</span></div><span class="nof">No filters</span></div>
+        <div class="stack clip">
+          <div class="card"><div class="film"></div><div class="shade"></div></div>
+          <div class="card" style="transform:translateX(64px) rotate(5deg);transform-origin:50% 100%">
+            <div class="film b" style="background:radial-gradient(120% 70% at 50% 30%,#d6d0c2 0%,#a9a291 50%,#3a372f 100%)"></div><div class="shade"></div>
+            <div class="ctop"><div class="tag"><span class="dot"></span>Verified · 23 Sep</div></div>
+            <div class="stw" style="left:20px;top:116px"><span class="st like oldv">SHORTLIST</span></div>
+            <div class="hud"><div class="who"><div class="whotap"><div class="av">MK</div><div><div class="nm">Meera Kulkarni <svg class="ic"><use href="#i-check"/></svg></div><div class="hl">Operations Associate</div></div></div></div></div>
+          </div>
+          <div class="acts"><div class="rb sm"><svg class="ic c-undo"><use href="#i-undo"/></svg></div><div class="rb lg"><svg class="ic c-pass"><use href="#i-x"/></svg></div><div class="rb lg"><svg class="ic f c-like"><use href="#i-heart"/></svg></div><div class="rb sm"><svg class="ic c-send"><use href="#i-send"/></svg></div></div>
+        </div>
+        <div class="tabbar dark"><div class="ti on"><span class="pi"><svg class="ic"><use href="#i-feed"/></svg></span>Feed</div><div class="ti"><span class="pi"><svg class="ic"><use href="#i-bookmark"/></svg></span>Shortlist</div><div class="ti"><span class="pi"><svg class="ic"><use href="#i-heart"/></svg></span>Interests</div><div class="ti"><span class="pi"><svg class="ic"><use href="#i-brief"/></svg></span>Jobs</div><div class="ti"><span class="pi"><svg class="ic"><use href="#i-user"/></svg></span>Profile</div></div>
+      </div></div>
+    </div>
+    <div class="col">
+      <div class="cap">New · the option picked above<span>Use the Stamp switch at the top to try A, B or C.</span></div>
+      <div class="phone"><div class="scr">
+        <div class="sb"><span>9:37</span><span class="r"><i style="width:14px;height:9px"></i><i style="width:20px;height:10px"></i></span></div>
+        <div class="fhead"><div class="tbtn back"><svg class="ic"><use href="#i-chevL"/></svg></div><h3>Feed</h3><div class="hbtns"><div class="tbtn"><svg class="ic"><use href="#i-bookmark"/></svg></div><div class="tbtn"><svg class="ic"><use href="#i-sliders"/></svg></div></div></div>
+        <div class="chips"><div class="mchip"><b>5</b><span>match</span></div><span class="nof">No filters</span></div>
+        <div class="stack clip">
+          <div class="card"><div class="film"></div><div class="shade"></div></div>
+          <div class="card" style="transform:translateX(64px) rotate(5deg);transform-origin:50% 100%">
+            <div class="film b" style="background:radial-gradient(120% 70% at 50% 30%,#d6d0c2 0%,#a9a291 50%,#3a372f 100%)"></div><div class="shade"></div>
+            <div class="ctop"><div class="tag tk"><span class="tick"><svg class="ic"><use href="#i-check"/></svg></span>23 Sep</div></div>
+            <div class="stw" style="left:20px;top:116px"><span class="st like dyn"><svg class="ic f si"><use href="#i-heart"/></svg>SHORTLIST</span></div>
+            <div class="hud new"><div class="who"><div class="whotap"><div class="av">MK</div><div><div class="nm">Meera Kulkarni <svg class="ic"><use href="#i-check"/></svg></div><div class="hl">Operations Associate</div></div></div></div></div>
+          </div>
+          <div class="acts big"><div class="rb sm"><svg class="ic c-undo"><use href="#i-undo"/></svg></div><div class="rb lg"><svg class="ic c-pass"><use href="#i-x"/></svg></div><div class="rb lg"><svg class="ic f c-like"><use href="#i-heart"/></svg></div><div class="rb sm"><svg class="ic c-send"><use href="#i-send"/></svg></div></div>
+        </div>
+        <div class="tabbar dark"><div class="ti on"><span class="pi"><svg class="ic"><use href="#i-feed"/></svg></span>Feed</div><div class="ti"><span class="pi"><svg class="ic"><use href="#i-bookmark"/></svg></span>Shortlist</div><div class="ti"><span class="pi"><svg class="ic"><use href="#i-heart"/></svg></span>Interests</div><div class="ti"><span class="pi"><svg class="ic"><use href="#i-brief"/></svg></span>Jobs</div><div class="ti"><span class="pi"><svg class="ic"><use href="#i-user"/></svg></span>Profile</div></div>
+        <i class="ann" style="left:86px;top:236px">5</i>
+      </div></div>
+    </div>
+    <div class="spec" style="flex:1;min-width:320px;align-self:center;margin-top:0;grid-template-columns:1fr">
+      <div><b>Where</b><code>FeedStamp</code> in components/ui/feed-deck.tsx, the one place for all three stamps, used by both the employer feed and the student Jobs feed. The badge is <code>onInkBadge</code> (white 92 %), already a token.</div>
+      <div><b>Text colours on white</b>Green on white is hard to read, so A uses the success greens (<code>successFill</code> border, <code>success</code> word). PASS is the brand red. SKIP is ink. PASS keeps its "· 30D" days, which come from /config.</div>
+      <div><b>Capitals</b>The stamps stay in capitals, as they are today. They are the only capitals left after the 6 Oct label pass. Say if you want "Shortlist" in normal case.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ PROFILE ═══════════════════════ -->
+<div class="section" id="profile">
+  <h2>Candidate profile · the full-interview button <span class="tagp app">APK</span></h2>
+  <p class="sub">Item 6. "⛶ Full" becomes the feed's frosted pill: a white disc with the play triangle and "Watch full interview", in the same place, bottom-right of the film. The top-left tag uses the same tick as the feed (item 2). The website's profile already has a "Watch full interview" button, so it only gets the tick.</p>
+  <div class="row">
+    <div class="col">
+      <div class="cap">Today (your screenshot 2)</div>
+      <div class="phone"><div class="scr light">
+        <div class="sb" style="color:var(--text)"><span>9:38</span><span class="r"><i style="width:14px;height:9px"></i><i style="width:20px;height:10px"></i></span></div>
+        <div class="lhead"><div class="ib" style="margin-left:-8px"><svg class="ic"><use href="#i-chevL"/></svg></div></div>
+        <div class="pfilm">
+          <div class="pplay"><svg class="ic f"><use href="#i-play"/></svg></div>
+          <div class="gp" style="left:12px;top:12px"><svg class="ic" style="stroke-width:2.6"><use href="#i-check"/></svg>Verified interview · 22 Oct</div>
+          <div class="gp" style="right:12px;bottom:12px"><svg class="ic"><use href="#i-max"/></svg>Full</div>
+        </div>
+        <div class="pwho"><div class="face" style="width:56px;height:56px;background:var(--accent);font-size:18px">AP</div><div><div class="pname">Arjun Pillai</div><div class="psub">Graduation · Tier 2 · Kochi</div></div></div>
+        <div class="facts"><div><span>Expected</span><b>₹7–10 L</b></div><div><span>Joins</span><b>60+ days</b></div><div><span>Experience</span><b>4.3 yrs</b></div></div>
+        <div class="vids"><h5>Videos · 3</h5><div class="vrow">
+          <div class="vt"><div class="vth"><i><svg class="ic f"><use href="#i-play"/></svg></i></div><b>Interview</b><span class="vchip ok">Verified</span></div>
+          <div class="vt"><div class="vth"><i><svg class="ic f"><use href="#i-play"/></svg></i></div><b>Clip 1 · 0:01</b><span class="vchip w">Self-uploaded</span></div>
+          <div class="vt"><div class="vth"><i><svg class="ic f"><use href="#i-play"/></svg></i></div><b>Clip 2 · 0:01</b><span class="vchip w">Self-uploaded</span></div>
+        </div></div>
+        <div class="pfoot"><div class="rnd"><svg class="ic"><use href="#i-x"/></svg></div><div class="bo"><svg class="ic"><use href="#i-bookmark"/></svg>Shortlist</div><div class="bp"><svg class="ic"><use href="#i-chat"/></svg>Open chat</div></div>
+        <div class="tabbar"><div class="ti on"><span class="pi"><svg class="ic"><use href="#i-feed"/></svg></span>Feed</div><div class="ti"><span class="pi"><svg class="ic"><use href="#i-bookmark"/></svg></span>Shortlist</div><div class="ti"><span class="pi"><svg class="ic"><use href="#i-heart"/></svg></span>Interests</div><div class="ti"><span class="pi"><svg class="ic"><use href="#i-brief"/></svg></span>Jobs</div><div class="ti"><span class="pi"><svg class="ic"><use href="#i-user"/></svg></span>Profile</div></div>
+      </div></div>
+    </div>
+    <div class="col">
+      <div class="cap">New</div>
+      <div class="phone"><div class="scr light">
+        <div class="sb" style="color:var(--text)"><span>9:38</span><span class="r"><i style="width:14px;height:9px"></i><i style="width:20px;height:10px"></i></span></div>
+        <div class="lhead"><div class="ib" style="margin-left:-8px"><svg class="ic"><use href="#i-chevL"/></svg></div></div>
+        <div class="pfilm">
+          <div class="pplay"><svg class="ic f"><use href="#i-play"/></svg></div>
+          <div class="tag tk" style="position:absolute;left:12px;top:12px"><span class="tick"><svg class="ic"><use href="#i-check"/></svg></span>22 Oct</div>
+          <div class="w3" style="position:absolute;right:12px;bottom:12px"><span class="wp"><svg class="ic f"><use href="#i-play"/></svg></span>Watch full interview</div>
+        </div>
+        <div class="pwho"><div class="face" style="width:56px;height:56px;background:var(--accent);font-size:18px">AP</div><div><div class="pname">Arjun Pillai</div><div class="psub">Graduation · Tier 2 · Kochi</div></div></div>
+        <div class="facts"><div><span>Expected</span><b>₹7–10 L</b></div><div><span>Joins</span><b>60+ days</b></div><div><span>Experience</span><b>4.3 yrs</b></div></div>
+        <div class="vids"><h5>Videos · 3</h5><div class="vrow">
+          <div class="vt"><div class="vth"><i><svg class="ic f"><use href="#i-play"/></svg></i></div><b>Interview</b><span class="vchip ok">Verified</span></div>
+          <div class="vt"><div class="vth"><i><svg class="ic f"><use href="#i-play"/></svg></i></div><b>Clip 1 · 0:01</b><span class="vchip w">Self-uploaded</span></div>
+          <div class="vt"><div class="vth"><i><svg class="ic f"><use href="#i-play"/></svg></i></div><b>Clip 2 · 0:01</b><span class="vchip w">Self-uploaded</span></div>
+        </div></div>
+        <div class="pfoot"><div class="rnd"><svg class="ic"><use href="#i-x"/></svg></div><div class="bo"><svg class="ic"><use href="#i-bookmark"/></svg>Shortlist</div><div class="bp"><svg class="ic"><use href="#i-chat"/></svg>Open chat</div></div>
+        <div class="tabbar"><div class="ti on"><span class="pi"><svg class="ic"><use href="#i-feed"/></svg></span>Feed</div><div class="ti"><span class="pi"><svg class="ic"><use href="#i-bookmark"/></svg></span>Shortlist</div><div class="ti"><span class="pi"><svg class="ic"><use href="#i-heart"/></svg></span>Interests</div><div class="ti"><span class="pi"><svg class="ic"><use href="#i-brief"/></svg></span>Jobs</div><div class="ti"><span class="pi"><svg class="ic"><use href="#i-user"/></svg></span>Profile</div></div>
+        <i class="ann" style="left:126px;top:290px">6</i><i class="ann" style="left:100px;top:84px">2</i>
+      </div></div>
+    </div>
+    <div class="spec" style="flex:1;min-width:320px;align-self:center;margin-top:0;grid-template-columns:1fr">
+      <div><b>Same component as the feed</b>The profile uses <code>FeedWatchButton</code> from feed-deck.tsx, so a later change to one changes both. The <code>GlassPill icon="max"</code> goes.</div>
+      <div><b>Length</b>Today "Full · 12:30" shows the film's length. The feed pill has no length, so the new pill has none either. Say if you want it kept, as "Watch full interview · 12:30".</div>
+      <div><b>No plays left</b>Only when the admin turns the daily limit on (it's off). The pill dims and reads "Resets at midnight", as "Full" does today.
+        <div style="margin-top:10px;background:#1F1F1F;border-radius:14px;padding:12px;display:flex;justify-content:flex-end"><div class="w3 off"><span class="wp"><svg class="ic f"><use href="#i-play"/></svg></span>Resets at midnight</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ SIGN OUT ═══════════════════════ -->
+<div class="section" id="signout">
+  <h2>Sign out · one component for all three <span class="tagp app">APK</span> <span class="tagp web">web</span></h2>
+  <p class="sub">Item 7. Today the app uses the Android system alert, and each account screen has its own sign-out button (a red text row, an outlined button, a pill). New: one <code>SignOutButton</code> and one <code>SignOutDialog</code> in components/ui, used by the student, employer and interviewer account screens. The words are the website's ("Sign out of Lenient?", "You will be signed out on this device."). The website's dialog gets the same icon and filled button, so both look alike. Use the switch at the top to compare a centre dialog with a bottom sheet.</p>
+  <div class="row">
+    <div class="col">
+      <div class="cap">Student · Account</div>
+      <div class="phone"><div class="scr light">
+        <div class="sb" style="color:var(--text)"><span>9:40</span><span class="r"><i style="width:14px;height:9px"></i><i style="width:20px;height:10px"></i></span></div>
+        <div class="who-lbl">Account</div>
+        <div class="skel"><div class="pc"><i></i><div style="flex:1;display:grid;gap:7px"><div class="ln" style="width:55%"></div><div class="ln" style="width:35%;height:8px"></div></div></div>
+          <div class="grp"><div class="it"><i></i><div class="ln" style="width:40%"></div></div><div class="it"><i></i><div class="ln" style="width:52%"></div></div><div class="it"><i></i><div class="ln" style="width:34%"></div></div><div class="it"><i></i><div class="ln" style="width:46%"></div></div></div>
+          <div class="grp"><div class="it"><i></i><div class="ln" style="width:38%"></div></div><div class="it"><i></i><div class="ln" style="width:50%"></div></div></div></div>
+        <div class="sobtn"><svg class="ic"><use href="#i-out"/></svg>Sign out</div>
+        <div class="scrim"></div>
+        <div class="dlg so-dialog"><div class="soi"><svg class="ic"><use href="#i-out"/></svg></div><div class="so-t">Sign out of Lenient?</div><div class="so-p">You will be signed out on this device.</div><div class="so-a"><div class="bfill">Sign out</div><div class="bq">Cancel</div></div></div>
+        <div class="bsh so-sheet"><div class="hdl"></div><div class="soi"><svg class="ic"><use href="#i-out"/></svg></div><div class="so-t">Sign out of Lenient?</div><div class="so-p">You will be signed out on this device.</div><div class="so-a"><div class="bfill">Sign out</div><div class="bq">Cancel</div></div></div>
+      </div></div>
+    </div>
+    <div class="col">
+      <div class="cap">Employer · Account</div>
+      <div class="phone"><div class="scr light">
+        <div class="sb" style="color:var(--text)"><span>9:40</span><span class="r"><i style="width:14px;height:9px"></i><i style="width:20px;height:10px"></i></span></div>
+        <div class="who-lbl">Account</div>
+        <div class="skel"><div class="pc"><i style="border-radius:12px"></i><div style="flex:1;display:grid;gap:7px"><div class="ln" style="width:62%"></div><div class="ln" style="width:30%;height:8px"></div></div></div>
+          <div class="grp"><div class="it"><i></i><div class="ln" style="width:48%"></div></div><div class="it"><i></i><div class="ln" style="width:36%"></div></div><div class="it"><i></i><div class="ln" style="width:55%"></div></div></div>
+          <div class="grp"><div class="it"><i></i><div class="ln" style="width:44%"></div></div><div class="it"><i></i><div class="ln" style="width:30%"></div></div><div class="it"><i></i><div class="ln" style="width:50%"></div></div></div></div>
+        <div class="sobtn"><svg class="ic"><use href="#i-out"/></svg>Sign out</div>
+        <div class="scrim"></div>
+        <div class="dlg so-dialog"><div class="soi"><svg class="ic"><use href="#i-out"/></svg></div><div class="so-t">Sign out of Lenient?</div><div class="so-p">You will be signed out on this device.</div><div class="so-a"><div class="bfill">Sign out</div><div class="bq">Cancel</div></div></div>
+        <div class="bsh so-sheet"><div class="hdl"></div><div class="soi"><svg class="ic"><use href="#i-out"/></svg></div><div class="so-t">Sign out of Lenient?</div><div class="so-p">You will be signed out on this device.</div><div class="so-a"><div class="bfill">Sign out</div><div class="bq">Cancel</div></div></div>
+      </div></div>
+    </div>
+    <div class="col">
+      <div class="cap">Interviewer · Account · signing out</div>
+      <div class="phone"><div class="scr light">
+        <div class="sb" style="color:var(--text)"><span>9:40</span><span class="r"><i style="width:14px;height:9px"></i><i style="width:20px;height:10px"></i></span></div>
+        <div class="who-lbl">Account</div>
+        <div class="skel"><div class="pc"><i></i><div style="flex:1;display:grid;gap:7px"><div class="ln" style="width:50%"></div><div class="ln" style="width:40%;height:8px"></div></div></div>
+          <div class="grp"><div class="it"><i></i><div class="ln" style="width:42%"></div></div><div class="it"><i></i><div class="ln" style="width:58%"></div></div><div class="it"><i></i><div class="ln" style="width:38%"></div></div><div class="it"><i></i><div class="ln" style="width:30%"></div></div></div>
+          <div class="grp"><div class="it"><i></i><div class="ln" style="width:46%"></div></div><div class="it"><i></i><div class="ln" style="width:36%"></div></div></div></div>
+        <div class="sobtn"><svg class="ic"><use href="#i-out"/></svg>Sign out</div>
+        <div class="scrim"></div>
+        <div class="dlg so-dialog"><div class="soi"><svg class="ic"><use href="#i-out"/></svg></div><div class="so-t">Sign out of Lenient?</div><div class="so-p">You will be signed out on this device.</div><div class="so-a"><div class="bfill" style="opacity:.85"><span class="spin"></span>Signing out…</div><div class="bq" style="opacity:.5">Cancel</div></div></div>
+        <div class="bsh so-sheet"><div class="hdl"></div><div class="soi"><svg class="ic"><use href="#i-out"/></svg></div><div class="so-t">Sign out of Lenient?</div><div class="so-p">You will be signed out on this device.</div><div class="so-a"><div class="bfill" style="opacity:.85"><span class="spin"></span>Signing out…</div><div class="bq" style="opacity:.5">Cancel</div></div></div>
+      </div></div>
+    </div>
+    <div class="spec" style="flex:1;min-width:320px;align-self:center;margin-top:0;grid-template-columns:1fr">
+      <div><b>The account screens are greyed out</b>Only the sign-out parts change; the rest of each account screen stays as it is, so it's drawn as grey bars here.</div>
+      <div><b>Behaviour</b>The scrim and Back close it, except while signing out. "Sign out" shows a spinner, then the same logout → clear token → back to Welcome as today. Cancel is disabled while that runs.</div>
+      <div><b>Colour</b>The action uses the danger orange-red (<code>dangerFill</code>), not the brand red, so it doesn't look like a normal primary button. The trigger is the outlined <code>destructive</code> button the employer screen already has.</div>
+      <div><b>Website</b>The three web menus and account pages already open a centre dialog with this text. They get the icon disc and the filled button. If you pick the bottom sheet, the web keeps the centre dialog: a sheet looks wrong on a desktop.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ MASS INTEREST ═══════════════════════ -->
+<div class="section" id="mass">
+  <h2>Mass Send Interest · from the Shortlist tab <span class="tagp app">APK</span> <span class="tagp web">web</span> <span class="tagp api">API</span></h2>
+  <p class="sub">Item 8. A new "Select" button on Shortlist. Tick several people, then send one Interest to all of them, with the same job and message. The rules for one Interest still apply to each person. Anyone who can't take one right now (Interest still open, already connected, or no longer on Lenient) can't be ticked, and the card says why. The server checks again when sending, and the result lists anyone it refused.</p>
+  <div class="row">
+    <div class="col">
+      <div class="cap">1 · Shortlist, with "Select"</div>
+      <div class="phone"><div class="scr light">
+        <div class="sb" style="color:var(--text)"><span>9:41</span><span class="r"><i style="width:14px;height:9px"></i><i style="width:20px;height:10px"></i></span></div>
+        <div class="lhead"><h3>Shortlist<small>5</small></h3><div class="tbtnl"><svg class="ic"><use href="#i-select"/></svg>Select</div><div class="ib"><svg class="ic"><use href="#i-download"/></svg></div><div class="ib" style="margin-right:-8px"><svg class="ic"><use href="#i-sort"/></svg></div></div>
+        <div class="sbody">
+          <div class="frow"><div class="fc dk">All · 5</div><div class="fc"><svg class="ic"><use href="#i-brief"/></svg>All jobs<svg class="ic"><use href="#i-chevD"/></svg></div><div class="fc">Recently added<svg class="ic"><use href="#i-chevD"/></svg></div></div>
+          <div class="scard"><div class="shead"><div class="face" style="width:40px;height:40px;background:var(--accent-bright);font-size:14px">NV</div><div style="min-width:0"><div class="sname">Nikhil Verma <svg class="ic"><use href="#i-check"/></svg></div><div class="smeta">Business Analyst · Bengaluru</div></div><div class="sdate">27 Oct</div></div>
+            <div class="sacts"><div class="sq dg"><svg class="ic"><use href="#i-trash"/></svg></div><div class="sq"><svg class="ic"><use href="#i-edit"/></svg></div><div class="bsec"><svg class="ic"><use href="#i-heart"/></svg>Send Interest</div></div></div>
+          <div class="scard"><div class="shead"><div class="face" style="width:40px;height:40px;background:var(--accent-bright);font-size:14px">MK</div><div style="min-width:0"><div class="sname">Meera Kulkarni <svg class="ic"><use href="#i-check"/></svg></div><div class="smeta">Operations Associate · Indore</div></div><div class="sdate">27 Oct</div></div>
+            <div class="sacts"><div class="sq dg"><svg class="ic"><use href="#i-trash"/></svg></div><div class="sq"><svg class="ic"><use href="#i-edit"/></svg></div><div class="bsec"><svg class="ic"><use href="#i-heart"/></svg>Send Interest</div></div></div>
+          <div class="scard"><div class="shead"><div class="face" style="width:40px;height:40px;background:var(--accent-bright);font-size:14px">AP</div><div style="min-width:0"><div class="sname">Arjun Pillai <svg class="ic"><use href="#i-check"/></svg></div><div class="smeta">Graduation · Tier 2 · Kochi</div></div><div class="sdate">22 Oct</div></div>
+            <div class="sacts"><div class="sq dg"><svg class="ic"><use href="#i-trash"/></svg></div><div class="sq"><svg class="ic"><use href="#i-edit"/></svg></div><div class="quiet">Interest sent · 6 days left</div></div></div>
+        </div>
+        <div class="tabbar"><div class="ti"><span class="pi"><svg class="ic"><use href="#i-feed"/></svg></span>Feed</div><div class="ti on"><span class="pi"><svg class="ic"><use href="#i-bookmark"/></svg></span>Shortlist</div><div class="ti"><span class="pi"><svg class="ic"><use href="#i-heart"/></svg></span>Interests</div><div class="ti"><span class="pi"><svg class="ic"><use href="#i-brief"/></svg></span>Jobs</div><div class="ti"><span class="pi"><svg class="ic"><use href="#i-user"/></svg></span>Profile</div></div>
+        <div class="hot" style="left:164px;top:35px;width:102px;height:44px"></div><i class="ann" style="left:254px;top:26px">8</i>
+      </div></div>
+    </div>
+
+    <div class="col">
+      <div class="cap">2 · Select mode</div>
+      <div class="phone"><div class="scr light">
+        <div class="sb" style="color:var(--text)"><span>9:41</span><span class="r"><i style="width:14px;height:9px"></i><i style="width:20px;height:10px"></i></span></div>
+        <div class="lhead"><div class="ib x" style="margin-left:-4px"><svg class="ic"><use href="#i-x"/></svg></div><h3>3 selected</h3><div class="tbtnl" style="border:0;color:var(--accent);padding:0 4px">Select all</div></div>
+        <div class="sbody">
+          <div class="scard sel"><div class="shead"><div class="cb on"><svg class="ic"><use href="#i-check"/></svg></div><div class="face" style="width:40px;height:40px;background:var(--accent-bright);font-size:14px">NV</div><div style="min-width:0"><div class="sname">Nikhil Verma <svg class="ic"><use href="#i-check"/></svg></div><div class="smeta">Business Analyst · Bengaluru</div></div></div></div>
+          <div class="scard sel"><div class="shead"><div class="cb on"><svg class="ic"><use href="#i-check"/></svg></div><div class="face" style="width:40px;height:40px;background:var(--accent-bright);font-size:14px">MK</div><div style="min-width:0"><div class="sname">Meera Kulkarni <svg class="ic"><use href="#i-check"/></svg></div><div class="smeta">Operations Associate · Indore</div></div></div></div>
+          <div class="scard sel"><div class="shead"><div class="cb on"><svg class="ic"><use href="#i-check"/></svg></div><div class="face" style="width:40px;height:40px;background:var(--accent-bright);font-size:14px">AM</div><div style="min-width:0"><div class="sname">Aarav Mehta <svg class="ic"><use href="#i-check"/></svg></div><div class="smeta">Sales · Pune</div></div></div></div>
+          <div class="scard dis"><div class="shead"><div class="cb no"></div><div class="face" style="width:40px;height:40px;background:var(--accent-bright);font-size:14px">AP</div><div style="min-width:0"><div class="sname">Arjun Pillai <svg class="ic"><use href="#i-check"/></svg></div><div class="smeta">Graduation · Tier 2 · Kochi</div></div></div><span class="why">Interest sent · 6 days left</span></div>
+          <div class="scard dis"><div class="shead"><div class="cb no"></div><div class="face" style="width:40px;height:40px;background:var(--accent-bright);font-size:14px">SI</div><div style="min-width:0"><div class="sname">Sneha Iyer <svg class="ic"><use href="#i-check"/></svg></div><div class="smeta">Bengaluru</div></div></div><span class="why">Connected · in your chats</span></div>
+        </div>
+        <div class="selbar"><p>2 can't take an Interest right now</p><div class="bp"><svg class="ic"><use href="#i-heart"/></svg>Send Interest to 3</div></div>
+        <div class="tabbar"><div class="ti"><span class="pi"><svg class="ic"><use href="#i-feed"/></svg></span>Feed</div><div class="ti on"><span class="pi"><svg class="ic"><use href="#i-bookmark"/></svg></span>Shortlist</div><div class="ti"><span class="pi"><svg class="ic"><use href="#i-heart"/></svg></span>Interests</div><div class="ti"><span class="pi"><svg class="ic"><use href="#i-brief"/></svg></span>Jobs</div><div class="ti"><span class="pi"><svg class="ic"><use href="#i-user"/></svg></span>Profile</div></div>
+      </div></div>
+      <div class="legend"><div><span>A long-press on a card also starts select mode. "Select all" ticks only the people who can take one, up to the batch limit (see decisions).</span></div></div>
+    </div>
+
+    <div class="col">
+      <div class="cap">3 · One sheet for everyone</div>
+      <div class="phone"><div class="scr light">
+        <div class="sb" style="color:var(--text)"><span>9:42</span><span class="r"><i style="width:14px;height:9px"></i><i style="width:20px;height:10px"></i></span></div>
+        <div class="lhead"><div class="ib x" style="margin-left:-4px"><svg class="ic"><use href="#i-x"/></svg></div><h3>3 selected</h3></div>
+        <div class="scrim"></div>
+        <div class="lsheet"><div class="hdl"></div>
+          <div class="stackf"><div class="face" style="width:40px;height:40px;background:var(--accent-bright);font-size:13px">NV</div><div class="face" style="width:40px;height:40px;background:var(--accent);font-size:13px">MK</div><div class="face" style="width:40px;height:40px;background:var(--accent-deep,#6B1414);font-size:13px">AM</div></div>
+          <div class="lt">Send an Interest to 3 people</div>
+          <div class="ls">Nikhil Verma, Meera Kulkarni and Aarav Mehta</div>
+          <div class="flab">Job</div>
+          <div class="radio"><i></i>No specific job</div>
+          <div class="radio on"><i></i>Operations Associate<small>Live</small></div>
+          <div class="radio"><i></i>Business Analyst<small>Paused</small></div>
+          <div class="flab">Message</div>
+          <div class="ta">Hi, we liked your interview. Would you like to talk about this role?<em>68 / 600</em></div>
+          <div class="hint">Each of them gets this message on their own. No one sees who else got it.</div>
+          <div class="bp" style="margin-top:14px;height:50px;font-size:15px"><svg class="ic"><use href="#i-heart"/></svg>Send to 3</div>
+          <div class="hint" style="text-align:center">Each Interest stays open for 14 days.</div>
+        </div>
+      </div></div>
+    </div>
+
+    <div class="col">
+      <div class="cap">4 · What happened</div>
+      <div class="phone"><div class="scr light">
+        <div class="sb" style="color:var(--text)"><span>9:42</span><span class="r"><i style="width:14px;height:9px"></i><i style="width:20px;height:10px"></i></span></div>
+        <div class="lhead"><h3>Shortlist<small>5</small></h3></div>
+        <div class="scrim"></div>
+        <div class="lsheet"><div class="hdl"></div>
+          <div class="bigok"><svg class="ic"><use href="#i-check"/></svg></div>
+          <div class="lt">Sent to 2 of 3</div>
+          <div class="ls">They'll see it in their Interests. You'll get a chat when one accepts.</div>
+          <div style="margin-top:14px">
+            <div class="rrow"><div class="face" style="width:32px;height:32px;background:var(--accent-bright);font-size:12px">NV</div>Nikhil Verma<span class="st2 okc"><svg class="ic"><use href="#i-check"/></svg>Sent</span></div>
+            <div class="rrow"><div class="face" style="width:32px;height:32px;background:var(--accent);font-size:12px">MK</div>Meera Kulkarni<span class="st2 okc"><svg class="ic"><use href="#i-check"/></svg>Sent</span></div>
+            <div class="rrow" style="border-bottom:0"><div class="face" style="width:32px;height:32px;background:#6B1414;font-size:12px">AM</div><div style="flex:1;min-width:0">Aarav Mehta<div class="smeta">An Interest is already open · next from 26 Nov</div></div><span class="st2 wc">Not sent</span></div>
+          </div>
+          <div class="bp" style="margin-top:16px;height:50px;font-size:15px">Done</div>
+        </div>
+      </div></div>
+      <div class="legend"><div><span>The "Not sent" reasons are the server's own three: cooldown (with its date), connected, unavailable. The dates and the 14 days come from /config and the reply.</span></div></div>
+    </div>
+  </div>
+
+  <div class="h3">Website · /employers/shortlist</div>
+  <div class="desk">
+    <div class="dside">
+      <div class="dlogo"><i>L</i>Lenient</div>
+      <div class="dnav"><svg class="ic"><use href="#i-home"/></svg>Home</div>
+      <div class="dnav"><svg class="ic"><use href="#i-feed"/></svg>Feed</div>
+      <div class="dnav on"><svg class="ic"><use href="#i-bookmark"/></svg>Shortlist</div>
+      <div class="dnav"><svg class="ic"><use href="#i-heart"/></svg>Interests</div>
+      <div class="dnav"><svg class="ic"><use href="#i-brief"/></svg>Jobs</div>
+      <div class="dnav"><svg class="ic"><use href="#i-chat"/></svg>Chats</div>
+    </div>
+    <div class="dmain">
+      <div class="dtitle"><h3>Shortlist<small>5</small></h3><div class="tbtnl on"><svg class="ic"><use href="#i-select"/></svg>Selecting</div><div class="tbtnl"><svg class="ic"><use href="#i-download"/></svg>Export</div></div>
+      <div class="tbl">
+        <div class="tr th"><div class="cb on" style="background:var(--accent);border-color:var(--accent)"><svg class="ic" style="width:12px;height:12px"><use href="#i-check"/></svg></div><div>Candidate</div><div>Job</div><div>Saved</div><div>Interest</div></div>
+        <div class="tr sel"><div class="cb on"><svg class="ic"><use href="#i-check"/></svg></div><div class="nmw"><div class="face" style="width:34px;height:34px;background:var(--accent-bright);font-size:12px">NV</div><div><b>Nikhil Verma <svg class="ic"><use href="#i-check"/></svg></b><span>Business Analyst · Bengaluru</span></div></div><div>—</div><div>27 Oct</div><div>Can send</div></div>
+        <div class="tr sel"><div class="cb on"><svg class="ic"><use href="#i-check"/></svg></div><div class="nmw"><div class="face" style="width:34px;height:34px;background:var(--accent);font-size:12px">MK</div><div><b>Meera Kulkarni <svg class="ic"><use href="#i-check"/></svg></b><span>Operations Associate · Indore</span></div></div><div>Operations Associate</div><div>27 Oct</div><div>Can send</div></div>
+        <div class="tr sel"><div class="cb on"><svg class="ic"><use href="#i-check"/></svg></div><div class="nmw"><div class="face" style="width:34px;height:34px;background:#6B1414;font-size:12px">AM</div><div><b>Aarav Mehta <svg class="ic"><use href="#i-check"/></svg></b><span>Sales · Pune</span></div></div><div>—</div><div>26 Oct</div><div>Can send</div></div>
+        <div class="tr dis"><div class="cb no"></div><div class="nmw"><div class="face" style="width:34px;height:34px;background:var(--accent-bright);font-size:12px;opacity:.55">AP</div><div><b style="color:var(--subtle)">Arjun Pillai</b><span>Graduation · Tier 2 · Kochi</span></div></div><div>—</div><div>22 Oct</div><div>Interest sent · 6 days left</div></div>
+        <div class="tr dis" style="border-bottom:0"><div class="cb no"></div><div class="nmw"><div class="face" style="width:34px;height:34px;background:var(--accent-bright);font-size:12px;opacity:.55">SI</div><div><b style="color:var(--subtle)">Sneha Iyer</b><span>Bengaluru</span></div></div><div>—</div><div>20 Oct</div><div>Connected</div></div>
+      </div>
+      <div class="dbar"><b>3 selected</b><span>2 can't take an Interest right now</span><div class="lnk">Clear</div><div class="bp"><svg class="ic"><use href="#i-heart"/></svg>Send Interest to 3</div></div>
+    </div>
+  </div>
+  <div class="spec">
+    <div><b>API <span class="tagp api">new</span></b><code>POST /employers/interests/batch</code> { candidateIds, jobId?, message? } → one result per person: <code>sent | cooldown(nextEligibleAt) | connected | unavailable</code>. It runs the same domain function as the single send, one Interest and one notification each. Nothing is all-or-nothing.</div>
+    <div><b>Limit <span class="tagp api">admin</span></b>A new admin setting, <code>employer.interestBatchMax</code>, read through /config; the app never hard-codes it. The default is yours to choose (decision 5). "Select all" stops at it.</div>
+    <div><b>App</b>EmployerShortlistScreen gets a select mode. <code>SendInterestSheet</code> takes a list instead of one candidate (the single-candidate form stays the same). The cards already know who can take one (<code>interestSlot</code>).</div>
+    <div><b>Web</b>ShortlistPreview / list gets a checkbox column and the dark action bar. The existing <code>SendInterestModal</code> takes the list, and the result is drawn in the same modal.</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ PICKERS ═══════════════════════ -->
+<div class="section" id="pickers">
+  <h2>Searchable dropdowns · domains and languages <span class="tagp app">APK</span> <span class="tagp web">web</span> <span class="tagp api">DB</span></h2>
+  <p class="sub">Item 9. One <code>SearchSelect</code> component (multi-pick, or single-pick for one value), used in four forms. The closed field shows what's picked as chips. Tapping it opens a sheet with a search box, the picked items at the top, and the full list underneath. The lists come from the DB's master data through /config, as they do now. They just get longer: imported once from a public source (next section), then managed in Admin › Master data. List entries below that aren't in today's DB are marked as samples.</p>
+  <div class="row">
+    <div class="col">
+      <div class="cap">Interviewer · Apply to interview<span>Domains and Languages are now dropdown fields. Today they are a wall of 12 + 13 chips.</span></div>
+      <div class="phone"><div class="scr light">
+        <div class="brandh"><div style="display:flex;align-items:center;gap:8px"><svg class="ic" style="width:20px;height:20px"><use href="#i-chevL"/></svg></div><h3>Apply to interview</h3><p>We read every application and reply by email.</p></div>
+        <div class="sb" style="color:#fff"><span>9:44</span><span class="r"><i style="width:14px;height:9px"></i><i style="width:20px;height:10px"></i></span></div>
+        <div class="form" style="top:166px">
+          <div class="fld"><label>Years of experience</label><div class="inp">6</div></div>
+          <div class="fld"><label>LinkedIn <span>Optional</span></label><div class="inp ph">linkedin.com/in/…</div></div>
+          <div class="fld"><label>Domains <span>Pick at least one</span></label>
+            <div class="ms"><span class="ch">Software Engineering<svg class="ic"><use href="#i-x"/></svg></span><span class="ch">Data Science<svg class="ic"><use href="#i-x"/></svg></span><svg class="ic"><use href="#i-chevD"/></svg></div></div>
+          <div class="fld"><label>Languages <span>Pick at least one</span></label>
+            <div class="ms"><span class="ch">English<svg class="ic"><use href="#i-x"/></svg></span><span class="ch">Hindi<svg class="ic"><use href="#i-x"/></svg></span><span class="ch">Kannada<svg class="ic"><use href="#i-x"/></svg></span><svg class="ic"><use href="#i-chevD"/></svg></div></div>
+          <div class="fld"><label>CV <span>Optional</span></label><div class="inp ph">Upload a PDF</div></div>
+        </div>
+        <div class="pfoot2"><div class="bp">Send application</div></div>
+        <i class="ann" style="left:78px;top:334px">9</i>
+      </div></div>
+    </div>
+
+    <div class="col">
+      <div class="cap">Languages · searching "ma"<span>Search matches any part of the name. Picked items stay pinned at the top while you search.</span></div>
+      <div class="phone"><div class="scr light">
+        <div class="sb" style="color:var(--text)"><span>9:44</span><span class="r"><i style="width:14px;height:9px"></i><i style="width:20px;height:10px"></i></span></div>
+        <div class="scrim"></div>
+        <div class="lsheet" style="top:56px;padding-bottom:0">
+          <div class="hdl"></div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between"><div class="lt" style="margin-top:0">Languages</div><span style="font-size:13px;color:var(--muted)">4 picked</span></div>
+          <div class="srch" style="margin-top:12px"><svg class="ic"><use href="#i-search"/></svg>ma<span class="caret"></span><span class="clr"><svg class="ic"><use href="#i-x"/></svg></span></div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:12px"><span class="ch">English<svg class="ic"><use href="#i-x"/></svg></span><span class="ch">Hindi<svg class="ic"><use href="#i-x"/></svg></span><span class="ch">Kannada<svg class="ic"><use href="#i-x"/></svg></span><span class="ch">Malayalam<svg class="ic"><use href="#i-x"/></svg></span></div>
+          <div class="grph">6 matches</div>
+          <div class="opt"><span><mark>Ma</mark>ithili</span><small>sample</small><span class="cb"></span></div>
+          <div class="opt"><span><mark>Ma</mark>lay</span><small>sample</small><span class="cb"></span></div>
+          <div class="opt"><span><mark>Ma</mark>layalam</span><span class="cb on"><svg class="ic"><use href="#i-check"/></svg></span></div>
+          <div class="opt"><span><mark>Ma</mark>ltese</span><small>sample</small><span class="cb"></span></div>
+          <div class="opt"><span><mark>Ma</mark>nipuri</span><small>sample</small><span class="cb"></span></div>
+          <div class="opt" style="border-bottom:0"><span><mark>Ma</mark>rathi</span><span class="cb"></span></div>
+        </div>
+        <div class="pfoot2" style="z-index:22"><span class="txt">Clear</span><div class="bp">Done · 4</div></div>
+      </div></div>
+    </div>
+
+    <div class="col">
+      <div class="cap">Domains · searching "eng"<span>The same sheet. With a long list, each result shows its group so similar names are easy to tell apart.</span></div>
+      <div class="phone"><div class="scr light">
+        <div class="sb" style="color:var(--text)"><span>9:45</span><span class="r"><i style="width:14px;height:9px"></i><i style="width:20px;height:10px"></i></span></div>
+        <div class="scrim"></div>
+        <div class="lsheet" style="top:56px;padding-bottom:0">
+          <div class="hdl"></div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between"><div class="lt" style="margin-top:0">Domains</div><span style="font-size:13px;color:var(--muted)">2 picked</span></div>
+          <div class="srch" style="margin-top:12px"><svg class="ic"><use href="#i-search"/></svg>eng<span class="caret"></span><span class="clr"><svg class="ic"><use href="#i-x"/></svg></span></div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:12px"><span class="ch">Software Engineering<svg class="ic"><use href="#i-x"/></svg></span><span class="ch">Data Science<svg class="ic"><use href="#i-x"/></svg></span></div>
+          <div class="grph">5 matches</div>
+          <div class="opt" style="height:54px"><span>Software <mark>Eng</mark>ineering<br><small>Information technology</small></span><span class="cb on"><svg class="ic"><use href="#i-check"/></svg></span></div>
+          <div class="opt" style="height:54px"><span>Building and civil <mark>eng</mark>ineering<br><small>Engineering and construction · sample</small></span><span class="cb"></span></div>
+          <div class="opt" style="height:54px"><span>Chemical <mark>eng</mark>ineering<br><small>Engineering and construction · sample</small></span><span class="cb"></span></div>
+          <div class="opt" style="height:54px"><span>Aeronautical <mark>eng</mark>ineering<br><small>Engineering and construction · sample</small></span><span class="cb"></span></div>
+          <div class="opt" style="height:54px;border-bottom:0"><span><mark>Eng</mark>lish literature<br><small>Humanities and languages · sample</small></span><span class="cb"></span></div>
+        </div>
+        <div class="pfoot2" style="z-index:22"><span class="txt">Clear</span><div class="bp">Done · 2</div></div>
+      </div></div>
+    </div>
+
+    <div class="col">
+      <div class="cap">No match<span>No free-text entries: the lists are complete, and a typo would split the filters. A missing item is added in Admin.</span></div>
+      <div class="phone"><div class="scr light">
+        <div class="sb" style="color:var(--text)"><span>9:45</span><span class="r"><i style="width:14px;height:9px"></i><i style="width:20px;height:10px"></i></span></div>
+        <div class="scrim"></div>
+        <div class="lsheet" style="top:56px;padding-bottom:0">
+          <div class="hdl"></div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between"><div class="lt" style="margin-top:0">Languages</div><span style="font-size:13px;color:var(--muted)">4 picked</span></div>
+          <div class="srch" style="margin-top:12px"><svg class="ic"><use href="#i-search"/></svg>tulu<span class="caret"></span><span class="clr"><svg class="ic"><use href="#i-x"/></svg></span></div>
+          <div class="empty">No language matches "tulu".<br>Check the spelling, or try fewer letters.</div>
+        </div>
+        <div class="pfoot2" style="z-index:22"><span class="txt">Clear</span><div class="bp">Done · 4</div></div>
+      </div></div>
+    </div>
+  </div>
+
+  <div class="h3">The same field in the other three forms</div>
+  <div class="row">
+    <div class="mini"><h6>Student · profile setup · Personal</h6>
+      <div class="fld"><label>Languages you speak</label><div class="ms"><span class="ch">Hindi<svg class="ic"><use href="#i-x"/></svg></span><span class="ch">English<svg class="ic"><use href="#i-x"/></svg></span><svg class="ic"><use href="#i-chevD"/></svg></div></div>
+      <h6 style="margin-top:14px">Student · profile setup · Education <span class="tagp">decision 4</span></h6>
+      <div class="fld" style="margin-bottom:0"><label>Field of study <span>Pick one</span></label><div class="ms"><span class="ph" style="color:var(--text)">Commerce &amp; Finance</span><svg class="ic"><use href="#i-chevD"/></svg></div></div>
+      <div class="hint">Single pick: the same sheet with round buttons, closes on tap. Today this is free text.</div>
+    </div>
+    <div class="mini"><h6>Interviewer · Edit profile</h6>
+      <div class="fld" style="margin-bottom:0"><label>Languages you interview in <span>Pick at least one</span></label><div class="ms"><span class="ch">English<svg class="ic"><use href="#i-x"/></svg></span><span class="ch">Hindi<svg class="ic"><use href="#i-x"/></svg></span><span class="ch">Tamil<svg class="ic"><use href="#i-x"/></svg></span><svg class="ic"><use href="#i-chevD"/></svg></div></div>
+      <div class="hint">Domains stay read-only here (set by the team), as today.</div>
+    </div>
+    <div class="mini"><h6>Employer · Feed filters</h6>
+      <div class="fld"><label>Field of study</label><div class="ms"><span class="ch">Commerce &amp; Finance<svg class="ic"><use href="#i-x"/></svg></span><span class="ch more">+2</span><svg class="ic"><use href="#i-chevD"/></svg></div></div>
+      <div class="fld" style="margin-bottom:0"><label>Languages</label><div class="ms"><span class="ph">Any language</span><svg class="ic"><use href="#i-chevD"/></svg></div></div>
+      <div class="hint">Empty means "any". After two chips, the rest collapse into "+n".</div>
+    </div>
+  </div>
+
+  <div class="h3">Website · the same field as a dropdown (/join-us/apply)</div>
+  <div class="desk" style="height:600px">
+    <div class="dmain" style="background:var(--bg)">
+      <div class="dform">
+        <div style="font-size:24px;font-weight:700;letter-spacing:-.01em">Apply to interview</div>
+        <div style="font-size:14px;color:var(--muted);margin:4px 0 22px">We read every application and reply by email.</div>
+        <div class="fld"><label>Domains <span>Pick at least one</span></label><div class="ms"><span class="ch">Software Engineering<svg class="ic"><use href="#i-x"/></svg></span><span class="ch">Data Science<svg class="ic"><use href="#i-x"/></svg></span><svg class="ic"><use href="#i-chevD"/></svg></div></div>
+        <div class="fld"><label>Languages <span>Pick at least one</span></label><div class="ms focus"><span class="ch">English<svg class="ic"><use href="#i-x"/></svg></span><span class="ch">Hindi<svg class="ic"><use href="#i-x"/></svg></span><span class="ch">Kannada<svg class="ic"><use href="#i-x"/></svg></span><svg class="ic" style="transform:rotate(180deg)"><use href="#i-chevD"/></svg></div></div>
+      </div>
+      <div class="pop" style="left:50%;margin-left:-280px;width:560px;top:262px">
+        <div class="srch"><svg class="ic"><use href="#i-search"/></svg>ta<span class="caret"></span></div>
+        <div style="margin-top:6px">
+          <div class="opt"><span><mark>Ta</mark>galog</span><small style="margin-left:8px">sample</small><span class="cb"></span></div>
+          <div class="opt"><span><mark>Ta</mark>jik</span><small style="margin-left:8px">sample</small><span class="cb"></span></div>
+          <div class="opt hov"><span><mark>Ta</mark>mil</span><span class="cb"></span></div>
+          <div class="opt"><span><mark>Ta</mark>tar</span><small style="margin-left:8px">sample</small><span class="cb"></span></div>
+          <div class="opt"><span>San<mark>ta</mark>li</span><small style="margin-left:8px">sample · matches inside the name too</small><span class="cb"></span></div>
+        </div>
+        <div class="popf"><span>3 picked · ↑↓ to move, Enter to pick, Esc to close</span><b>Done</b></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ DATA ═══════════════════════ -->
+<div class="section" id="data">
+  <h2>Where the longer lists come from <span class="tagp api">DB</span></h2>
+  <p class="sub">You asked for the lists to be built from a public source and stored in the DB. Plan: a one-time import script in apostrophe-admin (<code>scripts/import-master-data.ts</code>) fetches the list and upserts it into the <code>masterData</code> collection as LANGUAGE and DOMAIN rows. It adds missing rows and never deletes, so it's safe to re-run. The 12 domains and 13 languages already there keep their exact names, because interviewers, students and saved filters use them. The app and website keep reading <code>/config → masterData</code>, so nothing is hard-coded, and Admin › Master data can still edit, add or hide items.</p>
+  <div class="spec" style="margin-top:0">
+    <div><b>Languages · proposed source</b>ISO 639-1 English names (about 180 languages) <b>plus</b> the 22 scheduled languages of India. ISO 639-1 alone is missing Maithili, Manipuri, Bodo, Dogri, Konkani and Santali, so those come from ISO 639-2/3. Today's 13 stay as they are.</div>
+    <div><b>Domains · proposed source</b>UNESCO ISCED-F 2013, the international list of fields of education: 11 broad, 29 narrow and about 80 detailed fields. Each new domain stores its broad field as a group, which is the grey line under each result. Its licence is CC BY-NC-SA; check that before shipping.</div>
+    <div><b>Booking needs care</b>Interviewer matching (<code>domainMapping.ts</code>) maps a student's field to one of today's 12 domains by keyword. A new domain with no interviewer yet means no slots for that student. So the plan: a student's new domain falls back to its broad field's interviewers. This needs the group stored on each domain (decision 3).</div>
+    <div><b>Admin</b>The Master data page lists the new rows like any other. No new screen; it may need search and paging if it doesn't have them, since the domain list grows to about 90.</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ DECISIONS ═══════════════════════ -->
+<div class="section" id="decisions">
+  <h2>Decisions before the build</h2>
+  <p class="sub">My recommended answer is first in each.</p>
+  <div class="dec">
+    <div><i class="n">1</i><span><b>Stamp style:</b> A white badge (same as the web) · B solid white · C white outline.</span></div>
+    <div><i class="n">2</i><span><b>Sign-out:</b> centre dialog (same as the web) · bottom sheet (app only; the web keeps the centre dialog).</span></div>
+    <div><i class="n">3</i><span><b>Domains:</b> import the ISCED-F detailed fields (~80) with their broad group, and let booking fall back to the broad group · import only the 29 narrow fields · hand-pick a shorter Indian list instead.</span></div>
+    <div><i class="n">4</i><span><b>Student "Field of study":</b> turn it into a single-pick dropdown of domains, which also makes interviewer matching exact · keep it free text and only change Languages.</span></div>
+    <div><i class="n">5</i><span><b>Mass Interest limit per send</b> (<code>employer.interestBatchMax</code>, admin-editable): 20 · 10 · 50 · no limit.</span></div>
+    <div><i class="n">6</i><span><b>Tick instead of "Verified" elsewhere:</b> also on the profile page and the web feed/profile (drawn above) · feed card only.</span></div>
+    <div><i class="n">7</i><span><b>Profile pill length:</b> no length, same as the feed (drawn) · "Watch full interview · 12:30".</span></div>
+  </div>
+</div>
+
+</div>
+
+<script>
+(function(){
+  var P=new URLSearchParams(location.search);
+  var state={stamp:(P.get('stamp')||'A').toUpperCase(),so:(P.get('signout')||'dialog').toLowerCase()};
+  if(['A','B','C'].indexOf(state.stamp)<0)state.stamp='A';
+  if(['dialog','sheet'].indexOf(state.so)<0)state.so='dialog';
+  var only=P.get('only');
+  if(only&&document.getElementById(only)){
+    document.querySelectorAll('.intro,.section').forEach(function(s){if(s.id!==only)s.style.display='none'});
+  }
+  function render(){
+    document.body.dataset.stamp=state.stamp;
+    document.body.dataset.so=state.so;
+    document.querySelectorAll('.st.dyn').forEach(function(el){
+      ['vA','vB','vC'].forEach(function(c){el.classList.remove(c)});
+      el.classList.add('v'+state.stamp);
+    });
+    document.querySelectorAll('.stile').forEach(function(t){t.classList.toggle('on',t.dataset.pick===state.stamp)});
+    document.querySelectorAll('.seg').forEach(function(s){
+      var k=s.dataset.k;
+      s.querySelectorAll('button').forEach(function(b){b.classList.toggle('on',b.dataset.v===state[k])});
+    });
+    var q=new URLSearchParams();q.set('stamp',state.stamp);q.set('signout',state.so);if(only)q.set('only',only);
+    history.replaceState(null,'','?'+q.toString()+location.hash);
+  }
+  document.querySelectorAll('.seg button').forEach(function(b){
+    b.addEventListener('click',function(){state[b.parentNode.dataset.k]=b.dataset.v;render()});
+  });
+  document.querySelectorAll('.stile').forEach(function(t){
+    t.addEventListener('click',function(){state.stamp=t.dataset.pick;render()});
+  });
+  render();
+})();
+</script>
+</body>
+</html>

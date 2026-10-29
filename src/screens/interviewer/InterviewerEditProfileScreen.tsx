@@ -5,13 +5,14 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useQueryClient } from '@tanstack/react-query'
 import { borderWidth, color, fontFamilyNative as FF } from '../../theme'
 import { Icon, type IconName } from '../../components/ui/Icon'
+import { SearchSelect } from '../../components/ui/SearchSelect'
 import { ApiClientError } from '../../lib/api'
 import { updateInterviewerProfile } from '../../lib/api/interviewer'
 import { formatPaise } from '../../lib/format/money'
 import { pickAvatar, uploadAvatar, type AvatarFile } from '../../lib/interviewer/avatar'
 import { BIO_MAX, hasChanges, initialsFrom, profileChanges, validateProfileDraft, type ProfileErrors } from '../../lib/interviewer/profile'
 import { INTERVIEWER_KEY, useAppConfig, useInterviewerIdentity, useInterviewerMe } from '../../lib/interviewer/useInterviewer'
-import { AcChip, AcDisc, AcField, AcInput, AcLink, AcNotice, AcPage, AcPill, AcReadOnly, AcSheet, AcSkel, AcSmallBtn, SupportSheet, noticeText } from './accountKit'
+import { AcDisc, AcField, AcInput, AcLink, AcNotice, AcPage, AcPill, AcReadOnly, AcSheet, AcSkel, AcSmallBtn, SupportSheet, noticeText } from './accountKit'
 import type { RootStackParamList } from '../../../App'
 
 type Photo = { kind: 'keep' } | { kind: 'new'; file: AvatarFile } | { kind: 'removed' }
@@ -62,13 +63,14 @@ export function InterviewerEditProfileScreen() {
   }), [navigation])
 
   const touched = () => { if (stage === 'error' || stage === 'saved') { setStage('idle'); setMessage(null) } }
-  const toggleLang = (l: string) => {
+  const pickLangs = (next: string[]) => {
     touched()
     setErrs((x) => ({ ...x, languages: undefined }))
-    setLangs((cur) => { const c = cur ?? base.languages; return c.includes(l) ? c.filter((v) => v !== l) : [...c, l] })
+    setLangs(next)
   }
 
-  const options = Array.from(new Set([...(config?.masterData?.languages?.map((l) => l.name) ?? []), ...base.languages]))
+  // The master list, plus any language already on the profile that the list no longer carries.
+  const options = Array.from(new Set([...(config?.masterData?.languages?.map((l) => l.name) ?? []), ...base.languages])).map((l) => ({ value: l, label: l }))
   const avatarUri = photo.kind === 'new' ? photo.file.uri : photo.kind === 'removed' ? null : p?.avatarUrl
   const hasPhoto = !!avatarUri
 
@@ -146,7 +148,16 @@ export function InterviewerEditProfileScreen() {
           </AcField>
 
           <AcField label="Languages you interview in" right={<Text style={st.hint}>Pick at least one</Text>} error={errs.languages}>
-            <View style={st.chips}>{options.map((l) => <AcChip key={l} label={l} on={draft.languages.includes(l)} onPress={() => toggleLang(l)} />)}</View>
+            <SearchSelect
+              title="Languages"
+              noun="language"
+              options={options}
+              value={draft.languages}
+              placeholder="Pick languages"
+              invalid={!!errs.languages}
+              disabled={stage === 'saving'}
+              onChange={pickLangs}
+            />
           </AcField>
 
           <AcField label="Short bio" right={<Text style={[st.count, draft.bio.length > BIO_MAX && { color: color.danger }]}>{`${draft.bio.length}/${BIO_MAX}`}</Text>} error={errs.bio}>
@@ -193,7 +204,6 @@ const st = StyleSheet.create({
   bold: { fontFamily: FF.bodyBold },
   retry: { fontFamily: FF.bodyBold, color: color.danger, textDecorationLine: 'underline' },
   photo: { alignItems: 'center', gap: 10, paddingTop: 4, paddingBottom: 2 },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   hint: { fontFamily: FF.body, fontSize: 12.5, color: color.textMuted },
   count: { fontFamily: FF.bodyMedium, fontSize: 12, fontVariant: ['tabular-nums'], color: color.textMuted },
   managed: { gap: 12, paddingTop: 14, borderTopWidth: borderWidth.thin, borderTopColor: color.border },
