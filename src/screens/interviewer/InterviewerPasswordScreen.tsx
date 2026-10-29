@@ -1,10 +1,11 @@
 import React, { useState } from 'react'
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native'
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { color, space, spaceHalf } from '../../theme'
 import { Banner, Body, Button, Field, Input } from '../../components/ui'
+import { SignOutDialog } from '../../components/ui/SignOutDialog'
 import { EmBar, EmCard, EmDone, EmFoot, EmTitle } from '../../components/employer/em'
 import { CONNECTION_DROPPED, PasswordInput } from '../employer/EmployerRegisterScreen'
 import { ApiClientError, tokenStore } from '../../lib/api'
@@ -49,28 +50,17 @@ export function InterviewerPasswordScreen() {
   const [errs, setErrs] = useState<Errs>({})
   const [error, setError] = useState<string | null>(null)
   const [sentLine, setSentLine] = useState<string | null>(null)
+  const [signOutOpen, setSignOutOpen] = useState(false)
 
   const toSignIn = () => navigation.reset({ index: 0, routes: [{ name: 'Welcome' }, { name: 'SignIn' }] })
 
-  function signOut() {
-    Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Sign Out',
-          style: 'destructive',
-          onPress: async () => {
-            setBusy(true)
-            await logout().catch(() => undefined)
-            await tokenStore.clear()
-            forget()
-            navigation.reset({ index: 0, routes: [{ name: 'Welcome' }] })
-          },
-        },
-      ]
-    )
+  /** Back on the forced form signs out, confirmed in the shared sign-out dialog. */
+  async function signOut() {
+    setBusy(true)
+    await logout().catch(() => undefined)
+    await tokenStore.clear()
+    forget()
+    navigation.reset({ index: 0, routes: [{ name: 'Welcome' }] })
   }
 
   function checkNew(withCurrent: boolean): Errs {
@@ -180,7 +170,7 @@ export function InterviewerPasswordScreen() {
     </Field>
   )
 
-  const onBack = forced ? () => { signOut() } : stage === 'reset' ? () => setStage('request') : () => navigation.goBack()
+  const onBack = forced ? () => setSignOutOpen(true) : stage === 'reset' ? () => setStage('request') : () => navigation.goBack()
 
   return (
     <KeyboardAvoidingView style={[styles.page, { paddingTop: insets.top }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -253,6 +243,7 @@ export function InterviewerPasswordScreen() {
           {stage === 'reset' && <Button variant="primary" size="lg" full busy={busy} label="Set new password" onPress={reset} />}
         </View>
       </EmFoot>
+      <SignOutDialog open={signOutOpen} onClose={() => setSignOutOpen(false)} onConfirm={signOut} />
     </KeyboardAvoidingView>
   )
 }

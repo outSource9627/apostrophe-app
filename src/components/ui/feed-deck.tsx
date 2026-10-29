@@ -37,11 +37,16 @@ import { Icon, type IconName } from './Icon'
  * button does.
  */
 
-/** How far up a card's facts sit, clear of the round buttons over its foot (the mockup's 84). */
+/** How far up a card's facts sit, clear of the round buttons over its foot (92 since they grew to 66; was 84). */
 export const FEED_FOOT = space.md + height['feed-action'] + spaceHalf['3.5']
 /** Where the toast and the stamps sit from the top of the card: under the tag row. */
 export const FEED_TOAST_TOP = space['4xl']
 const STAMP_TOP = space['4xl'] * 2
+/** The round buttons' glyphs: 24 in the small pair, 34 in the big (docs/feed-shortlist-forms-mockups.html · feed 1). */
+const GLYPH_SM = height.glyph
+const GLYPH_LG = space['2xl'] + spaceHalf['1.5']
+/** The sound flash's disc stays the 74 it was drawn at, though the round buttons it was sized from grew by 8. */
+const FLASH = height['feed-action'] + space.sm
 
 /** The card itself: rounded, ink, and clipping the film. */
 export function FeedCardFrame({ children, style }: { children?: React.ReactNode; style?: StyleProp<ViewStyle> }) {
@@ -96,8 +101,23 @@ export function FeedCardTop({ left, right }: { left?: React.ReactNode; right?: R
   )
 }
 
-/** The glass tag over the film: a green dot and what the card is (a job's category, a verified interview). */
-export function FeedTag({ label }: { label: string }) {
+/**
+ * The glass tag over the film: a green dot and what the card is (a job's
+ * category or its video pitch). `verified` is the verified-interview form
+ * (docs/feed-shortlist-forms-mockups.html · feed 2): a green tick disc and the
+ * short date alone ("14 Oct"), read out as "Verified interview, …".
+ */
+export function FeedTag({ label, verified, a11y }: { label: string; verified?: boolean; a11y?: string }) {
+  if (verified) {
+    return (
+      <View style={[styles.tag, styles.tagTick]} accessible accessibilityLabel={a11y ?? `Verified interview, ${label}`}>
+        <View style={styles.tick}>
+          <Icon name="check" size={space.md - 1} tint={color.inkDeep} weight={3.4} />
+        </View>
+        <Text style={[styles.tagText, styles.tagTickText]} numberOfLines={1}>{label}</Text>
+      </View>
+    )
+  }
   return (
     <View style={styles.tag}>
       <View style={styles.tagDot} />
@@ -110,16 +130,21 @@ export function FeedTag({ label }: { label: string }) {
  * "Watch full interview" (docs/feed-room-mockups.html · Watch 3, frosted pill):
  * a white play disc and the label in a light glass pill at the card's top-right.
  * React Native has no backdrop blur here, so the "frost" is the translucent
- * white alone.
+ * white alone. The candidate profile's film uses it too; `disabled` dims it
+ * (no plays left today — the caller says so in `label`).
  */
-export function FeedWatchButton({ label, a11y, onPress }: { label: string; a11y?: string; onPress: () => void }) {
+export function FeedWatchButton({
+  label, a11y, disabled, onPress,
+}: { label: string; a11y?: string; disabled?: boolean; onPress: () => void }) {
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={a11y ?? label}
+      accessibilityState={{ disabled: !!disabled }}
+      disabled={disabled}
       onPress={onPress}
       hitSlop={space.xs}
-      style={({ pressed }) => [styles.watch, pressed && styles.nudge]}
+      style={({ pressed }) => [styles.watch, disabled && styles.watchOff, pressed && styles.nudge]}
     >
       <View style={styles.watchDisc}>
         <Icon name="playR" size={space.md + 2} tint={color.ink} fill={color.ink} weight={1} />
@@ -224,13 +249,20 @@ export function FeedMeta({ label }: { label: string }) {
   )
 }
 
-/** The stamp a drag fades in: the right-swipe verb (green, tilted left), Pass (pink, tilted right), Skip (white, level). */
+/**
+ * The stamp a drag fades in, on a white badge so it reads on bright footage too
+ * (docs/feed-shortlist-forms-mockups.html · stamp A, as on the website): the
+ * right-swipe verb in the success greens (tilted left), Pass in the brand red
+ * (tilted right), Skip in ink (level).
+ */
 export function FeedStamp({ kind, label }: { kind: 'like' | 'pass' | 'skip'; label: string }) {
-  const tone = kind === 'like' ? color.feedLike : kind === 'pass' ? color.feedPink : color.textOnInk
+  const edge = kind === 'like' ? color.successFill : kind === 'pass' ? color.feedPink : color.ink
+  // Green on white is hard to read, so the like word takes the darker success green.
+  const word = kind === 'like' ? color.success : edge
   return (
     <View style={[styles.stampWrap, kind === 'like' ? styles.stampLeft : kind === 'pass' ? styles.stampRight : styles.stampMid]} pointerEvents="none">
-      <View style={[styles.stamp, { borderColor: tone }, kind === 'like' ? styles.tiltLeft : kind === 'pass' ? styles.tiltRight : null]}>
-        <Text style={[styles.stampText, { color: tone }]}>{label}</Text>
+      <View style={[styles.stamp, { borderColor: edge }, kind === 'like' ? styles.tiltLeft : kind === 'pass' ? styles.tiltRight : null]}>
+        <Text style={[styles.stampText, { color: word }]}>{label}</Text>
       </View>
     </View>
   )
@@ -238,7 +270,7 @@ export function FeedStamp({ kind, label }: { kind: 'like' | 'pass' | 'skip'; lab
 
 /**
  * The four round buttons over the foot of the card: Undo (gold) · Pass (pink) ·
- * Save or Shortlist (green) · Apply or Interest (violet).
+ * Save or Shortlist (green) · Apply or Interest (red).
  */
 export function FeedActions({
   canUndo, disabled, passLabel, likeLabel, planeLabel, planeDisabled, onUndo, onPass, onLike, onPlane,
@@ -266,7 +298,7 @@ export function FeedActions({
         onPress={onUndo}
         style={({ pressed }) => [styles.round, styles.roundSm, undoOff && styles.off, pressed && styles.squeeze]}
       >
-        <Icon name="undo" size={space.xl} tint={color.feedUndo} weight={2.5} />
+        <Icon name="undo" size={GLYPH_SM} tint={color.feedUndo} weight={2.5} />
       </Pressable>
       <Pressable
         accessibilityRole="button"
@@ -276,7 +308,7 @@ export function FeedActions({
         onPress={onPass}
         style={({ pressed }) => [styles.round, styles.roundLg, disabled && styles.off, pressed && styles.squeeze]}
       >
-        <Icon name="x" size={space['2xl']} tint={color.feedPink} weight={2.8} />
+        <Icon name="x" size={GLYPH_LG} tint={color.feedPink} weight={2.8} />
       </Pressable>
       <Pressable
         accessibilityRole="button"
@@ -286,7 +318,7 @@ export function FeedActions({
         onPress={onLike}
         style={({ pressed }) => [styles.round, styles.roundLg, disabled && styles.off, pressed && styles.squeeze]}
       >
-        <Icon name="heart" size={space['2xl']} tint={color.feedLike} fill={color.feedLike} weight={2} />
+        <Icon name="heart" size={GLYPH_LG} tint={color.feedLike} fill={color.feedLike} weight={2} />
       </Pressable>
       <Pressable
         accessibilityRole="button"
@@ -296,7 +328,7 @@ export function FeedActions({
         onPress={onPlane}
         style={({ pressed }) => [styles.round, styles.roundSm, planeOff && styles.off, pressed && styles.squeeze]}
       >
-        <Icon name="send" size={space.xl} tint={color.accentBright} weight={2.5} />
+        <Icon name="send" size={GLYPH_SM} tint={color.accentBright} weight={2.5} />
       </Pressable>
     </View>
   )
@@ -612,11 +644,16 @@ const styles = StyleSheet.create({
   },
   tagDot: { width: space.sm, height: space.sm, borderRadius: radius.pill, backgroundColor: color.feedLike },
   tagText: { flexShrink: 1, fontFamily: FF.bodySemiBold, fontSize: fontSize['ui-xs'], lineHeight: leadingNative['ui-xs'], color: color.textOnInk, fontVariant: ['tabular-nums'] },
+  tagTick: { paddingLeft: spaceHalf['1.5'], paddingRight: spaceHalf['2.5'] + 1, gap: spaceHalf['1.5'] + 1 },
+  tick: { width: spaceHalf['4.5'], height: spaceHalf['4.5'], borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', backgroundColor: color.feedLike },
+  tagTickText: { fontSize: fontSize['meta-md'], lineHeight: leadingNative['meta-md'] },
 
   watch: {
     flexDirection: 'row', alignItems: 'center', gap: space.sm, height: height['feed-top'], paddingLeft: space.xs, paddingRight: spaceHalf['3.5'],
     borderRadius: radius.pill, backgroundColor: color.onInkPlay, borderWidth: borderWidth.thin, borderColor: color.onInkOutline,
   },
+  /** Dimmed, not greyed: the mockup's 0.6. */
+  watchOff: { opacity: opacity.disabled + 0.1 },
   watchDisc: { width: height['chip-sm'], height: height['chip-sm'], borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', backgroundColor: color.textOnInk },
   watchText: { fontFamily: FF.bodySemiBold, fontSize: fontSize['ui-sm'], lineHeight: leadingNative['ui-sm'], color: color.textOnInk },
   tapLayer: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1 },
@@ -626,7 +663,7 @@ const styles = StyleSheet.create({
   },
   flashWrap: { position: 'absolute', top: '36%', left: 0, right: 0, alignItems: 'center', zIndex: 3 },
   flash: {
-    width: height['feed-action'] + space.lg, height: height['feed-action'] + space.lg, marginTop: -(height['feed-action'] + space.lg) / 2,
+    width: FLASH, height: FLASH, marginTop: -FLASH / 2,
     borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', backgroundColor: color.onInkGlass,
   },
 
@@ -647,12 +684,12 @@ const styles = StyleSheet.create({
   stampLeft: { left: space.xl },
   stampRight: { right: space.xl },
   stampMid: { left: 0, right: 0, alignItems: 'center' },
-  stamp: { paddingHorizontal: spaceHalf['4.5'], paddingVertical: spaceHalf['1.5'], borderRadius: radius.tile, borderWidth: borderWidth.stamp, backgroundColor: color.onInkGlass },
+  stamp: { paddingHorizontal: spaceHalf['4.5'], paddingVertical: spaceHalf['1.5'], borderRadius: radius.tile, borderWidth: borderWidth.stamp, backgroundColor: color.onInkBadge },
   tiltLeft: { transform: [{ rotate: '-15deg' }] },
   tiltRight: { transform: [{ rotate: '15deg' }] },
   stampText: { fontFamily: FF.bodySemiBold, fontSize: fontSize['meta-otp'], lineHeight: leadingNative['meta-otp'], letterSpacing: trackingNative.widest },
 
-  actions: { position: 'absolute', left: 0, right: 0, bottom: space.md, zIndex: 4, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', paddingHorizontal: spaceHalf['6'] },
+  actions: { position: 'absolute', left: 0, right: 0, bottom: space.md, zIndex: 4, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', paddingHorizontal: space.xl },
   round: { borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', backgroundColor: color.feedAction, borderWidth: borderWidth.thin, borderColor: color.onInkGround },
   roundSm: { width: height['feed-action-sm'], height: height['feed-action-sm'] },
   roundLg: { width: height['feed-action'], height: height['feed-action'] },

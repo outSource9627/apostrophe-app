@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Full Video Layout</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!--
+  The full interview video (Agora composite, 1920x1080) — new layout, every case. 2026-10-29.
+  Student centred 9:16, interviewer top-right, solid dark sides (#0A0A0A = the players' ink-deep).
+  Geometry is drawn from the same numbers the recording would use (see "The numbers").
+  URL: ?only=frame|students|interviewer|moments|players|same
+-->
+<style>
+  :root{
+    --accent:#B22222; --accent-soft:#F9EAEA; --accent-text:#951C1C;
+    --ink:#141414; --ink-deep:#0A0A0A; --ink-raised:#1F1F1F;
+    --text:#141414; --text2:#2C2C2C; --muted:#777777; --subtle:#8C8C8C;
+    --surface:#FFFFFF; --surface-muted:#F3F3F3; --border:#E5E5E5;
+    --on:#FFFFFF; --on-muted:#D0D0D0; --on-subtle:#9A9A9A;
+    --ok:#0B7A55; --ok-soft:#E7F6EF; --warn:#7A5200; --warn-soft:#FFF3D6;
+    --note:#2563EB; --guide:#06B6D4;
+    /* camera content stand-ins: not brand colours, just two rooms you can tell apart */
+    --room-student:#6E625A; --room-student-2:#857769; --person-student:#2B2522;
+    --room-iv:#4D5862; --room-iv-2:#5F6B75; --person-iv:#1E2328;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Geist',system-ui,sans-serif;background:#ECECEC;color:var(--text);padding:32px 24px 100px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1500px;margin:0 auto}
+  .intro,.section{background:#fff;border:1px solid var(--border);border-radius:24px;padding:24px 28px;margin-bottom:16px}
+  .intro h1{font-size:28px;font-weight:700;letter-spacing:-.02em}
+  .intro p,.section .sub{font-size:15px;color:var(--muted);margin-top:6px;line-height:1.5;max-width:1060px}
+  .section h2{font-size:21px;font-weight:700;letter-spacing:-.01em}
+  .section .sub{margin-bottom:20px}
+  .map{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px;margin-top:16px}
+  .map div{background:var(--surface-muted);border-radius:14px;padding:11px 13px;font-size:13.5px;line-height:1.45;color:var(--text2)}
+  .map b{display:block;font-size:14px;color:var(--text);margin-bottom:2px;font-weight:600}
+  .tag{display:inline-block;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:99px;margin-left:6px;vertical-align:1px}
+  .tag.same{background:var(--ok-soft);color:var(--ok)}
+  .tag.note{background:var(--warn-soft);color:var(--warn)}
+  .tag.new{background:var(--accent-soft);color:var(--accent-text)}
+
+  /* ── the video frame: everything inside is % of 1920×1080 ── */
+  .frame{position:relative;aspect-ratio:16/9;background:var(--ink-deep);overflow:hidden;border-radius:10px;container-type:inline-size}
+  .frame.sq{border-radius:0}
+  .reg{position:absolute;overflow:hidden}
+  .reg.student{left:34.1797%;top:0;width:31.6406%;height:100%}
+  .reg.iv{left:69.1667%;top:2.963%;width:29.1667%;height:29.1667%;border-radius:0}
+  .reg.off{background:var(--ink-deep)}
+  .who{position:absolute;left:4%;bottom:4%;font-size:clamp(8px,1.6cqw,14px);font-weight:600;color:#fff;background:rgba(10,10,10,.55);padding:.25em .6em;border-radius:99px;white-space:nowrap}
+  .reg.iv .who{left:5%;bottom:7%}
+
+  /* a "camera picture": a room and a person, drawn to fill whatever box holds it */
+  .cam{position:absolute;inset:0}
+  .cam.s{background:linear-gradient(180deg,var(--room-student-2),var(--room-student))}
+  .cam.i{background:linear-gradient(180deg,var(--room-iv-2),var(--room-iv))}
+  .cam svg{position:absolute;inset:0;width:100%;height:100%}
+  .cam.s svg{fill:var(--person-student)}
+  .cam.i svg{fill:var(--person-iv)}
+
+  /* dimension notes on the big frame */
+  .dim{position:absolute;z-index:5;font-size:12px;font-weight:700;color:#fff;background:var(--note);padding:3px 8px;border-radius:6px;white-space:nowrap}
+  .dimline{position:absolute;z-index:4;border-color:var(--note);border-style:dashed;border-width:0}
+
+  /* ── layout helpers ── */
+  .big{max-width:1100px}
+  .cases{display:grid;gap:14px}
+  .case{display:grid;grid-template-columns:230px 260px 24px 1fr;gap:18px;align-items:center;border:1px solid var(--border);border-radius:18px;padding:16px 18px}
+  .case .t{font-size:15px;font-weight:600}
+  .case .t span{display:block;font-size:13px;font-weight:400;color:var(--muted);margin-top:4px;line-height:1.45}
+  .arrow{font-size:20px;color:var(--subtle);text-align:center}
+  .inbox{display:flex;justify-content:center;align-items:center;height:178px;padding-top:22px;background:var(--surface-muted);border-radius:12px;position:relative}
+  .camframe{position:relative;overflow:hidden;border-radius:6px}
+  .crop{position:absolute;top:0;bottom:0;border:2px dashed #fff;box-shadow:0 0 0 999px rgba(10,10,10,.55)}
+  .inbox .lbl{position:absolute;left:8px;top:7px;font-size:11.5px;font-weight:600;color:var(--muted)}
+  .result{max-width:330px}
+  .grid3{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:20px}
+  .tile{display:grid;gap:10px;align-content:start}
+  .cap{font-size:14.5px;font-weight:600}
+  .cap span{display:block;font-size:13px;font-weight:400;color:var(--muted);margin-top:3px;line-height:1.45}
+  .cap span.tag{display:inline-block;margin-top:0;font-size:11.5px;font-weight:600}
+  .spec{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;margin-top:6px}
+  .spec div{border:1px solid var(--border);border-radius:14px;padding:12px 14px;font-size:13.5px;line-height:1.5;color:var(--text2)}
+  .spec b{display:block;color:var(--text);font-size:14px;margin-bottom:2px}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;background:var(--surface-muted);padding:1px 5px;border-radius:5px}
+
+  /* ── players ── */
+  .phone{width:300px;height:640px;padding:9px;border-radius:44px;background:#111;box-shadow:0 20px 50px rgba(0,0,0,.16),inset 0 0 0 2px #2b2b2b}
+  .phone .scr{position:relative;width:100%;height:100%;border-radius:36px;overflow:hidden;background:var(--ink-deep);color:#fff;display:flex;flex-direction:column;padding:44px 14px 0}
+  .phone.land{width:640px;height:300px}
+  .phone.land .scr{padding:0;justify-content:center;align-items:center}
+  .phone.land .frame{height:100%;width:auto;border-radius:0}
+  .ph-top{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+  .ph-top i{width:30px;height:30px;border-radius:99px;background:rgba(255,255,255,.12);flex:none}
+  .ph-top b{font-size:14px;font-weight:600}
+  .ctrl{display:flex;align-items:center;gap:10px;margin-top:16px}
+  .ctrl .play{width:34px;height:34px;border-radius:99px;background:#fff;flex:none;position:relative}
+  .ctrl .play::after{content:"";position:absolute;left:13px;top:10px;border-left:11px solid var(--ink);border-top:7px solid transparent;border-bottom:7px solid transparent}
+  .ctrl .bar{flex:1;height:4px;border-radius:9px;background:rgba(255,255,255,.2);position:relative}
+  .ctrl .bar::after{content:"";position:absolute;left:0;top:0;bottom:0;width:30%;border-radius:9px;background:var(--accent)}
+  .web{width:100%;max-width:560px;border:1px solid var(--border);border-radius:16px;padding:14px;background:#fff}
+  .web .bar{height:10px;display:flex;gap:6px;margin-bottom:12px}
+  .web .bar i{width:10px;height:10px;border-radius:99px;background:#DADADA}
+  .web .frame{border-radius:14px}
+  /* mockup only: marks where the video ends, since its dark sides match the dark player */
+  .edge{outline:1px dashed rgba(255,255,255,.28);outline-offset:-1px}
+  @media (max-width:900px){.case{grid-template-columns:1fr}.arrow{transform:rotate(90deg)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="intro">
+  <h1>Full interview video: new layout</h1>
+  <p>Only the full interview video changes: the one an employer opens with "Watch full interview". It stays landscape, 1920×1080. The student's portrait video sits in the middle at full height, and the interviewer sits in a box in the top-right corner. The sides are a solid dark colour, the same dark as the players' background. Agora, which records the video, can't blur the sides.</p>
+  <div class="map">
+    <div><b>1 · The frame</b>Exact sizes and positions.</div>
+    <div><b>2 · Every student camera</b>Phone, tablet, laptop 16:9 and 4:3, mobile browser. All of them end up the same.</div>
+    <div><b>3 · Every interviewer camera</b>16:9 fills the box; 4:3 is trimmed a little at the top and bottom.</div>
+    <div><b>4 · During the interview</b>Camera off, weak network, not joined yet, left early.</div>
+    <div><b>5 · How it plays</b>Employer app (portrait and full screen) and the website.</div>
+    <div><b>6 · What stays the same</b>Old recordings, the feed video, the interview room, the players.</div>
+  </div>
+</div>
+
+<!-- 1 ─────────────────────────────────────────────────────────── -->
+<div class="section" data-id="frame">
+  <h2>1 · The frame</h2>
+  <p class="sub">One fixed layout for every interview. The two pictures never overlap: there's a 64 px gap between them. Agora's docs don't say which video is drawn on top when two overlap, so this layout avoids the question.</p>
+  <div class="big">
+    <div class="frame" id="bigframe"></div>
+  </div>
+  <div class="spec" style="margin-top:18px">
+    <div><b>Canvas</b>1920 × 1080, 30 fps, landscape. The sides are <code>#0A0A0A</code>, the same dark as the app and website player backgrounds, so they blend into the player.</div>
+    <div><b>Student · centre, full height</b>About 608 × 1080, from x 656 to x 1264. Crop mode: the area is always filled, and a picture that isn't 9:16 has its centre kept.</div>
+    <div><b>Interviewer · top-right</b>560 × 315 (16:9), 32 px from the top and right edges, at x 1328, y 32. Crop mode: the box is always filled.</div>
+  </div>
+</div>
+
+<!-- 2 ─────────────────────────────────────────────────────────── -->
+<div class="section" data-id="students">
+  <h2>2 · Every student camera <span class="tag same">all end up the same</span></h2>
+  <p class="sub">The room already sends every student as 9:16 portrait. The website crops a laptop webcam's centre before sending, and the app is locked to portrait. So whatever the camera, the full video looks the same. The dashed box shows what is kept.</p>
+  <div class="cases" id="studentCases"></div>
+</div>
+
+<!-- 3 ─────────────────────────────────────────────────────────── -->
+<div class="section" data-id="interviewer">
+  <h2>3 · Every interviewer camera</h2>
+  <p class="sub">The interviewer sends 16:9 landscape. The website asks the browser for 1280×720, and the app is locked to landscape. The corner box is 16:9 too, so normally nothing is lost.</p>
+  <div class="cases" id="ivCases"></div>
+</div>
+
+<!-- 4 ─────────────────────────────────────────────────────────── -->
+<div class="section" data-id="moments">
+  <h2>4 · During the interview</h2>
+  <p class="sub">When someone's video stops for more than about 3.5 seconds, Agora fills their area with the background colour. Here that's the same dark as the sides, so the area simply goes dark. Sound keeps recording throughout.</p>
+  <div class="grid3" id="moments"></div>
+</div>
+
+<!-- 5 ─────────────────────────────────────────────────────────── -->
+<div class="section" data-id="players">
+  <h2>5 · How it plays <span class="tag same">players unchanged</span></h2>
+  <p class="sub">The players already show the full video as 16:9 on a dark background, so no player code changes. The dark sides of the video blend into that background. The faint dashed line marks where the video ends; it isn't on screen.</p>
+  <div class="row" style="display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start">
+    <div class="tile">
+      <div class="cap">Employer app · portrait<span>The full interview screen: the 16:9 video across the width, then the controls.</span></div>
+      <div class="phone"><div class="scr">
+        <div class="ph-top"><i></i><b>Student name · Full interview</b></div>
+        <div class="frame edge" data-fill="normal" style="border-radius:12px"></div>
+        <div class="ctrl"><span class="play"></span><span class="bar"></span></div>
+      </div></div>
+    </div>
+    <div class="tile">
+      <div class="cap">Employer app · full screen<span>Turned landscape: the video fills the screen height.</span></div>
+      <div class="phone land"><div class="scr"><div class="frame edge" data-fill="normal"></div></div></div>
+    </div>
+    <div class="tile" style="flex:1;min-width:320px">
+      <div class="cap">Website · employer<span>The full video player, 16:9 with rounded corners.</span></div>
+      <div class="web"><div class="bar"><i></i><i></i><i></i></div><div class="frame" data-fill="normal"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- 6 ─────────────────────────────────────────────────────────── -->
+<div class="section" data-id="same">
+  <h2>6 · What stays the same</h2>
+  <p class="sub">The layout is fixed into each video when it's recorded, so only interviews recorded after this ships get it.</p>
+  <div class="grid3">
+    <div class="tile">
+      <div class="cap">Old recordings <span class="tag note">stay as they are</span><span>Recorded before the change: the student panel on the left, the interviewer filling the rest. There's no separate interviewer recording to rebuild them from.</span></div>
+      <div class="frame" id="today"></div>
+    </div>
+    <div class="tile">
+      <div class="cap">New recordings <span class="tag new">new</span><span>Recorded after the change.</span></div>
+      <div class="frame" data-fill="normal"></div>
+    </div>
+    <div class="tile">
+      <div class="cap">Not changing<span>The student-only portrait video used in the feed and on the profile. The interview room for both people. The website and app players. Only the full video's layout settings in the recording code change.</span></div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+/* A person, drawn bottom-centre. Always scaled to the box's HEIGHT (slice in a portrait box, meet in a wide one), so a crop and its result show them the same size. */
+const PERSON = '<circle cx="50" cy="45" r="12"/><path d="M26 100 C26 76 38 66 50 66 C62 66 74 76 74 100 Z"/>'
+const person = (fit) => `<svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMax ${fit}">${PERSON}</svg>`
+const cam = (kind, fit = 'meet') => `<div class="cam ${kind}">${person(fit)}</div>`
+
+function regions(opts = {}) {
+  const s = opts.student === 'off' ? '<div class="reg student off"></div>'
+    : opts.student === 'none' ? '' : `<div class="reg student">${cam('s', 'slice')}<span class="who">Student</span></div>`
+  const i = opts.iv === 'off' ? '<div class="reg iv off"></div>'
+    : opts.iv === 'none' ? '' : `<div class="reg iv">${cam('i')}<span class="who">Interviewer</span></div>`
+  return s + i
+}
+
+/* The big annotated frame */
+const big = document.getElementById('bigframe')
+big.innerHTML = regions() + `
+  <div class="dimline" style="left:34.18%;right:34.18%;top:50%;border-top-width:2px"></div>
+  <span class="dim" style="left:50%;top:calc(50% + 6px);transform:translateX(-50%)">≈608 × 1080 · centred</span>
+  <div class="dimline" style="left:0;width:34.18%;top:88%;border-top-width:2px"></div>
+  <span class="dim" style="left:17.09%;top:calc(88% + 6px);transform:translateX(-50%)">656 px dark</span>
+  <span class="dim" style="left:69.17%;top:calc(32.13% + 8px)">560 × 315 · 32 px from top and right</span>
+  <div class="dimline" style="left:65.82%;width:3.35%;top:16.5%;border-top-width:2px"></div>
+  <span class="dim" style="left:65.2%;top:calc(16.5% - 30px)">64 px gap</span>`
+
+/* Fill every plain frame with the normal layout */
+document.querySelectorAll('.frame[data-fill="normal"]').forEach((f) => { f.innerHTML = regions() })
+
+/* Today's layout, for comparison: student panel left, interviewer fit into the rest (letterboxed) */
+document.getElementById('today').innerHTML = `
+  <div class="reg" style="left:0;top:0;width:31.64%;height:100%">${cam('s', 'slice')}<span class="who">Student</span></div>
+  <div class="reg" style="left:31.64%;top:15.84%;width:68.36%;height:68.32%">${cam('i', 'meet')}<span class="who">Interviewer</span></div>`
+
+/* ── Student camera cases ── */
+const result = () => `<div class="result"><div class="frame">${regions()}</div></div>`
+function camBox(w, h, kind, cropFrac, label) {
+  // cropFrac: the share of the width kept (9:16 of the height), centred; null = nothing cropped
+  const crop = cropFrac ? `<div class="crop" style="left:${(1 - cropFrac) * 50}%;width:${cropFrac * 100}%"></div>` : ''
+  return `<div class="inbox"><span class="lbl">${label}</span><div class="camframe" style="width:${w}px;height:${h}px">${cam(kind, w < h ? 'slice' : 'meet')}${crop}</div></div>`
+}
+const keep916 = (aw, ah) => (9 / 16) * (ah / aw) // share of a landscape frame's width a centred 9:16 keeps
+
+const studentCases = [
+  ['Phone · app', 'The app is locked to portrait, so 9:16 is sent as it is.', camBox(72, 128, 's', null, 'Camera 9:16')],
+  ['Phone held sideways · app', 'The app stays portrait and keeps the centre of the picture.', camBox(200, 112, 's', keep916(16, 9), 'Camera 16:9')],
+  ['Tablet · app', 'Locked to portrait like a phone; any camera shape is sent as 9:16.', camBox(84, 128, 's', null, 'Camera, any shape')],
+  ['Phone · website', 'A phone browser camera is usually portrait already.', camBox(72, 128, 's', null, 'Camera 9:16')],
+  ['Laptop 16:9 webcam · website', 'The website keeps the centre 9:16 strip before sending.', camBox(200, 112, 's', keep916(16, 9), 'Webcam 16:9')],
+  ['Laptop 4:3 webcam · website', 'Same: the centre 9:16 strip of the 4:3 picture.', camBox(160, 120, 's', keep916(4, 3), 'Webcam 4:3')],
+  ['Laptop · website, crop fails (rare)', 'If the browser can\'t crop, the camera is sent as it is. The recording then keeps the centre itself (crop mode), so it looks the same.', camBox(200, 112, 's', keep916(16, 9), 'Webcam as sent')],
+]
+document.getElementById('studentCases').innerHTML = studentCases.map(([t, s, input]) =>
+  `<div class="case"><div class="t">${t}<span>${s}</span></div>${input}<div class="arrow">→</div>${result()}</div>`).join('')
+
+/* ── Interviewer camera cases ── */
+function ivResult(trim) {
+  // trim: show what the box keeps of a 4:3 picture (top and bottom trimmed)
+  return `<div class="result"><div class="frame">${regions()}${trim ? '<div class="reg iv" style="pointer-events:none;box-shadow:inset 0 0 0 2px #fff"></div>' : ''}</div></div>`
+}
+function ivBox(w, h, cropTopBottom, label) {
+  const crop = cropTopBottom ? `<div class="crop" style="left:0;right:0;top:${cropTopBottom}%;bottom:${cropTopBottom}%;width:auto"></div>` : ''
+  return `<div class="inbox"><span class="lbl">${label}</span><div class="camframe" style="width:${w}px;height:${h}px">${cam('i', 'meet')}${crop}</div></div>`
+}
+// 4:3 into 16:9 by crop: keeps 75% of the height → 12.5% off top and bottom
+const ivCases = [
+  ['Laptop 16:9 webcam · website', 'Fills the corner box exactly.', ivBox(200, 112, 0, 'Webcam 16:9'), ivResult(false)],
+  ['Laptop 4:3 webcam · website', 'If the browser sends 4:3, the box keeps the middle: about 12% is trimmed from the top and from the bottom. Their face stays in view.', ivBox(160, 120, 12.5, 'Webcam 4:3'), ivResult(true)],
+  ['Phone · app', 'The app is locked to landscape for the interviewer, so 16:9 is sent.', ivBox(200, 112, 0, 'Camera 16:9'), ivResult(false)],
+]
+document.getElementById('ivCases').innerHTML = ivCases.map(([t, s, input, out]) =>
+  `<div class="case"><div class="t">${t}<span>${s}</span></div>${input}<div class="arrow">→</div>${out}</div>`).join('')
+
+/* ── Moments ── */
+const moments = [
+  ['Both on', 'The normal case.', {}],
+  ['Interviewer camera off', 'Or the interviewer\'s video drops to audio-only on a weak network. The corner goes dark after about 3.5 s, and their voice is still recorded.', { iv: 'off' }],
+  ['Student camera off', 'Or the student\'s video drops to audio-only. The middle goes dark; the interviewer box stays.', { student: 'off' }],
+  ['Before the student joins / after they leave', 'Nothing is drawn in the middle until their video arrives.', { student: 'none' }],
+  ['Before the interviewer joins / after they leave', 'The corner stays dark.', { iv: 'none' }],
+  ['Both cameras off', 'An all-dark frame; sound only.', { student: 'off', iv: 'off' }],
+]
+document.getElementById('moments').innerHTML = moments.map(([t, s, o]) =>
+  `<div class="tile"><div class="cap">${t}<span>${s}</span></div><div class="frame">${regions(o)}</div></div>`).join('')
+
+/* ?only=… shows one section */
+const only = new URLSearchParams(location.search).get('only')
+if (only) document.querySelectorAll('[data-id]').forEach((el) => { if (el.dataset.id !== only) el.style.display = 'none' })
+if (only) document.querySelector('.intro').style.display = 'none'
+</script>
+</body>
+</html>
